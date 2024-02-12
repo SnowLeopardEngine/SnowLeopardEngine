@@ -1,6 +1,8 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Event/ApplicationEvents.h"
+#include "SnowLeopardEngine/Core/Event/EventHandler.h"
 #include "SnowLeopardEngine/Core/Time/Timer.h"
 #include "SnowLeopardEngine/Engine/Engine.h"
 
@@ -56,12 +58,14 @@ namespace SnowLeopardEngine
          * @brief Event callback when window is closing
          *
          */
-        void OnWindowClose();
+        void OnWindowClose(const WindowCloseEvent& e);
 
     private:
         Ref<Engine> m_Engine = nullptr;
         Timer       m_Timer;
         bool        m_IsRunning = false;
+
+        EventHandler<WindowCloseEvent> m_WindowCloseHandler = [this](const WindowCloseEvent& e) { OnWindowClose(e); };
 
         static DesktopApp* s_Instance;
     };

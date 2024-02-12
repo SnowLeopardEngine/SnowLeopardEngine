@@ -4,3 +4,13 @@ build/
 
 # VS Code
 .vscode/
+
+# VS
+vsxmake*/
+
+# CMake
+cmake*/
+CMakeLists.txt
+
+# IntelliJ
+.idea/

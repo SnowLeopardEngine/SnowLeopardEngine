@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Platform/GLFW/GLFWWindow.h"
+#include "SnowLeopardEngine/Core/Event/ApplicationEvents.h"
+#include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
-#include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
 {
@@ -69,13 +70,17 @@ namespace SnowLeopardEngine
             data.Width       = width;
             data.Height      = height;
 
-            // Dispatch events
+            // Trigger event
+            WindowResizeEvent event(width, height);
+            TriggerEvent(event);
         });
 
         glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window) {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
-            // Dispatch events
+            // Queue event
+            Scope<WindowCloseEvent> event = std::move(CreateScope<WindowCloseEvent>());
+            QueueEvent(std::move(event));
         });
 
         glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -84,15 +89,15 @@ namespace SnowLeopardEngine
             switch (action)
             {
                 case GLFW_PRESS: {
-                    // TODO: Dispatch Events
+                    // TODO: Ruofan He InputSystem set keyboard states
                     break;
                 }
                 case GLFW_RELEASE: {
-                    // TODO: Dispatch Events
+                    // TODO: Ruofan He InputSystem set keyboard states
                     break;
                 }
                 case GLFW_REPEAT: {
-                    // TODO: Dispatch Events
+                    // TODO: Ruofan He InputSystem set keyboard states
                     break;
                 }
             }
@@ -101,7 +106,7 @@ namespace SnowLeopardEngine
         glfwSetCharCallback(m_Window, [](GLFWwindow* window, unsigned int keycode) {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
-            // TODO: Dispatch Events
+            // TODO: Ruofan He InputSystem set keyboard states
         });
 
         glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods) {
@@ -110,11 +115,11 @@ namespace SnowLeopardEngine
             switch (action)
             {
                 case GLFW_PRESS: {
-                    // TODO: Dispatch Events
+                    // TODO: Ruofan He InputSystem set mouse states
                     break;
                 }
                 case GLFW_RELEASE: {
-                    // TODO: Dispatch Events
+                    // TODO: Ruofan He InputSystem set mouse states
                     break;
                 }
             }
@@ -123,14 +128,16 @@ namespace SnowLeopardEngine
         glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset) {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
-            // TODO: Dispatch Events
+            // TODO: Ruofan He InputSystem set mouse states
         });
 
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
-            // TODO: Dispatch Events
+            // TODO: Ruofan He InputSystem set mouse states
         });
+
+        // TODO: Ruofan He InputSystem add Controller buttons & joysticks support.
 
         SNOW_LEOPARD_CORE_INFO("[GLFWWindow] Initialized");
     }

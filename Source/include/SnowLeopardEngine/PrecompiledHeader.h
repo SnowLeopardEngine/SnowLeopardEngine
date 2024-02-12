@@ -9,8 +9,9 @@
 #include <memory>
 #include <mutex>
 #include <sstream>
-#include <string>
-#include <vector>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 // Add more headers if necessary.

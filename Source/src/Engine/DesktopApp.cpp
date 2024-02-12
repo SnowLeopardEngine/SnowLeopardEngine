@@ -1,5 +1,5 @@
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
-#include "SnowLeopardEngine/Core/Log/LogSystem.h"
+#include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
@@ -18,6 +18,9 @@ namespace SnowLeopardEngine
             return false;
         }
 
+        // subscribe events
+        Subscribe(m_WindowCloseHandler);
+
         m_IsRunning = true;
 
         return true;
@@ -25,7 +28,7 @@ namespace SnowLeopardEngine
 
     void DesktopApp::Run()
     {
-        while (m_IsRunning)
+        while (m_IsRunning && !m_Engine->GetContext()->WindowSys->ShouldClose())
         {
             m_Timer.Start();
             m_Engine->TickOneFrame(m_Timer.GetDeltaTime());
@@ -37,5 +40,18 @@ namespace SnowLeopardEngine
 
     void DesktopApp::Quit() { m_IsRunning = false; }
 
-    void DesktopApp::Shutdown() { m_Engine->Shutdown(); }
+    void DesktopApp::Shutdown()
+    {
+        // unsubscribe events
+        Unsubscribe(m_WindowCloseHandler);
+
+        // shutdown the engine
+        m_Engine->Shutdown();
+    }
+
+    void DesktopApp::OnWindowClose(const WindowCloseEvent& e)
+    {
+        SNOW_LEOPARD_CORE_INFO("[App] OnWindowClose");
+        Quit();
+    }
 } // namespace SnowLeopardEngine

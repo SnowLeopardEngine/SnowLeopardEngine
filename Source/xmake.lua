@@ -1,5 +1,5 @@
 -- add requirements
-add_requires("spdlog", "glfw", "glm")
+add_requires("spdlog", "fmt 9.1.0", "glfw", "glm")
 
 -- target defination, name: SnowLeopardEngine
 target("SnowLeopardEngine")
@@ -20,6 +20,7 @@ target("SnowLeopardEngine")
 
     -- add packages
     add_packages("spdlog", { public = true })
+    add_packages("fmt", { public = true })
     add_packages("glfw", { public = true })
     add_packages("glm", { public = true })
 
