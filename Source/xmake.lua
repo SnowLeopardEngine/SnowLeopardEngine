@@ -1,5 +1,5 @@
 -- add requirements
-add_requires("spdlog", "fmt 9.1.0", "glfw", "glm")
+add_requires("spdlog", "fmt 9.1.0", "glfw", "glm", "stduuid", "entt v3.10.0")
 
 -- target defination, name: SnowLeopardEngine
 target("SnowLeopardEngine")
@@ -23,6 +23,8 @@ target("SnowLeopardEngine")
     add_packages("fmt", { public = true })
     add_packages("glfw", { public = true })
     add_packages("glm", { public = true })
+    add_packages("stduuid", { public = true })
+    add_packages("entt", { public = true })
 
     -- set target directory
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/SnowLeopardEngine")

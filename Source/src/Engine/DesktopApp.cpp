@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
+#include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
@@ -28,10 +29,25 @@ namespace SnowLeopardEngine
 
     void DesktopApp::Run()
     {
+        float fixedTimer = 0;
         while (m_IsRunning && !m_Engine->GetContext()->WindowSys->ShouldClose())
         {
             m_Timer.Start();
-            m_Engine->TickOneFrame(m_Timer.GetDeltaTime());
+            float dt        = m_Timer.GetDeltaTime();
+            Time::DeltaTime = dt;
+
+            // Fixed Tick
+            fixedTimer += dt;
+            while (fixedTimer >= Time::FixedDeltaTime)
+            {
+                m_Engine->FixedTickOneFrame();
+                
+                fixedTimer -= Time::FixedDeltaTime;
+            }
+
+            // Normal Tick
+            m_Engine->TickOneFrame(dt);
+
             m_Timer.Stop();
         }
 

@@ -13,5 +13,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <regex>
 
 // Add more headers if necessary.

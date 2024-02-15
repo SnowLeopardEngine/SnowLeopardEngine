@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Engine/Engine.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Time/Time.h"
 
 namespace SnowLeopardEngine
 {
@@ -26,7 +27,7 @@ namespace SnowLeopardEngine
     void Engine::TickOneFrame(float deltaTime)
     {
         // Tick sub systems
-        SNOW_LEOPARD_CORE_INFO("[Engine] DeltaTime: {0}", deltaTime);
+        // SNOW_LEOPARD_CORE_INFO("[Engine] DeltaTime: {0}", deltaTime);
 
         // Tick Window System
         if (!g_EngineContext->WindowSys->Tick())
@@ -40,6 +41,23 @@ namespace SnowLeopardEngine
         // TODO: Tick Logic
 
         // TODO: Tick Rendering
+
+        for (auto& tickable : m_Tickables)
+        {
+            tickable->OnTick(deltaTime);
+        }
+    }
+
+    void Engine::FixedTickOneFrame()
+    {
+        // SNOW_LEOPARD_CORE_INFO("[Engine] FixedTick, FixedDeltaTime: {0}", Time::FixedDeltaTime);
+
+        // TODO: Tick Physics
+
+        for (auto& tickable : m_Tickables)
+        {
+            tickable->OnFixedTick();
+        }
     }
 
     void Engine::Shutdown()
