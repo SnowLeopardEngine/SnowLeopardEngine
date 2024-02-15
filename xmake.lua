@@ -22,10 +22,21 @@ end
 -- global rules
 rule("install_physx")
     before_build(function(target)
-        if is_plat("macosx") then
-            print("Installing PhysX SDK 5.1.2...")
+        print("Installing PhysX SDK 5.1.2...")
+        if is_plat("windows") then
+            os.cd("$(projectdir)/Deps/SPhysX-Cross")
+            os.run("powershell.exe .\\download_prebuilt_sdk_windows.ps1")
+        elseif is_plat("macosx") then
             os.cd("$(projectdir)/Deps/SPhysX-Cross")
             os.run("./download_prebuilt_sdk_macosx.sh")
+        end
+    end)
+
+    after_build(function(target)
+        if is_plat("windows") then
+            -- copy dll
+            print("Copying PhysX DLLs...")
+            os.cp("$(projectdir)/Deps/SPhysX-Cross/Prebuilt/Libraries/windows/$(arch)/$(mode)/dll/*", target:targetdir())
         end
     end)
 rule_end()
