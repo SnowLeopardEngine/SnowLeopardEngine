@@ -23,4 +23,4 @@ void CustomAssert(bool condition, const char* message, Args... args)
     }
 }
 
-#define SNOW_LEOPARD_CORE_ASSERT(cond, msg, ...) CustomAssert(cond, msg, __VA_ARGS__)
+#define SNOW_LEOPARD_CORE_ASSERT(...) CustomAssert(__VA_ARGS__)

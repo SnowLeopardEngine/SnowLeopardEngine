@@ -36,7 +36,7 @@ public:
         m_EngineContext = DesktopApp::GetInstance()->GetEngine()->GetContext();
 
         // Create a scene and set active
-        auto& scene = m_EngineContext->SceneMngr->CreateScene("NativeScripting", true);
+        auto scene = m_EngineContext->SceneMngr->CreateScene("NativeScripting", true);
 
         // Create an entity with NativeScriptingComponent
         Entity entity         = scene->CreateEntity("Entity1");
