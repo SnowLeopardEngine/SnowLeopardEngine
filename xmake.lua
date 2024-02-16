@@ -31,7 +31,10 @@ rule("install_physx")
             os.run("./download_prebuilt_sdk_macosx.sh")
         elseif is_plat("linux") then
             os.cd("$(projectdir)/Deps/SPhysX-Cross")
-            os.run("./download_prebuilt_sdk_linux.sh")
+            os.run("./BuildLinux_$(mode).sh")
+	    -- Fake Prebuilt folder
+	    os.mkdir("Prebuilt/Libraries/linux/$(arch)/$(mode)")
+	    os.cp("lib/bin/linux.clang/$(mode)/*", "Prebuilt/Libraries/linux/$(arch)/$(mode)")
         end
     end)
 
