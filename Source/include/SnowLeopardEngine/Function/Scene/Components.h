@@ -3,6 +3,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
+#include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 
 namespace SnowLeopardEngine
 {
@@ -107,5 +108,14 @@ namespace SnowLeopardEngine
             Rotation      = rotation;
             RotationEuler = glm::eulerAngles(rotation);
         }
+    };
+
+    struct NativeScriptingComponent
+    {
+        Ref<NativeScriptInstance> ScriptInstance;
+
+        NativeScriptingComponent()                                = default;
+        NativeScriptingComponent(const NativeScriptingComponent&) = default;
+        NativeScriptingComponent(const Ref<NativeScriptInstance>& scriptInstance) : ScriptInstance(scriptInstance) {}
     };
 } // namespace SnowLeopardEngine

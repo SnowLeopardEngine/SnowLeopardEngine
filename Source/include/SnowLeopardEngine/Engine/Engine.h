@@ -18,6 +18,14 @@ namespace SnowLeopardEngine
         bool Init();
 
         /**
+         * @brief Post initialized the engine
+         * 
+         * @return true 
+         * @return false 
+         */
+        bool PostInit();
+
+        /**
          * @brief Add a LifeTimeComponent object
          *
          * @param lifeTimeComponent

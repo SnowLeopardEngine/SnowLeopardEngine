@@ -10,6 +10,16 @@ namespace SnowLeopardEngine
     public:
         DECLARE_SUBSYSTEM(SceneManager)
 
-        Ref<LogicScene> CreateScene(const std::string& name);
+        Ref<LogicScene> CreateScene(const std::string& name, bool active = false);
+
+        void SetActiveScene(const Ref<LogicScene>& activeScene);
+
+        void OnLoad();
+        void OnTick(float deltaTime);
+        void OnFixedTick();
+        void OnUnload();
+
+    private:
+        Ref<LogicScene> m_ActiveScene = nullptr;
     };
 } // namespace SnowLeopardEngine

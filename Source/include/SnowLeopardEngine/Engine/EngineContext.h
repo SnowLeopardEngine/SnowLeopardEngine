@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Core/Base/SingletonWrapper.h"
 #include "SnowLeopardEngine/Core/Event/EventSystem.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
+#include "SnowLeopardEngine/Function/Scene/SceneManager.h"
 #include "SnowLeopardEngine/Function/Window/WindowSystem.h"
 
 namespace SnowLeopardEngine
@@ -13,6 +14,7 @@ namespace SnowLeopardEngine
         SingletonWrapper<LogSystem>    LogSys;
         SingletonWrapper<EventSystem>  EventSys;
         SingletonWrapper<WindowSystem> WindowSys;
+        SingletonWrapper<SceneManager> SceneMngr;
     };
 
     extern EngineContext* g_EngineContext;

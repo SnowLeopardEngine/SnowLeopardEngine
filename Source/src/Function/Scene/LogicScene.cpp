@@ -79,7 +79,50 @@ namespace SnowLeopardEngine
 
     Entity LogicScene::GetEntityWithCoreUUID(CoreUUID id) const { return m_EntityMap->at(id); }
 
-    void LogicScene::OnUpdate(float deltaTime) {}
+    void LogicScene::OnLoad()
+    {
+        auto view = m_Registry.view<NativeScriptingComponent>();
+        for (const auto& entity : view)
+        {
+            auto nativeScriptingComponent = view.get<NativeScriptingComponent>(entity);
+            nativeScriptingComponent.ScriptInstance->OnLoad();
+        }
+    }
+
+    void LogicScene::OnTick(float deltaTime)
+    {
+        // Tick NativeScriptingComponents for now
+        // TODO: Consider Script Tick Priority
+        // TODO: If time is enough, integrate Lua or C# Scripting.
+        auto view = m_Registry.view<NativeScriptingComponent>();
+        for (const auto& entity : view)
+        {
+            auto nativeScriptingComponent = view.get<NativeScriptingComponent>(entity);
+            nativeScriptingComponent.ScriptInstance->OnTick(deltaTime);
+        }
+    }
+
+    void LogicScene::OnFixedTick()
+    {
+        auto view = m_Registry.view<NativeScriptingComponent>();
+        for (const auto& entity : view)
+        {
+            auto nativeScriptingComponent = view.get<NativeScriptingComponent>(entity);
+            nativeScriptingComponent.ScriptInstance->OnFixedTick();
+        }
+
+        // TODO: Fixed Tick Physics Components
+    }
+
+    void LogicScene::OnUnload()
+    {
+        auto view = m_Registry.view<NativeScriptingComponent>();
+        for (const auto& entity : view)
+        {
+            auto nativeScriptingComponent = view.get<NativeScriptingComponent>(entity);
+            nativeScriptingComponent.ScriptInstance->OnUnload();
+        }
+    }
 
     std::vector<Entity> LogicScene::GetEntitiesSortedByName()
     {
@@ -137,4 +180,5 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(NameComponent) {}
     ON_COMPONENT_ADDED(TreeNodeComponent) {}
     ON_COMPONENT_ADDED(TransformComponent) {}
+    ON_COMPONENT_ADDED(NativeScriptingComponent) {}
 } // namespace SnowLeopardEngine

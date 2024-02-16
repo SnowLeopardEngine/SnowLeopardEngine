@@ -27,6 +27,15 @@ namespace SnowLeopardEngine
         return true;
     }
 
+    bool DesktopApp::PostInit()
+    {
+        if (!m_Engine->PostInit())
+        {
+            std::cerr << "Failed to post initialize the engine!" << std::endl;
+            return false;
+        }
+    }
+
     void DesktopApp::Run()
     {
         float fixedTimer = 0;
@@ -41,7 +50,7 @@ namespace SnowLeopardEngine
             while (fixedTimer >= Time::FixedDeltaTime)
             {
                 m_Engine->FixedTickOneFrame();
-                
+
                 fixedTimer -= Time::FixedDeltaTime;
             }
 

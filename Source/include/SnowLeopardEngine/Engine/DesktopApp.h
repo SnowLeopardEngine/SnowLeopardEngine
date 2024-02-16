@@ -22,6 +22,14 @@ namespace SnowLeopardEngine
         bool Init();
 
         /**
+         * @brief Post initialize the application
+         * 
+         * @return true 
+         * @return false 
+         */
+        bool PostInit();
+
+        /**
          * @brief Let the application start running.
          *
          */
@@ -45,7 +53,7 @@ namespace SnowLeopardEngine
          *
          * @return DesktopApp* application instance
          */
-        static DesktopApp* Get() { return s_Instance; }
+        static DesktopApp* GetInstance() { return s_Instance; }
 
     private:
         /**

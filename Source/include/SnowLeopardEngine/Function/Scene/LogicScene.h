@@ -25,7 +25,10 @@ namespace SnowLeopardEngine
         void   DestroyEntity(Entity entity);
         Entity GetEntityWithCoreUUID(CoreUUID uuid) const;
 
-        void OnUpdate(float deltaTime);
+        void OnLoad();
+        void OnTick(float deltaTime);
+        void OnFixedTick();
+        void OnUnload();
 
         std::vector<Entity> GetEntitiesSortedByName();
 
