@@ -9,7 +9,8 @@ int main()
     ma_engine engine;
 
     result = ma_engine_init(NULL, &engine);
-    if (result != MA_SUCCESS) {
+    if (result != MA_SUCCESS)
+    {
         return -1;
     }
 

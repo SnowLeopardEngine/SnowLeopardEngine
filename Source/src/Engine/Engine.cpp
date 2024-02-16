@@ -22,6 +22,9 @@ namespace SnowLeopardEngine
         // Init scene manager
         g_EngineContext->SceneMngr.Init();
 
+        // Init audio system
+        g_EngineContext->AudioSys.Init();
+
         SNOW_LEOPARD_CORE_INFO("[Engine] Initialized");
 
         return true;
@@ -86,6 +89,8 @@ namespace SnowLeopardEngine
         {
             lifeTime->OnUnload();
         }
+        
+        g_EngineContext->AudioSys.Shutdown();
         g_EngineContext->SceneMngr->OnUnload();
         g_EngineContext->SceneMngr.Shutdown();
         g_EngineContext->WindowSys.Shutdown();

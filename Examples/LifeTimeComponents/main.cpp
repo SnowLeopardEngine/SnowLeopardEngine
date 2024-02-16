@@ -48,6 +48,7 @@ int main()
     app.GetEngine()->AddLifeTimeComponent(l1);
     app.GetEngine()->AddLifeTimeComponent(l2);
 
+    app.PostInit();
     app.Run();
 
     return 0;
