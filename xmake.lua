@@ -53,7 +53,12 @@ function link_physx()
     add_includedirs("$(projectdir)/Deps/SPhysX-Cross/PhysX-CMake/physx/include", {public = true}) -- public: let other targets to auto include
 
     -- links
-    add_linkdirs("$(projectdir)/Deps/SPhysX-Cross/Prebuilt/Libraries/$(plat)/$(arch)/$(mode)/")
+    if is_plat("macosx") then
+        add_linkdirs("$(projectdir)/Deps/SPhysX-Cross/Prebuilt/Libraries/macosx/general/$(mode)/")
+    else
+        add_linkdirs("$(projectdir)/Deps/SPhysX-Cross/Prebuilt/Libraries/$(plat)/$(arch)/$(mode)/")
+    end
+    
     add_links("PhysX_static")
     add_links("PhysXCharacterKinematic_static")
     add_links("PhysXCommon_static")
