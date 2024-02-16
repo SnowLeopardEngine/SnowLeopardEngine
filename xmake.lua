@@ -29,14 +29,17 @@ rule("install_physx")
         elseif is_plat("macosx") then
             os.cd("$(projectdir)/Deps/SPhysX-Cross")
             os.run("./download_prebuilt_sdk_macosx.sh")
+        elseif is_plat("linux") then
+            os.cd("$(projectdir)/Deps/SPhysX-Cross")
+            os.run("./download_prebuilt_sdk_linux.sh")
         end
     end)
 
     after_build(function(target)
-        if is_plat("windows") then
+        if is_plat("windows") or is_plat("linux") then
             -- copy dll
             print("Copying PhysX DLLs...")
-            os.cp("$(projectdir)/Deps/SPhysX-Cross/Prebuilt/Libraries/windows/$(arch)/$(mode)/dll/*", target:targetdir())
+            os.cp("$(projectdir)/Deps/SPhysX-Cross/Prebuilt/Libraries/$(plat)/$(arch)/$(mode)/dll/*", target:targetdir())
         end
     end)
 rule_end()
@@ -59,14 +62,14 @@ function link_physx()
         add_linkdirs("$(projectdir)/Deps/SPhysX-Cross/Prebuilt/Libraries/$(plat)/$(arch)/$(mode)/")
     end
     
-    add_links("PhysX_static")
+    -- it must follow the order: https://github.com/NVIDIAGameWorks/PhysX/issues/53
+    add_links("PhysX_static", "PhysXPvdSDK_static", "PhysXExtensions_static", "PhysXCooking_static", "PhysXCommon_static", "PhysXFoundation_static")
     add_links("PhysXCharacterKinematic_static")
-    add_links("PhysXCommon_static")
-    add_links("PhysXCooking_static")
-    add_links("PhysXExtensions_static")
-    add_links("PhysXFoundation_static")
-    add_links("PhysXPvdSDK_static")
     add_links("PhysXVehicle_static")
+
+    if is_plat("linux") then
+        add_links("pthread", "dl")
+    end
 end
 
 -- include source
