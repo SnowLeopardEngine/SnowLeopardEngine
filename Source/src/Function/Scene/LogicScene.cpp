@@ -81,12 +81,8 @@ namespace SnowLeopardEngine
 
     void LogicScene::OnLoad()
     {
-        auto view = m_Registry.view<NativeScriptingComponent>();
-        for (const auto& entity : view)
-        {
-            auto nativeScriptingComponent = view.get<NativeScriptingComponent>(entity);
-            nativeScriptingComponent.ScriptInstance->OnLoad();
-        }
+        m_Registry.view<NativeScriptingComponent>().each(
+            [](entt::entity entity, NativeScriptingComponent& nativeScript) { nativeScript.ScriptInstance->OnLoad(); });
     }
 
     void LogicScene::OnTick(float deltaTime)
@@ -94,34 +90,28 @@ namespace SnowLeopardEngine
         // Tick NativeScriptingComponents for now
         // TODO: Consider Script Tick Priority
         // TODO: If time is enough, integrate Lua or C# Scripting.
-        auto view = m_Registry.view<NativeScriptingComponent>();
-        for (const auto& entity : view)
-        {
-            auto nativeScriptingComponent = view.get<NativeScriptingComponent>(entity);
-            nativeScriptingComponent.ScriptInstance->OnTick(deltaTime);
-        }
+        m_Registry.view<NativeScriptingComponent>().each(
+            [deltaTime](entt::entity entity, NativeScriptingComponent& nativeScript) {
+                nativeScript.ScriptInstance->OnTick(deltaTime);
+            });
     }
 
     void LogicScene::OnFixedTick()
     {
-        auto view = m_Registry.view<NativeScriptingComponent>();
-        for (const auto& entity : view)
-        {
-            auto nativeScriptingComponent = view.get<NativeScriptingComponent>(entity);
-            nativeScriptingComponent.ScriptInstance->OnFixedTick();
-        }
+        m_Registry.view<NativeScriptingComponent>().each(
+            [](entt::entity entity, NativeScriptingComponent& nativeScript) {
+                nativeScript.ScriptInstance->OnFixedTick();
+            });
 
         // TODO: Fixed Tick Physics Components
     }
 
     void LogicScene::OnUnload()
     {
-        auto view = m_Registry.view<NativeScriptingComponent>();
-        for (const auto& entity : view)
-        {
-            auto nativeScriptingComponent = view.get<NativeScriptingComponent>(entity);
-            nativeScriptingComponent.ScriptInstance->OnUnload();
-        }
+        m_Registry.view<NativeScriptingComponent>().each(
+            [](entt::entity entity, NativeScriptingComponent& nativeScript) {
+                nativeScript.ScriptInstance->OnUnload();
+            });
     }
 
     std::vector<Entity> LogicScene::GetEntitiesSortedByName()
