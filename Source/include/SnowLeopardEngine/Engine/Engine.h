@@ -2,7 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "SnowLeopardEngine/Engine/Tickable.h"
+#include "SnowLeopardEngine/Engine/LifeTimeComponent.h"
 
 namespace SnowLeopardEngine
 {
@@ -18,11 +18,11 @@ namespace SnowLeopardEngine
         bool Init();
 
         /**
-         * @brief Add a tickable object
+         * @brief Add a LifeTimeComponent object
          *
-         * @param tickable
+         * @param lifeTimeComponent
          */
-        void AddTickable(const Ref<Tickable>& tickable) { m_Tickables.emplace_back(tickable); }
+        void AddLifeTimeComponent(const Ref<LifeTimeComponent>& lifeTimeComponent) { m_LiftTimeComponents.emplace_back(lifeTimeComponent); }
 
         /**
          * @brief Tick for one frame (logic + render)
@@ -51,6 +51,6 @@ namespace SnowLeopardEngine
         static EngineContext* GetContext();
 
     private:
-        std::vector<Ref<Tickable>> m_Tickables;
+        std::vector<Ref<LifeTimeComponent>> m_LiftTimeComponents;
     };
 } // namespace SnowLeopardEngine

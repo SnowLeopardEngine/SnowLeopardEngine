@@ -1,5 +1,5 @@
--- target defination, name: Tickables
-target("Tickables")
+-- target defination, name: LifeTimeComponents
+target("LifeTimeComponents")
     -- set target kind: executable
     set_kind("binary")
 
@@ -10,4 +10,4 @@ target("Tickables")
     add_deps("SnowLeopardEngine")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Examples/Tickables")
+    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Examples/LifeTimeComponents")

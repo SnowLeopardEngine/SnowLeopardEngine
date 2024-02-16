@@ -19,6 +19,12 @@ namespace SnowLeopardEngine
         WindowSystemInitInfo windowSysInitInfo {};
         g_EngineContext->WindowSys.Init(windowSysInitInfo);
 
+        // LifeTimeComponents OnLoad
+        for (auto& lifeTime : m_LiftTimeComponents)
+        {
+            lifeTime->OnLoad();
+        }
+
         SNOW_LEOPARD_CORE_INFO("[Engine] Initialized");
 
         return true;
@@ -42,9 +48,9 @@ namespace SnowLeopardEngine
 
         // TODO: Tick Rendering
 
-        for (auto& tickable : m_Tickables)
+        for (auto& lifeTime : m_LiftTimeComponents)
         {
-            tickable->OnTick(deltaTime);
+            lifeTime->OnTick(deltaTime);
         }
     }
 
@@ -54,15 +60,20 @@ namespace SnowLeopardEngine
 
         // TODO: Tick Physics
 
-        for (auto& tickable : m_Tickables)
+        for (auto& lifeTime : m_LiftTimeComponents)
         {
-            tickable->OnFixedTick();
+            lifeTime->OnFixedTick();
         }
     }
 
     void Engine::Shutdown()
     {
         SNOW_LEOPARD_CORE_INFO("[Engine] Shutting Down...");
+
+        for (auto& lifeTime : m_LiftTimeComponents)
+        {
+            lifeTime->OnUnload();
+        }
 
         g_EngineContext->WindowSys.Shutdown();
         g_EngineContext->EventSys.Shutdown();
