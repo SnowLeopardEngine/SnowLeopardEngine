@@ -6,6 +6,11 @@
 
 namespace SnowLeopardEngine
 {
+    struct EngineInitInfo
+    {
+        WindowInitInfo Window;
+    };
+
     class Engine
     {
     public:
@@ -15,7 +20,7 @@ namespace SnowLeopardEngine
          * @return true no error
          * @return false has some errors
          */
-        bool Init();
+        bool Init(const EngineInitInfo& initInfo);
 
         /**
          * @brief Post initialized the engine

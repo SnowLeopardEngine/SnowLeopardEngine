@@ -4,7 +4,7 @@
 
 namespace SnowLeopardEngine
 {
-    bool Engine::Init()
+    bool Engine::Init(const EngineInitInfo& initInfo)
     {
         // Init engine context
         g_EngineContext = new EngineContext();
@@ -17,6 +17,7 @@ namespace SnowLeopardEngine
 
         // Init window system
         WindowSystemInitInfo windowSysInitInfo {};
+        windowSysInitInfo.Window = initInfo.Window;
         g_EngineContext->WindowSys.Init(windowSysInitInfo);
 
         // Init scene manager
@@ -89,7 +90,7 @@ namespace SnowLeopardEngine
         {
             lifeTime->OnUnload();
         }
-        
+
         g_EngineContext->AudioSys.Shutdown();
         g_EngineContext->SceneMngr->OnUnload();
         g_EngineContext->SceneMngr.Shutdown();

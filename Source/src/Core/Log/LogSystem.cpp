@@ -26,10 +26,13 @@ namespace SnowLeopardEngine
         m_ClientLogger->flush_on(spdlog::level::trace);
 
         m_State = SystemState::InitOk;
+
+        m_CoreLogger->info("[LogSystem] Initialized");
     }
 
     LogSystem::~LogSystem()
     {
+        m_CoreLogger->info("[LogSystem] Shutting Down...");
         spdlog::shutdown();
         m_State = SystemState::ShutdownOk;
     }

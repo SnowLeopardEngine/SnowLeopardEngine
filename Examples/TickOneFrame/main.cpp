@@ -4,8 +4,11 @@ using namespace SnowLeopardEngine;
 
 int main()
 {
+    EngineInitInfo initInfo {};
+    initInfo.Window.Title = "Example - TickOneFrame";
+
     Engine engine;
-    if (!engine.Init())
+    if (!engine.Init(initInfo))
     {
         std::cerr << "Failed to init engine!" << std::endl;
         return 1;

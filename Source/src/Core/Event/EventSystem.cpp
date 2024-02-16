@@ -1,12 +1,22 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Event/EventSystem.h"
+#include "SnowLeopardEngine/Core/Log/Log.h"
 
 namespace SnowLeopardEngine
 {
-    EventSystem::EventSystem() {}
+    EventSystem::EventSystem()
+    {
+        SNOW_LEOPARD_CORE_INFO("[EventSystem] Initialized");
+        m_State = SystemState::InitOk;
+    }
 
-    EventSystem::~EventSystem() { m_Subscribers.clear(); }
+    EventSystem::~EventSystem()
+    {
+        SNOW_LEOPARD_CORE_INFO("[EventSystem] Shutting Down...");
+        m_Subscribers.clear();
+        m_State = SystemState::ShutdownOk;
+    }
 
     void EventSystem::Subscribe(EventId eventId, Scope<IEventHandlerWrapper>&& handler, HandlerId handlerId)
     {

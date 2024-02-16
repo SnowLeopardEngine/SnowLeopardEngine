@@ -9,11 +9,11 @@ namespace SnowLeopardEngine
 
     DesktopApp::DesktopApp() { s_Instance = this; }
 
-    bool DesktopApp::Init()
+    bool DesktopApp::Init(const DesktopAppInitInfo& initInfo)
     {
         // create the engine
         m_Engine = CreateRef<Engine>();
-        if (!m_Engine->Init())
+        if (!m_Engine->Init(initInfo.Engine))
         {
             std::cerr << "Failed to initialize the engine!" << std::endl;
             return false;

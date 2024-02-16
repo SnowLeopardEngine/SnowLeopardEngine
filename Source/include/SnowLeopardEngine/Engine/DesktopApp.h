@@ -8,6 +8,11 @@
 
 namespace SnowLeopardEngine
 {
+    struct DesktopAppInitInfo
+    {
+        EngineInitInfo Engine;
+    };
+
     class DesktopApp
     {
     public:
@@ -19,13 +24,13 @@ namespace SnowLeopardEngine
          * @return true no error
          * @return false has some errors
          */
-        bool Init();
+        bool Init(const DesktopAppInitInfo& initInfo);
 
         /**
          * @brief Post initialize the application
-         * 
-         * @return true 
-         * @return false 
+         *
+         * @return true
+         * @return false
          */
         bool PostInit();
 

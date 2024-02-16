@@ -50,9 +50,11 @@ private:
 
 int main()
 {
+    DesktopAppInitInfo initInfo {};
+    initInfo.Engine.Window.Title = "Example - NativeScripting";
     DesktopApp app;
 
-    if (!app.Init())
+    if (!app.Init(initInfo))
     {
         std::cerr << "Failed to initialize the application!" << std::endl;
         return 1;
