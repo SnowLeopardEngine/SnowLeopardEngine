@@ -34,7 +34,12 @@ int main()
     // add a custom lifeTimeComponent to the engine
     app.GetEngine()->AddLifeTimeComponent(CreateRef<CustomLifeTime>());
 
-    app.PostInit();
+    if (!app.PostInit())
+    {
+        std::cerr << "Failed to post initialize the application!" << std::endl;
+        return 1;
+    }
+
     app.Run();
 
     return 0;

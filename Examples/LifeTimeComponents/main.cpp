@@ -48,7 +48,12 @@ int main()
     app.GetEngine()->AddLifeTimeComponent(l1);
     app.GetEngine()->AddLifeTimeComponent(l2);
 
-    app.PostInit();
+    if (!app.PostInit())
+    {
+        std::cerr << "Failed to post initialize the application!" << std::endl;
+        return 1;
+    }
+
     app.Run();
 
     return 0;

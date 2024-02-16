@@ -34,6 +34,8 @@ namespace SnowLeopardEngine
             std::cerr << "Failed to post initialize the engine!" << std::endl;
             return false;
         }
+
+        return true;
     }
 
     void DesktopApp::Run()
