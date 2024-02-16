@@ -1,0 +1,23 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - name: Build
+        shell: pwsh
+        run: xmake -v -y
