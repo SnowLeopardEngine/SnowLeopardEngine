@@ -32,9 +32,9 @@ rule("install_physx")
         elseif is_plat("linux") then
             os.cd("$(projectdir)/Deps/SPhysX-Cross")
             os.run("./BuildLinux_$(mode).sh")
-	    -- Fake Prebuilt folder
-	    os.mkdir("Prebuilt/Libraries/linux/$(arch)/$(mode)")
-	    os.cp("lib/bin/linux.clang/$(mode)/*", "Prebuilt/Libraries/linux/$(arch)/$(mode)")
+	        -- Fake Prebuilt folder
+	        os.mkdir("Prebuilt/Libraries/linux/$(arch)/$(mode)")
+	        os.cp("lib/bin/linux.clang/$(mode)/*", "Prebuilt/Libraries/linux/$(arch)/$(mode)")
         end
     end)
 
