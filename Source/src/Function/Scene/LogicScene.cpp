@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
+#include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
 #include <fmt/core.h>
@@ -102,8 +103,6 @@ namespace SnowLeopardEngine
             [](entt::entity entity, NativeScriptingComponent& nativeScript) {
                 nativeScript.ScriptInstance->OnFixedTick();
             });
-
-        // TODO: Fixed Tick Physics Components
     }
 
     void LogicScene::OnUnload()
@@ -171,4 +170,6 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(TreeNodeComponent) {}
     ON_COMPONENT_ADDED(TransformComponent) {}
     ON_COMPONENT_ADDED(NativeScriptingComponent) {}
+    ON_COMPONENT_ADDED(RigidBodyComponent) {}
+    ON_COMPONENT_ADDED(SphereColliderComponent) {}
 } // namespace SnowLeopardEngine

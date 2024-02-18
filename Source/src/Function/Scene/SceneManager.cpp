@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Scene/SceneManager.h"
-#include "SnowLeopardEngine/Core/Log/Log.h"
+#include "SnowLeopardEngine/Core/Log/LogSystem.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
 {
@@ -32,6 +33,9 @@ namespace SnowLeopardEngine
         if (m_ActiveScene)
         {
             m_ActiveScene->OnLoad();
+
+            // Cook PhysicsScene!
+            g_EngineContext->PhysicsSys->CookPhysicsScene(m_ActiveScene);
         }
     }
 

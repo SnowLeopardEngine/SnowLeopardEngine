@@ -16,64 +16,20 @@ option_end()
 if is_host("windows") then
     add_cxxflags("/Zc:__cplusplus", {tools = {"msvc", "cl"}}) -- fix __cplusplus == 199711L error
     add_cxxflags("/bigobj") -- avoid big obj
+    add_cxxflags("-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING")
     set_runtimes("MD")
+    if is_mode("debug") then
+        add_links("ucrtd")
+    end
 end
 
 -- global rules
-rule("install_physx")
-    before_build(function(target)
-        print("Installing PhysX SDK 5.1.2...")
-        if is_plat("windows") then
-            os.cd("$(projectdir)/Deps/SPhysX-Cross")
-            os.run("powershell.exe .\\download_prebuilt_sdk_windows.ps1")
-        elseif is_plat("macosx") then
-            os.cd("$(projectdir)/Deps/SPhysX-Cross")
-            os.run("./download_prebuilt_sdk_macosx.sh")
-        elseif is_plat("linux") then
-            os.cd("$(projectdir)/Deps/SPhysX-Cross")
-            os.run("./BuildLinux_$(mode).sh")
-	        -- Fake Prebuilt folder
-	        os.mkdir("Prebuilt/Libraries/linux/$(arch)/$(mode)")
-	        os.cp("lib/bin/linux.clang/$(mode)/*", "Prebuilt/Libraries/linux/$(arch)/$(mode)")
-        end
-    end)
-
-    after_build(function(target)
-        if is_plat("windows") or is_plat("linux") then
-            -- copy dll
-            print("Copying PhysX DLLs...")
-            os.cp("$(projectdir)/Deps/SPhysX-Cross/Prebuilt/Libraries/$(plat)/$(arch)/$(mode)/dll/*", target:targetdir())
-        end
-    end)
-rule_end()
-
 add_rules("mode.debug", "mode.release")
 add_rules("plugin.vsxmake.autoupdate")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 
 -- add our own xmake-repo here
 add_repositories("snow-leopard-engine-xmake-repo https://github.com/SnowLeopardEngine/xmake-repo.git dev")
-
-function link_physx()
-    -- add include dir
-    add_includedirs("$(projectdir)/Deps/SPhysX-Cross/PhysX-CMake/physx/include", {public = true}) -- public: let other targets to auto include
-
-    -- links
-    if is_plat("macosx") then
-        add_linkdirs("$(projectdir)/Deps/SPhysX-Cross/Prebuilt/Libraries/macosx/general/$(mode)/")
-    else
-        add_linkdirs("$(projectdir)/Deps/SPhysX-Cross/Prebuilt/Libraries/$(plat)/$(arch)/$(mode)/")
-    end
-    
-    -- it must follow the order: https://github.com/NVIDIAGameWorks/PhysX/issues/53
-    add_links("PhysX_static", "PhysXPvdSDK_static", "PhysXExtensions_static", "PhysXCooking_static", "PhysXCommon_static", "PhysXFoundation_static")
-    add_links("PhysXCharacterKinematic_static")
-    add_links("PhysXVehicle_static")
-
-    if is_plat("linux") then
-        add_links("pthread", "dl")
-    end
-end
 
 -- include 3rdParty libraries
 includes("3rdParty")

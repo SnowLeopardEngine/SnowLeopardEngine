@@ -12,7 +12,8 @@ namespace SnowLeopardEngine
 
         Ref<LogicScene> CreateScene(const std::string& name, bool active = false);
 
-        void SetActiveScene(const Ref<LogicScene>& activeScene);
+        void            SetActiveScene(const Ref<LogicScene>& activeScene);
+        Ref<LogicScene> GetActiveScene() const { return m_ActiveScene; }
 
         void OnLoad();
         void OnTick(float deltaTime);

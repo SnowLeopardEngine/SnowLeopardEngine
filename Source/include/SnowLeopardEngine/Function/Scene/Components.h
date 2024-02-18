@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
+#include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
 
 namespace SnowLeopardEngine
 {
@@ -14,7 +15,7 @@ namespace SnowLeopardEngine
         IDComponent()                   = default;
         IDComponent(const IDComponent&) = default;
 
-        std::string GetIdString() { return to_string(Id); }
+        std::string GetIdString() const { return to_string(Id); }
         void        SetIdByString(std::string id)
         {
             auto optionalId = CoreUUID::from_string(id);
@@ -31,7 +32,7 @@ namespace SnowLeopardEngine
 
         NameComponent()                     = default;
         NameComponent(const NameComponent&) = default;
-        NameComponent(const std::string& name) : Name(name) {}
+        explicit NameComponent(const std::string& name) : Name(name) {}
     };
 
     struct TreeNodeComponent
@@ -42,7 +43,7 @@ namespace SnowLeopardEngine
         TreeNodeComponent()                         = default;
         TreeNodeComponent(const TreeNodeComponent&) = default;
 
-        std::string GetParentIdString() { return to_string(ParentId); }
+        std::string GetParentIdString() const { return to_string(ParentId); }
         void        SetParentIdByString(std::string parentId)
         {
             auto optionalId = CoreUUID::from_string(parentId);
@@ -55,6 +56,7 @@ namespace SnowLeopardEngine
         std::vector<std::string> GetChildrenIdsString()
         {
             std::vector<std::string> result;
+            result.reserve(ChildrenIds.size());
             for (const auto& id : ChildrenIds)
             {
                 result.emplace_back(to_string(id));
@@ -82,31 +84,31 @@ namespace SnowLeopardEngine
 
         TransformComponent()                          = default;
         TransformComponent(const TransformComponent&) = default;
-        TransformComponent(const glm::vec3& position, const glm::vec3& scale = glm::vec3(1, 1, 1)) :
+        explicit TransformComponent(const glm::vec3& position, const glm::vec3& scale = glm::vec3(1, 1, 1)) :
             Position(position), Scale(scale)
         {}
 
     private:
-        glm::vec3 RotationEuler = glm::vec3(0, 0, 0);
-        glm::quat Rotation      = glm::quat(1, 0, 0, 0);
+        glm::vec3 m_RotationEuler = glm::vec3(0, 0, 0);
+        glm::quat m_Rotation      = glm::quat(1, 0, 0, 0);
 
     public:
-        glm::mat4 GetTransform() const { return Math::GetTransformMatrix(Position, Rotation, Scale); }
+        glm::mat4 GetTransform() const { return Math::GetTransformMatrix(Position, m_Rotation, Scale); }
 
-        glm::vec3 GetRotationEuler() const { return RotationEuler; }
+        glm::vec3 GetRotationEuler() const { return m_RotationEuler; }
 
         void SetRotationEuler(const glm::vec3& euler)
         {
-            RotationEuler = euler;
-            Rotation      = glm::quat(glm::radians(euler));
+            m_RotationEuler = euler;
+            m_Rotation      = glm::quat(glm::radians(euler));
         }
 
-        glm::quat GetRotation() const { return Rotation; }
+        glm::quat GetRotation() const { return m_Rotation; }
 
         void SetRotation(glm::quat rotation)
         {
-            Rotation      = rotation;
-            RotationEuler = glm::eulerAngles(rotation);
+            m_Rotation      = rotation;
+            m_RotationEuler = glm::eulerAngles(rotation);
         }
     };
 
@@ -116,6 +118,27 @@ namespace SnowLeopardEngine
 
         NativeScriptingComponent()                                = default;
         NativeScriptingComponent(const NativeScriptingComponent&) = default;
-        NativeScriptingComponent(const Ref<NativeScriptInstance>& scriptInstance) : ScriptInstance(scriptInstance) {}
+        explicit NativeScriptingComponent(const Ref<NativeScriptInstance>& scriptInstance) :
+            ScriptInstance(scriptInstance)
+        {}
+    };
+
+    struct RigidBodyComponent
+    {
+        float Mass = 1.0f;
+
+        RigidBodyComponent()                          = default;
+        RigidBodyComponent(const RigidBodyComponent&) = default;
+        explicit RigidBodyComponent(float mass) : Mass(mass) {}
+    };
+
+    struct SphereColliderComponent
+    {
+        float            Radius   = 0.5f;
+        PhysicsMaterial* Material = nullptr;
+
+        SphereColliderComponent()                               = default;
+        SphereColliderComponent(const SphereColliderComponent&) = default;
+        SphereColliderComponent(float radius, PhysicsMaterial* material) : Radius(radius), Material(material) {}
     };
 } // namespace SnowLeopardEngine

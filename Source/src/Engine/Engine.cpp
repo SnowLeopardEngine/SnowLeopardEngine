@@ -19,6 +19,9 @@ namespace SnowLeopardEngine
         // Init audio system
         g_EngineContext->AudioSys.Init();
 
+        // Init physics system
+        g_EngineContext->PhysicsSys.Init();
+
         // Init window system
         WindowSystemInitInfo windowSysInitInfo {};
         windowSysInitInfo.Window = initInfo.Window;
@@ -81,8 +84,11 @@ namespace SnowLeopardEngine
     {
         // SNOW_LEOPARD_CORE_INFO("[Engine] FixedTick, FixedDeltaTime: {0}", Time::FixedDeltaTime);
 
-        // Tick Physics
+        // Tick Logic
         g_EngineContext->SceneMngr->OnFixedTick();
+
+        // Tick Physics
+        g_EngineContext->PhysicsSys->OnFixedTick();
 
         for (auto& lifeTime : m_LiftTimeComponents)
         {
@@ -103,6 +109,7 @@ namespace SnowLeopardEngine
         g_EngineContext->SceneMngr->OnUnload();
         g_EngineContext->SceneMngr.Shutdown();
         g_EngineContext->WindowSys.Shutdown();
+        g_EngineContext->PhysicsSys.Shutdown();
         g_EngineContext->AudioSys.Shutdown();
         g_EngineContext->EventSys.Shutdown();
         g_EngineContext->LogSys.Shutdown();

@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderSystem.h"
-#include "SnowLeopardEngine/Core/Log/Log.h"
+#include "SnowLeopardEngine/Core/Log/LogSystem.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Platform/OpenGL/GLContext.h"
 
 #include <glad/glad.h>

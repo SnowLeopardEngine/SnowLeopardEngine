@@ -52,7 +52,6 @@ namespace SnowLeopardEngine
             while (fixedTimer >= Time::FixedDeltaTime)
             {
                 m_Engine->FixedTickOneFrame();
-
                 fixedTimer -= Time::FixedDeltaTime;
             }
 

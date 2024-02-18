@@ -1,5 +1,5 @@
--- target defination, name: AudioSystem
-target("AudioSystem")
+-- target defination, name: PhysicsSystem
+target("PhysicsSystem")
     -- set target kind: executable
     set_kind("binary")
 
@@ -18,9 +18,4 @@ target("AudioSystem")
     end
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Examples/AudioSystem")
-
-    -- copy sounds
-    after_build(function(target)
-        os.cp("$(scriptdir)/sounds", target:targetdir())
-    end)
+    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Examples/PhysicsSystem")

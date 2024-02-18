@@ -1,3 +1,5 @@
+add_requires("sphysx-cross", { configs = { debug = is_mode("debug") }})
+
 -- target defination, name: PhysX_Test
 target("PhysX_Test")
     -- set target kind: executable
@@ -6,11 +8,7 @@ target("PhysX_Test")
     -- add source files
     add_files("main.cpp")
 
-    -- add rules
-    add_rules("install_physx")
-
-    -- link PhysX
-    link_physx()
+    add_packages("sphysx-cross")
 
     -- defines
     add_defines("PX_PHYSX_STATIC_LIB") -- force static lib https://github.com/NVIDIAGameWorks/PhysX/issues/260
