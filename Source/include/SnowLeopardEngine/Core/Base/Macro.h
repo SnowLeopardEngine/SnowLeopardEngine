@@ -14,7 +14,7 @@
 
 // Custom Assert function
 template<typename... Args>
-void CustomAssert(bool condition, const char* message, Args... args)
+void CustomAssert(bool condition, const std::string& message, Args... args)
 {
     if (!condition)
     {

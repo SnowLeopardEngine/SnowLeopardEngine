@@ -75,6 +75,9 @@ function link_physx()
     end
 end
 
+-- include 3rdParty libraries
+includes("3rdParty")
+
 -- include source
 includes("Source")
 

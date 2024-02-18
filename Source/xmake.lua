@@ -27,5 +27,8 @@ target("SnowLeopardEngine")
     add_packages("entt", { public = true })
     add_packages("miniaudio", { public = true })
 
+    -- add dependencies (inside project)
+    add_deps("glad")
+
     -- set target directory
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/SnowLeopardEngine")

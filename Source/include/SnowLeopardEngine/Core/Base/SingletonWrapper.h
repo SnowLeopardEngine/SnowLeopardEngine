@@ -23,7 +23,7 @@ namespace SnowLeopardEngine
             }
             else
             {
-                throw std::runtime_error("Init function is called twice.");
+                SNOW_LEOPARD_CORE_ASSERT(false, "Cannot call init twice!");
             }
         }
 

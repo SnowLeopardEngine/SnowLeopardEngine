@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Engine/Engine.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
 {
@@ -15,6 +16,9 @@ namespace SnowLeopardEngine
         // Init event system
         g_EngineContext->EventSys.Init();
 
+        // Init audio system
+        g_EngineContext->AudioSys.Init();
+
         // Init window system
         WindowSystemInitInfo windowSysInitInfo {};
         windowSysInitInfo.Window = initInfo.Window;
@@ -23,8 +27,8 @@ namespace SnowLeopardEngine
         // Init scene manager
         g_EngineContext->SceneMngr.Init();
 
-        // Init audio system
-        g_EngineContext->AudioSys.Init();
+        // Init render system
+        g_EngineContext->RenderSys.Init();
 
         SNOW_LEOPARD_CORE_INFO("[Engine] Initialized");
 
@@ -58,15 +62,19 @@ namespace SnowLeopardEngine
         // Dispatch Events
         g_EngineContext->EventSys->DispatchEvents();
 
-        // Tick Logic
-        g_EngineContext->SceneMngr->OnTick(deltaTime);
-
-        // TODO: Tick Rendering
-
         for (auto& lifeTime : m_LiftTimeComponents)
         {
             lifeTime->OnTick(deltaTime);
         }
+
+        // Tick Logic
+        g_EngineContext->SceneMngr->OnTick(deltaTime);
+
+        // Tick Rendering
+        g_EngineContext->RenderSys->OnTick(deltaTime);
+
+        // Present
+        g_EngineContext->RenderSys->Present();
     }
 
     void Engine::FixedTickOneFrame()
@@ -91,10 +99,11 @@ namespace SnowLeopardEngine
             lifeTime->OnUnload();
         }
 
-        g_EngineContext->AudioSys.Shutdown();
+        g_EngineContext->RenderSys.Shutdown();
         g_EngineContext->SceneMngr->OnUnload();
         g_EngineContext->SceneMngr.Shutdown();
         g_EngineContext->WindowSys.Shutdown();
+        g_EngineContext->AudioSys.Shutdown();
         g_EngineContext->EventSys.Shutdown();
         g_EngineContext->LogSys.Shutdown();
     }
