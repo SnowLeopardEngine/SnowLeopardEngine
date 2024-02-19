@@ -89,15 +89,15 @@ namespace SnowLeopardEngine
             switch (action)
             {
                 case GLFW_PRESS: {
-                    // TODO: Ruofan He InputSystem set keyboard states
+                    // TODO: Ruofan He InputSystem set keyboard states & dispatch event
                     break;
                 }
                 case GLFW_RELEASE: {
-                    // TODO: Ruofan He InputSystem set keyboard states
+                    // TODO: Ruofan He InputSystem set keyboard states & dispatch event
                     break;
                 }
                 case GLFW_REPEAT: {
-                    // TODO: Ruofan He InputSystem set keyboard states
+                    // TODO: Ruofan He InputSystem set keyboard states & dispatch event
                     break;
                 }
             }
@@ -106,7 +106,7 @@ namespace SnowLeopardEngine
         glfwSetCharCallback(m_Window, [](GLFWwindow* window, unsigned int keycode) {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
-            // TODO: Ruofan He InputSystem set keyboard states
+            // TODO: Ruofan He InputSystem set keyboard states & dispatch event
         });
 
         glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods) {
@@ -115,11 +115,11 @@ namespace SnowLeopardEngine
             switch (action)
             {
                 case GLFW_PRESS: {
-                    // TODO: Ruofan He InputSystem set mouse states
+                    // TODO: Ruofan He InputSystem set mouse states & dispatch event
                     break;
                 }
                 case GLFW_RELEASE: {
-                    // TODO: Ruofan He InputSystem set mouse states
+                    // TODO: Ruofan He InputSystem set mouse states & dispatch event
                     break;
                 }
             }
@@ -138,6 +138,7 @@ namespace SnowLeopardEngine
         });
 
         // TODO: Ruofan He InputSystem add Controller buttons & joysticks support.
+        // https://www.glfw.org/docs/3.3/input_guide.html#joystick
 
         SNOW_LEOPARD_CORE_INFO("[GLFWWindow] Initialized");
     }

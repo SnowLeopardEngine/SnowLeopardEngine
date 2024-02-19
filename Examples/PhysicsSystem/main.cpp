@@ -23,7 +23,6 @@ public:
 
         sphere.GetComponent<TransformComponent>().Position.y = 10.0f;
         sphere.AddComponent<RigidBodyComponent>(1.0f);
-
         sphere.AddComponent<SphereColliderComponent>(1.0f, smoothMaterial);
 
         // Create a floor with RigidBodyComponent & BoxColliderComponent
