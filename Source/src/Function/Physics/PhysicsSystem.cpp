@@ -93,6 +93,8 @@ namespace SnowLeopardEngine
                 }
                 else
                 {
+                    // TODO: Jubiao Lin setLinearDamping, setAngularDamping, enable ccd here:
+                    // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
                     body = m_Physics->createRigidDynamic(pxTransform);
                     static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
                 }
@@ -138,6 +140,8 @@ namespace SnowLeopardEngine
                 }
                 else
                 {
+                    // TODO: Jubiao Lin setLinearDamping, setAngularDamping, enable ccd here:
+                    // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
                     body = m_Physics->createRigidDynamic(pxTransform);
                     dynamic_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
                 }
