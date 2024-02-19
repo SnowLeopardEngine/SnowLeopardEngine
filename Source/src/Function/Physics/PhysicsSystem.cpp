@@ -110,6 +110,7 @@ namespace SnowLeopardEngine
                                                          sphereCollider.Material->Bounciness);
                 }
                 PxSphereGeometry sphereGeometry(sphereCollider.Radius);
+                // TODO: Simiao Wang Consider shape trigger flag here. read from sphereCollider.IsTrigger.
                 auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
 
                 // attach the shape to the rigidBody
@@ -155,6 +156,7 @@ namespace SnowLeopardEngine
                 }
                 PxBoxGeometry boxGeometry(
                     boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
+                // TODO: Simiao Wang Consider shape trigger flag here. read from boxCollider.IsTrigger.
                 auto* boxShape = m_Physics->createShape(boxGeometry, *material);
 
                 // attach the shape to the rigidBody
