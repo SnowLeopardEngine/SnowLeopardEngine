@@ -14,7 +14,7 @@ public:
         m_EngineContext = DesktopApp::GetInstance()->GetEngine()->GetContext();
 
         // Create a scene and set active
-        auto scene = m_EngineContext->SceneMngr->CreateScene("NativeScripting", true);
+        auto scene = m_EngineContext->SceneMngr->CreateScene("PhysicsSystem", true);
 
         // Create a smooth material
         auto smoothMaterial = CreateRef<PhysicsMaterial>(0, 0, 1);
@@ -44,7 +44,7 @@ private:
 int main()
 {
     DesktopAppInitInfo initInfo {};
-    initInfo.Engine.Window.Title = "Example - NativeScripting";
+    initInfo.Engine.Window.Title = "Example - PhysicsSystem";
     DesktopApp app;
 
     if (!app.Init(initInfo))
