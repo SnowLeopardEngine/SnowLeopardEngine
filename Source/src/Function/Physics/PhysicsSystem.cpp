@@ -113,7 +113,7 @@ namespace SnowLeopardEngine
                 }
                 PxSphereGeometry sphereGeometry(sphereCollider.Radius);
                 // TODO: Simiao Wang Consider shape trigger flag here. read from sphereCollider.IsTrigger.
-                auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
+                auto* sphereShape = m_Physics->createShape(sphereGeometry, *material);
 
                 // attach the shape to the rigidBody
                 body->attachShape(*sphereShape);
@@ -143,7 +143,7 @@ namespace SnowLeopardEngine
                     // TODO: Jubiao Lin setLinearDamping, setAngularDamping, enable ccd here:
                     // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
                     body = m_Physics->createRigidDynamic(pxTransform);
-                    dynamic_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
+                    static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
                 }
 
                 // create a box shape
