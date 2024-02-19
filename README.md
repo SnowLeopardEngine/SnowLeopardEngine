@@ -49,6 +49,13 @@ TODO
 - Visual Studio 2019 (or above) with C++ Desktop Development Environment
 - Git 2.1 (or above)
 
+> Avoid long-path limit:
+> Execute with system manager permission (Powershell):
+> ```powershell
+> New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" ` -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+> git config --system core.longpaths true
+> ```
+
 ### macOS
 
 - [XMake](https://github.com/xmake-io/xmake)
