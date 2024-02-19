@@ -47,6 +47,10 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_CORE_INFO("[PhysicsSystem] Shutting Down...");
 
+        if (m_Scene != nullptr)
+        {
+            m_Scene->release();
+        }
         m_Physics->release();
         m_Foundation->release();
 
