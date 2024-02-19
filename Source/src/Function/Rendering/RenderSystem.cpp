@@ -12,6 +12,8 @@ namespace SnowLeopardEngine
         m_Context = CreateRef<GLContext>();
         m_Context->Init();
 
+        // Currently, set render passes' inputs here
+
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Initialized");
         m_State = SystemState::InitOk;
     }
@@ -27,8 +29,13 @@ namespace SnowLeopardEngine
 
     void RenderSystem::OnTick(float deltaTime)
     {
+        // Currently, define and execute hardcoded render passes.
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // 1. Geometry Pass
+
+        // 2. Lighting Pass
     }
 
     void RenderSystem::Present() { m_Context->SwapBuffers(); }
