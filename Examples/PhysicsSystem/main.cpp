@@ -1,3 +1,6 @@
+#include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
+#include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
@@ -13,10 +16,25 @@ public:
         // Create a scene and set active
         auto scene = m_EngineContext->SceneMngr->CreateScene("NativeScripting", true);
 
-        // Create an entity with RigidBodyComponent & SphereColliderComponent
-        Entity entity = scene->CreateEntity("Sphere");
-        entity.AddComponent<RigidBodyComponent>();
-        entity.AddComponent<SphereColliderComponent>();
+        // Create a smooth material
+        auto smoothMaterial = CreateRef<PhysicsMaterial>(0, 0, 1);
+        // Create a sphere with RigidBodyComponent & SphereColliderComponent
+        Entity sphere = scene->CreateEntity("Sphere");
+
+        sphere.GetComponent<TransformComponent>().Position.y = 10.0f;
+        sphere.AddComponent<RigidBodyComponent>(1.0f);
+
+        sphere.AddComponent<SphereColliderComponent>(1.0f, smoothMaterial);
+
+        // Create a floor with RigidBodyComponent & BoxColliderComponent
+        Entity floor = scene->CreateEntity("Floor");
+
+        // set it to static, so that rigidBody will be static.
+        floor.GetComponent<EntityStatusComponent>().IsStatic = true;
+        floor.AddComponent<RigidBodyComponent>();
+        glm::vec3 size   = {50, 0.1, 50};
+        glm::vec3 offset = {0, 0, 0};
+        floor.AddComponent<BoxColliderComponent>(size, offset, smoothMaterial);
     }
 
 private:

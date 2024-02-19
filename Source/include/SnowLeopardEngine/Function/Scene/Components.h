@@ -123,6 +123,15 @@ namespace SnowLeopardEngine
         {}
     };
 
+    struct EntityStatusComponent
+    {
+        bool IsStatic = false;
+
+        EntityStatusComponent()                             = default;
+        EntityStatusComponent(const EntityStatusComponent&) = default;
+        explicit EntityStatusComponent(bool isStatic) : IsStatic(isStatic) {}
+    };
+
     struct RigidBodyComponent
     {
         float Mass = 1.0f;
@@ -134,11 +143,35 @@ namespace SnowLeopardEngine
 
     struct SphereColliderComponent
     {
-        float            Radius   = 0.5f;
-        PhysicsMaterial* Material = nullptr;
+        float                Radius    = 0.5f;
+        Ref<PhysicsMaterial> Material  = nullptr;
+        bool                 IsTrigger = false;
 
         SphereColliderComponent()                               = default;
         SphereColliderComponent(const SphereColliderComponent&) = default;
-        SphereColliderComponent(float radius, PhysicsMaterial* material) : Radius(radius), Material(material) {}
+        explicit SphereColliderComponent(float                       radius,
+                                         const Ref<PhysicsMaterial>& material  = nullptr,
+                                         bool                        isTrigger = false) :
+            Radius(radius),
+            Material(material), IsTrigger(isTrigger)
+        {}
+    };
+
+    struct BoxColliderComponent
+    {
+        glm::vec3            Offset    = {0, 0, 0};
+        glm::vec3            Size      = {1, 1, 1};
+        Ref<PhysicsMaterial> Material  = nullptr;
+        bool                 IsTrigger = false;
+
+        BoxColliderComponent()                            = default;
+        BoxColliderComponent(const BoxColliderComponent&) = default;
+        explicit BoxColliderComponent(const glm::vec3&            size,
+                                      const glm::vec3&            offset    = {0, 0, 0},
+                                      const Ref<PhysicsMaterial>& material  = nullptr,
+                                      bool                        isTrigger = false) :
+            Offset(offset),
+            Size(size), Material(material), IsTrigger(isTrigger)
+        {}
     };
 } // namespace SnowLeopardEngine

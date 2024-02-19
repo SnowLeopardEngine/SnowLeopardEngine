@@ -22,6 +22,7 @@ namespace SnowLeopardEngine
         entity.AddComponent<IDComponent>(uuid);
         entity.AddComponent<TreeNodeComponent>();
         entity.AddComponent<TransformComponent>();
+        entity.AddComponent<EntityStatusComponent>();
 
         // check duplicate
         auto     createName     = name.empty() ? "Entity" : name;
@@ -49,6 +50,9 @@ namespace SnowLeopardEngine
 
         entity.AddComponent<IDComponent>(uuid);
         entity.AddComponent<NameComponent>(name);
+        entity.AddComponent<TreeNodeComponent>();
+        entity.AddComponent<TransformComponent>();
+        entity.AddComponent<EntityStatusComponent>();
 
         (*m_EntityMap)[uuid] = entity;
 
@@ -141,7 +145,7 @@ namespace SnowLeopardEngine
 
     std::string LogicScene::GetNameFromEntity(Entity entity) const
     {
-        if (auto* nameComponent = m_Registry.try_get<NameComponent>(entity))
+        if (const auto* nameComponent = m_Registry.try_get<NameComponent>(entity))
         {
             return nameComponent->Name;
         }
@@ -170,6 +174,8 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(TreeNodeComponent) {}
     ON_COMPONENT_ADDED(TransformComponent) {}
     ON_COMPONENT_ADDED(NativeScriptingComponent) {}
+    ON_COMPONENT_ADDED(EntityStatusComponent) {}
     ON_COMPONENT_ADDED(RigidBodyComponent) {}
     ON_COMPONENT_ADDED(SphereColliderComponent) {}
+    ON_COMPONENT_ADDED(BoxColliderComponent) {}
 } // namespace SnowLeopardEngine

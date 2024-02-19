@@ -1,10 +1,12 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
 #include "PxActor.h"
+#include "PxRigidActor.h"
 #include "PxRigidDynamic.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "geometry/PxBoxGeometry.h"
 
 using namespace physx;
 
@@ -72,15 +74,24 @@ namespace SnowLeopardEngine
         auto& registry = logicScene->GetRegistry();
 
         // Case 1: RigidBody + SphereCollider
-        registry.view<TransformComponent, RigidBodyComponent, SphereColliderComponent>().each(
+        registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, SphereColliderComponent>().each(
             [this](entt::entity             entity,
                    TransformComponent&      transform,
+                   EntityStatusComponent&   entityStatus,
                    RigidBodyComponent&      rigidBody,
                    SphereColliderComponent& sphereCollider) {
-                // create a dynamic rigidBody
-                PxTransform pxTransform(transform.Position.x, transform.Position.y, transform.Position.z);
-                auto*       body = m_Physics->createRigidDynamic(pxTransform);
-                body->setMass(rigidBody.Mass);
+                // create a rigidBody
+                PxTransform   pxTransform(transform.Position.x, transform.Position.y, transform.Position.z);
+                PxRigidActor* body;
+                if (entityStatus.IsStatic)
+                {
+                    body = m_Physics->createRigidStatic(pxTransform);
+                }
+                else
+                {
+                    body = m_Physics->createRigidDynamic(pxTransform);
+                    static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
+                }
 
                 // create a sphere shape
                 PxMaterial* material;
@@ -99,6 +110,51 @@ namespace SnowLeopardEngine
 
                 // attach the shape to the rigidBody
                 body->attachShape(*sphereShape);
+
+                // add the rigidBody to the scene
+                m_Scene->addActor(*body);
+            });
+
+        // Case 2: RigidBody + BoxCollider
+        registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, BoxColliderComponent>().each(
+            [this](entt::entity           entity,
+                   TransformComponent&    transform,
+                   EntityStatusComponent& entityStatus,
+                   RigidBodyComponent&    rigidBody,
+                   BoxColliderComponent&  boxCollider) {
+                // create a rigidBody
+                PxTransform   pxTransform(transform.Position.x + boxCollider.Offset.x,
+                                        transform.Position.y + boxCollider.Offset.y,
+                                        transform.Position.z + boxCollider.Offset.z);
+                PxRigidActor* body;
+                if (entityStatus.IsStatic)
+                {
+                    body = m_Physics->createRigidStatic(pxTransform);
+                }
+                else
+                {
+                    body = m_Physics->createRigidDynamic(pxTransform);
+                    dynamic_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
+                }
+
+                // create a box shape
+                PxMaterial* material;
+                if (boxCollider.Material == nullptr)
+                {
+                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
+                }
+                else
+                {
+                    material = m_Physics->createMaterial(boxCollider.Material->DynamicFriction,
+                                                         boxCollider.Material->StaticFriction,
+                                                         boxCollider.Material->Bounciness);
+                }
+                PxBoxGeometry boxGeometry(
+                    boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
+                auto* boxShape = m_Physics->createShape(boxGeometry, *material);
+
+                // attach the shape to the rigidBody
+                body->attachShape(*boxShape);
 
                 // add the rigidBody to the scene
                 m_Scene->addActor(*body);
