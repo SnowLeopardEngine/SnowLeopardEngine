@@ -1,9 +1,9 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderSystem.h"
+#include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Rendering/Forward/ForwardPipeline.h"
 #include "SnowLeopardEngine/Platform/OpenGL/GLContext.h"
-
-#include <glad/glad.h>
 
 namespace SnowLeopardEngine
 {
@@ -12,7 +12,8 @@ namespace SnowLeopardEngine
         m_Context = CreateRef<GLContext>();
         m_Context->Init();
 
-        // Currently, set render passes' inputs here
+        m_Pipeline = CreateRef<ForwardPipeline>();
+        m_Pipeline->Init();
 
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Initialized");
         m_State = SystemState::InitOk;
@@ -22,20 +23,19 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Shutting Down...");
 
+        m_Pipeline->Shutdown();
+
         m_Context->Shutdown();
         m_Context.reset();
+
         m_State = SystemState::ShutdownOk;
     }
 
     void RenderSystem::OnTick(float deltaTime)
     {
-        // Currently, define and execute hardcoded render passes.
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // 1. Geometry Pass
-
-        // 2. Lighting Pass
+        // Draw Built-in Deferred Pipeline
+        // Now, draw forward instead for testing
+        m_Pipeline->Tick(deltaTime);
     }
 
     void RenderSystem::Present() { m_Context->SwapBuffers(); }

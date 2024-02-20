@@ -12,9 +12,9 @@ namespace SnowLeopardEngine
                                   GLenum        type,
                                   GLuint        id,
                                   GLenum        severity,
-                                  GLsizei       length,
+                                  GLsizei        /*length*/,
                                   GLchar const* message,
-                                  void const*   userParam)
+                                  void const*    /*userParam*/)
     {
         const auto* const srcStr = [source]() {
             switch (source)
