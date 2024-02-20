@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SnowLeopardEngine/Function/Rendering/Pass/RenderDispatchPass.h"
+#include "SnowLeopardEngine/Function/Rendering/Pass/RenderDrawPass.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
 
 namespace SnowLeopardEngine
@@ -24,6 +26,7 @@ namespace SnowLeopardEngine
 
     protected:
         std::map<std::string, Ref<PipelineState>> m_States;
-        std::vector<Ref<RenderPass>>              m_RenderPasses;
+        std::vector<Ref<RenderDrawPass>>          m_DrawPasses;
+        std::vector<Ref<RenderDispatchPass>>      m_DispatchPasses;
     };
 } // namespace SnowLeopardEngine

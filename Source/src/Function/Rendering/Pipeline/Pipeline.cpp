@@ -7,7 +7,7 @@ namespace SnowLeopardEngine
     void Pipeline::Tick(float deltaTime)
     {
         // Draw passes
-        for (auto& renderPass : m_RenderPasses)
+        for (auto& renderPass : m_DrawPasses)
         {
             renderPass->BeginPass();
             renderPass->Draw();
