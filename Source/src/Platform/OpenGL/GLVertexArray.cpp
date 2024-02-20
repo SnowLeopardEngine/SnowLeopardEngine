@@ -77,6 +77,7 @@ namespace SnowLeopardEngine
                                               ShaderDataTypeToGLBaseType(element.Type),
                                               element.Normalized ? GL_TRUE : GL_FALSE,
                                               element.Offset);
+                    glVertexArrayAttribBinding(m_VertexArrayName, m_VertexBufferIndex, 0);
                     m_VertexBufferIndex++;
                     break;
                 }
@@ -91,6 +92,7 @@ namespace SnowLeopardEngine
                                                element.GetComponentCount(),
                                                ShaderDataTypeToGLBaseType(element.Type),
                                                element.Offset);
+                    glVertexArrayAttribBinding(m_VertexArrayName, m_VertexBufferIndex, 0);
                     m_VertexBufferIndex++;
                     break;
                 }
@@ -106,6 +108,7 @@ namespace SnowLeopardEngine
                                                   ShaderDataTypeToGLBaseType(element.Type),
                                                   element.Normalized ? GL_TRUE : GL_FALSE,
                                                   element.Offset + sizeof(float) * count * i);
+                        glVertexArrayAttribBinding(m_VertexArrayName, m_VertexBufferIndex, 0);
                         glVertexAttribDivisor(m_VertexBufferIndex, 1);
                         m_VertexBufferIndex++;
                     }
