@@ -13,6 +13,8 @@ namespace SnowLeopardEngine
 
         virtual uint32_t GetCount() const { return m_Count; }
 
+        uint32_t GetName() const { return m_BufferName; }
+
     private:
         uint32_t m_BufferName = 0;
         uint32_t m_Count      = 0;

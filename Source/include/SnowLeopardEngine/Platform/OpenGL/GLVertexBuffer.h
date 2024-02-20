@@ -13,9 +13,15 @@ namespace SnowLeopardEngine
 
         virtual ~GLVertexBuffer();
 
+        uint32_t GetName() const { return m_BufferName; }
+
         virtual void SetBufferData(const void* data, uint32_t size) override;
 
+        virtual const BufferLayout& GetLayout() const override { return m_Layout; }
+        virtual void                SetLayout(const BufferLayout& layout) override { m_Layout = layout; }
+
     private:
-        uint32_t m_BufferName = 0;
+        uint32_t     m_BufferName = 0;
+        BufferLayout m_Layout;
     };
 } // namespace SnowLeopardEngine
