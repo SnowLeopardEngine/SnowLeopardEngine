@@ -1,3 +1,9 @@
+rule("copy_assets")
+    after_build(function(target)
+        os.cp("$(projectdir)/Assets", target:targetdir())
+    end)
+rule_end()
+
 includes("TickOneFrame")
 includes("Application")
 includes("LifeTimeComponents")

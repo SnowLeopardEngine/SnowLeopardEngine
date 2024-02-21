@@ -1,4 +1,9 @@
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
+#include "SnowLeopardEngine/Core/File/FileSystem.h"
+#include "SnowLeopardEngine/Core/Log/LogSystem.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
+#include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
@@ -86,8 +91,43 @@ namespace SnowLeopardEngine
 
     void LogicScene::OnLoad()
     {
+        // Scripting Callback
         m_Registry.view<NativeScriptingComponent>().each(
             [](entt::entity entity, NativeScriptingComponent& nativeScript) { nativeScript.ScriptInstance->OnLoad(); });
+
+        // Mesh Loading (dirty code for now)
+        m_Registry.view<MeshFilterComponent>().each([](entt::entity entity, MeshFilterComponent& meshFilter) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(meshFilter.FilePath))
+            {
+                Model model;
+                if (!ModelLoader::LoadModel(meshFilter.FilePath, model))
+                {
+                    SNOW_LEOPARD_CORE_ERROR("Failed to load {0}!", meshFilter.FilePath.generic_string());
+                }
+                meshFilter.Meshes = model.Meshes;
+            }
+
+            if (meshFilter.PrimitiveType != MeshPrimitiveType::None)
+            {
+                switch (meshFilter.PrimitiveType)
+                {
+                    case MeshPrimitiveType::Cube: {
+                        auto meshItem = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
+                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        break;
+                    }
+
+                    case MeshPrimitiveType::Sphere: {
+                        auto meshItem = GeometryFactory::CreateMeshPrimitive<SphereMesh>();
+                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        break;
+                    }
+                    case MeshPrimitiveType::None:
+                        break;
+                }
+            }
+        });
     }
 
     void LogicScene::OnTick(float deltaTime)
@@ -173,11 +213,17 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(NameComponent) {}
     ON_COMPONENT_ADDED(TreeNodeComponent) {}
     ON_COMPONENT_ADDED(TransformComponent) {}
-    ON_COMPONENT_ADDED(NativeScriptingComponent) {}
     ON_COMPONENT_ADDED(EntityStatusComponent) {}
+
+    ON_COMPONENT_ADDED(NativeScriptingComponent) {}
+
     ON_COMPONENT_ADDED(RigidBodyComponent) {}
     ON_COMPONENT_ADDED(SphereColliderComponent) {}
     ON_COMPONENT_ADDED(BoxColliderComponent) {}
     ON_COMPONENT_ADDED(CapsuleColliderComponent) {}
     ON_COMPONENT_ADDED(HeightfieldColliderComponent) {}
+
+    ON_COMPONENT_ADDED(CameraComponent) {}
+    ON_COMPONENT_ADDED(MeshFilterComponent) {}
+    ON_COMPONENT_ADDED(MeshRendererComponent) {}
 } // namespace SnowLeopardEngine

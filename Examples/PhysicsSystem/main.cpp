@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
@@ -16,49 +17,52 @@ public:
         // Create a scene and set active
         auto scene = m_EngineContext->SceneMngr->CreateScene("PhysicsSystem", true);
 
+        // Create a camera
+        Entity camera                                      = scene->CreateEntity("MainCamera");
+        camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
+        camera.AddComponent<CameraComponent>();
+
         // Create a smooth material
         auto smoothMaterial = CreateRef<PhysicsMaterial>(0, 0, 1);
         // Create a sphere with RigidBodyComponent & SphereColliderComponent
-        Entity sphere = scene->CreateEntity("Cube");
+        Entity sphere = scene->CreateEntity("Sphere");
 
-        sphere.GetComponent<TransformComponent>().Position.y = 10.0f;
+        auto& sphereTransform      = sphere.GetComponent<TransformComponent>();
+        sphereTransform.Position.y = 10.0f;
+        sphereTransform.Scale *= 3;
+
         sphere.AddComponent<RigidBodyComponent>(1.0f);
-        sphere.GetComponent<RigidBodyComponent>().LinearDamping  = 5;
-        sphere.GetComponent<RigidBodyComponent>().AngularDamping = 10;
-        sphere.GetComponent<RigidBodyComponent>().EnableCCD      = true;
-        glm::vec3 size1                                          = {4, 1, 2};
-        glm::vec3 offset1                                        = {0, 0, 0};
-        sphere.AddComponent<BoxColliderComponent>(size1, offset1, smoothMaterial);
-
-        Entity capsule                                        = scene->CreateEntity("Capsule");
-        capsule.GetComponent<TransformComponent>().Position.y = 20.0f;
-        capsule.AddComponent<RigidBodyComponent>(1.0f);
-        capsule.GetComponent<RigidBodyComponent>().LinearDamping  = 5;
-        capsule.GetComponent<RigidBodyComponent>().AngularDamping = 10;
-        capsule.GetComponent<RigidBodyComponent>().EnableCCD      = true;
-        glm::vec3 offset2                                         = {5, 5, 5};
-        capsule.AddComponent<CapsuleColliderComponent>(2.0f, 2.0f, offset2, smoothMaterial);
+        sphere.AddComponent<SphereColliderComponent>(smoothMaterial);
+        auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
+        sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
+        auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
+        sphereMeshRenderer.BaseColor   = {0, 1, 0, 1}; // Green
 
         // Create a floor with RigidBodyComponent & BoxColliderComponent
         Entity floor = scene->CreateEntity("Floor");
 
+        auto& floorTransform = floor.GetComponent<TransformComponent>();
+        floorTransform.Scale = {50, 0.1, 50};
+
         // set it to static, so that rigidBody will be static.
         floor.GetComponent<EntityStatusComponent>().IsStatic = true;
         floor.AddComponent<RigidBodyComponent>();
-        glm::vec3 size   = {50, 1, 50};
-        glm::vec3 offset = {0, 0, 0};
-        floor.AddComponent<BoxColliderComponent>(size, offset, smoothMaterial);
+        floor.AddComponent<BoxColliderComponent>(smoothMaterial);
+        auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
+        floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
+        auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
+        floorMeshRenderer.BaseColor   = {1, 0, 0, 1}; // Red
     }
 
 private:
     EngineContext* m_EngineContext;
 };
 
-int main()
+int main(int argc, char** argv)
 {
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - PhysicsSystem";
-    DesktopApp app;
+    DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))
     {

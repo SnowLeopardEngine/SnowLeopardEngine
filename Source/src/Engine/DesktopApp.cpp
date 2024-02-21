@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
+#include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
@@ -7,7 +8,11 @@ namespace SnowLeopardEngine
 {
     DesktopApp* DesktopApp::s_Instance = nullptr;
 
-    DesktopApp::DesktopApp() { s_Instance = this; }
+    DesktopApp::DesktopApp(int argc, char** argv)
+    {
+        FileSystem::InitExecutableDirectory(argv[0]);
+        s_Instance = this;
+    }
 
     bool DesktopApp::Init(const DesktopAppInitInfo& initInfo)
     {

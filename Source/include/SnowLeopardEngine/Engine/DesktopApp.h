@@ -16,7 +16,7 @@ namespace SnowLeopardEngine
     class DesktopApp
     {
     public:
-        DesktopApp();
+        DesktopApp(int argc, char** argv);
 
         /**
          * @brief Initialize the application.

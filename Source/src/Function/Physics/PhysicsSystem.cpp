@@ -125,8 +125,8 @@ namespace SnowLeopardEngine
                                                          sphereCollider.Material->StaticFriction,
                                                          sphereCollider.Material->Bounciness);
                 }
-                PxSphereGeometry sphereGeometry(sphereCollider.Radius);
-                PxShapeFlags     shapeFlags;
+
+                PxShapeFlags shapeFlags;
                 if (sphereCollider.IsTrigger)
                 {
                     shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
@@ -135,8 +135,14 @@ namespace SnowLeopardEngine
                 {
                     shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
                 }
-                // TODO: Simiao Wang Consider shape trigger flag here. read from sphereCollider.IsTrigger.
-                auto* sphereShape = m_Physics->createShape(sphereGeometry, *material);
+
+                float radius = 0.5f;
+                if (sphereCollider.Radius == 0)
+                {
+                    radius = radius * transform.Scale.x;
+                }
+                PxSphereGeometry sphereGeometry(radius);
+                auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
 
                 // attach the shape to the rigidBody
                 body->attachShape(*sphereShape);
@@ -194,9 +200,7 @@ namespace SnowLeopardEngine
                                                          boxCollider.Material->StaticFriction,
                                                          boxCollider.Material->Bounciness);
                 }
-                PxBoxGeometry boxGeometry(
-                    boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
-                // TODO: Simiao Wang Consider shape trigger flag here. read from boxCollider.IsTrigger.
+
                 PxShapeFlags shapeFlags;
                 if (boxCollider.IsTrigger)
                 {
@@ -206,7 +210,16 @@ namespace SnowLeopardEngine
                 {
                     shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
                 }
-                auto* boxShape = m_Physics->createShape(boxGeometry, *material);
+
+                glm::vec3 size = {1, 1, 1};
+                if (boxCollider.Size == glm::vec3(0, 0, 0))
+                {
+                    size.x *= transform.Scale.x;
+                    size.y *= transform.Scale.y;
+                    size.z *= transform.Scale.z;
+                }
+                PxBoxGeometry boxGeometry(size.x / 2.0f, size.y / 2.0f, size.z / 2.0f);
+                auto*         boxShape = m_Physics->createShape(boxGeometry, *material);
 
                 // attach the shape to the rigidBody
                 body->attachShape(*boxShape);
@@ -262,6 +275,7 @@ namespace SnowLeopardEngine
                                                          capsuleCollider.Material->StaticFriction,
                                                          capsuleCollider.Material->Bounciness);
                 }
+
                 PxCapsuleGeometry capsuleGeometry(capsuleCollider.Radius, capsuleCollider.Height);
                 auto*             capsuleShape = m_Physics->createShape(capsuleGeometry, *material);
                 body->attachShape(*capsuleShape);
