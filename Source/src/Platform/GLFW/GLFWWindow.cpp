@@ -2,7 +2,7 @@
 #include "SnowLeopardEngine/Core/Event/ApplicationEvents.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
-#include "SnowLeopardEngine/Function/Input/InputSystem.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
 {
@@ -47,7 +47,11 @@ namespace SnowLeopardEngine
 #if SNOW_LEOPARD_PLATFORM_DARWIN
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 #endif
-        m_Window = glfwCreateWindow((int)initInfo.Width, (int)initInfo.Height, m_Data.Title.c_str(), nullptr, nullptr);
+        m_Window = glfwCreateWindow(static_cast<int>(initInfo.Width),
+                                    static_cast<int>(initInfo.Height),
+                                    m_Data.Title.c_str(),
+                                    nullptr,
+                                    nullptr);
         ++s_glfwWindowCount;
 
 #if !SNOW_LEOPARD_PLATFORM_DARWIN
@@ -67,7 +71,7 @@ namespace SnowLeopardEngine
 
         // Set GLFW callbacks
         glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
             data.Width       = width;
             data.Height      = height;
 
@@ -77,7 +81,7 @@ namespace SnowLeopardEngine
         });
 
         glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
             // Queue event
             Scope<WindowCloseEvent> event = std::move(CreateScope<WindowCloseEvent>());
@@ -85,12 +89,12 @@ namespace SnowLeopardEngine
         });
 
         glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-            InputSystem::GetInstance()->SetKeyState(key, action);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+            g_EngineContext->InputSys->SetKeyState(key, action);
         });
 
         glfwSetCharCallback(m_Window, [](GLFWwindow* window, unsigned int keycode) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
             // TODO: Ruofan He InputSystem set keyboard states & dispatch event
 
@@ -98,18 +102,18 @@ namespace SnowLeopardEngine
         });
 
         glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-            InputSystem::GetInstance()->SetMouseButtonState(button, action);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+            g_EngineContext->InputSys->SetMouseButtonState(button, action);
         });
 
         glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
             // TODO: Ruofan He InputSystem set mouse states
         });
 
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
             // TODO: Ruofan He InputSystem set mouse states
         });
@@ -135,9 +139,7 @@ namespace SnowLeopardEngine
 
     bool GLFWWindow::OnTick()
     {
-        InputSystem::GetInstance()->test();
-        InputSystem::GetInstance()->ClearState();
-
+        g_EngineContext->InputSys->ClearStates();
         glfwPollEvents();
         return true;
     }

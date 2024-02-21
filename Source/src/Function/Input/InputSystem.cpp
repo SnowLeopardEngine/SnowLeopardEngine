@@ -1,98 +1,103 @@
 #include "SnowLeopardEngine/Function/Input/InputSystem.h"
+#include "SnowLeopardEngine/Core/Log/LogSystem.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
-#include <map>
-#include <GLFW/glfw3.h>
-
 
 namespace SnowLeopardEngine
 {
-
-InputSystem* InputSystem::instance = nullptr; 
-
-InputSystem* InputSystem::GetInstance() {
-    if (instance == nullptr) {
-        instance = new InputSystem(); 
-    }
-    return instance; 
-}
-
-    //set state
-    void InputSystem::SetKeyState(int key, int action) {
-        if (action == GLFW_PRESS) {
-            if (!currentKeyStates[key]) { 
-                KeyDownStates[key] = true;
-            }
-            currentKeyStates[key] = true;
-        } 
-        
-        else if (action == GLFW_RELEASE) {
-            currentKeyStates[key] = false;
-            KeyUpStates[key] = true;
-        }
-
-    }
-
-    void InputSystem::SetMouseButtonState(int button, int action) {
-        if (action == GLFW_PRESS) {
-            if (!mouseButtonStates[button]) {
-                mouseButtonDownStates[button] = true;
-            }
-            mouseButtonStates[button] = true;
-        } else if (action == GLFW_RELEASE) {
-            mouseButtonStates[button] = false;
-            mouseButtonUpStates[button] = true;
-        }
-    }
-
- //key  state
-   bool InputSystem::GetKey(KeyCode key){
-        auto it = currentKeyStates.find(ToInt(key));
-        return it != currentKeyStates.end() && it->second;
-    }
-
-    bool InputSystem:: GetKeyDown(KeyCode key)  {
-        auto it = KeyDownStates.find(ToInt(key));
-        return it != KeyDownStates.end() && it->second;
-    }
-
-    bool InputSystem::GetKeyUp(KeyCode key)  {
-        auto it = KeyUpStates.find(ToInt(key));
-        return it != KeyUpStates.end() && it->second;
-    }
-
-
-//mouse
-
-   bool InputSystem::GetMouseButton(MouseCode button)  {
-        auto it = mouseButtonStates.find(ToInt(button));
-        return it != mouseButtonStates.end() && it->second;
-    }
-
-    bool InputSystem::GetMouseButtonDown(MouseCode button)  {
-        auto it = mouseButtonDownStates.find(ToInt(button));
-        return it != mouseButtonDownStates.end() && it->second;
-    }
-
-    bool InputSystem::GetMouseButtonUp(MouseCode button)  {
-        auto it = mouseButtonUpStates.find(ToInt(button));
-        return it != mouseButtonUpStates.end() && it->second;
-    }
-
-
-
-    void InputSystem::test()
+    // set state
+    InputSystem::InputSystem()
     {
-       if(InputSystem::GetMouseButtonDown(MouseCode::ButtonLeft))
-        std::cerr<<"1"<<std::endl;
+        SNOW_LEOPARD_CORE_INFO("[InputSystem] Initialized");
+        m_State = SystemState::InitOk;
     }
 
+    InputSystem::~InputSystem()
+    {
+        SNOW_LEOPARD_CORE_INFO("[InputSystem] Shutting Down...");
+        m_State = SystemState::ShutdownOk;
+    }
 
+    void InputSystem::SetKeyState(int key, int action)
+    {
+        if (action == ToInt(InputAction::Press))
+        {
+            if (!m_CurrentKeyStates[key])
+            {
+                m_KeyDownStates[key] = true;
+            }
+            m_CurrentKeyStates[key] = true;
+        }
 
+        else if (action == ToInt(InputAction::Release))
+        {
+            m_CurrentKeyStates[key] = false;
+            m_KeyUpStates[key]      = true;
+        }
+    }
 
-void InputSystem::ClearState() {
-        KeyDownStates.clear();
-        KeyUpStates.clear();
-        mouseButtonDownStates.clear();
-        mouseButtonUpStates.clear();
+    void InputSystem::SetMouseButtonState(int button, int action)
+    {
+        if (action == ToInt(InputAction::Press))
+        {
+            if (!m_MouseButtonStates[button])
+            {
+                m_MouseButtonDownStates[button] = true;
+            }
+            m_MouseButtonStates[button] = true;
+        }
+        else if (action == ToInt(InputAction::Release))
+        {
+            m_MouseButtonStates[button]   = false;
+            m_MouseButtonUpStates[button] = true;
+        }
+    }
+
+    // key  state
+
+    bool InputSystem::GetKey(KeyCode key)
+    {
+        auto it = m_CurrentKeyStates.find(ToInt(key));
+        return it != m_CurrentKeyStates.end() && it->second;
+    }
+
+    bool InputSystem::GetKeyDown(KeyCode key)
+    {
+        auto it = m_KeyDownStates.find(ToInt(key));
+        return it != m_KeyDownStates.end() && it->second;
+    }
+
+    bool InputSystem::GetKeyUp(KeyCode key)
+    {
+        auto it = m_KeyUpStates.find(ToInt(key));
+        return it != m_KeyUpStates.end() && it->second;
+    }
+
+    // mouse
+
+    bool InputSystem::GetMouseButton(MouseCode button)
+    {
+        auto it = m_MouseButtonStates.find(ToInt(button));
+        return it != m_MouseButtonStates.end() && it->second;
+    }
+
+    bool InputSystem::GetMouseButtonDown(MouseCode button)
+    {
+        auto it = m_MouseButtonDownStates.find(ToInt(button));
+        return it != m_MouseButtonDownStates.end() && it->second;
+    }
+
+    bool InputSystem::GetMouseButtonUp(MouseCode button)
+    {
+        auto it = m_MouseButtonUpStates.find(ToInt(button));
+        return it != m_MouseButtonUpStates.end() && it->second;
+    }
+
+    void InputSystem::ClearStates()
+    {
+        m_KeyDownStates.clear();
+        m_KeyUpStates.clear();
+        m_MouseButtonDownStates.clear();
+        m_MouseButtonUpStates.clear();
     }
 } // namespace SnowLeopardEngine

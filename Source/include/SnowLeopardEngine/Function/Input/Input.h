@@ -2,6 +2,13 @@
 
 namespace SnowLeopardEngine
 {
+    enum class InputAction
+    {
+        Release = 0,
+        Press   = 1,
+        Repeat  = 2
+    };
+
     enum class KeyCode
     {
         Space      = 32,
@@ -153,4 +160,4 @@ namespace SnowLeopardEngine
         ButtonMiddle = Button_2
     };
 
-}
+} // namespace SnowLeopardEngine

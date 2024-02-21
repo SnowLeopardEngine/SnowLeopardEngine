@@ -27,6 +27,9 @@ namespace SnowLeopardEngine
         windowSysInitInfo.Window = initInfo.Window;
         g_EngineContext->WindowSys.Init(windowSysInitInfo);
 
+        // Init input system
+        g_EngineContext->InputSys.Init();
+
         // Init scene manager
         g_EngineContext->SceneMngr.Init();
 
@@ -108,6 +111,7 @@ namespace SnowLeopardEngine
         g_EngineContext->RenderSys.Shutdown();
         g_EngineContext->SceneMngr->OnUnload();
         g_EngineContext->SceneMngr.Shutdown();
+        g_EngineContext->InputSys.Shutdown();
         g_EngineContext->WindowSys.Shutdown();
         g_EngineContext->PhysicsSys.Shutdown();
         g_EngineContext->AudioSys.Shutdown();
