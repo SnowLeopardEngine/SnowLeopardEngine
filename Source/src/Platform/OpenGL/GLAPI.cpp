@@ -103,6 +103,16 @@ namespace SnowLeopardEngine
 
     Ref<VertexArray> OpenGLAPI::CreateVertexArray(const MeshItem& meshItem)
     {
+        // Create a default layout and set it
+        BufferLayout layout = {{ShaderDataType::Float3, "a_Position"},
+                               {ShaderDataType::Float3, "a_Normal"},
+                               {ShaderDataType::Float2, "a_TexCoords"}};
+
+        return CreateVertexArray(meshItem, layout);
+    }
+
+    Ref<VertexArray> OpenGLAPI::CreateVertexArray(const MeshItem& meshItem, const BufferLayout& inputLayout)
+    {
         // Create the vertex array
         auto vertexArray = VertexArray::Create();
 
@@ -110,11 +120,7 @@ namespace SnowLeopardEngine
         auto vertices     = meshItem.Data.Vertices;
         auto vertexBuffer = VertexBuffer::Create(vertices);
 
-        // Create layout and set it
-        BufferLayout layout = {{ShaderDataType::Float3, "a_Position"},
-                               {ShaderDataType::Float3, "a_Normal"},
-                               {ShaderDataType::Float2, "a_TexCoords"}};
-        vertexBuffer->SetLayout(layout);
+        vertexBuffer->SetLayout(inputLayout);
 
         // Create indices and the index buffer
         auto indices     = meshItem.Data.Indices;
