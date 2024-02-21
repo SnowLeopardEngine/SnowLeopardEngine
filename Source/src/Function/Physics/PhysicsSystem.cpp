@@ -2,6 +2,7 @@
 #include "PxActor.h"
 #include "PxRigidActor.h"
 #include "PxRigidDynamic.h"
+#include "PxShape.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
@@ -112,8 +113,19 @@ namespace SnowLeopardEngine
                                                          sphereCollider.Material->Bounciness);
                 }
                 PxSphereGeometry sphereGeometry(sphereCollider.Radius);
+                
                 // TODO: Simiao Wang Consider shape trigger flag here. read from sphereCollider.IsTrigger.
-                auto* sphereShape = m_Physics->createShape(sphereGeometry, *material);
+                PxShapeFlags shapeFlags;
+                if (sphereCollider.IsTrigger) 
+                {
+                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
+                }
+                else
+                {
+                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
+                }
+                // create the shape using determined flags
+                PxShape* sphereShape = m_Physics->createShape(sphereGeometry, *material, false, shapeFlags);
 
                 // attach the shape to the rigidBody
                 body->attachShape(*sphereShape);
@@ -160,8 +172,19 @@ namespace SnowLeopardEngine
                 }
                 PxBoxGeometry boxGeometry(
                     boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
+                
                 // TODO: Simiao Wang Consider shape trigger flag here. read from boxCollider.IsTrigger.
-                auto* boxShape = m_Physics->createShape(boxGeometry, *material);
+                PxShapeFlags shapeFlags;
+                if (boxCollider.IsTrigger) 
+                {
+                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
+                }
+                else 
+                {
+                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
+                }
+                // create the shape using determined flags
+                PxShape* boxShape  = m_Physics->createShape(boxGeometry, *material, false, shapeFlags);
 
                 // attach the shape to the rigidBody
                 body->attachShape(*boxShape);
