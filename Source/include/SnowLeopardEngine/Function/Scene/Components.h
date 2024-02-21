@@ -152,8 +152,8 @@ namespace SnowLeopardEngine
     {
         float Mass           = 1.0f;
         bool  EnableCCD      = false;
-        float LinearDamping  = 0.1f;
-        float AngularDamping = 0.1f;
+        float LinearDamping  = 0.0f;
+        float AngularDamping = 0.05f;
 
         physx::PxRigidActor* InternalBody             = nullptr;
         RigidBodyComponent()                          = default;

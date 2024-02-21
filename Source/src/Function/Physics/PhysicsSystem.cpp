@@ -288,6 +288,7 @@ namespace SnowLeopardEngine
                 auto*             capsuleShape = m_Physics->createShape(capsuleGeometry, *material);
                 body->attachShape(*capsuleShape);
                 m_Scene->addActor(*body);
+
                 rigidBody.InternalBody = body;
             });
 
@@ -344,14 +345,13 @@ namespace SnowLeopardEngine
 
             auto& registry = m_LogicScene->GetRegistry();
             registry.view<TransformComponent, RigidBodyComponent>().each(
-                [](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody){
+                [](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody) {
                     PxTransform pxTransform = rigidBody.InternalBody->getGlobalPose();
-                    PxVec3 pxPosition = pxTransform.p;
-                    PxQuat pxRotation = pxTransform.q;
-                    transform.Position = {pxPosition.x, pxPosition.y, pxPosition.z};
-                    glm::quat rotation = {pxRotation.w, pxRotation.x, pxRotation.y, pxRotation.z};
+                    PxVec3      pxPosition  = pxTransform.p;
+                    PxQuat      pxRotation  = pxTransform.q;
+                    transform.Position      = {pxPosition.x, pxPosition.y, pxPosition.z};
+                    glm::quat rotation      = {pxRotation.w, pxRotation.x, pxRotation.y, pxRotation.z};
                     transform.SetRotation(rotation);
-
                 });
         }
     }

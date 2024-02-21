@@ -53,7 +53,7 @@ namespace SnowLeopardEngine
         std::string FragmentShaderName;
         // TODO: Kexuan Zhang More shader names
 
-        DepthTestMode DepthTest  = DepthTestMode::Always;
+        DepthTestMode DepthTest  = DepthTestMode::Less;
         bool          DepthWrite = true;
 
         StencilTestMode StencilTest = StencilTestMode::None;

@@ -5,14 +5,14 @@ layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aTexCoords;
 
 out vec2 varingTexCoords;
-out vec3 Normal;
+out vec3 varingNormal;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
 void main() {
-    Normal = aNormal;
+    varingNormal = aNormal;
     varingTexCoords = aTexCoords;
     gl_Position = projection * view * model * vec4(aPos, 1.0);
 }

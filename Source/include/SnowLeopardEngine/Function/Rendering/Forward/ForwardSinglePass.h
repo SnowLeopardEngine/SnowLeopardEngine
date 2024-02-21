@@ -1,19 +1,12 @@
 #pragma once
 
-#include "SnowLeopardEngine/Function/Rendering/Pass/RenderDrawPass.h"
-#include "SnowLeopardEngine/Function/Rendering/RHI/Shader.h"
+#include "SnowLeopardEngine/Function/Rendering/Pass/BaseRenderDrawPass.h"
 
 namespace SnowLeopardEngine
 {
-    class ForwardSinglePass : public RenderDrawPass
+    class ForwardSinglePass : public BaseRenderDrawPass
     {
     public:
-        virtual void BeginPass() override {}
-        virtual void EndPass() override {}
-
-        virtual void Draw() override final;
-
-    private:
-        Ref<Shader> m_Shader;
+        virtual void BeginPass() override final;
     };
 } // namespace SnowLeopardEngine
