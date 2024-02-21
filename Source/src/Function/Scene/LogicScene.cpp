@@ -123,6 +123,12 @@ namespace SnowLeopardEngine
                         meshFilter.Meshes.Items.emplace_back(meshItem);
                         break;
                     }
+                    case MeshPrimitiveType::Capsule: {
+                        auto meshItem = GeometryFactory::CreateMeshPrimitive<CapsuleMesh>();
+                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        break;
+                    }
+                    break;
                     case MeshPrimitiveType::None:
                         break;
                 }

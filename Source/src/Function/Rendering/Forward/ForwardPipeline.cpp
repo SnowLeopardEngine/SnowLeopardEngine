@@ -33,8 +33,9 @@ namespace SnowLeopardEngine
         skybox->Name               = "Skybox";
         skybox->VertexShaderName   = "Skybox.vert";
         skybox->FragmentShaderName = "Skybox.frag";
-        // TODO: Ziyu Min, draw skybox the last, so the pipeline state need to set.
         // https://learnopengl.com/Advanced-OpenGL/Cubemaps
+        skybox->DepthTest = DepthTestMode::LessEqual;
+        skybox->CullFace  = CullFaceMode::None;
         m_StateManager->RegisterState(skybox);
 
         // Add forward single pass
