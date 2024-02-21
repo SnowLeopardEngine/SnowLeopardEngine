@@ -22,3 +22,8 @@ target("PhysicsSystem")
 
     -- set target directory
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Examples/PhysicsSystem")
+
+    -- copy sounds
+    after_build(function(target)
+        os.cp("$(scriptdir)/sounds", target:targetdir())
+    end)

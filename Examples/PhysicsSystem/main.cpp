@@ -12,7 +12,11 @@ using namespace SnowLeopardEngine;
 class SphereScript : public NativeScriptInstance
 {
 public:
-    virtual void OnColliderEnter() override { SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter"); }
+    virtual void OnColliderEnter() override
+    {
+        SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter");
+        DesktopApp::GetInstance()->GetEngine()->GetContext()->AudioSys->Play("sounds/jump.mp3");
+    }
 };
 
 class CustomLifeTime final : public LifeTimeComponent
