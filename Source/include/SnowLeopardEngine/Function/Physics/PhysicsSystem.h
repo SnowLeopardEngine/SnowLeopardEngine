@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Base/EngineSubSystem.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsErrorCallback.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
@@ -20,5 +21,6 @@ namespace SnowLeopardEngine
         physx::PxFoundation*      m_Foundation = nullptr;
         physx::PxPhysics*         m_Physics    = nullptr;
         physx::PxScene*           m_Scene      = nullptr;
+        Ref<LogicScene>           m_LogicScene = nullptr;
     };
 } // namespace SnowLeopardEngine

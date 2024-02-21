@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PxRigidActor.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
@@ -154,6 +155,7 @@ namespace SnowLeopardEngine
         float LinearDamping  = 0.1f;
         float AngularDamping = 0.1f;
 
+        physx::PxRigidActor* InternalBody             = nullptr;
         RigidBodyComponent()                          = default;
         RigidBodyComponent(const RigidBodyComponent&) = default;
         explicit RigidBodyComponent(float mass) : Mass(mass) {}

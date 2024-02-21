@@ -7,7 +7,10 @@
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "entt/entity/fwd.hpp"
+#include "foundation/Px.h"
 #include "geometry/PxBoxGeometry.h"
+#include "glm/fwd.hpp"
 
 using namespace physx;
 
@@ -60,6 +63,7 @@ namespace SnowLeopardEngine
 
     void PhysicsSystem::CookPhysicsScene(const Ref<LogicScene>& logicScene)
     {
+        m_LogicScene = logicScene;
         // Create a scene
         PxSceneDesc sceneDesc(m_Physics->getTolerancesScale());
         sceneDesc.gravity       = PxVec3(0.0f, -9.8f, 0.0f); // scene gravity
@@ -149,6 +153,8 @@ namespace SnowLeopardEngine
 
                 // add the rigidBody to the scene
                 m_Scene->addActor(*body);
+
+                rigidBody.InternalBody = body;
             });
 
         // Case 2: RigidBody + BoxCollider
@@ -226,6 +232,8 @@ namespace SnowLeopardEngine
 
                 // add the rigidBody to the scene
                 m_Scene->addActor(*body);
+
+                rigidBody.InternalBody = body;
             });
 
         // case3: RigidBodyComponent + CapsuleColliderComponent
@@ -280,6 +288,7 @@ namespace SnowLeopardEngine
                 auto*             capsuleShape = m_Physics->createShape(capsuleGeometry, *material);
                 body->attachShape(*capsuleShape);
                 m_Scene->addActor(*body);
+                rigidBody.InternalBody = body;
             });
 
         // case4: Rigid + Heightfield
@@ -332,6 +341,18 @@ namespace SnowLeopardEngine
         {
             m_Scene->simulate(Time::FixedDeltaTime);
             m_Scene->fetchResults(true);
+
+            auto& registry = m_LogicScene->GetRegistry();
+            registry.view<TransformComponent, RigidBodyComponent>().each(
+                [](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody){
+                    PxTransform pxTransform = rigidBody.InternalBody->getGlobalPose();
+                    PxVec3 pxPosition = pxTransform.p;
+                    PxQuat pxRotation = pxTransform.q;
+                    transform.Position = {pxPosition.x, pxPosition.y, pxPosition.z};
+                    glm::quat rotation = {pxRotation.w, pxRotation.x, pxRotation.y, pxRotation.z};
+                    transform.SetRotation(rotation);
+
+                });
         }
     }
 } // namespace SnowLeopardEngine
