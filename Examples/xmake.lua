@@ -1,5 +1,5 @@
 rule("copy_assets")
-    after_build(function(target)
+    on_load(function(target)
         os.cp("$(projectdir)/Assets", target:targetdir())
     end)
 rule_end()
