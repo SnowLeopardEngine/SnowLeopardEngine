@@ -6,7 +6,7 @@
 
 namespace SnowLeopardEngine
 {
-    void ForwardSinglePass::BeginPass()
+    ForwardSinglePass::ForwardSinglePass()
     {
         // Add sub-passes
 

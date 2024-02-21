@@ -7,6 +7,6 @@ namespace SnowLeopardEngine
     class ForwardSinglePass : public BaseRenderDrawPass
     {
     public:
-        virtual void BeginPass() override final;
+        ForwardSinglePass();
     };
 } // namespace SnowLeopardEngine

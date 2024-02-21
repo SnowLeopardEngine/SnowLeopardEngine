@@ -9,6 +9,7 @@ namespace SnowLeopardEngine
     class BaseRenderDrawPass : public RenderDrawPass
     {
     public:
+        virtual void BeginPass() override {}
         virtual void EndPass() override {}
         virtual void Draw() override;
 
