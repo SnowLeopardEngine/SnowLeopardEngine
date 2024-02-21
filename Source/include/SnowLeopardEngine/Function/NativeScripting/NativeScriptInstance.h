@@ -14,5 +14,7 @@ namespace SnowLeopardEngine
         virtual void OnFixedTick() override {}
 
         virtual void OnUnload() override {}
+
+        virtual void OnColliderEnter() {}
     };
 } // namespace SnowLeopardEngine

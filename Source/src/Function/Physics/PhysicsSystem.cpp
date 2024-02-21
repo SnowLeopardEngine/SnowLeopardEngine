@@ -16,6 +16,19 @@ using namespace physx;
 
 namespace SnowLeopardEngine
 {
+    // Set the actions when collision occurs,Physx needs to do.
+    static PxFilterFlags SimulationFilterShader(PxFilterObjectAttributes attributes0,
+                                                PxFilterData             filterData0,
+                                                PxFilterObjectAttributes attributes1,
+                                                PxFilterData             filterData1,
+                                                PxPairFlags&             pairFlags,
+                                                const void*              constantBlock,
+                                                PxU32                    constantBlockSize)
+    {
+        pairFlags = PxPairFlag::eCONTACT_DEFAULT | PxPairFlag::eNOTIFY_TOUCH_FOUND;
+        return PxFilterFlags();
+    }
+
     PhysicsSystem::PhysicsSystem()
     {
         // Create foundation
@@ -66,12 +79,14 @@ namespace SnowLeopardEngine
         m_LogicScene = logicScene;
         // Create a scene
         PxSceneDesc sceneDesc(m_Physics->getTolerancesScale());
-        sceneDesc.gravity       = PxVec3(0.0f, -9.8f, 0.0f); // scene gravity
-        auto* cpuDispatcher     = PxDefaultCpuDispatcherCreate(2);
-        sceneDesc.cpuDispatcher = cpuDispatcher;
-        sceneDesc.filterShader  = PxDefaultSimulationFilterShader;
-        m_Scene                 = m_Physics->createScene(sceneDesc);
-        auto* pvdClient         = m_Scene->getScenePvdClient();
+        sceneDesc.gravity                 = PxVec3(0.0f, -9.8f, 0.0f); // scene gravity
+        auto* cpuDispatcher               = PxDefaultCpuDispatcherCreate(2);
+        sceneDesc.cpuDispatcher           = cpuDispatcher;
+        sceneDesc.simulationEventCallback = this;
+        // sceneDesc.filterShader  = PxDefaultSimulationFilterShader;
+        sceneDesc.filterShader = SimulationFilterShader;
+        m_Scene                = m_Physics->createScene(sceneDesc);
+        auto* pvdClient        = m_Scene->getScenePvdClient();
         if (pvdClient)
         {
             pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
@@ -344,15 +359,56 @@ namespace SnowLeopardEngine
 
             auto& registry = m_LogicScene->GetRegistry();
             registry.view<TransformComponent, RigidBodyComponent>().each(
-                [](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody){
+                [](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody) {
                     PxTransform pxTransform = rigidBody.InternalBody->getGlobalPose();
-                    PxVec3 pxPosition = pxTransform.p;
-                    PxQuat pxRotation = pxTransform.q;
-                    transform.Position = {pxPosition.x, pxPosition.y, pxPosition.z};
-                    glm::quat rotation = {pxRotation.w, pxRotation.x, pxRotation.y, pxRotation.z};
+                    PxVec3      pxPosition  = pxTransform.p;
+                    PxQuat      pxRotation  = pxTransform.q;
+                    transform.Position      = {pxPosition.x, pxPosition.y, pxPosition.z};
+                    glm::quat rotation      = {pxRotation.w, pxRotation.x, pxRotation.y, pxRotation.z};
                     transform.SetRotation(rotation);
-
                 });
         }
+    }
+
+    void PhysicsSystem::onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count)
+    {
+        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onConstraintBreak");
+    }
+
+    void PhysicsSystem::onWake(physx::PxActor** actors, physx::PxU32 count)
+    {
+        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onWake");
+    }
+
+    void PhysicsSystem::onSleep(physx::PxActor** actors, physx::PxU32 count)
+    {
+        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onSleep");
+    }
+
+    void PhysicsSystem::onContact(const physx::PxContactPairHeader& pairHeader,
+                                  const physx::PxContactPair*       pairs,
+                                  physx::PxU32                      count)
+    {
+        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onContact");
+        if (m_LogicScene != nullptr)
+        {
+            auto& registry = m_LogicScene->GetRegistry();
+            registry.view<NativeScriptingComponent>().each(
+                [](entt::entity entity, NativeScriptingComponent& nativescripting) {
+                    nativescripting.ScriptInstance->OnColliderEnter();
+                });
+        }
+    }
+
+    void PhysicsSystem::onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count)
+    {
+        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onTrigger");
+    }
+
+    void PhysicsSystem::onAdvance(const physx::PxRigidBody* const* bodyBuffer,
+                                  const physx::PxTransform*        poseBuffer,
+                                  const physx::PxU32               count)
+    {
+        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onAdvance");
     }
 } // namespace SnowLeopardEngine
