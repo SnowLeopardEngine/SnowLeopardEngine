@@ -44,6 +44,9 @@ namespace SnowLeopardEngine
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MINOR);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+        // MSAA
+        glfwWindowHint(GLFW_SAMPLES, 4);
+
 #if SNOW_LEOPARD_PLATFORM_DARWIN
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 #endif
