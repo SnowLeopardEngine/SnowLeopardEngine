@@ -22,27 +22,23 @@ public:
         Entity sphere = scene->CreateEntity("Cube");
 
         sphere.GetComponent<TransformComponent>().Position.y = 10.0f;
-
-        sphere.GetComponent<DampingComponent>().LinearDamping = 5;
-        sphere.GetComponent<DampingComponent>().AngularDamping = 10;
-        sphere.GetComponent<DampingComponent>().EnableCCD = true;
-
         sphere.AddComponent<RigidBodyComponent>(1.0f);
-        glm::vec3 size1   = {4, 1, 2};
-        glm::vec3 offset1 = {0, 0, 0};
+        sphere.GetComponent<RigidBodyComponent>().LinearDamping  = 5;
+        sphere.GetComponent<RigidBodyComponent>().AngularDamping = 10;
+        sphere.GetComponent<RigidBodyComponent>().EnableCCD      = true;
+        glm::vec3 size1                                          = {4, 1, 2};
+        glm::vec3 offset1                                        = {0, 0, 0};
         sphere.AddComponent<BoxColliderComponent>(size1, offset1, smoothMaterial);
 
-
-        Entity capsule = scene->CreateEntity("Capsule");
+        Entity capsule                                        = scene->CreateEntity("Capsule");
         capsule.GetComponent<TransformComponent>().Position.y = 20.0f;
-        capsule.GetComponent<DampingComponent>().LinearDamping = 5;
-        capsule.GetComponent<DampingComponent>().AngularDamping = 10;
-        capsule.GetComponent<DampingComponent>().EnableCCD = true;
-
         capsule.AddComponent<RigidBodyComponent>(1.0f);
-        glm::vec3 offset2 = {5, 5, 5};
+        capsule.GetComponent<RigidBodyComponent>().LinearDamping  = 5;
+        capsule.GetComponent<RigidBodyComponent>().AngularDamping = 10;
+        capsule.GetComponent<RigidBodyComponent>().EnableCCD      = true;
+        glm::vec3 offset2                                         = {5, 5, 5};
         capsule.AddComponent<CapsuleColliderComponent>(2.0f, 2.0f, offset2, smoothMaterial);
-        
+
         // Create a floor with RigidBodyComponent & BoxColliderComponent
         Entity floor = scene->CreateEntity("Floor");
 

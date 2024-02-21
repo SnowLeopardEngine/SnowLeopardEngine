@@ -23,7 +23,6 @@ namespace SnowLeopardEngine
         entity.AddComponent<TreeNodeComponent>();
         entity.AddComponent<TransformComponent>();
         entity.AddComponent<EntityStatusComponent>();
-        entity.AddComponent<DampingComponent>();
 
         // check duplicate
         auto     createName     = name.empty() ? "Entity" : name;
@@ -54,7 +53,6 @@ namespace SnowLeopardEngine
         entity.AddComponent<TreeNodeComponent>();
         entity.AddComponent<TransformComponent>();
         entity.AddComponent<EntityStatusComponent>();
-        entity.AddComponent<DampingComponent>();
 
         (*m_EntityMap)[uuid] = entity;
 
@@ -180,7 +178,6 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(RigidBodyComponent) {}
     ON_COMPONENT_ADDED(SphereColliderComponent) {}
     ON_COMPONENT_ADDED(BoxColliderComponent) {}
-    ON_COMPONENT_ADDED(DampingComponent){}
-    ON_COMPONENT_ADDED(CapsuleColliderComponent){}
-    ON_COMPONENT_ADDED(HeightfieldColliderComponent){}
+    ON_COMPONENT_ADDED(CapsuleColliderComponent) {}
+    ON_COMPONENT_ADDED(HeightfieldColliderComponent) {}
 } // namespace SnowLeopardEngine
