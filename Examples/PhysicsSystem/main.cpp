@@ -50,7 +50,7 @@ public:
         auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
         sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
         auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.BaseColor   = {0, 1, 0, 1}; // Green
+        sphereMeshRenderer.BaseColor   = {0.4, 0.45, 0.5, 1}; // Metal
 
         auto scriptInstance = CreateRef<SphereScript>();
         sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
@@ -68,7 +68,7 @@ public:
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.BaseColor   = {1, 0, 0, 1}; // Red
+        floorMeshRenderer.BaseColor   = {0.5, 0.45, 0.4, 1}; // Rice
     }
 
 private:
