@@ -2,6 +2,7 @@
 #include "SnowLeopardEngine/Core/Event/ApplicationEvents.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
 {
@@ -46,7 +47,11 @@ namespace SnowLeopardEngine
 #if SNOW_LEOPARD_PLATFORM_DARWIN
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 #endif
-        m_Window = glfwCreateWindow((int)initInfo.Width, (int)initInfo.Height, m_Data.Title.c_str(), nullptr, nullptr);
+        m_Window = glfwCreateWindow(static_cast<int>(initInfo.Width),
+                                    static_cast<int>(initInfo.Height),
+                                    m_Data.Title.c_str(),
+                                    nullptr,
+                                    nullptr);
         ++s_glfwWindowCount;
 
 #if !SNOW_LEOPARD_PLATFORM_DARWIN
@@ -66,7 +71,7 @@ namespace SnowLeopardEngine
 
         // Set GLFW callbacks
         glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
             data.Width       = width;
             data.Height      = height;
 
@@ -76,7 +81,7 @@ namespace SnowLeopardEngine
         });
 
         glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
             // Queue event
             Scope<WindowCloseEvent> event = std::move(CreateScope<WindowCloseEvent>());
@@ -84,55 +89,31 @@ namespace SnowLeopardEngine
         });
 
         glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-
-            switch (action)
-            {
-                case GLFW_PRESS: {
-                    // TODO: Ruofan He InputSystem set keyboard states & dispatch event
-                    break;
-                }
-                case GLFW_RELEASE: {
-                    // TODO: Ruofan He InputSystem set keyboard states & dispatch event
-                    break;
-                }
-                case GLFW_REPEAT: {
-                    // TODO: Ruofan He InputSystem set keyboard states & dispatch event
-                    break;
-                }
-            }
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+            g_EngineContext->InputSys->SetKeyState(key, action);
         });
 
         glfwSetCharCallback(m_Window, [](GLFWwindow* window, unsigned int keycode) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
             // TODO: Ruofan He InputSystem set keyboard states & dispatch event
+
+            // TODO: Ruofan He InputSystem set keyboard states
         });
 
         glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-
-            switch (action)
-            {
-                case GLFW_PRESS: {
-                    // TODO: Ruofan He InputSystem set mouse states & dispatch event
-                    break;
-                }
-                case GLFW_RELEASE: {
-                    // TODO: Ruofan He InputSystem set mouse states & dispatch event
-                    break;
-                }
-            }
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
+            g_EngineContext->InputSys->SetMouseButtonState(button, action);
         });
 
         glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
             // TODO: Ruofan He InputSystem set mouse states
         });
 
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
-            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
             // TODO: Ruofan He InputSystem set mouse states
         });
@@ -158,6 +139,7 @@ namespace SnowLeopardEngine
 
     bool GLFWWindow::OnTick()
     {
+        g_EngineContext->InputSys->ClearStates();
         glfwPollEvents();
         return true;
     }

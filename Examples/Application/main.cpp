@@ -2,11 +2,11 @@
 
 using namespace SnowLeopardEngine;
 
-int main()
+int main(int argc, char** argv)
 {
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - Application";
-    DesktopApp app;
+    DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))
     {

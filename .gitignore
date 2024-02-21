@@ -14,3 +14,6 @@ CMakeLists.txt
 
 # IntelliJ
 .idea/
+
+# Useless Deps
+Deps/SPhysX-Cross/

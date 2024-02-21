@@ -7,5 +7,5 @@
 
 namespace SnowLeopardEngine
 {
-    int GLContext::LoadGL() { return gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); }
+    int GLContext::LoadGL() { return gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)); }
 } // namespace SnowLeopardEngine
