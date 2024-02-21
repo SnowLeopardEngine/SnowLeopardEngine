@@ -1,11 +1,19 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
 using namespace SnowLeopardEngine;
+
+class SphereScript : public NativeScriptInstance
+{
+public:
+    virtual void OnColliderEnter() override { SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter"); }
+};
 
 class CustomLifeTime final : public LifeTimeComponent
 {
@@ -37,6 +45,9 @@ public:
         sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
         auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
         sphereMeshRenderer.BaseColor   = {0, 1, 0, 1}; // Green
+
+        auto scriptInstance = CreateRef<SphereScript>();
+        sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
 
         // Create a floor with RigidBodyComponent & BoxColliderComponent
         Entity floor = scene->CreateEntity("Floor");
