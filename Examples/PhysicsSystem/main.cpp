@@ -47,7 +47,8 @@ public:
         // set it to static, so that rigidBody will be static.
         floor.GetComponent<EntityStatusComponent>().IsStatic = true;
         floor.AddComponent<RigidBodyComponent>();
-        floor.AddComponent<BoxColliderComponent>(smoothMaterial);
+        auto& floorBoxCollider = floor.AddComponent<BoxColliderComponent>(smoothMaterial);
+        floorBoxCollider.Offset.y += 0.01f; // Fix Z-Fighting for now
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
