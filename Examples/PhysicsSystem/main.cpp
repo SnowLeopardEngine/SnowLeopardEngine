@@ -35,12 +35,14 @@ public:
         camera.AddComponent<CameraComponent>();
 
         // Create a smooth material
-        auto smoothMaterial = CreateRef<PhysicsMaterial>(0, 0, 1);
+        // https://forum.unity.com/threads/bounciness-1-0-conservation-of-energy-doesnt-work.143472/
+        auto smoothMaterial = CreateRef<PhysicsMaterial>(0, 0, 0.98);
+
         // Create a sphere with RigidBodyComponent & SphereColliderComponent
         Entity sphere = scene->CreateEntity("Sphere");
 
         auto& sphereTransform      = sphere.GetComponent<TransformComponent>();
-        sphereTransform.Position.y = 10.0f;
+        sphereTransform.Position.y = 15.0f;
         sphereTransform.Scale *= 3;
 
         sphere.AddComponent<RigidBodyComponent>(1.0f);
@@ -62,8 +64,7 @@ public:
         // set it to static, so that rigidBody will be static.
         floor.GetComponent<EntityStatusComponent>().IsStatic = true;
         floor.AddComponent<RigidBodyComponent>();
-        auto& floorBoxCollider = floor.AddComponent<BoxColliderComponent>(smoothMaterial);
-        floorBoxCollider.Offset.y += 0.01f; // Fix Z-Fighting for now
+        auto& floorBoxCollider        = floor.AddComponent<BoxColliderComponent>(smoothMaterial);
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
