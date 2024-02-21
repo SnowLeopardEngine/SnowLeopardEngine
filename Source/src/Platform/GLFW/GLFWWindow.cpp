@@ -2,6 +2,7 @@
 #include "SnowLeopardEngine/Core/Event/ApplicationEvents.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
+#include "SnowLeopardEngine/Function/Input/InputSystem.h"
 
 namespace SnowLeopardEngine
 {
@@ -85,44 +86,20 @@ namespace SnowLeopardEngine
 
         glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-
-            switch (action)
-            {
-                case GLFW_PRESS: {
-                    // TODO: Ruofan He InputSystem set keyboard states & dispatch event
-                    break;
-                }
-                case GLFW_RELEASE: {
-                    // TODO: Ruofan He InputSystem set keyboard states & dispatch event
-                    break;
-                }
-                case GLFW_REPEAT: {
-                    // TODO: Ruofan He InputSystem set keyboard states & dispatch event
-                    break;
-                }
-            }
+            InputSystem::GetInstance()->SetKeyState(key, action);
         });
 
         glfwSetCharCallback(m_Window, [](GLFWwindow* window, unsigned int keycode) {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
             // TODO: Ruofan He InputSystem set keyboard states & dispatch event
+
+            // TODO: Ruofan He InputSystem set keyboard states
         });
 
         glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods) {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-
-            switch (action)
-            {
-                case GLFW_PRESS: {
-                    // TODO: Ruofan He InputSystem set mouse states & dispatch event
-                    break;
-                }
-                case GLFW_RELEASE: {
-                    // TODO: Ruofan He InputSystem set mouse states & dispatch event
-                    break;
-                }
-            }
+            InputSystem::GetInstance()->SetMouseButtonState(button, action);
         });
 
         glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset) {
@@ -158,6 +135,9 @@ namespace SnowLeopardEngine
 
     bool GLFWWindow::OnTick()
     {
+        InputSystem::GetInstance()->test();
+        InputSystem::GetInstance()->ClearState();
+
         glfwPollEvents();
         return true;
     }
