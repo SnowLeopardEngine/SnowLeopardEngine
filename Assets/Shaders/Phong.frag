@@ -8,7 +8,7 @@ out vec4 FragColor;
 uniform vec4 baseColor;
 
 void main() {
-    vec3 lightDir = normalize(vec3(-0.6, -0.8, -0.5));
+    vec3 lightDir = normalize(vec3(0.5, -1.0, 1.0));
     vec3 ambient = 0.5 * vec3(baseColor.x, baseColor.y, baseColor.z);
 
     float diff = max(dot(varingNormal, -(lightDir)), 0.0);
