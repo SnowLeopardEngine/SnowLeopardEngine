@@ -2,7 +2,6 @@
 #include "PxActor.h"
 #include "PxRigidActor.h"
 #include "PxRigidDynamic.h"
-#include "PxShape.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
@@ -79,12 +78,13 @@ namespace SnowLeopardEngine
         auto& registry = logicScene->GetRegistry();
 
         // Case 1: RigidBody + SphereCollider
-        registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, SphereColliderComponent>().each(
+        registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, SphereColliderComponent, DampingComponent>().each(
             [this](entt::entity             entity,
                    TransformComponent&      transform,
                    EntityStatusComponent&   entityStatus,
                    RigidBodyComponent&      rigidBody,
-                   SphereColliderComponent& sphereCollider) {
+                   SphereColliderComponent& sphereCollider,
+                   DampingComponent&       damping) {
                 // create a rigidBody
                 PxTransform   pxTransform(transform.Position.x, transform.Position.y, transform.Position.z);
                 PxRigidActor* body;
@@ -98,6 +98,17 @@ namespace SnowLeopardEngine
                     // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
                     body = m_Physics->createRigidDynamic(pxTransform);
                     static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
+                    static_cast<PxRigidDynamic*>(body)->setLinearDamping(damping.LinearDamping);
+                    static_cast<PxRigidDynamic*>(body)->setAngularDamping(damping.AngularDamping);
+
+                    PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
+                    if (damping.EnableCCD) {
+                        currentFlags |= PxRigidBodyFlag::eENABLE_CCD; 
+                    } else {
+                        currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
+                    }
+                    static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
+
                 }
 
                 // create a sphere shape
@@ -113,19 +124,8 @@ namespace SnowLeopardEngine
                                                          sphereCollider.Material->Bounciness);
                 }
                 PxSphereGeometry sphereGeometry(sphereCollider.Radius);
-                
                 // TODO: Simiao Wang Consider shape trigger flag here. read from sphereCollider.IsTrigger.
-                PxShapeFlags shapeFlags;
-                if (sphereCollider.IsTrigger) 
-                {
-                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
-                }
-                else
-                {
-                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
-                }
-                // create the shape using determined flags
-                PxShape* sphereShape = m_Physics->createShape(sphereGeometry, *material, false, shapeFlags);
+                auto* sphereShape = m_Physics->createShape(sphereGeometry, *material);
 
                 // attach the shape to the rigidBody
                 body->attachShape(*sphereShape);
@@ -135,12 +135,13 @@ namespace SnowLeopardEngine
             });
 
         // Case 2: RigidBody + BoxCollider
-        registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, BoxColliderComponent>().each(
+        registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, BoxColliderComponent, DampingComponent>().each(
             [this](entt::entity           entity,
                    TransformComponent&    transform,
                    EntityStatusComponent& entityStatus,
                    RigidBodyComponent&    rigidBody,
-                   BoxColliderComponent&  boxCollider) {
+                   BoxColliderComponent&  boxCollider,
+                   DampingComponent&      damping) {
                 // create a rigidBody
                 PxTransform   pxTransform(transform.Position.x + boxCollider.Offset.x,
                                         transform.Position.y + boxCollider.Offset.y,
@@ -156,7 +157,19 @@ namespace SnowLeopardEngine
                     // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
                     body = m_Physics->createRigidDynamic(pxTransform);
                     static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
+                    static_cast<PxRigidDynamic*>(body)->setLinearDamping(damping.LinearDamping);
+                    static_cast<PxRigidDynamic*>(body)->setAngularDamping(damping.AngularDamping);
+
+                    PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
+                    if (damping.EnableCCD) {
+                        currentFlags |= PxRigidBodyFlag::eENABLE_CCD; 
+                    } else {
+                        currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
+                    }
+                    static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
+
                 }
+
 
                 // create a box shape
                 PxMaterial* material;
@@ -172,19 +185,8 @@ namespace SnowLeopardEngine
                 }
                 PxBoxGeometry boxGeometry(
                     boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
-                
                 // TODO: Simiao Wang Consider shape trigger flag here. read from boxCollider.IsTrigger.
-                PxShapeFlags shapeFlags;
-                if (boxCollider.IsTrigger) 
-                {
-                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
-                }
-                else 
-                {
-                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
-                }
-                // create the shape using determined flags
-                PxShape* boxShape  = m_Physics->createShape(boxGeometry, *material, false, shapeFlags);
+                auto* boxShape = m_Physics->createShape(boxGeometry, *material);
 
                 // attach the shape to the rigidBody
                 body->attachShape(*boxShape);
@@ -193,6 +195,95 @@ namespace SnowLeopardEngine
                 m_Scene->addActor(*body);
             });
 
+        //case3: RigidBodyComponent + CapsuleColliderComponent
+        registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, CapsuleColliderComponent, DampingComponent>().each(
+            [this](entt::entity           entity,
+                   TransformComponent&    transform,
+                   EntityStatusComponent& entityStatus,
+                   RigidBodyComponent&    rigidBody,
+                   CapsuleColliderComponent&  capsuleCollider,
+                   DampingComponent&      damping) {
+                   
+                //create a rigidBody
+                PxTransform pxTransform(transform.Position.x + capsuleCollider.Offset.x,
+                                        transform.Position.y + capsuleCollider.Offset.y,
+                                        transform.Position.z + capsuleCollider.Offset.z);
+                PxRigidActor* body;
+                if(entityStatus.IsStatic)
+                {
+                    body = m_Physics->createRigidStatic(pxTransform);
+                }else{
+                    body = m_Physics->createRigidDynamic(pxTransform);
+                    static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
+                    static_cast<PxRigidDynamic*>(body)->setLinearDamping(damping.LinearDamping);
+                    static_cast<PxRigidDynamic*>(body)->setAngularDamping(damping.AngularDamping);
+
+                    PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
+                    if (damping.EnableCCD) {
+                        currentFlags |= PxRigidBodyFlag::eENABLE_CCD; 
+                    } else {
+                        currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
+                    }
+                    static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
+                }
+
+                //create a box shape
+                PxMaterial* material;
+                if(capsuleCollider.Material == nullptr){
+                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
+                }else{
+                    material = m_Physics->createMaterial(capsuleCollider.Material->DynamicFriction,
+                                                         capsuleCollider.Material->StaticFriction,
+                                                         capsuleCollider.Material->Bounciness);
+                }
+                PxCapsuleGeometry capsuleGeometry(
+                    capsuleCollider.Radius, capsuleCollider.Height
+                );
+                auto* capsuleShape = m_Physics->createShape(capsuleGeometry, *material);
+                body->attachShape(*capsuleShape);
+                m_Scene->addActor(*body); 
+                });
+
+        //case4: Rigid + Heightfield
+        registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, HeightfieldColliderComponent, DampingComponent>().each(
+            [this](entt::entity           entity,
+                   TransformComponent&    transform,
+                   EntityStatusComponent& entityStatus,
+                   RigidBodyComponent&    rigidBody,
+                   HeightfieldColliderComponent&  heightfieldCollider,
+                   DampingComponent&      damping) {
+
+                auto t = heightfieldCollider.Width * heightfieldCollider.Height;
+                PxHeightFieldSample* hfSample = new PxHeightFieldSample[t];
+                for(unsigned i = 0; i<t; i++){
+                    hfSample[i].Height = static_cast<PxI16>(hfSample->height[i]);
+                    hfSample[i].materialIndex0 = hfSample[i].materialIndex1 = 0;
+                }
+
+                PxHeightFieldDesc hfDesc;
+                hfDesc.format = PxHeightFieldFormat::eS16_TM;
+                hfDesc.nbColumns = hfSample.Width;
+                hfDesc.nbRows = hfSample.Height;
+                hfDesc.samples.data = hfSample;
+                hfDesc.samples.stride = sizeof(PxHeightFieldSample);
+
+                PxHeightField* heightField = m_Physics->createHeightField(hfDesc);
+                delete[] hfSample;
+
+                PxHeightFieldGeometry hfGeometry(heightField, PxMeshGeometryFlags(), 1.0f, 1.0f, 1.0f);
+                PxMaterial* material = m_Physics->createMaterial(heightfieldCollider.Material->DynamicFriction,
+                                                                 heightfieldCollider.Material->StaticFriction,
+                                                                 heightfieldCollider.Material->Bounciness);
+                
+                PxRigidActor* body;
+                if(entityStatus.IsStatic){
+                    body = m_Physics->createRigidStatic(PxTransform(FromGlmVec3(transform.Position)));
+                }
+
+                body->createShape(hfGeometry, *material);
+                m_Scene->addActor(*body);
+
+                   });
         // TODO: More cases
     }
 
