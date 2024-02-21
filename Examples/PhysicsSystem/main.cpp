@@ -19,7 +19,7 @@ public:
 
         // Create a camera
         Entity camera                                      = scene->CreateEntity("MainCamera");
-        camera.GetComponent<TransformComponent>().Position = {0, 15, 20};
+        camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         camera.AddComponent<CameraComponent>();
 
         // Create a smooth material
@@ -29,6 +29,7 @@ public:
 
         auto& sphereTransform      = sphere.GetComponent<TransformComponent>();
         sphereTransform.Position.y = 10.0f;
+        sphereTransform.Scale *= 3;
 
         sphere.AddComponent<RigidBodyComponent>(1.0f);
         sphere.AddComponent<SphereColliderComponent>(smoothMaterial);
