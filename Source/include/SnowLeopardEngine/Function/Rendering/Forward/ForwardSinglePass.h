@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SnowLeopardEngine/Function/Rendering/Pass/RenderDrawPass.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/Shader.h"
 
 namespace SnowLeopardEngine
 {
@@ -11,5 +12,8 @@ namespace SnowLeopardEngine
         virtual void EndPass() override {}
 
         virtual void Draw() override final;
+
+    private:
+        Ref<Shader> m_Shader;
     };
 } // namespace SnowLeopardEngine

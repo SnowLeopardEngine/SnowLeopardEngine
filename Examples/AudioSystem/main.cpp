@@ -21,11 +21,11 @@ public:
     virtual void OnUnload() override final { SNOW_LEOPARD_INFO("[CustomLifeTime] OnUnload"); }
 };
 
-int main()
+int main(int argc, char** argv)
 {
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - AudioSystem";
-    DesktopApp app;
+    DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))
     {

@@ -85,4 +85,11 @@ namespace SnowLeopardEngine
     {
         std::vector<MeshItem> Items;
     };
+
+    struct Model
+    {
+        MeshGroup Meshes;
+
+        // TODO: Skeletal animation data structures
+    };
 } // namespace SnowLeopardEngine

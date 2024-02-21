@@ -7,6 +7,6 @@ namespace SnowLeopardEngine
     class ForwardPipeline : public Pipeline
     {
     public:
-        virtual bool Init() override;
+        virtual bool Init(const PipelineInitInfo& initInfo) override;
     };
 } // namespace SnowLeopardEngine

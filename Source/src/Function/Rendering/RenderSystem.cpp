@@ -3,6 +3,8 @@
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardPipeline.h"
+#include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
+#include "SnowLeopardEngine/Platform/OpenGL/GLAPI.h"
 #include "SnowLeopardEngine/Platform/OpenGL/GLContext.h"
 
 namespace SnowLeopardEngine
@@ -12,8 +14,12 @@ namespace SnowLeopardEngine
         m_Context = CreateRef<GLContext>();
         m_Context->Init();
 
-        m_Pipeline = CreateRef<ForwardPipeline>();
-        m_Pipeline->Init();
+        m_API = CreateRef<OpenGLAPI>();
+
+        PipelineInitInfo pipelineInitInfo = {};
+        pipelineInitInfo.API              = m_API;
+        m_Pipeline                        = CreateRef<ForwardPipeline>();
+        m_Pipeline->Init(pipelineInitInfo);
 
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Initialized");
         m_State = SystemState::InitOk;

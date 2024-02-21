@@ -32,11 +32,11 @@ public:
     virtual void OnUnload() override final { SNOW_LEOPARD_INFO("[LifeTimeB] OnUnload"); }
 };
 
-int main()
+int main(int argc, char** argv)
 {
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - LifeTimeComponents";
-    DesktopApp app;
+    DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))
     {

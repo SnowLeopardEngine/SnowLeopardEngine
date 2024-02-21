@@ -8,14 +8,19 @@
 
 namespace SnowLeopardEngine
 {
-    static void GLMessageCallback(GLenum        source,
-                                  GLenum        type,
-                                  GLuint        id,
-                                  GLenum        severity,
-                                  GLsizei        /*length*/,
+    static void GLMessageCallback(GLenum source,
+                                  GLenum type,
+                                  GLuint id,
+                                  GLenum severity,
+                                  GLsizei /*length*/,
                                   GLchar const* message,
-                                  void const*    /*userParam*/)
+                                  void const* /*userParam*/)
     {
+        if (id == 131185)
+        {
+            return;
+        }
+
         const auto* const srcStr = [source]() {
             switch (source)
             {

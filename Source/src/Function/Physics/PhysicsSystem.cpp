@@ -7,6 +7,7 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "geometry/PxBoxGeometry.h"
+#include "glm/fwd.hpp"
 
 using namespace physx;
 
@@ -109,7 +110,12 @@ namespace SnowLeopardEngine
                                                          sphereCollider.Material->StaticFriction,
                                                          sphereCollider.Material->Bounciness);
                 }
-                PxSphereGeometry sphereGeometry(sphereCollider.Radius);
+                float radius = 0.5f;
+                if (sphereCollider.Radius == 0)
+                {
+                    radius = radius * transform.Scale.x;
+                }
+                PxSphereGeometry sphereGeometry(radius);
                 auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
 
                 // attach the shape to the rigidBody
@@ -153,9 +159,16 @@ namespace SnowLeopardEngine
                                                          boxCollider.Material->StaticFriction,
                                                          boxCollider.Material->Bounciness);
                 }
-                PxBoxGeometry boxGeometry(
-                    boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
-                auto* boxShape = m_Physics->createShape(boxGeometry, *material);
+
+                glm::vec3 size = {1, 1, 1};
+                if (boxCollider.Size == glm::vec3(0, 0, 0))
+                {
+                    size.x *= transform.Scale.x;
+                    size.y *= transform.Scale.y;
+                    size.z *= transform.Scale.z;
+                }
+                PxBoxGeometry boxGeometry(size.x / 2.0f, size.y / 2.0f, size.z / 2.0f);
+                auto*         boxShape = m_Physics->createShape(boxGeometry, *material);
 
                 // attach the shape to the rigidBody
                 body->attachShape(*boxShape);

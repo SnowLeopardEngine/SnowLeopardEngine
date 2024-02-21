@@ -48,11 +48,11 @@ private:
     EngineContext* m_EngineContext;
 };
 
-int main()
+int main(int argc, char** argv)
 {
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - NativeScripting";
-    DesktopApp app;
+    DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))
     {

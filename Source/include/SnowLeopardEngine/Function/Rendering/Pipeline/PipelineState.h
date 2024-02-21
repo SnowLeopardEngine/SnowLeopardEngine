@@ -7,8 +7,8 @@ namespace SnowLeopardEngine
     enum class DepthTestMode
     {
         None = 0,
-        Large,
-        LargeEqual,
+        Greater,
+        GreaterEqual,
         Equal,
         LessEqual,
         Less,
@@ -31,8 +31,8 @@ namespace SnowLeopardEngine
 
     enum class PipelineType
     {
-        Rasterisation,
-        Computation
+        Graphics,
+        Compute
     };
 
     enum class PipelineFlag
@@ -47,7 +47,7 @@ namespace SnowLeopardEngine
         virtual ~PipelineState() = default;
 
         std::string  Name;
-        PipelineType Type = PipelineType::Rasterisation;
+        PipelineType Type = PipelineType::Graphics;
 
         std::string VertexShaderName;
         std::string FragmentShaderName;
