@@ -136,7 +136,10 @@ namespace SnowLeopardEngine
     // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
     struct RigidBodyComponent
     {
-        float Mass = 1.0f;
+        float Mass           = 1.0f;
+        bool  EnableCCD      = false;
+        float LinearDamping  = 0.1f;
+        float AngularDamping = 0.1f;
 
         RigidBodyComponent()                          = default;
         RigidBodyComponent(const RigidBodyComponent&) = default;
@@ -175,5 +178,51 @@ namespace SnowLeopardEngine
             Offset(offset),
             Size(size), Material(material), IsTrigger(isTrigger)
         {}
+    }; // Test Pass
+
+    struct CapsuleColliderComponent
+    {
+        float                Radius    = 0.5f;
+        float                Height    = 1.0f;
+        glm::vec3            Offset    = {0, 0, 0};
+        Ref<PhysicsMaterial> Material  = nullptr;
+        bool                 IsTrigger = false;
+
+        CapsuleColliderComponent()                                = default;
+        CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
+        explicit CapsuleColliderComponent(float                      radius,
+                                          float                      height,
+                                          const glm::vec3&           offset    = {0, 0, 0},
+                                          const Ref<PhysicsMaterial> material  = nullptr,
+                                          bool                       isTrigger = false) :
+            Radius(radius),
+            Height(height), Offset(offset), Material(material), IsTrigger(isTrigger)
+        {}
     };
+
+    struct HeightfieldColliderComponent
+    {
+        unsigned             Width;
+        unsigned             Height;
+        std::vector<float>   HeightfieldMap;
+        float                RowScale;
+        float                ColumnScale;
+        Ref<PhysicsMaterial> Material  = nullptr;
+        bool                 IsTrigger = false;
+
+        HeightfieldColliderComponent()                                    = default;
+        HeightfieldColliderComponent(const HeightfieldColliderComponent&) = default;
+        explicit HeightfieldColliderComponent(unsigned                   width,
+                                              unsigned                   height,
+                                              std::vector<float>         heightfieldMap,
+                                              float                      rowScale,
+                                              float                      columnScale,
+                                              const Ref<PhysicsMaterial> material  = nullptr,
+                                              bool                       isTrigger = false) :
+            Width(width),
+            Height(height), HeightfieldMap(heightfieldMap), RowScale(rowScale), ColumnScale(columnScale),
+            Material(material), IsTrigger(isTrigger)
+        {}
+    }; // Not Test
+
 } // namespace SnowLeopardEngine

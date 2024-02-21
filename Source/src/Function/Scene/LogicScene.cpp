@@ -178,4 +178,6 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(RigidBodyComponent) {}
     ON_COMPONENT_ADDED(SphereColliderComponent) {}
     ON_COMPONENT_ADDED(BoxColliderComponent) {}
+    ON_COMPONENT_ADDED(CapsuleColliderComponent) {}
+    ON_COMPONENT_ADDED(HeightfieldColliderComponent) {}
 } // namespace SnowLeopardEngine
