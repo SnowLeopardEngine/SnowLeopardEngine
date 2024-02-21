@@ -132,6 +132,8 @@ namespace SnowLeopardEngine
         explicit EntityStatusComponent(bool isStatic) : IsStatic(isStatic) {}
     };
 
+    // TODO: Jubiao Lin Add more properties here
+    // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
     struct RigidBodyComponent
     {
         float Mass = 1.0f;

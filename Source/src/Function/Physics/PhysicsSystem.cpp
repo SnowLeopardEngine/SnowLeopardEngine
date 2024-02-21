@@ -2,6 +2,7 @@
 #include "PxActor.h"
 #include "PxRigidActor.h"
 #include "PxRigidDynamic.h"
+#include "PxShape.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
@@ -93,6 +94,8 @@ namespace SnowLeopardEngine
                 }
                 else
                 {
+                    // TODO: Jubiao Lin setLinearDamping, setAngularDamping, enable ccd here:
+                    // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
                     body = m_Physics->createRigidDynamic(pxTransform);
                     static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
                 }
@@ -110,7 +113,19 @@ namespace SnowLeopardEngine
                                                          sphereCollider.Material->Bounciness);
                 }
                 PxSphereGeometry sphereGeometry(sphereCollider.Radius);
-                auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
+                
+                // TODO: Simiao Wang Consider shape trigger flag here. read from sphereCollider.IsTrigger.
+                PxShapeFlags shapeFlags;
+                if (sphereCollider.IsTrigger) 
+                {
+                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
+                }
+                else
+                {
+                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
+                }
+                // create the shape using determined flags
+                PxShape* sphereShape = m_Physics->createShape(sphereGeometry, *material, false, shapeFlags);
 
                 // attach the shape to the rigidBody
                 body->attachShape(*sphereShape);
@@ -137,8 +152,10 @@ namespace SnowLeopardEngine
                 }
                 else
                 {
+                    // TODO: Jubiao Lin setLinearDamping, setAngularDamping, enable ccd here:
+                    // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
                     body = m_Physics->createRigidDynamic(pxTransform);
-                    dynamic_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
+                    static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
                 }
 
                 // create a box shape
@@ -155,7 +172,19 @@ namespace SnowLeopardEngine
                 }
                 PxBoxGeometry boxGeometry(
                     boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
-                auto* boxShape = m_Physics->createShape(boxGeometry, *material);
+                
+                // TODO: Simiao Wang Consider shape trigger flag here. read from boxCollider.IsTrigger.
+                PxShapeFlags shapeFlags;
+                if (boxCollider.IsTrigger) 
+                {
+                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
+                }
+                else 
+                {
+                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
+                }
+                // create the shape using determined flags
+                PxShape* boxShape  = m_Physics->createShape(boxGeometry, *material, false, shapeFlags);
 
                 // attach the shape to the rigidBody
                 body->attachShape(*boxShape);
