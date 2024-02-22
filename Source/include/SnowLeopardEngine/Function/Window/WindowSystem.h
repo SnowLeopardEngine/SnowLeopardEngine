@@ -55,6 +55,8 @@ namespace SnowLeopardEngine
         void MakeCurrentContext() { m_Window->MakeCurrentContext(); }
         void SwapBuffers() { m_Window->SwapBuffers(); }
 
+        void SetHideCursor(bool hide) { m_Window->SetHideCursor(hide); }
+
         void* GetPlatformWindow() const { return m_Window->GetPlatformWindow(); }
         void* GetNativeWindow() const { return m_Window->GetNativeWindow(); }
 

@@ -11,7 +11,7 @@ namespace SnowLeopardEngine
         uint32_t    Height = 768;
         bool        VSync  = true;
 
-        WindowInitInfo() {}
+        WindowInitInfo() = default;
         WindowInitInfo(const std::string& title, uint32_t width, uint32_t height, bool vsync) :
             Title(title), Width(width), Height(height), VSync(vsync)
         {}
@@ -71,6 +71,8 @@ namespace SnowLeopardEngine
 
         virtual void MakeCurrentContext() = 0;
         virtual void SwapBuffers()        = 0;
+
+        virtual void SetHideCursor(bool hide) = 0;
 
         virtual void* GetPlatformWindow() const = 0;
         virtual void* GetNativeWindow() const   = 0;

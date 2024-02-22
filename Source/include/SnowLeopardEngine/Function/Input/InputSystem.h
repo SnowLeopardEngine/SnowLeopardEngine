@@ -2,6 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Base/EngineSubSystem.h"
+#include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
 
 namespace SnowLeopardEngine
@@ -10,10 +11,6 @@ namespace SnowLeopardEngine
     {
     public:
         DECLARE_SUBSYSTEM(InputSystem)
-
-        // Update states
-        void SetKeyState(int key, int action);
-        void SetMouseButtonState(int button, int action);
 
         // Keyboard
         bool GetKey(KeyCode key);
@@ -25,7 +22,8 @@ namespace SnowLeopardEngine
         bool GetMouseButtonDown(MouseCode button);
         bool GetMouseButtonUp(MouseCode button);
 
-        void ClearStates();
+        glm::vec2 GetMousePosition() { return m_MousePosition; }
+        glm::vec2 GetMouseScrollDelta() { return m_MouseScrollDelta; }
 
     private:
         template<typename T>
@@ -33,6 +31,16 @@ namespace SnowLeopardEngine
         {
             return static_cast<int>(code);
         }
+
+        // Update states
+        void SetKeyState(int key, int action);
+        void SetMouseButtonState(int button, int action);
+        void SetMousePosition(const glm::vec2& position) { m_MousePosition = position; }
+        void SetMouseScrollDelta(const glm::vec2& scrollDelta) { m_MouseScrollDelta = scrollDelta; };
+
+        void ClearStates();
+
+        friend class GLFWWindow;
 
     private:
         std::map<int, bool> m_KeyDownStates;
@@ -42,5 +50,8 @@ namespace SnowLeopardEngine
         std::map<int, bool> m_MouseButtonStates;
         std::map<int, bool> m_MouseButtonDownStates;
         std::map<int, bool> m_MouseButtonUpStates;
+
+        glm::vec2 m_MousePosition    = {0, 0};
+        glm::vec2 m_MouseScrollDelta = {0, 0};
     };
 } // namespace SnowLeopardEngine

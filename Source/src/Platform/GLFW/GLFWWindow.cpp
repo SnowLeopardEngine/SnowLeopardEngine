@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Platform/GLFW/GLFWWindow.h"
-#include "SnowLeopardEngine/Core/Event/WindowEvents.h"
+#include "GLFW/glfw3.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
+#include "SnowLeopardEngine/Core/Event/WindowEvents.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
@@ -112,13 +113,13 @@ namespace SnowLeopardEngine
         glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset) {
             WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
-            // TODO: Ruofan He InputSystem set mouse states
+            g_EngineContext->InputSys->SetMouseScrollDelta(glm::vec2(xOffset, yOffset));
         });
 
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
             WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
-            // TODO: Ruofan He InputSystem set mouse states
+            g_EngineContext->InputSys->SetMousePosition(glm::vec2(xPos, yPos));
         });
 
         // TODO: Ruofan He InputSystem add Controller buttons & joysticks support.
@@ -152,4 +153,9 @@ namespace SnowLeopardEngine
     void GLFWWindow::MakeCurrentContext() { glfwMakeContextCurrent(m_Window); }
 
     void GLFWWindow::SwapBuffers() { glfwSwapBuffers(m_Window); }
+
+    void GLFWWindow::SetHideCursor(bool hide)
+    {
+        glfwSetInputMode(m_Window, GLFW_CURSOR, hide ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    }
 } // namespace SnowLeopardEngine
