@@ -65,6 +65,8 @@ public:
         sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
         auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
         sphereMeshRenderer.BaseColor   = {0.4, 0.45, 0.5, 1}; // Metal
+        sphereMeshRenderer.UseDiffuse             = true;
+        sphereMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/awesomeface.png";
 
         auto scriptInstance = CreateRef<SphereScript>();
         sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
@@ -84,7 +86,7 @@ public:
         auto& floorMeshRenderer                  = floor.AddComponent<MeshRendererComponent>();
         floorMeshRenderer.BaseColor              = {1, 1, 1, 1}; // Pure White
         floorMeshRenderer.UseDiffuse             = true;
-        floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/awesomeface.png";
+        floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
     }
 
 private:
