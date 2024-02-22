@@ -4,7 +4,7 @@
 
 namespace SnowLeopardEngine
 {
-    enum class DepthTestMode
+    enum class DepthTestMode : uint16_t
     {
         None = 0,
         Greater,
@@ -17,25 +17,25 @@ namespace SnowLeopardEngine
         Always
     };
 
-    enum class StencilTestMode
+    enum class StencilTestMode : uint16_t
     {
         None = 0
     };
 
-    enum class CullFaceMode
+    enum class CullFaceMode : uint16_t
     {
         None = 0,
         Front,
         Back
     };
 
-    enum class PipelineType
+    enum class PipelineType : uint8_t
     {
-        Graphics,
+        Graphics = 0,
         Compute
     };
 
-    enum class PipelineFlag
+    enum class PipelineFlag : uint8_t
     {
         None      = 0x0000,
         Shadow    = 0x0001,

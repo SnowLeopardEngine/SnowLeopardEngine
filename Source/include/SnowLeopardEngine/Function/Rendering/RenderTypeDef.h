@@ -13,7 +13,7 @@ namespace SnowLeopardEngine
         float Height;
     };
 
-    enum class PixelColorFormat
+    enum class PixelColorFormat : uint8_t
     {
         None = 0,
         RGB8,
@@ -22,14 +22,14 @@ namespace SnowLeopardEngine
         RGBA32
     };
 
-    enum class TextureType
+    enum class TextureType : uint8_t
     {
         None = 0,
         Texture2D,
         Texture3D // Cubemap
     };
 
-    enum class TextureWrapMode
+    enum class TextureWrapMode : uint8_t
     {
         None = 0,
         Clamp,
@@ -37,7 +37,7 @@ namespace SnowLeopardEngine
         Mirror
     };
 
-    enum class TextureFilterMode
+    enum class TextureFilterMode : uint8_t
     {
         None = 0,
         Point,
