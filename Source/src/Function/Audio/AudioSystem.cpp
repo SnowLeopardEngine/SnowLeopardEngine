@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Audio/AudioSystem.h"
+#include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
@@ -10,7 +11,7 @@ namespace SnowLeopardEngine
     AudioSystem::AudioSystem()
     {
         m_AudioEngine = new ma_engine();
-        auto result   = ma_engine_init(NULL, m_AudioEngine);
+        auto result   = ma_engine_init(nullptr, m_AudioEngine);
         SNOW_LEOPARD_CORE_ASSERT(result == MA_SUCCESS, "[AudioSystem] Failed to init miniaudio engine.");
         SNOW_LEOPARD_CORE_INFO("[AudioSystem] Initialized");
         m_State = SystemState::InitOk;
@@ -27,6 +28,7 @@ namespace SnowLeopardEngine
 
     void AudioSystem::Play(const std::string& rawAudioFilePath)
     {
-        ma_engine_play_sound(m_AudioEngine, rawAudioFilePath.c_str(), NULL);
+        auto realPath = FileSystem::GetExecutableDirectory() / rawAudioFilePath;
+        ma_engine_play_sound(m_AudioEngine, realPath.generic_string().c_str(), nullptr);
     }
 } // namespace SnowLeopardEngine

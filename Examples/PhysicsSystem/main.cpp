@@ -65,10 +65,12 @@ public:
         floor.GetComponent<EntityStatusComponent>().IsStatic = true;
         floor.AddComponent<RigidBodyComponent>();
         floor.AddComponent<BoxColliderComponent>(smoothMaterial);
-        auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
-        floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.BaseColor   = {1, 1, 1, 1}; // Pure White
+        auto& floorMeshFilter                    = floor.AddComponent<MeshFilterComponent>();
+        floorMeshFilter.PrimitiveType            = MeshPrimitiveType::Cube;
+        auto& floorMeshRenderer                  = floor.AddComponent<MeshRendererComponent>();
+        floorMeshRenderer.BaseColor              = {1, 1, 1, 1}; // Pure White
+        floorMeshRenderer.UseDiffuse             = true;
+        floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/awesomeface.png";
     }
 
 private:

@@ -10,12 +10,15 @@ uniform vec4 baseColor;
 uniform vec3 lightPos;
 uniform vec3 viewPos;
 
+uniform int useDiffuse;
+uniform sampler2D diffuseMap;
+
 void main() {
     vec3 lightDir = normalize(lightPos - fragPos);
     vec3 ambient = 0.5 * vec3(baseColor.x, baseColor.y, baseColor.z);
 
     float diff = max(dot(varingNormal, lightDir), 0.0);
-    vec3 diffuse = diff * baseColor.xyz;
+    vec3 diffuse = diff * (texture2D(diffuseMap, varingTexCoords).xyz * useDiffuse + baseColor.xyz * (1 - useDiffuse));
 
     vec3 viewDir = normalize(viewPos - fragPos);
     vec3 reflectDir = reflect(-lightDir, varingNormal);

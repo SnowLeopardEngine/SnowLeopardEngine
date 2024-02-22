@@ -3,7 +3,10 @@
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
+#include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
@@ -129,9 +132,33 @@ namespace SnowLeopardEngine
                         break;
                     }
                     break;
+                    case MeshPrimitiveType::Heightfield: {
+                        auto meshItem = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
+                            Utils::GenerateBlankHeightMap(50, 50));
+                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        break;
+                    }
                     case MeshPrimitiveType::None:
                         break;
                 }
+            }
+        });
+
+        // Texture Loading (dirty code for now)
+        m_Registry.view<MeshRendererComponent>().each([](entt::entity entity, MeshRendererComponent& meshRenderer) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(meshRenderer.DiffuseTextureFilePath))
+            {
+                Buffer      buffer;
+                TextureDesc desc;
+                if (!TextureLoader::LoadTexture2D(
+                        meshRenderer.DiffuseTextureFilePath, false, buffer, desc.Format, desc.Width, desc.Height))
+                {
+                    SNOW_LEOPARD_CORE_ERROR("Failed to load {0}!",
+                                            meshRenderer.DiffuseTextureFilePath.generic_string());
+                }
+                auto diffuseTexture         = Texture2D::Create(desc, &buffer);
+                meshRenderer.DiffuseTexture = diffuseTexture;
             }
         });
     }

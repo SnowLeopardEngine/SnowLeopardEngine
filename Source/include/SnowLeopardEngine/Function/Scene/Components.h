@@ -7,8 +7,8 @@
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
-#include <filesystem>
 
 namespace SnowLeopardEngine
 {
@@ -292,6 +292,9 @@ namespace SnowLeopardEngine
         glm::vec4 BaseColor;
 
         // TODO: Add MaterialSystem & other stuff
+        bool                  UseDiffuse = false;
+        std::filesystem::path DiffuseTextureFilePath;
+        Ref<Texture2D>        DiffuseTexture = nullptr;
 
         MeshRendererComponent()                             = default;
         MeshRendererComponent(const MeshRendererComponent&) = default;

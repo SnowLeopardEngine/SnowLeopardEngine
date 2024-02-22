@@ -2,6 +2,7 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/Pass/RenderPass.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 
 namespace SnowLeopardEngine
@@ -96,6 +97,18 @@ namespace SnowLeopardEngine
                 m_Shader->SetFloat4("baseColor", meshRenderer.BaseColor);
                 m_Shader->SetFloat3("lightPos", glm::vec3(-10, 20, 10));
                 m_Shader->SetFloat3("viewPos", mainCameraTransform.Position);
+
+                // Bind diffuse texture
+                if (meshRenderer.UseDiffuse && meshRenderer.DiffuseTexture != nullptr)
+                {
+                    meshRenderer.DiffuseTexture->Bind(0);
+                    m_Shader->SetInt("diffuseMap", 0);
+                    m_Shader->SetInt("useDiffuse", 1);
+                }
+                else
+                {
+                    m_Shader->SetInt("useDiffuse", 0);
+                }
 
                 // Currently, no static batching. leave temp test code here
                 auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshFilter.Meshes.Items[0]);
