@@ -275,6 +275,18 @@ namespace SnowLeopardEngine
         CameraComponent(const CameraComponent&) = default;
     };
 
+    struct FreeMoveCameraControllerComponent
+    {
+        float Sensitivity = 0.05f;
+        float Speed       = 0.1f;
+
+        bool      IsFirstTime = true;
+        glm::vec2 LastFrameMousePosition;
+
+        FreeMoveCameraControllerComponent()                                         = default;
+        FreeMoveCameraControllerComponent(const FreeMoveCameraControllerComponent&) = default;
+    };
+
     struct MeshFilterComponent
     {
         // TODO: Remove, add AssetManager

@@ -17,6 +17,16 @@ public:
         SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter");
         DesktopApp::GetInstance()->GetEngine()->GetContext()->AudioSys->Play("sounds/jump.mp3");
     }
+
+    virtual void OnTick(float deltaTime) override
+    {
+        auto& inputSystem = DesktopApp::GetInstance()->GetEngine()->GetContext()->InputSys;
+
+        if (inputSystem->GetKey(KeyCode::Escape))
+        {
+            DesktopApp::GetInstance()->Quit();
+        }
+    }
 };
 
 class CustomLifeTime final : public LifeTimeComponent
@@ -26,6 +36,9 @@ public:
     {
         m_EngineContext = DesktopApp::GetInstance()->GetEngine()->GetContext();
 
+        // Hide mouse cursor
+        m_EngineContext->WindowSys->SetHideCursor(true);
+
         // Create a scene and set active
         auto scene = m_EngineContext->SceneMngr->CreateScene("PhysicsSystem", true);
 
@@ -33,6 +46,7 @@ public:
         Entity camera                                      = scene->CreateEntity("MainCamera");
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         camera.AddComponent<CameraComponent>();
+        camera.AddComponent<FreeMoveCameraControllerComponent>();
 
         // Create a smooth material
         // https://forum.unity.com/threads/bounciness-1-0-conservation-of-energy-doesnt-work.143472/

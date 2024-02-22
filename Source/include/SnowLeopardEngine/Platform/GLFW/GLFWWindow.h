@@ -35,6 +35,8 @@ namespace SnowLeopardEngine
         virtual void MakeCurrentContext() override;
         virtual void SwapBuffers() override;
 
+        virtual void SetHideCursor(bool hide) override;
+
         virtual void* GetPlatformWindow() const override { return m_Window; }
 
         virtual void* GetNativeWindow() const override
