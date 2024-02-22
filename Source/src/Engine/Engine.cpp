@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Engine/Engine.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
@@ -35,6 +36,9 @@ namespace SnowLeopardEngine
 
         // Init render system
         g_EngineContext->RenderSys.Init();
+
+        // subscribe events
+        Subscribe(m_WindowResizeHandler);
 
         SNOW_LEOPARD_CORE_INFO("[Engine] Initialized");
 
@@ -76,11 +80,14 @@ namespace SnowLeopardEngine
         // Tick Logic
         g_EngineContext->SceneMngr->OnTick(deltaTime);
 
-        // Tick Rendering
-        g_EngineContext->RenderSys->OnTick(deltaTime);
+        if (!m_IsWindowMinimized)
+        {
+            // Tick Rendering
+            g_EngineContext->RenderSys->OnTick(deltaTime);
 
-        // Present
-        g_EngineContext->RenderSys->Present();
+            // Present
+            g_EngineContext->RenderSys->Present();
+        }
     }
 
     void Engine::FixedTickOneFrame()
@@ -103,6 +110,9 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_CORE_INFO("[Engine] Shutting Down...");
 
+        // unsubscribe events
+        Unsubscribe(m_WindowResizeHandler);
+
         for (auto& lifeTime : m_LiftTimeComponents)
         {
             lifeTime->OnUnload();
@@ -120,4 +130,21 @@ namespace SnowLeopardEngine
     }
 
     EngineContext* Engine::GetContext() { return g_EngineContext; }
+
+    void Engine::OnWindowResize(const WindowResizeEvent& e)
+    {
+        SNOW_LEOPARD_CORE_INFO("[App] OnWindowResize, {0}", e.ToString());
+
+        auto w = e.GetWidth();
+        auto h = e.GetHeight();
+
+        if (w == 0 || h == 0)
+        {
+            m_IsWindowMinimized = true;
+            return;
+        }
+
+        m_IsWindowMinimized = false;
+        g_EngineContext->RenderSys->GetAPI()->UpdateViewport(0, 0, w, h);
+    }
 } // namespace SnowLeopardEngine

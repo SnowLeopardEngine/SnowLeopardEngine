@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Event/WindowEvents.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Engine/LifeTimeComponent.h"
 
@@ -24,9 +25,9 @@ namespace SnowLeopardEngine
 
         /**
          * @brief Post initialized the engine
-         * 
-         * @return true 
-         * @return false 
+         *
+         * @return true
+         * @return false
          */
         bool PostInit();
 
@@ -35,7 +36,10 @@ namespace SnowLeopardEngine
          *
          * @param lifeTimeComponent
          */
-        void AddLifeTimeComponent(const Ref<LifeTimeComponent>& lifeTimeComponent) { m_LiftTimeComponents.emplace_back(lifeTimeComponent); }
+        void AddLifeTimeComponent(const Ref<LifeTimeComponent>& lifeTimeComponent)
+        {
+            m_LiftTimeComponents.emplace_back(lifeTimeComponent);
+        }
 
         /**
          * @brief Tick for one frame (logic + render)
@@ -57,6 +61,13 @@ namespace SnowLeopardEngine
         void Shutdown();
 
         /**
+         * @brief Event callback when window is resizing
+         *
+         * @param e
+         */
+        void OnWindowResize(const WindowResizeEvent& e);
+
+        /**
          * @brief Get the Context
          *
          * @return Ref<EngineContext> the context of engine
@@ -65,5 +76,11 @@ namespace SnowLeopardEngine
 
     private:
         std::vector<Ref<LifeTimeComponent>> m_LiftTimeComponents;
+
+        bool m_IsWindowMinimized = false;
+
+        EventHandler<WindowResizeEvent> m_WindowResizeHandler = [this](const WindowResizeEvent& e) {
+            OnWindowResize(e);
+        };
     };
 } // namespace SnowLeopardEngine
