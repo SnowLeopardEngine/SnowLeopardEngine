@@ -24,4 +24,10 @@ namespace SnowLeopardEngine
     public:
         static Ref<Texture2D> Create(const TextureDesc& desc, Buffer* data);
     };
+
+    class Texture3D : public Texture
+    {
+    public:
+        static Ref<Texture3D> Create(const TextureDesc& desc, std::vector<Buffer*> dataList);
+    };
 } // namespace SnowLeopardEngine
