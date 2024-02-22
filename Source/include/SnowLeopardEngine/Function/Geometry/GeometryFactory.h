@@ -5,12 +5,13 @@
 
 namespace SnowLeopardEngine
 {
-    enum class MeshPrimitiveType
+    enum class MeshPrimitiveType : uint8_t
     {
         None = 0,
         Cube,
         Sphere,
-        Capsule
+        Capsule,
+        Heightfield
     };
 
     struct CubeMesh
@@ -263,6 +264,87 @@ namespace SnowLeopardEngine
 
             capsuleMesh.Data = capsuleData;
             return capsuleMesh;
+        }
+    };
+
+    namespace Utils
+    {
+        static std::vector<std::vector<float>> GenerateBlankHeightMap(int x, int y)
+        {
+            std::vector<std::vector<float>> heightMap(x, std::vector<float>(y, 0.0f));
+            return heightMap;
+        }
+    } // namespace Utils
+
+    struct HeightfieldMesh
+    {
+        static const MeshPrimitiveType Type = MeshPrimitiveType::Heightfield;
+
+        static MeshItem Create(const std::vector<std::vector<float>>& heightMap,
+                               float                                  scaleX = 1.0f,
+                               float                                  scaleY = 1.0f,
+                               float                                  scaleZ = 1.0f)
+        {
+            MeshItem heightfieldMesh;
+            heightfieldMesh.Name = "Heightfield";
+
+            MeshData heightfieldData;
+
+            for (size_t row = 0; row < heightMap.size(); ++row)
+            {
+                for (size_t col = 0; col < heightMap[row].size(); ++col)
+                {
+                    float x = static_cast<float>(col) * scaleX;
+                    float y = heightMap[row][col] * scaleY;
+                    float z = static_cast<float>(row) * scaleZ;
+
+                    glm::vec3 position(x, y, z);
+                    glm::vec3 normal = CalculateNormal(heightMap, row, col, scaleX, scaleZ);
+                    glm::vec2 texCoord(static_cast<float>(col) / heightMap[row].size(),
+                                       static_cast<float>(row) / heightMap.size());
+
+                    heightfieldData.Vertices.push_back({position, normal, texCoord});
+                }
+            }
+
+            for (size_t row = 0; row < heightMap.size() - 1; ++row)
+            {
+                for (size_t col = 0; col < heightMap[row].size() - 1; ++col)
+                {
+                    int current = row * heightMap[row].size() + col;
+                    int next    = current + heightMap[row].size();
+
+                    heightfieldData.Indices.push_back(current);
+                    heightfieldData.Indices.push_back(next);
+                    heightfieldData.Indices.push_back(current + 1);
+
+                    heightfieldData.Indices.push_back(current + 1);
+                    heightfieldData.Indices.push_back(next);
+                    heightfieldData.Indices.push_back(next + 1);
+                }
+            }
+
+            heightfieldMesh.Data = heightfieldData;
+            return heightfieldMesh;
+        }
+
+    private:
+        static glm::vec3 CalculateNormal(const std::vector<std::vector<float>>& heightMap,
+                                         size_t                                 row,
+                                         size_t                                 col,
+                                         float                                  scaleX,
+                                         float                                  scaleZ)
+        {
+            glm::vec3 normal(0.0f, 1.0f, 0.0f);
+
+            if (row > 0 && row < heightMap.size() - 1 && col > 0 && col < heightMap[row].size() - 1)
+            {
+                float dzdx = (heightMap[row][col + 1] - heightMap[row][col - 1]) / (2.0f * scaleX);
+                float dzdy = (heightMap[row + 1][col] - heightMap[row - 1][col]) / (2.0f * scaleZ);
+                normal     = glm::normalize(glm::vec3(-dzdx, 1.0f, dzdy));
+            }
+
+            return normal;
         }
     };
 

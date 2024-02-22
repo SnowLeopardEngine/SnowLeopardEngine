@@ -7,6 +7,11 @@
 
 namespace SnowLeopardEngine
 {
+    ForwardSkyboxSubPass::ForwardSkyboxSubPass()
+    {
+        m_SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
+    }
+
     void ForwardSkyboxSubPass::Draw()
     {
         // Get pipeline
@@ -87,11 +92,10 @@ namespace SnowLeopardEngine
                                            mainCamera.Near,
                                            mainCamera.Far));
 
-        auto meshItem    = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
-        auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
+        auto vertexArray = pipeline->GetAPI()->CreateVertexArray(m_SkyboxCubeMesh);
         vertexArray->Bind();
 
-        pipeline->GetAPI()->DrawIndexed(meshItem.Data.Indices.size());
+        pipeline->GetAPI()->DrawIndexed(m_SkyboxCubeMesh.Data.Indices.size());
 
         vertexArray->Unbind();
         m_Shader->Unbind();
