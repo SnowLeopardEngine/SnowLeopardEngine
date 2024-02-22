@@ -73,7 +73,7 @@ namespace SnowLeopardEngine
                 // Setup camera matrices
                 auto eulerAngles = mainCameraTransform.GetRotationEuler();
 
-                // Calculate forward (Pitch - 90 to adjust)
+                // Calculate forward (Yaw - 90 to adjust)
                 glm::vec3 forward;
                 forward.x = cos(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
                 forward.y = sin(glm::radians(eulerAngles.x));
@@ -94,6 +94,8 @@ namespace SnowLeopardEngine
                                                    mainCamera.Near,
                                                    mainCamera.Far));
                 m_Shader->SetFloat4("baseColor", meshRenderer.BaseColor);
+                m_Shader->SetFloat3("lightPos", glm::vec3(-10, 20, 10));
+                m_Shader->SetFloat3("viewPos", mainCameraTransform.Position);
 
                 // Currently, no static batching. leave temp test code here
                 auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshFilter.Meshes.Items[0]);

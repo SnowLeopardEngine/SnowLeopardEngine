@@ -1,16 +1,8 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
-#include "PxActor.h"
-#include "PxRigidActor.h"
-#include "PxRigidDynamic.h"
-#include "PxShape.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
-#include "entt/entity/fwd.hpp"
-#include "foundation/Px.h"
-#include "geometry/PxBoxGeometry.h"
-#include "glm/fwd.hpp"
 
 using namespace physx;
 
@@ -158,7 +150,7 @@ namespace SnowLeopardEngine
                 float radius = 0.5f;
                 if (sphereCollider.Radius == 0)
                 {
-                    radius = radius * transform.Scale.x;
+                    radius = radius * transform.Scale.x  + 0.2;
                 }
                 PxSphereGeometry sphereGeometry(radius);
                 auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
@@ -236,8 +228,11 @@ namespace SnowLeopardEngine
                 if (boxCollider.Size == glm::vec3(0, 0, 0))
                 {
                     size.x *= transform.Scale.x;
+                    size.x += 0.2;
                     size.y *= transform.Scale.y;
+                    size.y += 0.2;
                     size.z *= transform.Scale.z;
+                    size.z += 0.2;
                 }
                 PxBoxGeometry boxGeometry(size.x / 2.0f, size.y / 2.0f, size.z / 2.0f);
                 auto*         boxShape = m_Physics->createShape(boxGeometry, *material);

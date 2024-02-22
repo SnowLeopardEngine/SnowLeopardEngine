@@ -59,16 +59,16 @@ public:
         Entity floor = scene->CreateEntity("Floor");
 
         auto& floorTransform = floor.GetComponent<TransformComponent>();
-        floorTransform.Scale = {50, 0.1, 50};
+        floorTransform.Scale = {50, 1, 50};
 
         // set it to static, so that rigidBody will be static.
         floor.GetComponent<EntityStatusComponent>().IsStatic = true;
         floor.AddComponent<RigidBodyComponent>();
-        auto& floorBoxCollider        = floor.AddComponent<BoxColliderComponent>(smoothMaterial);
+        floor.AddComponent<BoxColliderComponent>(smoothMaterial);
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.BaseColor   = {0.5, 0.45, 0.4, 1}; // Rice
+        floorMeshRenderer.BaseColor   = {1, 1, 1, 1}; // Pure White
     }
 
 private:

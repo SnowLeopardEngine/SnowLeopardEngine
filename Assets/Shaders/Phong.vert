@@ -6,6 +6,7 @@ layout(location = 2) in vec2 aTexCoords;
 
 out vec2 varingTexCoords;
 out vec3 varingNormal;
+out vec3 fragPos;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -15,4 +16,5 @@ void main() {
     varingNormal = aNormal;
     varingTexCoords = aTexCoords;
     gl_Position = projection * view * model * vec4(aPos, 1.0);
+    fragPos = gl_Position.xyz;
 }

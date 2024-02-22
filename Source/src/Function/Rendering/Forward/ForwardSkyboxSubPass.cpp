@@ -65,7 +65,7 @@ namespace SnowLeopardEngine
         // Setup camera matrices
         auto eulerAngles = mainCameraTransform.GetRotationEuler();
 
-        // Calculate forward (Pitch - 90 to adjust)
+        // Calculate forward (Yaw - 90 to adjust)
         glm::vec3 forward;
         forward.x = cos(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
         forward.y = sin(glm::radians(eulerAngles.x));
