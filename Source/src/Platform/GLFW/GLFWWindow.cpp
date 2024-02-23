@@ -1,8 +1,6 @@
 #include "SnowLeopardEngine/Platform/GLFW/GLFWWindow.h"
-#include "GLFW/glfw3.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Event/WindowEvents.h"
-#include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine

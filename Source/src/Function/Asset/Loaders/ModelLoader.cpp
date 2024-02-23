@@ -1,5 +1,4 @@
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
-#include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 #include <assimp/Importer.hpp>

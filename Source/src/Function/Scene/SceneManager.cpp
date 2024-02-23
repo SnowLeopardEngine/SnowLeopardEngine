@@ -1,5 +1,4 @@
 #include "SnowLeopardEngine/Function/Scene/SceneManager.h"
-#include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine

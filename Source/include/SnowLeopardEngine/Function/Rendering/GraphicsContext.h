@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SnowLeopardEngine/Core/Base/Base.h"
+
 namespace SnowLeopardEngine
 {
     class GraphicsContext
@@ -10,5 +12,7 @@ namespace SnowLeopardEngine
 
         virtual void SwapBuffers()               = 0;
         virtual void SetVSync(bool vsyncEnabled) = 0;
+
+        static Ref<GraphicsContext> Create();
     };
 } // namespace SnowLeopardEngine

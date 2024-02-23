@@ -1,5 +1,4 @@
 #include "SnowLeopardEngine/Platform/OpenGL/GLShader.h"
-#include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 #include <glad/glad.h>

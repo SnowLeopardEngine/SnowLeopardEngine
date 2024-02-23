@@ -1,18 +1,12 @@
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
-#include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
-#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
-
-#include "entt/entity/fwd.hpp"
-#include <fmt/core.h>
-#include <vector>
 
 namespace SnowLeopardEngine
 {

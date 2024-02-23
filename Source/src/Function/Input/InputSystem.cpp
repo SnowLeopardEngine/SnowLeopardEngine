@@ -1,5 +1,4 @@
 #include "SnowLeopardEngine/Function/Input/InputSystem.h"
-#include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
 

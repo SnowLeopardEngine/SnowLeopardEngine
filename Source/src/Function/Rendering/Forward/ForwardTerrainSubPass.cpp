@@ -1,18 +1,11 @@
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardTerrainSubPass.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Rendering/Pass/RenderPass.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 
 namespace SnowLeopardEngine
 {
-    ForwardTerrainSubPass::ForwardTerrainSubPass()
-    {
-        auto heightMap = Utils::GenerateBlankHeightMap(100, 100);
-        m_TerrainMesh  = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(heightMap);
-    }
-
     void ForwardTerrainSubPass::Draw()
     {
         // Get pipeline
