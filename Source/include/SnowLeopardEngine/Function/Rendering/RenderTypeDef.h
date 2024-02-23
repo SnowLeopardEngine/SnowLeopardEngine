@@ -3,6 +3,8 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
 
+#define NUM_BONES_PER_VERTEX 4
+
 namespace SnowLeopardEngine
 {
     struct ViewportDesc
@@ -86,10 +88,42 @@ namespace SnowLeopardEngine
         std::vector<MeshItem> Items;
     };
 
+    struct BoneData
+    {
+        unsigned int IDs[NUM_BONES_PER_VERTEX];
+        float        Weights[NUM_BONES_PER_VERTEX];
+
+        void AddBoneData(unsigned int boneId, float weight)
+        {
+            for (unsigned int i = 0; i < NUM_BONES_PER_VERTEX; i++)
+            {
+                if (Weights[i] == 0.0f)
+                {
+                    IDs[i]     = boneId;
+                    Weights[i] = weight;
+                    return;
+                }
+            }
+        }
+    };
+
+    struct BoneInfo
+    {
+        bool      IsSkinned = false;
+        glm::mat4 BoneOffset;
+        glm::mat4 DefaultOffset;
+        int       ParentIndex = 0;
+    };
+
     struct Model
     {
         MeshGroup Meshes;
 
+        std::vector<BoneData> Bones;
+
+        std::map<std::string, uint32_t> BoneMapping;
+        uint32_t                        NumBones = 0;
+        std::vector<BoneInfo>           BoneInfo;
         // TODO: Skeletal animation data structures
     };
 } // namespace SnowLeopardEngine
