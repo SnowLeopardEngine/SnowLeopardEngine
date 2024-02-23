@@ -117,6 +117,13 @@ namespace SnowLeopardEngine
                     m_Shader->SetInt("useDiffuse", 0);
                 }
 
+                // Bind heightmap
+                if (terrainRenderer.Heightmap != nullptr)
+                {
+                    terrainRenderer.Heightmap->Bind(1);
+                    m_Shader->SetInt("heightMap", 1);
+                }
+
                 // Currently, no static batching. leave temp test code here
                 auto vertexArray = pipeline->GetAPI()->CreateVertexArray(terrain.Mesh);
                 vertexArray->Bind();

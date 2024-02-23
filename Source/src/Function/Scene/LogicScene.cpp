@@ -167,6 +167,7 @@ namespace SnowLeopardEngine
                     terrainRenderer.DiffuseTexture =
                         TextureLoader::LoadTexture2D(terrainRenderer.DiffuseTextureFilePath, false);
                 }
+                terrainRenderer.Heightmap = TextureLoader::LoadTexture2D(terrainRenderer.HeightmapFilePath, false);
             });
         m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
             // TODO: Move to AssetManager

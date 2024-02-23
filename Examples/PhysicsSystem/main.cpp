@@ -107,6 +107,7 @@ public:
         auto& terrainRendererComponent      = terrain.AddComponent<TerrainRendererComponent>();
         terrainRendererComponent.UseDiffuse = true;
         terrainRendererComponent.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
+        terrainRendererComponent.HeightmapFilePath      = "Assets/Textures/awesomeface.png";
     }
 
 private:

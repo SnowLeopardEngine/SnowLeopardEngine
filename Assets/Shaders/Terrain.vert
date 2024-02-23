@@ -10,18 +10,15 @@ out vec3 varingNormal;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-uniform int useDiffuse;
-uniform sampler2D diffuseMap;
+uniform sampler2D heightMap;
 
-float getHeightValue(vec2 uv) 
-{
-    vec3 heightData = texture2D(diffuseMap, aTexCoords).xyz;
+float getHeightValue(vec2 uv) {
+    vec3 heightData = texture2D(heightMap, aTexCoords).xyz;
     return heightData.x * 65536.0 + heightData.y * 256.0 + heightData.z;
 }
 
-void main() 
-{
-    vec2 texelSize = 25.0 / textureSize(diffuseMap, 0);
+void main() {
+    vec2 texelSize = 25.0 / textureSize(heightMap, 0);
     float heightValue = getHeightValue(aTexCoords);
 
     heightValue = 0.0003 * heightValue;
