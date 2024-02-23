@@ -11,6 +11,9 @@ namespace SnowLeopardEngine
 
         WindowResizeEvent(int width, int height) : m_Width(width), m_Height(height) {}
 
+        int GetWidth() const { return m_Width; }
+        int GetHeight() const { return m_Height; }
+
         virtual const std::string ToString() const override
         {
             return fmt::format("WindowResizeEvent: Width = {0}, Height = {1}", m_Width, m_Height);

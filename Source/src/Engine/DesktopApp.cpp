@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
+#include "SnowLeopardEngine/Core/Event/WindowEvents.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"

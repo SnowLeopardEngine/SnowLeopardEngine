@@ -15,6 +15,8 @@ namespace SnowLeopardEngine
         void OnTick(float deltaTime);
         void Present();
 
+        const Ref<GraphicsAPI>& GetAPI() const { return m_API; }
+
     private:
         void Draw();
 

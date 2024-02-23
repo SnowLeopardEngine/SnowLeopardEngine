@@ -3,10 +3,14 @@
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
+#include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
+#include "entt/entity/fwd.hpp"
 #include <fmt/core.h>
 
 namespace SnowLeopardEngine
@@ -123,9 +127,39 @@ namespace SnowLeopardEngine
                         meshFilter.Meshes.Items.emplace_back(meshItem);
                         break;
                     }
+                    case MeshPrimitiveType::Capsule: {
+                        auto meshItem = GeometryFactory::CreateMeshPrimitive<CapsuleMesh>();
+                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        break;
+                    }
+                    break;
+                    case MeshPrimitiveType::Heightfield: {
+                        auto meshItem = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
+                            Utils::GenerateBlankHeightMap(50, 50));
+                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        break;
+                    }
                     case MeshPrimitiveType::None:
                         break;
                 }
+            }
+        });
+
+        // Texture Loading (dirty code for now)
+        m_Registry.view<MeshRendererComponent>().each([](entt::entity entity, MeshRendererComponent& meshRenderer) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(meshRenderer.DiffuseTextureFilePath))
+            {
+                Buffer      buffer;
+                TextureDesc desc;
+                if (!TextureLoader::LoadTexture2D(
+                        meshRenderer.DiffuseTextureFilePath, false, buffer, desc.Format, desc.Width, desc.Height))
+                {
+                    SNOW_LEOPARD_CORE_ERROR("Failed to load {0}!",
+                                            meshRenderer.DiffuseTextureFilePath.generic_string());
+                }
+                auto diffuseTexture         = Texture2D::Create(desc, &buffer);
+                meshRenderer.DiffuseTexture = diffuseTexture;
             }
         });
     }
@@ -138,6 +172,78 @@ namespace SnowLeopardEngine
         m_Registry.view<NativeScriptingComponent>().each(
             [deltaTime](entt::entity entity, NativeScriptingComponent& nativeScript) {
                 nativeScript.ScriptInstance->OnTick(deltaTime);
+            });
+
+        // Built-in camera controllers
+        m_Registry.view<TransformComponent, CameraComponent, FreeMoveCameraControllerComponent>().each(
+            [](entt::entity                       entity,
+               TransformComponent&                transform,
+               CameraComponent&                   camera,
+               FreeMoveCameraControllerComponent& freeMoveController) {
+                auto& inputSystem   = g_EngineContext->InputSys;
+                auto  mousePosition = inputSystem->GetMousePosition();
+
+                auto offset = mousePosition - freeMoveController.LastFrameMousePosition;
+                offset *= freeMoveController.Sensitivity;
+
+                if (freeMoveController.IsFirstTime)
+                {
+                    offset                         = {0, 0};
+                    freeMoveController.IsFirstTime = false;
+                }
+
+                auto cameraRotationEuler = transform.GetRotationEuler();
+
+                float yaw   = cameraRotationEuler.y;
+                float pitch = cameraRotationEuler.x;
+
+                yaw += offset.x;
+                pitch -= offset.y;
+
+                if (pitch > 89.0f)
+                {
+                    pitch = 89.0f;
+                }
+
+                if (pitch < -89.0f)
+                {
+                    pitch = -89.0f;
+                }
+
+                cameraRotationEuler.y = yaw;
+                cameraRotationEuler.x = pitch;
+
+                transform.SetRotationEuler(cameraRotationEuler);
+                freeMoveController.LastFrameMousePosition = mousePosition;
+
+                // Calculate forward (Yaw - 90 to adjust)
+                glm::vec3 forward;
+                forward.x = cos(glm::radians(cameraRotationEuler.y - 90)) * cos(glm::radians(cameraRotationEuler.x));
+                forward.y = sin(glm::radians(cameraRotationEuler.x));
+                forward.z = sin(glm::radians(cameraRotationEuler.y - 90)) * cos(glm::radians(cameraRotationEuler.x));
+                forward   = glm::normalize(forward);
+
+                glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
+
+                if (inputSystem->GetKey(KeyCode::W))
+                {
+                    transform.Position += forward * freeMoveController.Speed;
+                }
+
+                if (inputSystem->GetKey(KeyCode::S))
+                {
+                    transform.Position -= forward * freeMoveController.Speed;
+                }
+
+                if (inputSystem->GetKey(KeyCode::A))
+                {
+                    transform.Position -= right * freeMoveController.Speed;
+                }
+
+                if (inputSystem->GetKey(KeyCode::D))
+                {
+                    transform.Position += right * freeMoveController.Speed;
+                }
             });
     }
 
@@ -224,6 +330,7 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(HeightfieldColliderComponent) {}
 
     ON_COMPONENT_ADDED(CameraComponent) {}
+    ON_COMPONENT_ADDED(FreeMoveCameraControllerComponent) {}
     ON_COMPONENT_ADDED(MeshFilterComponent) {}
     ON_COMPONENT_ADDED(MeshRendererComponent) {}
 } // namespace SnowLeopardEngine

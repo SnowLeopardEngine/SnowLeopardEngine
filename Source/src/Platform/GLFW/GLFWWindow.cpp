@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Platform/GLFW/GLFWWindow.h"
-#include "SnowLeopardEngine/Core/Event/ApplicationEvents.h"
+#include "GLFW/glfw3.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
+#include "SnowLeopardEngine/Core/Event/WindowEvents.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
@@ -43,6 +44,9 @@ namespace SnowLeopardEngine
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MAJOR);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MINOR);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+        // MSAA
+        glfwWindowHint(GLFW_SAMPLES, 4);
 
 #if SNOW_LEOPARD_PLATFORM_DARWIN
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
@@ -109,13 +113,13 @@ namespace SnowLeopardEngine
         glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset) {
             WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
-            // TODO: Ruofan He InputSystem set mouse states
+            g_EngineContext->InputSys->SetMouseScrollDelta(glm::vec2(xOffset, yOffset));
         });
 
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
             WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
-            // TODO: Ruofan He InputSystem set mouse states
+            g_EngineContext->InputSys->SetMousePosition(glm::vec2(xPos, yPos));
         });
 
         // TODO: Ruofan He InputSystem add Controller buttons & joysticks support.
@@ -149,4 +153,9 @@ namespace SnowLeopardEngine
     void GLFWWindow::MakeCurrentContext() { glfwMakeContextCurrent(m_Window); }
 
     void GLFWWindow::SwapBuffers() { glfwSwapBuffers(m_Window); }
+
+    void GLFWWindow::SetHideCursor(bool hide)
+    {
+        glfwSetInputMode(m_Window, GLFW_CURSOR, hide ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    }
 } // namespace SnowLeopardEngine

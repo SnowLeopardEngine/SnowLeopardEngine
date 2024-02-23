@@ -13,11 +13,30 @@ namespace SnowLeopardEngine
 
         // Create and register pipeline states
         SNOW_LEOPARD_CORE_INFO("[Rendering][ForwardPipeline] Registering pipeline states...");
-        auto forward                = CreateRef<PipelineState>();
-        forward->Name               = "Forward";
-        forward->VertexShaderName   = "Phong.vert";
-        forward->FragmentShaderName = "Phong.frag";
-        m_StateManager->RegisterState(forward);
+
+        // Phong
+        auto phong                = CreateRef<PipelineState>();
+        phong->Name               = "Phong";
+        phong->VertexShaderName   = "Phong.vert";
+        phong->FragmentShaderName = "Phong.frag";
+        m_StateManager->RegisterState(phong);
+
+        // Terrain
+        auto terrain                = CreateRef<PipelineState>();
+        terrain->Name               = "Terrain";
+        terrain->VertexShaderName   = "Terrain.vert";
+        terrain->FragmentShaderName = "Terrain.frag";
+        m_StateManager->RegisterState(terrain);
+
+        // Skybox
+        auto skybox                = CreateRef<PipelineState>();
+        skybox->Name               = "Skybox";
+        skybox->VertexShaderName   = "Skybox.vert";
+        skybox->FragmentShaderName = "Skybox.frag";
+        // https://learnopengl.com/Advanced-OpenGL/Cubemaps
+        skybox->DepthTest = DepthTestMode::LessEqual;
+        skybox->CullFace  = CullFaceMode::None;
+        m_StateManager->RegisterState(skybox);
 
         // Add forward single pass
         SNOW_LEOPARD_CORE_INFO("[Rendering][ForwardPipeline] Adding ForwardSinglePass...");

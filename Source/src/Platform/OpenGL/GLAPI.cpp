@@ -6,7 +6,72 @@ namespace SnowLeopardEngine
 {
     void OpenGLAPI::SetPipelineState(const Ref<PipelineState>& pipelineState)
     {
-        // TODO: Set GL states
+        switch (pipelineState->DepthTest)
+        {
+            case DepthTestMode::None:
+                glDisable(GL_DEPTH_TEST);
+                break;
+            case DepthTestMode::Greater:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_GREATER);
+                break;
+            case DepthTestMode::GreaterEqual:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_GEQUAL);
+                break;
+            case DepthTestMode::Less:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_LESS);
+                break;
+            case DepthTestMode::LessEqual:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_LEQUAL);
+                break;
+            case DepthTestMode::Equal:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_EQUAL);
+                break;
+            case DepthTestMode::NotEqual:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_NOTEQUAL);
+                break;
+            case DepthTestMode::Never:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_NEVER);
+                break;
+            case DepthTestMode::Always:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_ALWAYS);
+                break;
+            default:
+                assert(0);
+        }
+
+        if (pipelineState->DepthWrite)
+        {
+            glDepthMask(GL_TRUE);
+        }
+        else
+        {
+            glDepthMask(GL_FALSE);
+        }
+
+        switch (pipelineState->CullFace)
+        {
+            case CullFaceMode::None:
+                glDisable(GL_CULL_FACE);
+                break;
+            case CullFaceMode::Front:
+                glEnable(GL_CULL_FACE);
+                glCullFace(GL_FRONT);
+                break;
+            case CullFaceMode::Back:
+                glEnable(GL_CULL_FACE);
+                glCullFace(GL_BACK);
+                break;
+            default:
+                assert(0);
+        }
     }
 
     void OpenGLAPI::ClearColor(float r, float g, float b, float a)
@@ -38,6 +103,16 @@ namespace SnowLeopardEngine
 
     Ref<VertexArray> OpenGLAPI::CreateVertexArray(const MeshItem& meshItem)
     {
+        // Create a default layout and set it
+        BufferLayout layout = {{ShaderDataType::Float3, "a_Position"},
+                               {ShaderDataType::Float3, "a_Normal"},
+                               {ShaderDataType::Float2, "a_TexCoords"}};
+
+        return CreateVertexArray(meshItem, layout);
+    }
+
+    Ref<VertexArray> OpenGLAPI::CreateVertexArray(const MeshItem& meshItem, const BufferLayout& inputLayout)
+    {
         // Create the vertex array
         auto vertexArray = VertexArray::Create();
 
@@ -45,11 +120,7 @@ namespace SnowLeopardEngine
         auto vertices     = meshItem.Data.Vertices;
         auto vertexBuffer = VertexBuffer::Create(vertices);
 
-        // Create layout and set it
-        BufferLayout layout = {{ShaderDataType::Float3, "a_Position"},
-                               {ShaderDataType::Float3, "a_Normal"},
-                               {ShaderDataType::Float2, "a_TexCoords"}};
-        vertexBuffer->SetLayout(layout);
+        vertexBuffer->SetLayout(inputLayout);
 
         // Create indices and the index buffer
         auto indices     = meshItem.Data.Indices;

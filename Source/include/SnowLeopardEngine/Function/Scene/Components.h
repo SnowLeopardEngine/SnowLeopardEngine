@@ -1,13 +1,14 @@
 #pragma once
 
+#include "PxRigidActor.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
-#include <filesystem>
 
 namespace SnowLeopardEngine
 {
@@ -151,9 +152,10 @@ namespace SnowLeopardEngine
     {
         float Mass           = 1.0f;
         bool  EnableCCD      = false;
-        float LinearDamping  = 0.1f;
-        float AngularDamping = 0.1f;
+        float LinearDamping  = 0.0f;
+        float AngularDamping = 0.05f;
 
+        physx::PxRigidActor* InternalBody             = nullptr;
         RigidBodyComponent()                          = default;
         RigidBodyComponent(const RigidBodyComponent&) = default;
         explicit RigidBodyComponent(float mass) : Mass(mass) {}
@@ -273,6 +275,18 @@ namespace SnowLeopardEngine
         CameraComponent(const CameraComponent&) = default;
     };
 
+    struct FreeMoveCameraControllerComponent
+    {
+        float Sensitivity = 0.05f;
+        float Speed       = 0.1f;
+
+        bool      IsFirstTime = true;
+        glm::vec2 LastFrameMousePosition;
+
+        FreeMoveCameraControllerComponent()                                         = default;
+        FreeMoveCameraControllerComponent(const FreeMoveCameraControllerComponent&) = default;
+    };
+
     struct MeshFilterComponent
     {
         // TODO: Remove, add AssetManager
@@ -290,6 +304,9 @@ namespace SnowLeopardEngine
         glm::vec4 BaseColor;
 
         // TODO: Add MaterialSystem & other stuff
+        bool                  UseDiffuse = false;
+        std::filesystem::path DiffuseTextureFilePath;
+        Ref<Texture2D>        DiffuseTexture = nullptr;
 
         MeshRendererComponent()                             = default;
         MeshRendererComponent(const MeshRendererComponent&) = default;
