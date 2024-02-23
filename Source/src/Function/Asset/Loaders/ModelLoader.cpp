@@ -77,7 +77,7 @@ namespace SnowLeopardEngine
                 BoneInfo bi;
                 model.BoneInfo.push_back(bi);
                 aiMatrix4x4 offsetMatrix             = aiMesh->mBones[i]->mOffsetMatrix;
-                model.BoneInfo[boneIndex].boneOffset = {offsetMatrix.a1,
+                model.BoneInfo[boneIndex].BoneOffset = {offsetMatrix.a1,
                                                         offsetMatrix.b1,
                                                         offsetMatrix.c1,
                                                         offsetMatrix.d1,
