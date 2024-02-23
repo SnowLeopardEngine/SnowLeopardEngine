@@ -7,4 +7,9 @@ namespace SnowLeopardEngine
     {
         return CreateRef<GLTexture2D>(desc, data);
     }
+
+    Ref<Texture3D> Texture3D::Create(const TextureDesc& desc, std::vector<Buffer*> dataList)
+    {
+        return CreateRef<GLTexture3D>(desc, dataList);
+    }
 } // namespace SnowLeopardEngine

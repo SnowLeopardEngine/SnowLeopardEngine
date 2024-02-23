@@ -66,40 +66,65 @@ namespace SnowLeopardEngine
             }
         }
 
-        auto viewPortDesc = pipeline->GetAPI()->GetViewport();
+        // for each terrain in the scene, request draw call.
+        registry.view<TransformComponent, TerrainComponent, TerrainRendererComponent>().each(
+            [this, pipeline, mainCameraTransform, mainCamera](
+                TransformComponent& transform, TerrainComponent& terrain, TerrainRendererComponent& terrainRenderer) {
+                // No heightmap, skip...
+                if (terrain.HeightMap.empty())
+                {
+                    return;
+                }
 
-        // Setup camera matrices
-        auto eulerAngles = mainCameraTransform.GetRotationEuler();
+                auto viewPortDesc = pipeline->GetAPI()->GetViewport();
 
-        // Calculate forward (Yaw - 90 to adjust)
-        glm::vec3 forward;
-        forward.x = cos(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
-        forward.y = sin(glm::radians(eulerAngles.x));
-        forward.z = sin(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
-        forward   = glm::normalize(forward);
+                // Setup camera matrices
+                auto eulerAngles = mainCameraTransform.GetRotationEuler();
 
-        // Calculate up
-        glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
-        glm::vec3 up    = glm::normalize(glm::cross(right, forward));
+                // Calculate forward (Yaw - 90 to adjust)
+                glm::vec3 forward;
+                forward.x = cos(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
+                forward.y = sin(glm::radians(eulerAngles.x));
+                forward.z = sin(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
+                forward   = glm::normalize(forward);
 
-        m_Shader->Bind();
-        TransformComponent defaultTransform;
-        defaultTransform.Position.y = 5; // test
-        m_Shader->SetMat4("model", defaultTransform.GetTransform());
-        m_Shader->SetMat4("view",
-                          glm::lookAt(mainCameraTransform.Position, mainCameraTransform.Position + forward, up));
-        m_Shader->SetMat4("projection",
-                          glm::perspective(glm::radians(mainCamera.FOV),
-                                           viewPortDesc.Width / viewPortDesc.Height,
-                                           mainCamera.Near,
-                                           mainCamera.Far));
+                // Calculate up
+                glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
+                glm::vec3 up    = glm::normalize(glm::cross(right, forward));
 
-        auto vertexArray = pipeline->GetAPI()->CreateVertexArray(m_TerrainMesh);
-        vertexArray->Bind();
+                m_Shader->Bind();
+                m_Shader->SetMat4("model", transform.GetTransform());
+                m_Shader->SetMat4(
+                    "view", glm::lookAt(mainCameraTransform.Position, mainCameraTransform.Position + forward, up));
+                m_Shader->SetMat4("projection",
+                                  glm::perspective(glm::radians(mainCamera.FOV),
+                                                   viewPortDesc.Width / viewPortDesc.Height,
+                                                   mainCamera.Near,
+                                                   mainCamera.Far));
+                m_Shader->SetFloat4("baseColor", terrainRenderer.BaseColor);
+                m_Shader->SetFloat3("lightPos", glm::vec3(-10, 20, 10));
+                m_Shader->SetFloat3("viewPos", mainCameraTransform.Position);
 
-        pipeline->GetAPI()->DrawIndexed(m_TerrainMesh.Data.Indices.size());
+                // Bind diffuse texture
+                if (terrainRenderer.UseDiffuse && terrainRenderer.DiffuseTexture != nullptr)
+                {
+                    terrainRenderer.DiffuseTexture->Bind(0);
+                    m_Shader->SetInt("diffuseMap", 0);
+                    m_Shader->SetInt("useDiffuse", 1);
+                }
+                else
+                {
+                    m_Shader->SetInt("useDiffuse", 0);
+                }
 
-        vertexArray->Unbind();
-        m_Shader->Unbind();
+                // Currently, no static batching. leave temp test code here
+                auto vertexArray = pipeline->GetAPI()->CreateVertexArray(terrain.Mesh);
+                vertexArray->Bind();
+
+                pipeline->GetAPI()->DrawIndexed(terrain.Mesh.Data.Indices.size());
+
+                vertexArray->Unbind();
+                m_Shader->Unbind();
+            });
     }
 } // namespace SnowLeopardEngine

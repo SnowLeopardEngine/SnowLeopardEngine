@@ -54,9 +54,16 @@ namespace SnowLeopardEngine
                 if (isFirst)
                 {
                     auto [transform, camera] = view.get<TransformComponent, CameraComponent>(cameraEntity);
-                    isFirst                  = false;
-                    mainCameraTransform      = transform;
-                    mainCamera               = camera;
+
+                    // Skybox not enabled
+                    if (camera.ClearFlags != CameraClearFlags::Skybox)
+                    {
+                        return;
+                    }
+
+                    isFirst             = false;
+                    mainCameraTransform = transform;
+                    mainCamera          = camera;
                 }
                 else
                 {
@@ -82,15 +89,17 @@ namespace SnowLeopardEngine
         glm::vec3 up    = glm::normalize(glm::cross(right, forward));
 
         m_Shader->Bind();
-        TransformComponent defaultTransform;
-        m_Shader->SetMat4("model", defaultTransform.GetTransform());
-        m_Shader->SetMat4("view",
-                          glm::lookAt(mainCameraTransform.Position, mainCameraTransform.Position + forward, up));
-        m_Shader->SetMat4("projection",
-                          glm::perspective(glm::radians(mainCamera.FOV),
-                                           viewPortDesc.Width / viewPortDesc.Height,
-                                           mainCamera.Near,
-                                           mainCamera.Far));
+
+        auto viewMatrix       = glm::lookAt(mainCameraTransform.Position, mainCameraTransform.Position + forward, up);
+        auto projectionMatrix = glm::perspective(
+            glm::radians(mainCamera.FOV), viewPortDesc.Width / viewPortDesc.Height, mainCamera.Near, mainCamera.Far);
+        auto view = glm::mat4(glm::mat3(viewMatrix));
+        auto vp   = projectionMatrix * view;
+        m_Shader->SetMat4("VP", vp);
+
+        // Bind cubemap
+        mainCamera.Cubemap->Bind(0);
+        m_Shader->SetInt("cubeMap", 0);
 
         auto vertexArray = pipeline->GetAPI()->CreateVertexArray(m_SkyboxCubeMesh);
         vertexArray->Bind();

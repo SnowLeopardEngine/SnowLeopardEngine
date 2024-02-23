@@ -9,6 +9,7 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
+#include "SnowLeopardEngine/Function/Scene/Components.h"
 
 namespace SnowLeopardEngine
 {
@@ -271,6 +272,9 @@ namespace SnowLeopardEngine
         float            Near       = 0.1f;
         float            Far        = 1000.0f;
 
+        std::vector<std::filesystem::path> CubemapFilePaths;
+        Ref<Texture3D>                     Cubemap = nullptr;
+
         CameraComponent()                       = default;
         CameraComponent(const CameraComponent&) = default;
     };
@@ -312,5 +316,31 @@ namespace SnowLeopardEngine
         MeshRendererComponent(const MeshRendererComponent&) = default;
     };
 
+    struct TerrainComponent
+    {
+        std::vector<std::vector<float>> HeightMap;
+
+        float XScale = 1;
+        float YScale = 1;
+        float ZScale = 1;
+
+        MeshItem Mesh;
+
+        TerrainComponent()                        = default;
+        TerrainComponent(const TerrainComponent&) = default;
+    };
+
+    struct TerrainRendererComponent
+    {
+        glm::vec4 BaseColor;
+
+        // TODO: Add MaterialSystem & other stuff
+        bool                  UseDiffuse = false;
+        std::filesystem::path DiffuseTextureFilePath;
+        Ref<Texture2D>        DiffuseTexture = nullptr;
+
+        TerrainRendererComponent()                                = default;
+        TerrainRendererComponent(const TerrainRendererComponent&) = default;
+    };
     // -------- Rendering Components DEFINITION END --------
 } // namespace SnowLeopardEngine

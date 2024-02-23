@@ -29,36 +29,33 @@ namespace SnowLeopardEngine
             const float side = l / 2.0f;
 
             cubeData.Vertices = {
-                {{-side, -side, -side}, {0, -1, 0}, {0, 0}}, // Swap Y and Z
-                {{-side, side, -side}, {0, -1, 0}, {0, 1}},  // Swap Y and Z
-                {{side, side, -side}, {0, -1, 0}, {1, 1}},   // Swap Y and Z
-                {{side, -side, -side}, {0, -1, 0}, {1, 0}},  // Swap Y and Z
+                {{-side, -side, -side}, {0, 0, -1}, {0, 0}}, {{-side, side, -side}, {0, 0, -1}, {0, 1}},
+                {{side, side, -side}, {0, 0, -1}, {1, 1}},   {{side, -side, -side}, {0, 0, -1}, {1, 0}},
 
-                {{-side, -side, side}, {0, 1, 0}, {0, 0}}, // Swap Y and Z
-                {{-side, side, side}, {0, 1, 0}, {0, 1}},  // Swap Y and Z
-                {{side, side, side}, {0, 1, 0}, {1, 1}},   // Swap Y and Z
-                {{side, -side, side}, {0, 1, 0}, {1, 0}},  // Swap Y and Z
+                {{-side, -side, side}, {0, 0, 1}, {0, 0}},   {{-side, side, side}, {0, 0, 1}, {0, 1}},
+                {{side, side, side}, {0, 0, 1}, {1, 1}},     {{side, -side, side}, {0, 0, 1}, {1, 0}},
 
-                {{-side, side, -side}, {0, 0, -1}, {0, 0}},  {{-side, side, side}, {0, 0, -1}, {0, 1}},
-                {{side, side, side}, {0, 0, -1}, {1, 1}},    {{side, side, -side}, {0, 0, -1}, {1, 0}},
+                {{-side, side, -side}, {0, 1, 0}, {0, 0}},   {{-side, side, side}, {0, 1, 0}, {0, 1}},
+                {{side, side, side}, {0, 1, 0}, {1, 1}},     {{side, side, -side}, {0, 1, 0}, {1, 0}},
 
-                {{-side, -side, -side}, {0, 0, 1}, {0, 0}},  {{-side, -side, side}, {0, 0, 1}, {0, 1}},
-                {{side, -side, side}, {0, 0, 1}, {1, 1}},    {{side, -side, -side}, {0, 0, 1}, {1, 0}},
+                {{-side, -side, -side}, {0, -1, 0}, {0, 0}}, {{-side, -side, side}, {0, -1, 0}, {0, 1}},
+                {{side, -side, side}, {0, -1, 0}, {1, 1}},   {{side, -side, -side}, {0, -1, 0}, {1, 0}},
 
                 {{-side, -side, -side}, {-1, 0, 0}, {0, 0}}, {{-side, -side, side}, {-1, 0, 0}, {0, 1}},
                 {{-side, side, side}, {-1, 0, 0}, {1, 1}},   {{-side, side, -side}, {-1, 0, 0}, {1, 0}},
 
                 {{side, -side, -side}, {1, 0, 0}, {0, 0}},   {{side, -side, side}, {1, 0, 0}, {0, 1}},
-                {{side, side, side}, {1, 0, 0}, {1, 1}},     {{side, side, -side}, {1, 0, 0}, {1, 0}}};
+                {{side, side, side}, {1, 0, 0}, {1, 1}},     {{side, side, -side}, {1, 0, 0}, {1, 0}},
+            };
 
             // Define indices for a unit cube
             cubeData.Indices = {
                 0,  1,  2,  0,  2,  3,  // Front
-                4,  5,  6,  4,  6,  7,  // Back
+                4,  6,  5,  4,  7,  6,  // Back
                 8,  9,  10, 8,  10, 11, // Top
-                12, 13, 14, 12, 14, 15, // Bottom
+                12, 14, 13, 14, 12, 15, // Bottom
                 16, 17, 18, 16, 18, 19, // Left
-                20, 21, 22, 20, 22, 23  // Right
+                20, 22, 21, 22, 20, 23  // Right
             };
 
             cubeMesh.Data = cubeData;

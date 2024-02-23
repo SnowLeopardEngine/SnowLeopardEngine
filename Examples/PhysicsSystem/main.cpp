@@ -45,7 +45,19 @@ public:
         // Create a camera
         Entity camera                                      = scene->CreateEntity("MainCamera");
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
-        camera.AddComponent<CameraComponent>();
+        auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
+        cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
+        // clang-format off
+        cameraComponent.CubemapFilePaths = {
+            "Assets/Textures/Skybox001/right.jpg",
+            "Assets/Textures/Skybox001/left.jpg",
+            "Assets/Textures/Skybox001/top.jpg",
+            "Assets/Textures/Skybox001/bottom.jpg",
+            "Assets/Textures/Skybox001/front.jpg",
+            "Assets/Textures/Skybox001/back.jpg"
+        };
+        // clang-format on
+
         camera.AddComponent<FreeMoveCameraControllerComponent>();
 
         // Create a smooth material
@@ -61,10 +73,12 @@ public:
 
         sphere.AddComponent<RigidBodyComponent>(1.0f);
         sphere.AddComponent<SphereColliderComponent>(smoothMaterial);
-        auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
-        sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
-        auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.BaseColor   = {0.4, 0.45, 0.5, 1}; // Metal
+        auto& sphereMeshFilter                    = sphere.AddComponent<MeshFilterComponent>();
+        sphereMeshFilter.PrimitiveType            = MeshPrimitiveType::Sphere;
+        auto& sphereMeshRenderer                  = sphere.AddComponent<MeshRendererComponent>();
+        sphereMeshRenderer.BaseColor              = {0.4, 0.45, 0.5, 1}; // Metal
+        sphereMeshRenderer.UseDiffuse             = true;
+        sphereMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/awesomeface.png";
 
         auto scriptInstance = CreateRef<SphereScript>();
         sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
@@ -84,7 +98,15 @@ public:
         auto& floorMeshRenderer                  = floor.AddComponent<MeshRendererComponent>();
         floorMeshRenderer.BaseColor              = {1, 1, 1, 1}; // Pure White
         floorMeshRenderer.UseDiffuse             = true;
-        floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/awesomeface.png";
+        floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
+
+        // Create a terrain
+        Entity terrain                      = scene->CreateEntity("Terrain");
+        auto&  terrainComponent             = terrain.AddComponent<TerrainComponent>();
+        terrainComponent.HeightMap          = Utils::GenerateBlankHeightMap(100, 100); // create a 100 x 100 height map
+        auto& terrainRendererComponent      = terrain.AddComponent<TerrainRendererComponent>();
+        terrainRendererComponent.UseDiffuse = true;
+        terrainRendererComponent.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
     }
 
 private:
