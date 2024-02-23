@@ -16,7 +16,7 @@ void main()
 
     vec3 adjustedPosition = vec3(aPos.x, aPos.y + wave, aPos.z);
     adjustedPosition.z = adjustedPosition.z - 50;
-    adjustedPosition.y = adjustedPosition.y - 10;
+    adjustedPosition.y = adjustedPosition.y - 5;
     adjustedPosition.x = adjustedPosition.x - 50;
 
     vec3 normalAdjustment = vec3(1, 0, 0);

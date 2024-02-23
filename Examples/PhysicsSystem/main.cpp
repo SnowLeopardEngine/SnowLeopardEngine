@@ -45,7 +45,19 @@ public:
         // Create a camera
         Entity camera                                      = scene->CreateEntity("MainCamera");
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
-        camera.AddComponent<CameraComponent>();
+        auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
+        // cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
+        // clang-format off
+        cameraComponent.CubemapFilePaths = {
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+        };
+        // clang-format on
+
         camera.AddComponent<FreeMoveCameraControllerComponent>();
 
         // Create a smooth material
@@ -61,10 +73,10 @@ public:
 
         sphere.AddComponent<RigidBodyComponent>(1.0f);
         sphere.AddComponent<SphereColliderComponent>(smoothMaterial);
-        auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
-        sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
-        auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.BaseColor   = {0.4, 0.45, 0.5, 1}; // Metal
+        auto& sphereMeshFilter                    = sphere.AddComponent<MeshFilterComponent>();
+        sphereMeshFilter.PrimitiveType            = MeshPrimitiveType::Sphere;
+        auto& sphereMeshRenderer                  = sphere.AddComponent<MeshRendererComponent>();
+        sphereMeshRenderer.BaseColor              = {0.4, 0.45, 0.5, 1}; // Metal
         sphereMeshRenderer.UseDiffuse             = true;
         sphereMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/awesomeface.png";
 
@@ -87,6 +99,14 @@ public:
         floorMeshRenderer.BaseColor              = {1, 1, 1, 1}; // Pure White
         floorMeshRenderer.UseDiffuse             = true;
         floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
+
+        // Create a terrain
+        Entity terrain                      = scene->CreateEntity("Terrain");
+        auto&  terrainComponent             = terrain.AddComponent<TerrainComponent>();
+        terrainComponent.HeightMap          = Utils::GenerateBlankHeightMap(100, 100); // create a 100 x 100 height map
+        auto& terrainRendererComponent      = terrain.AddComponent<TerrainRendererComponent>();
+        terrainRendererComponent.UseDiffuse = true;
+        terrainRendererComponent.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
     }
 
 private:

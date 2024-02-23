@@ -12,6 +12,7 @@
 
 #include "entt/entity/fwd.hpp"
 #include <fmt/core.h>
+#include <vector>
 
 namespace SnowLeopardEngine
 {
@@ -144,22 +145,34 @@ namespace SnowLeopardEngine
                 }
             }
         });
+        m_Registry.view<TerrainComponent>().each([](entt::entity entity, TerrainComponent& terrain) {
+            // TODO: Move to AssetManager
+            terrain.Mesh = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
+                terrain.HeightMap, terrain.XScale, terrain.YScale, terrain.ZScale);
+        });
 
         // Texture Loading (dirty code for now)
         m_Registry.view<MeshRendererComponent>().each([](entt::entity entity, MeshRendererComponent& meshRenderer) {
             // TODO: Move to AssetManager
-            if (FileSystem::Exists(meshRenderer.DiffuseTextureFilePath))
+            if (meshRenderer.UseDiffuse)
             {
-                Buffer      buffer;
-                TextureDesc desc;
-                if (!TextureLoader::LoadTexture2D(
-                        meshRenderer.DiffuseTextureFilePath, false, buffer, desc.Format, desc.Width, desc.Height))
+                meshRenderer.DiffuseTexture = TextureLoader::LoadTexture2D(meshRenderer.DiffuseTextureFilePath, false);
+            }
+        });
+        m_Registry.view<TerrainRendererComponent>().each(
+            [](entt::entity entity, TerrainRendererComponent& terrainRenderer) {
+                // TODO: Move to AssetManager
+                if (terrainRenderer.UseDiffuse)
                 {
-                    SNOW_LEOPARD_CORE_ERROR("Failed to load {0}!",
-                                            meshRenderer.DiffuseTextureFilePath.generic_string());
+                    terrainRenderer.DiffuseTexture =
+                        TextureLoader::LoadTexture2D(terrainRenderer.DiffuseTextureFilePath, false);
                 }
-                auto diffuseTexture         = Texture2D::Create(desc, &buffer);
-                meshRenderer.DiffuseTexture = diffuseTexture;
+            });
+        m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
+            // TODO: Move to AssetManager
+            if (camera.ClearFlags == CameraClearFlags::Skybox)
+            {
+                camera.Cubemap = TextureLoader::LoadTexture3D(camera.CubemapFilePaths, false);
             }
         });
     }
@@ -333,4 +346,6 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(FreeMoveCameraControllerComponent) {}
     ON_COMPONENT_ADDED(MeshFilterComponent) {}
     ON_COMPONENT_ADDED(MeshRendererComponent) {}
+    ON_COMPONENT_ADDED(TerrainComponent) {}
+    ON_COMPONENT_ADDED(TerrainRendererComponent) {}
 } // namespace SnowLeopardEngine

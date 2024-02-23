@@ -54,9 +54,16 @@ namespace SnowLeopardEngine
                 if (isFirst)
                 {
                     auto [transform, camera] = view.get<TransformComponent, CameraComponent>(cameraEntity);
-                    isFirst                  = false;
-                    mainCameraTransform      = transform;
-                    mainCamera               = camera;
+
+                    // Skybox not enabled
+                    if (camera.ClearFlags != CameraClearFlags::Skybox)
+                    {
+                        return;
+                    }
+
+                    isFirst             = false;
+                    mainCameraTransform = transform;
+                    mainCamera          = camera;
                 }
                 else
                 {
@@ -91,6 +98,10 @@ namespace SnowLeopardEngine
                                            viewPortDesc.Width / viewPortDesc.Height,
                                            mainCamera.Near,
                                            mainCamera.Far));
+
+        // Bind cubemap
+        mainCamera.Cubemap->Bind(0);
+        m_Shader->SetInt("cubeMap", 0);
 
         auto vertexArray = pipeline->GetAPI()->CreateVertexArray(m_SkyboxCubeMesh);
         vertexArray->Bind();
