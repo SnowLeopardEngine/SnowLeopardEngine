@@ -123,9 +123,22 @@ namespace SnowLeopardEngine
         }
 
         model.Meshes.Items.emplace_back(meshItem);
+
+        // Process bones
+        if (mesh->HasBones())
+        {
+            for (uint32_t i = 0; i < mesh->mNumBones; i++)
+            {
+                aiBone* bone = mesh->mBones[i];
+                ProcessBone(scene, mesh, bone, model);
+            }
+        }
     }
 
-    void ModelLoader::ProcessBones() {}
+    void ModelLoader::ProcessBone(const aiScene* scene, const aiMesh* mesh, const aiBone* bone, Model& model)
+    {
+        // TODO: Process a single bone data, save to model
+    }
 
     void ModelLoader::ReadNodeHierarchy(float animationTime, const aiNode* pNode, const glm::mat4& aarentTransform) {}
 } // namespace SnowLeopardEngine

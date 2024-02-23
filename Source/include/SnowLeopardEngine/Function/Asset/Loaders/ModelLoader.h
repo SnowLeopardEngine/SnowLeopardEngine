@@ -2,6 +2,7 @@
 
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
+#include "assimp/mesh.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -17,7 +18,7 @@ namespace SnowLeopardEngine
     private:
         static void ProcessNode(const aiScene* scene, const aiNode* node, Model& model);
         static void ProcessMesh(const aiScene* scene, const aiMesh* mesh, Model& model);
-        static void ProcessBones();
+        static void ProcessBone(const aiScene* scene, const aiMesh* mesh, const aiBone* bone, Model& model);
 
         void              ReadNodeHierarchy(float animationTime, const aiNode* pNode, const glm::mat4& aarentTransform);
         void              CalcInterpolatedScaling(aiVector3D& out, float animationTime, const aiNodeAnim* pNodeAnim);
