@@ -46,15 +46,15 @@ public:
         Entity camera                                      = scene->CreateEntity("MainCamera");
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
-        // cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
+        cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
         // clang-format off
         cameraComponent.CubemapFilePaths = {
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            "Assets/Textures/Skybox001/right.jpg",
+            "Assets/Textures/Skybox001/left.jpg",
+            "Assets/Textures/Skybox001/top.jpg",
+            "Assets/Textures/Skybox001/bottom.jpg",
+            "Assets/Textures/Skybox001/front.jpg",
+            "Assets/Textures/Skybox001/back.jpg"
         };
         // clang-format on
 
