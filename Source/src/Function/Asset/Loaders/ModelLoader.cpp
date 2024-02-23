@@ -64,39 +64,50 @@ namespace SnowLeopardEngine
 
     void ModelLoader::LoadBones(const aiMesh* aiMesh, Model& model)
     {
-        for (uint32_t i = 0 ; i < aiMesh->mNumBones ; i++) {                
-            uint32_t boneIndex = 0;        
+        for (uint32_t i = 0; i < aiMesh->mNumBones; i++)
+        {
+            uint32_t    boneIndex = 0;
             std::string boneName(aiMesh->mBones[i]->mName.data);
-            
-            if (model.BoneMapping.find(boneName) == model.BoneMapping.end()) {
+
+            if (model.BoneMapping.find(boneName) == model.BoneMapping.end())
+            {
                 // Allocate an index for a new bone
                 boneIndex = model.NumBones;
-                model.NumBones++;            
-                BoneInfo bi;			
+                model.NumBones++;
+                BoneInfo bi;
                 model.BoneInfo.push_back(bi);
-                aiMatrix4x4 offsetMatrix = aiMesh->mBones[i]->mOffsetMatrix; 
-                model.BoneInfo[boneIndex].boneOffset = {
-                    offsetMatrix.a1, offsetMatrix.b1, offsetMatrix.c1, offsetMatrix.d1,
-                    offsetMatrix.a2, offsetMatrix.b2, offsetMatrix.c2, offsetMatrix.d2,
-                    offsetMatrix.a3, offsetMatrix.b3, offsetMatrix.c3, offsetMatrix.d3,
-                    offsetMatrix.a4, offsetMatrix.b4, offsetMatrix.c4, offsetMatrix.d4
-                };           
-                model.BoneMapping[boneName] = boneIndex;
+                aiMatrix4x4 offsetMatrix             = aiMesh->mBones[i]->mOffsetMatrix;
+                model.BoneInfo[boneIndex].boneOffset = {offsetMatrix.a1,
+                                                        offsetMatrix.b1,
+                                                        offsetMatrix.c1,
+                                                        offsetMatrix.d1,
+                                                        offsetMatrix.a2,
+                                                        offsetMatrix.b2,
+                                                        offsetMatrix.c2,
+                                                        offsetMatrix.d2,
+                                                        offsetMatrix.a3,
+                                                        offsetMatrix.b3,
+                                                        offsetMatrix.c3,
+                                                        offsetMatrix.d3,
+                                                        offsetMatrix.a4,
+                                                        offsetMatrix.b4,
+                                                        offsetMatrix.c4,
+                                                        offsetMatrix.d4};
+                model.BoneMapping[boneName]          = boneIndex;
             }
-            else {
+            else
+            {
                 boneIndex = model.BoneMapping[boneName];
-            }                      
-            
-            for (size_t j = 0; j < aiMesh->mBones[i]->mNumWeights; j++) {
+            }
+
+            for (size_t j = 0; j < aiMesh->mBones[i]->mNumWeights; j++)
+            {
                 unsigned int vertexID = aiMesh->mBones[i]->mWeights[j].mVertexId;
-                float weight = aiMesh->mBones[i]->mWeights[j].mWeight;
+                float        weight   = aiMesh->mBones[i]->mWeights[j].mWeight;
                 model.Bones[vertexID].AddBoneData(boneIndex, weight);
             }
-        }    
+        }
     }
 
-    void ModelLoader::ReadNodeHierarchy(float animationTime, const aiNode* pNode, const glm::mat4& aarentTransform)
-    {
-
-    }
+    void ModelLoader::ReadNodeHierarchy(float animationTime, const aiNode* pNode, const glm::mat4& aarentTransform) {}
 } // namespace SnowLeopardEngine
