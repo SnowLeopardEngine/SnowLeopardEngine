@@ -1,5 +1,4 @@
 #include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
-#include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include <vector>

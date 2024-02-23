@@ -12,5 +12,6 @@ namespace SnowLeopardEngine
         }
 
         SNOW_LEOPARD_CORE_ASSERT(false, "[GraphicsAPI] Unsuppored API!");
+        return nullptr;
     }
 } // namespace SnowLeopardEngine

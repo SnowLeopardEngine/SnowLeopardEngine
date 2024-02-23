@@ -1,5 +1,4 @@
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardPipeline.h"
-#include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSinglePass.h"
 #include "SnowLeopardEngine/Function/Rendering/Pass/RenderPass.h"
