@@ -339,6 +339,9 @@ namespace SnowLeopardEngine
         std::filesystem::path DiffuseTextureFilePath;
         Ref<Texture2D>        DiffuseTexture = nullptr;
 
+        std::filesystem::path HeightmapFilePath;
+        Ref<Texture2D>        Heightmap = nullptr;
+
         TerrainRendererComponent()                                = default;
         TerrainRendererComponent(const TerrainRendererComponent&) = default;
     };
