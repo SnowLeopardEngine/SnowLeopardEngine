@@ -112,7 +112,7 @@ namespace SnowLeopardEngine
         bool      IsSkinned = false;
         glm::mat4 BoneOffset;
         glm::mat4 DefaultOffset;
-        int       ParentIndex;
+        int       ParentIndex = 0;
     };
 
     struct Model
@@ -122,7 +122,7 @@ namespace SnowLeopardEngine
         std::vector<BoneData> Bones;
 
         std::map<std::string, uint32_t> BoneMapping;
-        uint32_t                        NumBones;
+        uint32_t                        NumBones = 0;
         std::vector<BoneInfo>           BoneInfo;
         // TODO: Skeletal animation data structures
     };

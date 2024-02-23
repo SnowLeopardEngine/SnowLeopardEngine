@@ -10,10 +10,14 @@ namespace SnowLeopardEngine
 {
     class ModelLoader
     {
-    private:
     public:
         static bool LoadModel(const std::filesystem::path& path, Model& model);
         static void LoadBones(const aiMesh* mesh, Model& model);
+
+    private:
+        static void ProcessNode(const aiScene* scene, const aiNode* node, Model& model);
+        static void ProcessMesh(const aiScene* scene, const aiMesh* mesh, Model& model);
+        static void ProcessBones();
 
         void              ReadNodeHierarchy(float animationTime, const aiNode* pNode, const glm::mat4& aarentTransform);
         void              CalcInterpolatedScaling(aiVector3D& out, float animationTime, const aiNodeAnim* pNodeAnim);
