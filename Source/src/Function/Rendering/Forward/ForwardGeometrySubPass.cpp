@@ -112,7 +112,7 @@ namespace SnowLeopardEngine
                         m_Shader->SetInt("useDiffuse", 0);
                     }
 
-                    // Currently, no static batching.leave temp test code here auto vertexArray =
+                    // Currently, no static batching.leave temp test code here
                     auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
                     vertexArray->Bind();
 
