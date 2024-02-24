@@ -1,5 +1,4 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
-#include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>

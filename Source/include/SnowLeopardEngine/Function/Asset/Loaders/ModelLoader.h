@@ -2,7 +2,6 @@
 
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
-#include "assimp/mesh.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -13,20 +12,13 @@ namespace SnowLeopardEngine
     {
     public:
         static bool LoadModel(const std::filesystem::path& path, Model& model);
-        static void LoadBones(const aiMesh* mesh, Model& model);
 
     private:
         static void ProcessNode(const aiScene* scene, const aiNode* node, Model& model);
         static void ProcessMesh(const aiScene* scene, const aiMesh* mesh, Model& model);
-        static void ProcessBone(const aiScene* scene, const aiMesh* mesh, const aiBone* bone, Model& model);
 
-        void              ReadNodeHierarchy(float animationTime, const aiNode* pNode, const glm::mat4& aarentTransform);
-        void              CalcInterpolatedScaling(aiVector3D& out, float animationTime, const aiNodeAnim* pNodeAnim);
-        void              CalcInterpolatedRotation(aiQuaternion& out, float animationTime, const aiNodeAnim* pNodeAnim);
-        void              CalcInterpolatedPosition(aiVector3D& out, float animationTime, const aiNodeAnim* pNodeAnim);
-        unsigned int      FindScaling(float animationTime, const aiNodeAnim* pNodeAnim);
-        unsigned int      FindRotation(float animationTime, const aiNodeAnim* pNodeAnim);
-        unsigned int      FindPosition(float animationTime, const aiNodeAnim* pNodeAnim);
-        const aiNodeAnim* FindNodeAnim(const aiAnimation* pAnimation, const std::string& nodeName);
+        static void SetVertexBoneDataToDefault(VertexData& vertex);
+        static void SetVertexBoneData(VertexData& vertex, int boneID, float weight);
+        static void ExtractBoneWeightForVertices(std::vector<VertexData>& vertices, const aiMesh* mesh, Model& model);
     };
 } // namespace SnowLeopardEngine

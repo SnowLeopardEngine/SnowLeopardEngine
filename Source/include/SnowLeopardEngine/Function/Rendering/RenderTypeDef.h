@@ -3,7 +3,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
 
-#define NUM_BONES_PER_VERTEX 4
+const uint32_t MaxBoneInfluence = 4;
 
 namespace SnowLeopardEngine
 {
@@ -69,6 +69,12 @@ namespace SnowLeopardEngine
         glm::vec3 Position;
         glm::vec3 Normal;
         glm::vec2 TexCoord;
+
+        // bone indexes which will influence this vertex
+        int BoneIDs[MaxBoneInfluence];
+
+        // weights from each bone
+        float Weights[MaxBoneInfluence];
     };
 
     struct MeshData
@@ -88,42 +94,24 @@ namespace SnowLeopardEngine
         std::vector<MeshItem> Items;
     };
 
-    struct BoneData
-    {
-        unsigned int IDs[NUM_BONES_PER_VERTEX];
-        float        Weights[NUM_BONES_PER_VERTEX];
-
-        void AddBoneData(unsigned int boneId, float weight)
-        {
-            for (unsigned int i = 0; i < NUM_BONES_PER_VERTEX; i++)
-            {
-                if (Weights[i] == 0.0f)
-                {
-                    IDs[i]     = boneId;
-                    Weights[i] = weight;
-                    return;
-                }
-            }
-        }
-    };
-
     struct BoneInfo
     {
-        bool      IsSkinned = false;
-        glm::mat4 BoneOffset;
-        glm::mat4 DefaultOffset;
-        int       ParentIndex = 0;
+        // id is index in finalBoneMatrices
+        int Id = -1;
+
+        // offset matrix transforms vertex from model space to bone space
+        glm::mat4 Offset;
     };
+
+    struct AnimationClip
+    {};
 
     struct Model
     {
         MeshGroup Meshes;
 
-        std::vector<BoneData> Bones;
-
-        std::map<std::string, uint32_t> BoneMapping;
-        uint32_t                        NumBones = 0;
-        std::vector<BoneInfo>           BoneInfo;
-        // TODO: Skeletal animation data structures
+        std::vector<AnimationClip>      AnimationClips;
+        std::map<std::string, BoneInfo> BoneInfoMap;
+        int                             BoneCounter = 0;
     };
 } // namespace SnowLeopardEngine
