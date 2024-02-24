@@ -291,6 +291,16 @@ namespace SnowLeopardEngine
         FreeMoveCameraControllerComponent(const FreeMoveCameraControllerComponent&) = default;
     };
 
+    struct DirectionalLightComponent
+    {
+        glm::vec3 Direction = {-0.6, -1, -1.2};
+        float     Intensity = 0.8;
+        glm::vec3 Color     = {1, 1, 1};
+
+        DirectionalLightComponent()                                 = default;
+        DirectionalLightComponent(const DirectionalLightComponent&) = default;
+    };
+
     struct MeshFilterComponent
     {
         // TODO: Remove, add AssetManager

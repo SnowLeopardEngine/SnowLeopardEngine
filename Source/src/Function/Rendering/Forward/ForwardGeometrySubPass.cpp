@@ -59,9 +59,37 @@ namespace SnowLeopardEngine
             }
         }
 
+        // filter the first directional light
+        DirectionalLightComponent directionalLight;
+        {
+            bool isFirst = true;
+            auto view    = registry.view<TransformComponent, DirectionalLightComponent>();
+
+            // No Directional light
+            if (view.size_hint() == 0)
+            {
+                directionalLight.Intensity = 0;
+            }
+
+            for (const auto& directionalLightEntity : view)
+            {
+                if (isFirst)
+                {
+                    auto light       = view.get<DirectionalLightComponent>(directionalLightEntity);
+                    isFirst          = false;
+                    directionalLight = light;
+                }
+                else
+                {
+                    SNOW_LEOPARD_CORE_WARN("[Rendering][Forward][Geometry] There must be only 1 directional light!");
+                    break;
+                }
+            }
+        }
+
         // for each mesh in the scene, request draw call.
         registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
-            [this, pipeline, mainCameraTransform, mainCamera](
+            [this, pipeline, mainCameraTransform, mainCamera, directionalLight](
                 TransformComponent& transform, MeshFilterComponent& meshFilter, MeshRendererComponent& meshRenderer) {
                 // No meshes, skip...
                 if (meshFilter.Meshes.Items.empty())
@@ -97,8 +125,10 @@ namespace SnowLeopardEngine
                                                        mainCamera.Near,
                                                        mainCamera.Far));
                     m_Shader->SetFloat4("baseColor", meshRenderer.BaseColor);
-                    m_Shader->SetFloat3("lightPos", glm::vec3(-10, 20, 10));
                     m_Shader->SetFloat3("viewPos", mainCameraTransform.Position);
+                    m_Shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
+                    m_Shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
+                    m_Shader->SetFloat3("directionalLight.color", directionalLight.Color);
 
                     // Bind diffuse texture
                     if (meshRenderer.UseDiffuse && meshRenderer.DiffuseTexture != nullptr)

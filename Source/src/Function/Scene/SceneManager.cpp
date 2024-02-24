@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Scene/SceneManager.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Scene/Entity.h"
 
 namespace SnowLeopardEngine
 {
@@ -18,6 +19,13 @@ namespace SnowLeopardEngine
     Ref<LogicScene> SceneManager::CreateScene(const std::string& name, bool active)
     {
         auto scene = CreateRef<LogicScene>(name);
+
+        // Add default entities
+
+        // Default directional light
+        Entity directionalLight = scene->CreateEntity("Directional Light");
+        directionalLight.AddComponent<DirectionalLightComponent>();
+
         if (active)
         {
             m_ActiveScene = scene;
