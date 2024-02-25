@@ -63,6 +63,7 @@ public:
         // Create a smooth material
         // https://forum.unity.com/threads/bounciness-1-0-conservation-of-energy-doesnt-work.143472/
         auto smoothMaterial = CreateRef<PhysicsMaterial>(0, 0, 0.98);
+        auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
 
         // Create a sphere with RigidBodyComponent & SphereColliderComponent
         Entity sphere = scene->CreateEntity("Sphere");
@@ -72,7 +73,7 @@ public:
         sphereTransform.Scale *= 3;
 
         sphere.AddComponent<RigidBodyComponent>(1.0f);
-        sphere.AddComponent<SphereColliderComponent>(smoothMaterial);
+        sphere.AddComponent<SphereColliderComponent>(normalMaterial);
         auto& sphereMeshFilter                    = sphere.AddComponent<MeshFilterComponent>();
         sphereMeshFilter.PrimitiveType            = MeshPrimitiveType::Sphere;
         auto& sphereMeshRenderer                  = sphere.AddComponent<MeshRendererComponent>();
@@ -115,7 +116,7 @@ public:
         terrainComponent.XScale = xScale;
         terrainComponent.YScale = yScale;
         terrainComponent.ZScale = zScale;
-        terrain.AddComponent<TerrainColliderComponent>(smoothMaterial);
+        terrain.AddComponent<TerrainColliderComponent>(normalMaterial);
         auto& terrainRenderer = terrain.AddComponent<TerrainRendererComponent>();
         // terrainRenderer.BaseColor = {0.6, 1, 0.6, 1}; // Light Green
         terrainRenderer.UseDiffuse             = true;
