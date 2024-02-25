@@ -64,7 +64,7 @@ namespace SnowLeopardEngine
             [this, pipeline, mainCameraTransform, mainCamera](
                 TransformComponent& transform, TerrainComponent& terrain, TerrainRendererComponent& terrainRenderer) {
                 // No heightmap, skip...
-                if (terrain.HeightMap.empty())
+                if (terrain.TerrainHeightMap.Data.empty())
                 {
                     return;
                 }
@@ -108,13 +108,6 @@ namespace SnowLeopardEngine
                 else
                 {
                     m_Shader->SetInt("useDiffuse", 0);
-                }
-
-                // Bind heightmap
-                if (terrainRenderer.Heightmap != nullptr)
-                {
-                    terrainRenderer.Heightmap->Bind(1);
-                    m_Shader->SetInt("heightMap", 1);
                 }
 
                 // Currently, no static batching. leave temp test code here

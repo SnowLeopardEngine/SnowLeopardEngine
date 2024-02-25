@@ -23,7 +23,11 @@ void CustomAssert(bool condition, const std::string& message, Args... args)
     }
 }
 
+#ifdef _DEBUG
 #define SNOW_LEOPARD_CORE_ASSERT(...) CustomAssert(__VA_ARGS__)
+#else
+#define SNOW_LEOPARD_CORE_ASSERT(...)
+#endif
 
 #define FLAG_ENUM(name, baseType) \
     static name operator|(name lhs, name rhs) \
