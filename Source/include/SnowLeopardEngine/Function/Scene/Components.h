@@ -1,15 +1,15 @@
 #pragma once
 
-#include "PxRigidActor.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
-#include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
-#include "SnowLeopardEngine/Function/Scene/Components.h"
+
+#include <PxPhysicsAPI.h>
 
 namespace SnowLeopardEngine
 {
@@ -156,7 +156,8 @@ namespace SnowLeopardEngine
         float LinearDamping  = 0.0f;
         float AngularDamping = 0.05f;
 
-        physx::PxRigidActor* InternalBody             = nullptr;
+        physx::PxRigidActor* InternalBody = nullptr;
+
         RigidBodyComponent()                          = default;
         RigidBodyComponent(const RigidBodyComponent&) = default;
         explicit RigidBodyComponent(float mass) : Mass(mass) {}
@@ -200,7 +201,7 @@ namespace SnowLeopardEngine
             Offset(offset),
             Size(size), Material(material), IsTrigger(isTrigger)
         {}
-    }; // Test Pass
+    };
 
     struct CapsuleColliderComponent
     {
@@ -222,30 +223,19 @@ namespace SnowLeopardEngine
         {}
     };
 
-    struct HeightfieldColliderComponent
+    struct TerrainColliderComponent
     {
-        unsigned             Width;
-        unsigned             Height;
-        std::vector<float>   HeightfieldMap;
-        float                RowScale;
-        float                ColumnScale;
         Ref<PhysicsMaterial> Material  = nullptr;
         bool                 IsTrigger = false;
 
-        HeightfieldColliderComponent()                                    = default;
-        HeightfieldColliderComponent(const HeightfieldColliderComponent&) = default;
-        explicit HeightfieldColliderComponent(unsigned                   width,
-                                              unsigned                   height,
-                                              std::vector<float>         heightfieldMap,
-                                              float                      rowScale,
-                                              float                      columnScale,
-                                              const Ref<PhysicsMaterial> material  = nullptr,
-                                              bool                       isTrigger = false) :
-            Width(width),
-            Height(height), HeightfieldMap(heightfieldMap), RowScale(rowScale), ColumnScale(columnScale),
+        physx::PxRigidStatic* InternalBody = nullptr;
+
+        TerrainColliderComponent()                                = default;
+        TerrainColliderComponent(const TerrainColliderComponent&) = default;
+        explicit TerrainColliderComponent(const Ref<PhysicsMaterial>& material, bool isTrigger = false) :
             Material(material), IsTrigger(isTrigger)
         {}
-    }; // Not Test
+    };
 
     // -------- Physics Components DEFINITION END --------
 
@@ -328,7 +318,7 @@ namespace SnowLeopardEngine
 
     struct TerrainComponent
     {
-        std::vector<std::vector<float>> HeightMap;
+        HeightMap TerrainHeightMap;
 
         float XScale = 1;
         float YScale = 1;
@@ -336,7 +326,8 @@ namespace SnowLeopardEngine
 
         MeshItem Mesh;
 
-        TerrainComponent()                        = default;
+        TerrainComponent() = default;
+        explicit TerrainComponent(const HeightMap& heightMap) : TerrainHeightMap(heightMap) {}
         TerrainComponent(const TerrainComponent&) = default;
     };
 
@@ -348,9 +339,6 @@ namespace SnowLeopardEngine
         bool                  UseDiffuse = false;
         std::filesystem::path DiffuseTextureFilePath;
         Ref<Texture2D>        DiffuseTexture = nullptr;
-
-        std::filesystem::path HeightmapFilePath;
-        Ref<Texture2D>        Heightmap = nullptr;
 
         TerrainRendererComponent()                                = default;
         TerrainRendererComponent(const TerrainRendererComponent&) = default;

@@ -2,6 +2,10 @@
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "cooking/PxCooking.h"
+#include "geometry/PxHeightFieldGeometry.h"
+#include <cstdint>
+#include <exception>
 
 using namespace physx;
 
@@ -64,6 +68,8 @@ namespace SnowLeopardEngine
 
         m_State = SystemState::ShutdownOk;
     }
+
+    physx::PxVec3 FromGlmVec3(const glm::vec3& glmVec) { return physx::PxVec3(glmVec.x, glmVec.y, glmVec.z); }
 
     void PhysicsSystem::CookPhysicsScene(const Ref<LogicScene>& logicScene)
     {
@@ -149,7 +155,7 @@ namespace SnowLeopardEngine
                 float radius = 0.5f;
                 if (sphereCollider.Radius == 0)
                 {
-                    radius = radius * transform.Scale.x  + 0.2;
+                    radius = radius * transform.Scale.x;
                 }
                 PxSphereGeometry sphereGeometry(radius);
                 auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
@@ -227,11 +233,8 @@ namespace SnowLeopardEngine
                 if (boxCollider.Size == glm::vec3(0, 0, 0))
                 {
                     size.x *= transform.Scale.x;
-                    size.x += 0.2;
                     size.y *= transform.Scale.y;
-                    size.y += 0.2;
                     size.z *= transform.Scale.z;
-                    size.z += 0.2;
                 }
                 PxBoxGeometry boxGeometry(size.x / 2.0f, size.y / 2.0f, size.z / 2.0f);
                 auto*         boxShape = m_Physics->createShape(boxGeometry, *material);
@@ -301,47 +304,61 @@ namespace SnowLeopardEngine
                 rigidBody.InternalBody = body;
             });
 
-        // case4: Rigid + Heightfield
-        //  registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, HeightfieldColliderComponent,
-        //  DampingComponent>().each(
-        //      [this](entt::entity           entity,
-        //             TransformComponent&    transform,
-        //             EntityStatusComponent& entityStatus,
-        //             RigidBodyComponent&    rigidBody,
-        //             HeightfieldColliderComponent&  heightfieldCollider,
-        //             DampingComponent&      damping) {
+        // case4: TerrainComponent + TerrainColliderComponent
+        registry.view<TransformComponent, EntityStatusComponent, TerrainComponent, TerrainColliderComponent>().each(
+            [this](entt::entity              entity,
+                   TransformComponent&       transform,
+                   EntityStatusComponent&    entityStatus,
+                   TerrainComponent&         terrain,
+                   TerrainColliderComponent& terrainCollider) {
+                uint32_t             heightMapWidth  = terrain.TerrainHeightMap.Width;
+                uint32_t             heightMapHeight = terrain.TerrainHeightMap.Height;
+                PxHeightFieldSample* hfSample        = new PxHeightFieldSample[heightMapWidth * heightMapHeight];
 
-        //         auto t = heightfieldCollider.Width * heightfieldCollider.Height;
-        //         PxHeightFieldSample* hfSample = new PxHeightFieldSample[t];
-        //         for(unsigned i = 0; i<t; i++){
-        //             hfSample[i].Height = static_cast<PxI16>(hfSample->height[i]);
-        //             hfSample[i].materialIndex0 = hfSample[i].materialIndex1 = 0;
-        //         }
+                for (uint32_t row = 0; row < heightMapHeight; ++row)
+                {
+                    for (uint32_t column = 0; column < heightMapWidth; ++column)
+                    {
+                        uint32_t sampleIndex = row + column * heightMapHeight;
+                        // reverse because PhysX row = our column.
+                        hfSample[sampleIndex].height = static_cast<PxI16>(terrain.TerrainHeightMap.Get(row, column));
+                        hfSample[sampleIndex].materialIndex0 = hfSample[sampleIndex].materialIndex1 = 0;
+                    }
+                }
 
-        //         PxHeightFieldDesc hfDesc;
-        //         hfDesc.format = PxHeightFieldFormat::eS16_TM;
-        //         hfDesc.nbColumns = hfSample.Width;
-        //         hfDesc.nbRows = hfSample.Height;
-        //         hfDesc.samples.data = hfSample;
-        //         hfDesc.samples.stride = sizeof(PxHeightFieldSample);
+                PxHeightFieldDesc hfDesc;
+                hfDesc.format         = PxHeightFieldFormat::eS16_TM;
+                hfDesc.nbColumns      = heightMapWidth;
+                hfDesc.nbRows         = heightMapHeight;
+                hfDesc.samples.data   = hfSample;
+                hfDesc.samples.stride = sizeof(PxHeightFieldSample);
 
-        //         PxHeightField* heightField = m_Physics->createHeightField(hfDesc);
-        //         delete[] hfSample;
+                PxHeightField* heightField = PxCreateHeightField(hfDesc, m_Physics->getPhysicsInsertionCallback());
+                delete[] hfSample;
 
-        //         PxHeightFieldGeometry hfGeometry(heightField, PxMeshGeometryFlags(), 1.0f, 1.0f, 1.0f);
-        //         PxMaterial* material = m_Physics->createMaterial(heightfieldCollider.Material->DynamicFriction,
-        //                                                          heightfieldCollider.Material->StaticFriction,
-        //                                                          heightfieldCollider.Material->Bounciness);
+                // reverse X-Z because PhysX row = our column.
+                PxHeightFieldGeometry hfGeometry(
+                    heightField, PxMeshGeometryFlags(), terrain.YScale, terrain.XScale, terrain.ZScale);
+                PxMaterial* material;
+                if (terrainCollider.Material == nullptr)
+                {
+                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
+                }
+                else
+                {
+                    material = m_Physics->createMaterial(terrainCollider.Material->DynamicFriction,
+                                                         terrainCollider.Material->StaticFriction,
+                                                         terrainCollider.Material->Bounciness);
+                }
 
-        //         PxRigidActor* body;
-        //         if(entityStatus.IsStatic){
-        //             body = m_Physics->createRigidStatic(PxTransform(FromGlmVec3(transform.Position)));
-        //         }
+                PxRigidStatic* body = m_Physics->createRigidStatic(PxTransform(FromGlmVec3(transform.Position)));
 
-        //         body->createShape(hfGeometry, *material);
-        //         m_Scene->addActor(*body);
+                PxShape* shape = m_Physics->createShape(hfGeometry, *material);
+                body->attachShape(*shape);
+                m_Scene->addActor(*body);
 
-        //            });
+                terrainCollider.InternalBody = body;
+            });
         // TODO: More cases
     }
 
@@ -349,6 +366,7 @@ namespace SnowLeopardEngine
     {
         if (m_Scene != nullptr)
         {
+
             m_Scene->simulate(Time::FixedDeltaTime);
             m_Scene->fetchResults(true);
 
