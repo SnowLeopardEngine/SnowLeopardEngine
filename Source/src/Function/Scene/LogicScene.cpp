@@ -142,7 +142,7 @@ namespace SnowLeopardEngine
         m_Registry.view<TerrainComponent>().each([](entt::entity entity, TerrainComponent& terrain) {
             // TODO: Move to AssetManager
             terrain.Mesh = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
-                terrain.HeightMap, terrain.XScale, terrain.YScale, terrain.ZScale);
+                terrain.TerrainHeightMap, terrain.XScale, terrain.YScale, terrain.ZScale);
         });
 
         // Texture Loading (dirty code for now)
@@ -161,7 +161,6 @@ namespace SnowLeopardEngine
                     terrainRenderer.DiffuseTexture =
                         TextureLoader::LoadTexture2D(terrainRenderer.DiffuseTextureFilePath, false);
                 }
-                terrainRenderer.Heightmap = TextureLoader::LoadTexture2D(terrainRenderer.HeightmapFilePath, false);
             });
         m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
             // TODO: Move to AssetManager
@@ -335,7 +334,7 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(SphereColliderComponent) {}
     ON_COMPONENT_ADDED(BoxColliderComponent) {}
     ON_COMPONENT_ADDED(CapsuleColliderComponent) {}
-    ON_COMPONENT_ADDED(HeightfieldColliderComponent) {}
+    ON_COMPONENT_ADDED(TerrainColliderComponent) {}
 
     ON_COMPONENT_ADDED(CameraComponent) {}
     ON_COMPONENT_ADDED(FreeMoveCameraControllerComponent) {}
