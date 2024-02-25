@@ -92,15 +92,14 @@ namespace SnowLeopardEngine
         pipeline->GetAPI()->ClearColor(glm::vec4(0, 0, 0, 0), ClearBit::Depth);
 
         // TODO: View frustum get AABB and set borders.
-        glm::mat4 lightProjection  = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 10000.0f);
+        glm::mat4 lightProjection  = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 1.0f, 10000.0f);
         auto      lightPos         = -1000.0f * directionalLight.Direction; // simulate directional light position
         glm::mat4 lightView        = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
         // for each mesh in the scene, request draw call.
-        registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
-            [this, pipeline, lightSpaceMatrix](
-                TransformComponent& transform, MeshFilterComponent& meshFilter, MeshRendererComponent& meshRenderer) {
+        registry.view<TransformComponent, MeshFilterComponent>().each(
+            [this, pipeline, lightSpaceMatrix](TransformComponent& transform, MeshFilterComponent& meshFilter) {
                 // No meshes, skip...
                 if (meshFilter.Meshes.Items.empty())
                 {
@@ -126,6 +125,30 @@ namespace SnowLeopardEngine
                 }
             });
 
+        // for each terrain in the scene, request draw call.
+        registry.view<TransformComponent, TerrainComponent>().each(
+            [this, pipeline, lightSpaceMatrix](TransformComponent& transform, TerrainComponent& terrain) {
+                // No heightmap, skip...
+                if (terrain.TerrainHeightMap.Data.empty())
+                {
+                    return;
+                }
+
+                m_Shader->Bind();
+
+                m_Shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+                m_Shader->SetMat4("model", transform.GetTransform());
+
+                // Currently, no static batching.leave temp test code here auto vertexArray =
+                auto vertexArray = pipeline->GetAPI()->CreateVertexArray(terrain.Mesh);
+                vertexArray->Bind();
+
+                pipeline->GetAPI()->DrawIndexed(terrain.Mesh.Data.Indices.size());
+
+                vertexArray->Unbind();
+
+                m_Shader->Unbind();
+            });
         ownerPass->GetShadowDepthBuffer()->Unbind();
     }
 } // namespace SnowLeopardEngine

@@ -95,7 +95,7 @@ namespace SnowLeopardEngine
         }
 
         // TODO: View frustum get AABB and set borders.
-        glm::mat4 lightProjection  = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 10000.0f);
+        glm::mat4 lightProjection  = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 1.0f, 10000.0f);
         auto      lightPos         = -1000.0f * directionalLight.Direction; // simulate directional light position
         glm::mat4 lightView        = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 lightSpaceMatrix = lightProjection * lightView;
