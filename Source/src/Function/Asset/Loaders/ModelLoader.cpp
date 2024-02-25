@@ -1,5 +1,8 @@
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
+#include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
+#include <cstdint>
 
 namespace SnowLeopardEngine
 {
@@ -8,12 +11,12 @@ namespace SnowLeopardEngine
     bool ModelLoader::LoadModel(const std::filesystem::path& path, Model& model)
     {
         // Get aiScene
-        const auto* aiScene = g_Importer.ReadFile(path.generic_string(),
-                                                  aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals |
-                                                      aiProcess_GlobalScale);
+        const auto* scene = g_Importer.ReadFile(path.generic_string(),
+                                                aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals |
+                                                    aiProcess_GlobalScale);
 
         // Check
-        if (!aiScene || aiScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !aiScene->mRootNode)
+        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
             SNOW_LEOPARD_CORE_ERROR("[ModelLoader] Failed to load the .obj model: {0}, error message: {1}",
                                     path.filename().generic_string(),
@@ -22,56 +25,9 @@ namespace SnowLeopardEngine
         }
 
         // Process root node
-        ProcessNode(aiScene, aiScene->mRootNode, model);
+        ProcessNode(scene, scene->mRootNode, model);
 
         return true;
-    }
-
-    void ModelLoader::LoadBones(const aiMesh* aiMesh, Model& model)
-    {
-        for (uint32_t i = 0; i < aiMesh->mNumBones; i++)
-        {
-            uint32_t    boneIndex = 0;
-            std::string boneName(aiMesh->mBones[i]->mName.data);
-
-            if (model.BoneMapping.find(boneName) == model.BoneMapping.end())
-            {
-                // Allocate an index for a new bone
-                boneIndex                = model.NumBones++;
-                BoneInfo    bi           = {};
-                aiMatrix4x4 offsetMatrix = aiMesh->mBones[i]->mOffsetMatrix;
-                bi.BoneOffset            = {offsetMatrix.a1,
-                                            offsetMatrix.b1,
-                                            offsetMatrix.c1,
-                                            offsetMatrix.d1,
-                                            offsetMatrix.a2,
-                                            offsetMatrix.b2,
-                                            offsetMatrix.c2,
-                                            offsetMatrix.d2,
-                                            offsetMatrix.a3,
-                                            offsetMatrix.b3,
-                                            offsetMatrix.c3,
-                                            offsetMatrix.d3,
-                                            offsetMatrix.a4,
-                                            offsetMatrix.b4,
-                                            offsetMatrix.c4,
-                                            offsetMatrix.d4};
-
-                model.BoneInfo.push_back(bi);
-                model.BoneMapping[boneName] = boneIndex;
-            }
-            else
-            {
-                boneIndex = model.BoneMapping[boneName];
-            }
-
-            for (size_t j = 0; j < aiMesh->mBones[i]->mNumWeights; j++)
-            {
-                unsigned int vertexID = aiMesh->mBones[i]->mWeights[j].mVertexId;
-                float        weight   = aiMesh->mBones[i]->mWeights[j].mWeight;
-                model.Bones[vertexID].AddBoneData(boneIndex, weight);
-            }
-        }
     }
 
     void ModelLoader::ProcessNode(const aiScene* scene, const aiNode* node, Model& model)
@@ -82,8 +38,6 @@ namespace SnowLeopardEngine
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
             ProcessMesh(scene, mesh, model);
         }
-
-        // TODO: Process bones
 
         // Process children recursively
         for (uint32_t i = 0; i < node->mNumChildren; i++)
@@ -109,6 +63,9 @@ namespace SnowLeopardEngine
                 vertex.TexCoord = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
             }
 
+            // Set default bone data
+            SetVertexBoneDataToDefault(vertex);
+
             meshItem.Data.Vertices.push_back(vertex);
         }
 
@@ -122,10 +79,81 @@ namespace SnowLeopardEngine
             }
         }
 
+        // Process bones
+        ExtractBoneWeightForVertices(meshItem.Data.Vertices, mesh, model);
+
         model.Meshes.Items.emplace_back(meshItem);
     }
 
-    void ModelLoader::ProcessBones() {}
+    void ModelLoader::SetVertexBoneDataToDefault(VertexData& vertex)
+    {
+        // Setup default bone data
+        for (uint32_t i = 0; i < MaxBoneInfluence; ++i)
+        {
+            vertex.BoneIDs[i] = -1;
+            vertex.Weights[i] = 0.0f;
+        }
+    }
 
-    void ModelLoader::ReadNodeHierarchy(float animationTime, const aiNode* pNode, const glm::mat4& aarentTransform) {}
+    void ModelLoader::SetVertexBoneData(VertexData& vertex, int boneID, float weight)
+    {
+        for (uint32_t i = 0; i < MaxBoneInfluence; ++i)
+        {
+            if (vertex.BoneIDs[i] < 0)
+            {
+                vertex.Weights[i] = weight;
+                vertex.BoneIDs[i] = boneID;
+                break;
+            }
+        }
+    }
+
+    void ModelLoader::ExtractBoneWeightForVertices(std::vector<VertexData>& vertices, const aiMesh* mesh, Model& model)
+    {
+        for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
+        {
+            int         boneID   = -1;
+            std::string boneName = mesh->mBones[boneIndex]->mName.C_Str();
+            if (model.BoneInfoMap.find(boneName) == model.BoneInfoMap.end())
+            {
+                BoneInfo newBoneInfo;
+                newBoneInfo.Id              = model.BoneCounter;
+                auto offsetMatrix           = mesh->mBones[boneIndex]->mOffsetMatrix;
+                newBoneInfo.Offset          = {offsetMatrix.a1,
+                                               offsetMatrix.b1,
+                                               offsetMatrix.c1,
+                                               offsetMatrix.d1,
+                                               offsetMatrix.a2,
+                                               offsetMatrix.b2,
+                                               offsetMatrix.c2,
+                                               offsetMatrix.d2,
+                                               offsetMatrix.a3,
+                                               offsetMatrix.b3,
+                                               offsetMatrix.c3,
+                                               offsetMatrix.d3,
+                                               offsetMatrix.a4,
+                                               offsetMatrix.b4,
+                                               offsetMatrix.c4,
+                                               offsetMatrix.d4};
+                model.BoneInfoMap[boneName] = newBoneInfo;
+                boneID                      = model.BoneCounter;
+                model.BoneCounter++;
+            }
+            else
+            {
+                boneID = model.BoneInfoMap[boneName].Id;
+            }
+            SNOW_LEOPARD_CORE_ASSERT(boneID != -1, "[ModelLoader] Bone ID is -1!");
+            auto* weights    = mesh->mBones[boneIndex]->mWeights;
+            int   numWeights = mesh->mBones[boneIndex]->mNumWeights;
+
+            for (uint32_t weightIndex = 0; weightIndex < numWeights; ++weightIndex)
+            {
+                int   vertexId = weights[weightIndex].mVertexId;
+                float weight   = weights[weightIndex].mWeight;
+                SNOW_LEOPARD_CORE_ASSERT(vertexId <= vertices.size(), "[ModelLoader] Vertex ID out of range!");
+                SetVertexBoneData(vertices[vertexId], boneID, weight);
+            }
+        }
+    }
 } // namespace SnowLeopardEngine

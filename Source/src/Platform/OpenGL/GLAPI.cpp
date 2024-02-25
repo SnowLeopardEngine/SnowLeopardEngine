@@ -118,7 +118,9 @@ namespace SnowLeopardEngine
         // Create a default layout and set it
         BufferLayout layout = {{ShaderDataType::Float3, "a_Position"},
                                {ShaderDataType::Float3, "a_Normal"},
-                               {ShaderDataType::Float2, "a_TexCoords"}};
+                               {ShaderDataType::Float2, "a_TexCoords"},
+                               {ShaderDataType::Int4, "a_BoneIDs"},
+                               {ShaderDataType::Float4, "a_Weights"}};
 
         return CreateVertexArray(meshItem, layout);
     }
