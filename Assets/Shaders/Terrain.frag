@@ -1,7 +1,7 @@
 #version 460 core
 
 in vec2 varingTexCoords;
-in vec3 normal;
+in vec3 varingNormal;
 in vec3 fragPos;
 in vec4 fragPosLightSpace;
 
@@ -66,7 +66,7 @@ vec3 CalculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir
 void main() {
     // for now, only care about the directional light
     vec3 viewDir = normalize(viewPos - fragPos);
-    vec3 finalColor = CalculateDirectionalLight(directionalLight, normal, viewDir);
+    vec3 finalColor = CalculateDirectionalLight(directionalLight, varingNormal, viewDir);
 
     FragColor = vec4(finalColor, 1);
 }
