@@ -81,9 +81,9 @@ namespace SnowLeopardEngine
                     float theta = lat * (M_PI / segments);
                     float phi   = lon * (2 * M_PI / segments);
 
-                    float x = radius * std::sin(theta) * std::cos(phi);
-                    float z = radius * std::sin(theta) * std::sin(phi); // Swap y and z
-                    float y = radius * std::cos(theta);                 // Swap y and z
+                    float x = -radius * std::sin(theta) * std::cos(phi);
+                    float y = radius * std::cos(theta);
+                    float z = radius * std::sin(theta) * std::sin(phi);
 
                     glm::vec3 position(x, y, z);
                     glm::vec3 normal = glm::normalize(position);

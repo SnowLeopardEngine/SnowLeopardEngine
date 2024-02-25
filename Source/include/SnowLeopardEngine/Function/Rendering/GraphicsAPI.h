@@ -12,6 +12,15 @@ namespace SnowLeopardEngine
         OpenGL = 0,
     };
 
+    enum class ClearBit : uint32_t
+    {
+        None    = 0,
+        Color   = 1 << 0,
+        Depth   = 1 << 1,
+        Default = Color | Depth
+    };
+    FLAG_ENUM(ClearBit, uint32_t)
+
     class GraphicsAPI
     {
     public:
@@ -19,8 +28,8 @@ namespace SnowLeopardEngine
 
         virtual void SetPipelineState(const Ref<PipelineState>& pipelineState) = 0;
 
-        virtual void ClearColor(float r, float g, float b, float a) = 0;
-        virtual void ClearColor(const glm::vec4& color)             = 0;
+        virtual void ClearColor(float r, float g, float b, float a, ClearBit clearBit) = 0;
+        virtual void ClearColor(const glm::vec4& color, ClearBit clearBit)             = 0;
 
         virtual void         UpdateViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) = 0;
         virtual ViewportDesc GetViewport()                                                           = 0;

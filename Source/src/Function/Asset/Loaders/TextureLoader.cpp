@@ -1,7 +1,6 @@
 #include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
-#include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
@@ -11,6 +10,12 @@ namespace SnowLeopardEngine
     bool TextureLoader::LoadTexture2D(const std::filesystem::path& path, bool flip, TextureLoadingOutput& output)
     {
         std::string pathString = path.generic_string();
+
+        if (pathString.empty())
+        {
+            SNOW_LEOPARD_CORE_ERROR("[TextureLoader] Empty Path!");
+            return false;
+        }
 
         stbi_set_flip_vertically_on_load(flip);
 

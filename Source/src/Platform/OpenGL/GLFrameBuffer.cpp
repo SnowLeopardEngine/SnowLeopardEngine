@@ -1,7 +1,6 @@
 #include "SnowLeopardEngine/Platform/OpenGL/GLFrameBuffer.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
-#include <cstdint>
 #include <glad/glad.h>
 
 namespace SnowLeopardEngine
@@ -65,9 +64,12 @@ namespace SnowLeopardEngine
             {
                 glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTextureParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                glTextureParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTextureParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTextureParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+                glTextureParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+                glTextureParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+                GLfloat borderColor[] = {1.0, 1.0, 1.0, 1.0};
+                glTextureParameterfv(id, GL_TEXTURE_BORDER_COLOR, borderColor);
 
                 glTextureStorage2D(id, 1, format, width, height);
             }
@@ -76,7 +78,7 @@ namespace SnowLeopardEngine
 
         static bool IsDepthFormat(FrameBufferTextureFormat format)
         {
-            return format == FrameBufferTextureFormat::DEPTH24_STENCIL8;
+            return format == FrameBufferTextureFormat::DEPTH24_STENCIL8 || format == FrameBufferTextureFormat::DEPTH24;
         }
 
         static GLenum FBTextureFormatToGL(FrameBufferTextureFormat format)
@@ -89,6 +91,8 @@ namespace SnowLeopardEngine
                     return GL_RED_INTEGER;
                 case FrameBufferTextureFormat::DEPTH24_STENCIL8:
                     return GL_DEPTH24_STENCIL8;
+                case FrameBufferTextureFormat::DEPTH24:
+                    return GL_DEPTH_COMPONENT24;
                 case FrameBufferTextureFormat::None:
                     SNOW_LEOPARD_CORE_ASSERT(false, "[GLFrameBuffer] Unsupported framebuffer texture format!");
                     break;
@@ -101,7 +105,7 @@ namespace SnowLeopardEngine
 
     GLFrameBuffer::GLFrameBuffer(const FrameBufferDesc& spec) : m_Desc(spec)
     {
-        for (auto spec : m_Desc.Attachments.Attachments)
+        for (auto spec : m_Desc.AttachmentDesc.Attachments)
         {
             if (!Utils::IsDepthFormat(spec.TextureFormat))
                 m_ColorAttachmentDescs.emplace_back(spec);
@@ -167,6 +171,7 @@ namespace SnowLeopardEngine
                         break;
                     case FrameBufferTextureFormat::None:
                     case FrameBufferTextureFormat::DEPTH24_STENCIL8:
+                    case FrameBufferTextureFormat::DEPTH24:
                         break;
                 }
             }
@@ -182,6 +187,15 @@ namespace SnowLeopardEngine
                                               m_Desc.Samples,
                                               GL_DEPTH24_STENCIL8,
                                               GL_DEPTH_STENCIL_ATTACHMENT,
+                                              m_Desc.Width,
+                                              m_Desc.Height,
+                                              m_Name);
+                    break;
+                case FrameBufferTextureFormat::DEPTH24:
+                    Utils::AttachDepthTexture(m_DepthAttachment,
+                                              m_Desc.Samples,
+                                              GL_DEPTH_COMPONENT24,
+                                              GL_DEPTH_ATTACHMENT,
                                               m_Desc.Width,
                                               m_Desc.Height,
                                               m_Name);
@@ -206,13 +220,23 @@ namespace SnowLeopardEngine
         {
             // Only depth-pass
             glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
         }
 
         SNOW_LEOPARD_CORE_ASSERT(glCheckNamedFramebufferStatus(m_Name, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
                                  "[GLFrameBuffer] FrameBuffer is incomplete!");
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDrawBuffer(GL_BACK);
     }
 
-    void GLFrameBuffer::UpdateViewport() { glViewport(0, 0, m_Desc.Width, m_Desc.Height); }
+    void GLFrameBuffer::Bind()
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, m_Name);
+        glViewport(0, 0, m_Desc.Width, m_Desc.Height);
+    }
+
+    void GLFrameBuffer::Unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
     void GLFrameBuffer::Resize(uint32_t width, uint32_t height)
     {
@@ -246,4 +270,12 @@ namespace SnowLeopardEngine
         float newColor[4] = {color.r, color.g, color.b, color.a};
         glClearNamedFramebufferfv(m_Name, GL_COLOR, attachmentIndex, newColor);
     }
+
+    void GLFrameBuffer::BindColorAttachmentTexture(uint32_t index, uint32_t slot) const
+    {
+        SNOW_LEOPARD_CORE_ASSERT(index < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
+        glBindTextureUnit(slot, m_ColorAttachments[index]);
+    }
+
+    void GLFrameBuffer::BindDepthAttachmentTexture(uint32_t slot) const { glBindTextureUnit(slot, m_DepthAttachment); }
 } // namespace SnowLeopardEngine

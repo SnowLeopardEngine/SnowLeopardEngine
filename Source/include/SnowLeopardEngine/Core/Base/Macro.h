@@ -24,3 +24,13 @@ void CustomAssert(bool condition, const std::string& message, Args... args)
 }
 
 #define SNOW_LEOPARD_CORE_ASSERT(...) CustomAssert(__VA_ARGS__)
+
+#define FLAG_ENUM(name, baseType) \
+    static name operator|(name lhs, name rhs) \
+    { \
+        return static_cast<name>(static_cast<baseType>(lhs) | static_cast<baseType>(rhs)); \
+    } \
+    static name operator&(name lhs, name rhs) \
+    { \
+        return static_cast<ClearBit>(static_cast<baseType>(lhs) & static_cast<baseType>(rhs)); \
+    }

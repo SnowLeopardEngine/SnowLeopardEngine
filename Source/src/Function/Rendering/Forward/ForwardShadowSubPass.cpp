@@ -1,14 +1,13 @@
-#include "SnowLeopardEngine/Function/Rendering/Forward/ForwardGeometrySubPass.h"
+#include "SnowLeopardEngine/Function/Rendering/Forward/ForwardShadowSubPass.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSinglePass.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
-#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 
 namespace SnowLeopardEngine
 {
-    void ForwardGeometrySubPass::Draw()
+    void ForwardShadowSubPass::Draw()
     {
         auto* ownerPass = static_cast<ForwardSinglePass*>(m_OwnerPass);
 
@@ -16,7 +15,7 @@ namespace SnowLeopardEngine
         auto* pipeline = ownerPass->GetPipeline();
 
         // Get pipeline state & set
-        auto pipelineState = pipeline->GetStateManager()->GetState("Phong");
+        auto pipelineState = pipeline->GetStateManager()->GetState("ShadowMapping");
         pipeline->GetAPI()->SetPipelineState(pipelineState);
 
         // Load / Create shader
@@ -50,10 +49,9 @@ namespace SnowLeopardEngine
                 if (isFirst)
                 {
                     auto [transform, camera] = view.get<TransformComponent, CameraComponent>(cameraEntity);
-                    pipeline->GetAPI()->ClearColor(camera.ClearColor, ClearBit::Default);
-                    isFirst             = false;
-                    mainCameraTransform = transform;
-                    mainCamera          = camera;
+                    isFirst                  = false;
+                    mainCameraTransform      = transform;
+                    mainCamera               = camera;
                 }
                 else
                 {
@@ -90,6 +88,9 @@ namespace SnowLeopardEngine
             }
         }
 
+        ownerPass->GetShadowDepthBuffer()->Bind();
+        pipeline->GetAPI()->ClearColor(glm::vec4(0, 0, 0, 0), ClearBit::Depth);
+
         // TODO: View frustum get AABB and set borders.
         glm::mat4 lightProjection  = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 10000.0f);
         auto      lightPos         = -1000.0f * directionalLight.Direction; // simulate directional light position
@@ -98,7 +99,7 @@ namespace SnowLeopardEngine
 
         // for each mesh in the scene, request draw call.
         registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
-            [this, pipeline, mainCameraTransform, mainCamera, directionalLight, ownerPass, lightSpaceMatrix](
+            [this, pipeline, lightSpaceMatrix](
                 TransformComponent& transform, MeshFilterComponent& meshFilter, MeshRendererComponent& meshRenderer) {
                 // No meshes, skip...
                 if (meshFilter.Meshes.Items.empty())
@@ -106,55 +107,12 @@ namespace SnowLeopardEngine
                     return;
                 }
 
-                auto viewPortDesc = pipeline->GetAPI()->GetViewport();
-
-                // Setup camera matrices
-                auto eulerAngles = mainCameraTransform.GetRotationEuler();
-
-                // Calculate forward (Yaw - 90 to adjust)
-                glm::vec3 forward;
-                forward.x = cos(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
-                forward.y = sin(glm::radians(eulerAngles.x));
-                forward.z = sin(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
-                forward   = glm::normalize(forward);
-
-                // Calculate up
-                glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
-                glm::vec3 up    = glm::normalize(glm::cross(right, forward));
-
                 for (const auto& meshItem : meshFilter.Meshes.Items)
                 {
                     m_Shader->Bind();
-                    m_Shader->SetMat4("model", transform.GetTransform());
-                    m_Shader->SetMat4(
-                        "view", glm::lookAt(mainCameraTransform.Position, mainCameraTransform.Position + forward, up));
-                    m_Shader->SetMat4("projection",
-                                      glm::perspective(glm::radians(mainCamera.FOV),
-                                                       viewPortDesc.Width / viewPortDesc.Height,
-                                                       mainCamera.Near,
-                                                       mainCamera.Far));
-                    m_Shader->SetFloat4("baseColor", meshRenderer.BaseColor);
-                    m_Shader->SetFloat3("viewPos", mainCameraTransform.Position);
-                    m_Shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
-                    m_Shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
-                    m_Shader->SetFloat3("directionalLight.color", directionalLight.Color);
 
-                    // Bind diffuse texture
-                    if (meshRenderer.UseDiffuse && meshRenderer.DiffuseTexture != nullptr)
-                    {
-                        meshRenderer.DiffuseTexture->Bind(0);
-                        m_Shader->SetInt("diffuseMap", 0);
-                        m_Shader->SetInt("useDiffuse", 1);
-                    }
-                    else
-                    {
-                        m_Shader->SetInt("useDiffuse", 0);
-                    }
-
-                    // Bind shadow map
                     m_Shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
-                    ownerPass->GetShadowDepthBuffer()->BindDepthAttachmentTexture(1);
-                    m_Shader->SetInt("shadowMap", 1);
+                    m_Shader->SetMat4("model", transform.GetTransform());
 
                     // Currently, no static batching.leave temp test code here auto vertexArray =
                     auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
@@ -167,5 +125,7 @@ namespace SnowLeopardEngine
                     m_Shader->Unbind();
                 }
             });
+
+        ownerPass->GetShadowDepthBuffer()->Unbind();
     }
 } // namespace SnowLeopardEngine

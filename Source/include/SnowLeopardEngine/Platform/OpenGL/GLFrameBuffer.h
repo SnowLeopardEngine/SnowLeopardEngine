@@ -11,9 +11,10 @@ namespace SnowLeopardEngine
 
         void Invalidate();
 
-        virtual void UpdateViewport() override;
+        virtual void Bind() override;
+        virtual void Unbind() override;
 
-        virtual void  Resize(uint32_t width, uint32_t height) override;
+        virtual void      Resize(uint32_t width, uint32_t height) override;
         virtual glm::vec4 ReadPixel(uint32_t attachmentIndex, int x, int y) override;
 
         virtual void ClearAttachment(uint32_t attachmentIndex, const glm::vec4& color) override;
@@ -24,6 +25,9 @@ namespace SnowLeopardEngine
                                      "[GLFrameBuffer] ColorAttachment Index{0} is not attached!");
             return m_ColorAttachments[index];
         }
+
+        virtual void BindColorAttachmentTexture(uint32_t index, uint32_t slot) const override;
+        virtual void BindDepthAttachmentTexture(uint32_t slot) const override;
 
         virtual const FrameBufferDesc& GetDesc() const override { return m_Desc; }
 
