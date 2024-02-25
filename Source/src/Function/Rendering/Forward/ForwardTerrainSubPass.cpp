@@ -152,6 +152,7 @@ namespace SnowLeopardEngine
                 m_Shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
                 ownerPass->GetShadowDepthBuffer()->BindDepthAttachmentTexture(1);
                 m_Shader->SetInt("shadowMap", 1);
+                m_Shader->SetInt("castShadow", terrainRenderer.CastShadow);
 
                 // Currently, no static batching. leave temp test code here
                 auto vertexArray = pipeline->GetAPI()->CreateVertexArray(terrain.Mesh);

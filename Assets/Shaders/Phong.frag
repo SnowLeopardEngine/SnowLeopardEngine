@@ -20,6 +20,7 @@ uniform DirectionalLight directionalLight;
 uniform int useDiffuse;
 uniform sampler2D diffuseMap;
 
+uniform int castShadow;
 uniform sampler2D shadowMap;
 
 float ShadowCalculation(vec4 fragPosLightSpace) {
@@ -58,7 +59,7 @@ vec3 CalculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir
     vec3 diffuse = light.intensity * light.color * diff * diffuseColor;
     vec3 specular = light.intensity * light.color * spec * vec3(0.1, 0.1, 0.1);
 
-    float shadow = ShadowCalculation(fragPosLightSpace);
+    float shadow = ShadowCalculation(fragPosLightSpace) * castShadow;
 
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
