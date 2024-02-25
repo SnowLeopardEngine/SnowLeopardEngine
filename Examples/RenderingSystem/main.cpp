@@ -68,7 +68,6 @@ public:
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
         floorMeshRenderer.BaseColor   = {1, 1, 1, 1}; // Pure White
-        floorMeshRenderer.UseDiffuse  = true;
     }
 
 private:

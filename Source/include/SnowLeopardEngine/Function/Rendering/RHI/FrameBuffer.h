@@ -14,10 +14,8 @@ namespace SnowLeopardEngine
         RED_INTEGER,
 
         // Depth/stencil
-        DEPTH24_STENCIL8,
-
-        // Defaults
-        Depth = DEPTH24_STENCIL8
+        DEPTH24,
+        DEPTH24_STENCIL8
     };
 
     struct FrameBufferTextureDesc
@@ -44,7 +42,7 @@ namespace SnowLeopardEngine
     struct FrameBufferDesc
     {
         uint32_t                  Width = 0, Height = 0;
-        FrameBufferAttachmentDesc Attachments;
+        FrameBufferAttachmentDesc AttachmentDesc;
         uint32_t                  Samples = 1;
 
         bool SwapChainTarget = false;
@@ -55,7 +53,8 @@ namespace SnowLeopardEngine
     public:
         virtual ~FrameBuffer() = default;
 
-        virtual void UpdateViewport() = 0;
+        virtual void Bind()   = 0;
+        virtual void Unbind() = 0;
 
         virtual void      Resize(uint32_t width, uint32_t height)           = 0;
         virtual glm::vec4 ReadPixel(uint32_t attachmentIndex, int x, int y) = 0;
@@ -63,6 +62,9 @@ namespace SnowLeopardEngine
         virtual void ClearAttachment(uint32_t attachmentIndex, const glm::vec4& color) = 0;
 
         virtual uint32_t GetColorAttachmentID(uint32_t index) const = 0;
+
+        virtual void BindColorAttachmentTexture(uint32_t index, uint32_t slot) const = 0;
+        virtual void BindDepthAttachmentTexture(uint32_t slot) const                 = 0;
 
         virtual const FrameBufferDesc& GetDesc() const = 0;
 

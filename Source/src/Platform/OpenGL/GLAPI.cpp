@@ -74,13 +74,25 @@ namespace SnowLeopardEngine
         }
     }
 
-    void OpenGLAPI::ClearColor(float r, float g, float b, float a)
+    void OpenGLAPI::ClearColor(float r, float g, float b, float a, ClearBit clearBit)
     {
         glClearColor(r, g, b, a);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        GLbitfield field = 0;
+        if ((clearBit & ClearBit::Color) == ClearBit::Color)
+        {
+            field |= GL_COLOR_BUFFER_BIT;
+        }
+        if ((clearBit & ClearBit::Depth) == ClearBit::Depth)
+        {
+            field |= GL_DEPTH_BUFFER_BIT;
+        }
+        glClear(field);
     }
 
-    void OpenGLAPI::ClearColor(const glm::vec4& color) { ClearColor(color.r, color.g, color.b, color.a); }
+    void OpenGLAPI::ClearColor(const glm::vec4& color, ClearBit clearBit)
+    {
+        ClearColor(color.r, color.g, color.b, color.a, clearBit);
+    }
 
     void OpenGLAPI::UpdateViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
     {

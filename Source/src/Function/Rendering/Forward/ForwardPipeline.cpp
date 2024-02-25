@@ -13,6 +13,14 @@ namespace SnowLeopardEngine
         // Create and register pipeline states
         SNOW_LEOPARD_CORE_INFO("[Rendering][ForwardPipeline] Registering pipeline states...");
 
+        // ShadowMapping
+        auto shadowMapping                = CreateRef<PipelineState>();
+        shadowMapping->Name               = "ShadowMapping";
+        shadowMapping->VertexShaderName   = "ShadowMapping.vert";
+        shadowMapping->FragmentShaderName = "ShadowMapping.frag";
+        shadowMapping->CullFace           = CullFaceMode::Front; // avoid peter panning
+        m_StateManager->RegisterState(shadowMapping);
+
         // Phong
         auto phong                = CreateRef<PipelineState>();
         phong->Name               = "Phong";

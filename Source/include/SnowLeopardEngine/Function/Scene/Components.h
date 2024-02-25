@@ -293,9 +293,9 @@ namespace SnowLeopardEngine
 
     struct DirectionalLightComponent
     {
-        glm::vec3 Direction = {-0.6, -1, -1.2};
+        glm::vec3 Direction = glm::normalize(glm::vec3(-0.6, -1, -1.2));
         float     Intensity = 0.8;
-        glm::vec3 Color     = {1, 1, 1};
+        glm::vec3 Color     = {1, 0.996, 0.885};
 
         DirectionalLightComponent()                                 = default;
         DirectionalLightComponent(const DirectionalLightComponent&) = default;
