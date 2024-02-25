@@ -62,6 +62,10 @@ namespace SnowLeopardEngine
             }
         }
 
+        // after shadow-mapping, update the viewport use the size of the window
+        pipeline->GetAPI()->UpdateViewport(
+            0, 0, g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight());
+
         // filter the first directional light
         DirectionalLightComponent directionalLight;
         {
@@ -91,7 +95,7 @@ namespace SnowLeopardEngine
         }
 
         // TODO: View frustum get AABB and set borders.
-        glm::mat4 lightProjection  = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 10000.0f);
+        glm::mat4 lightProjection  = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 1.0f, 10000.0f);
         auto      lightPos         = -1000.0f * directionalLight.Direction; // simulate directional light position
         glm::mat4 lightView        = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 lightSpaceMatrix = lightProjection * lightView;
@@ -155,6 +159,7 @@ namespace SnowLeopardEngine
                     m_Shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
                     ownerPass->GetShadowDepthBuffer()->BindDepthAttachmentTexture(1);
                     m_Shader->SetInt("shadowMap", 1);
+                    m_Shader->SetInt("castShadow", meshRenderer.CastShadow);
 
                     // Currently, no static batching.leave temp test code here auto vertexArray =
                     auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);

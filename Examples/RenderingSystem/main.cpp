@@ -59,7 +59,27 @@ public:
         camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
 
-        // Create a floor with RigidBodyComponent & BoxColliderComponent
+        // Create cubes to test shadow
+        Entity cube1            = scene->CreateEntity("Cube1");
+        auto&  cubeTransform1   = cube1.GetComponent<TransformComponent>();
+        cubeTransform1.Position = {0, 10, 0};
+        cubeTransform1.SetRotationEuler(glm::vec3(45, 45, 45));
+        auto& cubeMeshFilter1         = cube1.AddComponent<MeshFilterComponent>();
+        cubeMeshFilter1.PrimitiveType = MeshPrimitiveType::Cube;
+        auto& cubeMeshRenderer1       = cube1.AddComponent<MeshRendererComponent>();
+        cubeMeshRenderer1.BaseColor   = {1, 0, 0, 1};
+
+        Entity cube2            = scene->CreateEntity("Cube2");
+        auto&  cubeTransform2   = cube2.GetComponent<TransformComponent>();
+        cubeTransform2.Position = {-3, 5, -5};
+        cubeTransform2.SetRotationEuler(glm::vec3(135, 135, 135));
+        cubeTransform2.Scale          = {2, 2, 2};
+        auto& cubeMeshFilter2         = cube2.AddComponent<MeshFilterComponent>();
+        cubeMeshFilter2.PrimitiveType = MeshPrimitiveType::Cube;
+        auto& cubeMeshRenderer2       = cube2.AddComponent<MeshRendererComponent>();
+        cubeMeshRenderer2.BaseColor   = {0, 1, 0, 1};
+
+        // Create a floor
         Entity floor = scene->CreateEntity("Floor");
 
         auto& floorTransform          = floor.GetComponent<TransformComponent>();

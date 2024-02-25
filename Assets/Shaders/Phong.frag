@@ -1,7 +1,7 @@
 #version 460 core
 
 in vec2 varingTexCoords;
-in vec3 normal;
+in vec3 varingNormal;
 in vec3 fragPos;
 in vec4 fragPosLightSpace;
 
@@ -20,6 +20,7 @@ uniform DirectionalLight directionalLight;
 uniform int useDiffuse;
 uniform sampler2D diffuseMap;
 
+uniform int castShadow;
 uniform sampler2D shadowMap;
 
 float ShadowCalculation(vec4 fragPosLightSpace) {
@@ -58,7 +59,7 @@ vec3 CalculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir
     vec3 diffuse = light.intensity * light.color * diff * diffuseColor;
     vec3 specular = light.intensity * light.color * spec * vec3(0.1, 0.1, 0.1);
 
-    float shadow = ShadowCalculation(fragPosLightSpace);
+    float shadow = ShadowCalculation(fragPosLightSpace) * castShadow;
 
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
@@ -66,7 +67,7 @@ vec3 CalculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir
 void main() {
     // for now, only care about the directional light
     vec3 viewDir = normalize(viewPos - fragPos);
-    vec3 finalColor = CalculateDirectionalLight(directionalLight, normal, viewDir);
+    vec3 finalColor = CalculateDirectionalLight(directionalLight, varingNormal, viewDir);
 
     FragColor = vec4(finalColor, 1);
 }

@@ -312,6 +312,8 @@ namespace SnowLeopardEngine
         std::filesystem::path DiffuseTextureFilePath;
         Ref<Texture2D>        DiffuseTexture = nullptr;
 
+        bool CastShadow = true;
+
         MeshRendererComponent()                             = default;
         MeshRendererComponent(const MeshRendererComponent&) = default;
     };
@@ -339,6 +341,8 @@ namespace SnowLeopardEngine
         bool                  UseDiffuse = false;
         std::filesystem::path DiffuseTextureFilePath;
         Ref<Texture2D>        DiffuseTexture = nullptr;
+
+        bool CastShadow = true;
 
         TerrainRendererComponent()                                = default;
         TerrainRendererComponent(const TerrainRendererComponent&) = default;

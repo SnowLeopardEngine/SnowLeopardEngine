@@ -56,12 +56,18 @@ namespace SnowLeopardEngine
                                     nullptr);
         ++s_glfwWindowCount;
 
+        // Update width and height when High DPI is enabled.
+        int frameBufferWidth, frameBufferHeight;
+        glfwGetFramebufferSize(m_Window, &frameBufferWidth, &frameBufferHeight);
+        m_Data.Width  = frameBufferWidth;
+        m_Data.Height = frameBufferHeight;
+
 #if !SNOW_LEOPARD_PLATFORM_DARWIN
         // Get vid mode
         const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
-        int xPos = (mode->width - initInfo.Width) / 2;
-        int yPos = (mode->height - initInfo.Height) / 2;
+        int xPos = (mode->width - m_Data.Width) / 2;
+        int yPos = (mode->height - m_Data.Height) / 2;
 
         // Set window default position (center of screen)
         glfwSetWindowPos(m_Window, xPos, yPos);
