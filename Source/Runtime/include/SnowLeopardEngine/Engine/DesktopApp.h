@@ -6,6 +6,7 @@
 #include "SnowLeopardEngine/Core/Time/Timer.h"
 #include "SnowLeopardEngine/Engine/Engine.h"
 
+
 namespace SnowLeopardEngine
 {
     struct DesktopAppInitInfo
@@ -32,19 +33,19 @@ namespace SnowLeopardEngine
          * @return true
          * @return false
          */
-        bool PostInit();
+        virtual bool PostInit();
 
         /**
          * @brief Let the application start running.
          *
          */
-        void Run();
+        virtual void Run();
 
         /**
          * @brief Quit the application.
          *
          */
-        void Quit();
+        virtual void Quit();
 
         /**
          * @brief Get the Engine
@@ -60,20 +61,20 @@ namespace SnowLeopardEngine
          */
         static DesktopApp* GetInstance() { return s_Instance; }
 
-    private:
+    protected:
         /**
          * @brief Shutdown the application.
          *
          */
-        void Shutdown();
+        virtual void Shutdown();
 
         /**
          * @brief Event callback when window is closing
          *
          */
-        void OnWindowClose(const WindowCloseEvent& e);
+        virtual void OnWindowClose(const WindowCloseEvent& e);
 
-    private:
+    protected:
         Ref<Engine> m_Engine = nullptr;
         Timer       m_Timer;
         bool        m_IsRunning = false;
