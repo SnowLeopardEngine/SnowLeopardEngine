@@ -1,9 +1,3 @@
-rule("copy_assets")
-    on_load(function(target)
-        os.cp("$(projectdir)/Assets", target:targetdir())
-    end)
-rule_end()
-
 includes("TickOneFrame")
 includes("Application")
 includes("LifeTimeComponents")

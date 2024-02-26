@@ -26,6 +26,12 @@ if is_host("windows") then
 end
 
 -- global rules
+rule("copy_assets")
+    on_load(function(target)
+        os.cp("$(projectdir)/Assets", target:targetdir())
+    end)
+rule_end()
+
 add_rules("mode.debug", "mode.release")
 add_rules("plugin.vsxmake.autoupdate")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
