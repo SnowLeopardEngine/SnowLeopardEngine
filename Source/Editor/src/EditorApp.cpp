@@ -1,5 +1,7 @@
 #include "SnowLeopardEditor/EditorApp.h"
+#include "SnowLeopardEditor/EditorGUISystem.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
+#include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
 
 namespace SnowLeopardEngine::Editor
@@ -17,6 +19,9 @@ namespace SnowLeopardEngine::Editor
             std::cerr << "Failed to initialize the engine!" << std::endl;
             return false;
         }
+
+        // init GUI system
+        m_GUISystem.Init();
 
         // subscribe events
         Subscribe(m_WindowCloseHandler);
@@ -41,8 +46,21 @@ namespace SnowLeopardEngine::Editor
 
     void EditorApp::Run()
     {
+        float fixedTimer = 0;
         while (m_IsRunning && !m_Engine->GetContext()->WindowSys->ShouldClose())
         {
+            m_Timer.Start();
+            float dt        = m_Timer.GetDeltaTime();
+            Time::DeltaTime = dt;
+
+            // Fixed Tick
+            fixedTimer += dt;
+            while (fixedTimer >= Time::FixedDeltaTime)
+            {
+                // TODO: Tick Logic & Physics
+                fixedTimer -= Time::FixedDeltaTime;
+            }
+
             // Tick Window System
             if (!m_Engine->GetContext()->WindowSys->Tick())
             {
@@ -53,12 +71,19 @@ namespace SnowLeopardEngine::Editor
             m_Engine->GetContext()->EventSys->DispatchEvents();
 
             // GUI Begin
+            m_GUISystem.Begin();
 
             // GUI Draw
+            m_GUISystem.OnTick(dt);
+
+            // TODO: Tick Rendering
 
             // GUI End
+            m_GUISystem.End();
 
             m_Engine->GetContext()->RenderSys->Present();
+
+            m_Timer.Stop();
         }
 
         Shutdown();

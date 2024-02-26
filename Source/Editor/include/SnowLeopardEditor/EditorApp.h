@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SnowLeopardEditor/EditorGUISystem.h"
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
 
 namespace SnowLeopardEngine::Editor
@@ -51,6 +52,8 @@ namespace SnowLeopardEngine::Editor
         virtual void Shutdown() override;
 
     private:
+        EditorGUISystem m_GUISystem;
+
         static EditorApp* s_Instance;
     };
 } // namespace SnowLeopardEngine::Editor

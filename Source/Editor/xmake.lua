@@ -1,5 +1,5 @@
 -- add requirements
-add_requires("imgui v1.90-docking")
+add_requires("imgui v1.90-docking", {configs = {glfw = true, opengl3 = true}})
 
 -- target defination, name: SnowLeopardEditor
 target("SnowLeopardEditor")
