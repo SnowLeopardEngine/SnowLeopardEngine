@@ -65,6 +65,11 @@ namespace SnowLeopardEngine::Editor
 
     void EditorGUISystem::Begin()
     {
+        // High DPI scaling
+        float dpiScaleX, dpiScaleY;
+        glfwGetWindowContentScale(static_cast<GLFWwindow*>(g_EngineContext->WindowSys->GetPlatformWindow()), &dpiScaleX, &dpiScaleY);
+        ImGui::GetIO().FontGlobalScale = dpiScaleX;
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
