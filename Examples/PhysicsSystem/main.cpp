@@ -1,11 +1,11 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
-#include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
+#include <cstdint>
 
 using namespace SnowLeopardEngine;
 
@@ -45,46 +45,82 @@ public:
         // Create a camera
         Entity camera                                      = scene->CreateEntity("MainCamera");
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
-        camera.AddComponent<CameraComponent>();
+        auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
+        cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
+        // clang-format off
+        cameraComponent.CubemapFilePaths = {
+            "Assets/Textures/Skybox001/right.jpg",
+            "Assets/Textures/Skybox001/left.jpg",
+            "Assets/Textures/Skybox001/top.jpg",
+            "Assets/Textures/Skybox001/bottom.jpg",
+            "Assets/Textures/Skybox001/front.jpg",
+            "Assets/Textures/Skybox001/back.jpg"
+        };
+        // clang-format on
+
         camera.AddComponent<FreeMoveCameraControllerComponent>();
 
         // Create a smooth material
         // https://forum.unity.com/threads/bounciness-1-0-conservation-of-energy-doesnt-work.143472/
         auto smoothMaterial = CreateRef<PhysicsMaterial>(0, 0, 0.98);
+        auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
 
         // Create a sphere with RigidBodyComponent & SphereColliderComponent
         Entity sphere = scene->CreateEntity("Sphere");
 
-        auto& sphereTransform      = sphere.GetComponent<TransformComponent>();
-        sphereTransform.Position.y = 15.0f;
+        auto& sphereTransform    = sphere.GetComponent<TransformComponent>();
+        sphereTransform.Position = {5, 15, 0};
         sphereTransform.Scale *= 3;
 
         sphere.AddComponent<RigidBodyComponent>(1.0f);
-        sphere.AddComponent<SphereColliderComponent>(smoothMaterial);
-        auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
-        sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
-        auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.BaseColor   = {0.4, 0.45, 0.5, 1}; // Metal
+        sphere.AddComponent<SphereColliderComponent>(normalMaterial);
+        auto& sphereMeshFilter                    = sphere.AddComponent<MeshFilterComponent>();
+        sphereMeshFilter.PrimitiveType            = MeshPrimitiveType::Sphere;
+        auto& sphereMeshRenderer                  = sphere.AddComponent<MeshRendererComponent>();
+        sphereMeshRenderer.BaseColor              = {0.4, 0.45, 0.5, 1}; // Metal
+        sphereMeshRenderer.UseDiffuse             = true;
+        sphereMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/awesomeface.png";
 
         auto scriptInstance = CreateRef<SphereScript>();
         sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
 
-        // Create a floor with RigidBodyComponent & BoxColliderComponent
-        Entity floor = scene->CreateEntity("Floor");
+        // // Create a floor with RigidBodyComponent & BoxColliderComponent
+        // Entity floor = scene->CreateEntity("Floor");
 
-        auto& floorTransform = floor.GetComponent<TransformComponent>();
-        floorTransform.Scale = {50, 1, 50};
+        // auto& floorTransform = floor.GetComponent<TransformComponent>();
+        // floorTransform.Scale = {50, 1, 50};
 
-        // set it to static, so that rigidBody will be static.
-        floor.GetComponent<EntityStatusComponent>().IsStatic = true;
-        floor.AddComponent<RigidBodyComponent>();
-        floor.AddComponent<BoxColliderComponent>(smoothMaterial);
-        auto& floorMeshFilter                    = floor.AddComponent<MeshFilterComponent>();
-        floorMeshFilter.PrimitiveType            = MeshPrimitiveType::Cube;
-        auto& floorMeshRenderer                  = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.BaseColor              = {1, 1, 1, 1}; // Pure White
-        floorMeshRenderer.UseDiffuse             = true;
-        floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/awesomeface.png";
+        // // set it to static, so that rigidBody will be static.
+        // floor.GetComponent<EntityStatusComponent>().IsStatic = true;
+        // floor.AddComponent<RigidBodyComponent>();
+        // floor.AddComponent<BoxColliderComponent>(smoothMaterial);
+        // auto& floorMeshFilter                    = floor.AddComponent<MeshFilterComponent>();
+        // floorMeshFilter.PrimitiveType            = MeshPrimitiveType::Cube;
+        // auto& floorMeshRenderer                  = floor.AddComponent<MeshRendererComponent>();
+        // floorMeshRenderer.BaseColor              = {1, 1, 1, 1}; // Pure White
+        // floorMeshRenderer.UseDiffuse             = true;
+        // floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
+
+        // Create a terrain
+        int    heightMapWidth                               = 100;
+        int    heightMapHeight                              = 100;
+        float  xScale                                       = 3;
+        float  yScale                                       = 3;
+        float  zScale                                       = 8;
+        Entity terrain                                      = scene->CreateEntity("Terrain");
+        terrain.GetComponent<TransformComponent>().Position = {
+            -heightMapWidth * 0.5f * xScale, 0, -heightMapHeight * 0.5f * zScale}; // fix center
+        auto& terrainComponent = terrain.AddComponent<TerrainComponent>();
+        terrainComponent.TerrainHeightMap =
+            Utils::GenerateWaveHeightMap(heightMapWidth, heightMapHeight); // create a 100 x 100 height map
+        terrainComponent.XScale = xScale;
+        terrainComponent.YScale = yScale;
+        terrainComponent.ZScale = zScale;
+        terrain.AddComponent<TerrainColliderComponent>(normalMaterial);
+        auto& terrainRenderer = terrain.AddComponent<TerrainRendererComponent>();
+        // terrainRenderer.BaseColor = {0.6, 1, 0.6, 1}; // Light Green
+        terrainRenderer.UseDiffuse             = true;
+        terrainRenderer.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
     }
 
 private:
