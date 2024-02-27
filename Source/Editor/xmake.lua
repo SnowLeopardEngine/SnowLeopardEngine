@@ -26,3 +26,8 @@ target("SnowLeopardEditor")
 
     -- set target directory
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/SnowLeopardEditor")
+
+    -- copy config
+    after_build(function(target)
+        os.cp("$(scriptdir)/config/*", target:targetdir())
+    end)

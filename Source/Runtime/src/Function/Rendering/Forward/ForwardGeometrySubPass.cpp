@@ -31,6 +31,13 @@ namespace SnowLeopardEngine
 
         auto& registry = activeScene->GetRegistry();
 
+        // If RT is set, render to RT.
+        auto rt = pipeline->GetRenderTarget();
+        if (rt != nullptr)
+        {
+            rt->Bind();
+        }
+
         // Get camera component, currently we pick the first one as main camera.
         // TODO: filter main camera & other cameras
         TransformComponent mainCameraTransform;
@@ -99,13 +106,6 @@ namespace SnowLeopardEngine
         auto      lightPos         = -1000.0f * directionalLight.Direction; // simulate directional light position
         glm::mat4 lightView        = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-        // If RT is set, render to RT.
-        auto rt = pipeline->GetRenderTarget();
-        if (rt != nullptr)
-        {
-            rt->Bind();
-        }
 
         // for each mesh in the scene, request draw call.
         registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(

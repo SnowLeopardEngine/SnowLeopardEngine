@@ -1,4 +1,5 @@
 #include "SnowLeopardEditor/EditorGUISystem.h"
+#include "SnowLeopardEditor/PanelManager.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
@@ -46,6 +47,9 @@ namespace SnowLeopardEngine::Editor
         ImGui_ImplGlfw_InitForOpenGL(static_cast<GLFWwindow*>(g_EngineContext->WindowSys->GetPlatformWindow()), true);
         ImGui_ImplOpenGL3_Init("#version 330");
 
+        // init panel manager
+        PanelManager::Init();
+
         SNOW_LEOPARD_INFO("[EditorGUISystem] Initialized");
     }
 
@@ -61,13 +65,16 @@ namespace SnowLeopardEngine::Editor
     {
         g_EngineContext->RenderSys->GetAPI()->ClearColor(glm::vec4(0, 0, 0, 0), ClearBit::Default);
         ImGui::ShowDemoWindow();
+
+        PanelManager::OnTick(deltaTime);
     }
 
     void EditorGUISystem::Begin()
     {
         // High DPI scaling
         float dpiScaleX, dpiScaleY;
-        glfwGetWindowContentScale(static_cast<GLFWwindow*>(g_EngineContext->WindowSys->GetPlatformWindow()), &dpiScaleX, &dpiScaleY);
+        glfwGetWindowContentScale(
+            static_cast<GLFWwindow*>(g_EngineContext->WindowSys->GetPlatformWindow()), &dpiScaleX, &dpiScaleY);
         ImGui::GetIO().FontGlobalScale = dpiScaleX;
 
         ImGui_ImplOpenGL3_NewFrame();

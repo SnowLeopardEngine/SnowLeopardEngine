@@ -1,5 +1,6 @@
 #include "SnowLeopardEditor/EditorApp.h"
 #include "SnowLeopardEditor/EditorGUISystem.h"
+#include "SnowLeopardEditor/PanelManager.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
@@ -76,8 +77,6 @@ namespace SnowLeopardEngine::Editor
             // GUI Draw
             m_GUISystem.OnTick(dt);
 
-            // TODO: Tick Rendering
-
             // GUI End
             m_GUISystem.End();
 
@@ -94,6 +93,7 @@ namespace SnowLeopardEngine::Editor
         SNOW_LEOPARD_INFO("[Editor] Shutting Down...");
 
         // GUI Shutdown
+        m_GUISystem.Shutdown();
 
         DesktopApp::Shutdown();
     }
