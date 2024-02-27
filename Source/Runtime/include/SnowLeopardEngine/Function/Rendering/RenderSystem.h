@@ -16,6 +16,7 @@ namespace SnowLeopardEngine
         void Present();
 
         const Ref<GraphicsAPI>& GetAPI() const { return m_API; }
+        const Ref<Pipeline>&    GetPipeline() const { return m_Pipeline; }
 
     private:
         void Draw();

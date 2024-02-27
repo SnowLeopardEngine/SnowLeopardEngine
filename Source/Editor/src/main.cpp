@@ -6,8 +6,8 @@ int main(int argc, char** argv)
 {
     EditorAppInitInfo initInfo    = {};
     initInfo.Engine.Window.Title  = "SnowLeopardEditor";
-    initInfo.Engine.Window.Width  = 1600;
-    initInfo.Engine.Window.Height = 900;
+    initInfo.Engine.Window.Width  = 1440;
+    initInfo.Engine.Window.Height = 810;
 
     EditorApp app(argc, argv);
 

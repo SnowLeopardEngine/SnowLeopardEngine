@@ -46,11 +46,19 @@ namespace SnowLeopardEngine
 
         /**
          * @brief Whether the window should close or not.
+         *
+         * @return true
+         * @return false
+         */
+        bool ShouldClose() { return m_Window->ShouldClose(); }
+
+        /**
+         * @brief Whether the window is minimized.
          * 
          * @return true 
          * @return false 
          */
-        bool ShouldClose() { return m_Window->ShouldClose(); }
+        bool IsMinimized() { return m_Window->IsMinimized(); }
 
         void MakeCurrentContext() { m_Window->MakeCurrentContext(); }
         void SwapBuffers() { m_Window->SwapBuffers(); }

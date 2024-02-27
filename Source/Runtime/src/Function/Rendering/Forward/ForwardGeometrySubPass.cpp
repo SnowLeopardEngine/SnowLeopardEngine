@@ -31,6 +31,13 @@ namespace SnowLeopardEngine
 
         auto& registry = activeScene->GetRegistry();
 
+        // If RT is set, render to RT.
+        auto rt = pipeline->GetRenderTarget();
+        if (rt != nullptr)
+        {
+            rt->Bind();
+        }
+
         // Get camera component, currently we pick the first one as main camera.
         // TODO: filter main camera & other cameras
         TransformComponent mainCameraTransform;
@@ -62,9 +69,16 @@ namespace SnowLeopardEngine
             }
         }
 
-        // after shadow-mapping, update the viewport use the size of the window
-        pipeline->GetAPI()->UpdateViewport(
-            0, 0, g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight());
+        // after shadow-mapping, update the viewport use the size of the window, if RT is not set
+        if (rt == nullptr)
+        {
+            pipeline->GetAPI()->UpdateViewport(
+                0, 0, g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight());
+        }
+        else
+        {
+            pipeline->GetAPI()->UpdateViewport(0, 0, rt->GetDesc().Width, rt->GetDesc().Height);
+        }
 
         // filter the first directional light
         DirectionalLightComponent directionalLight;
@@ -99,13 +113,6 @@ namespace SnowLeopardEngine
         auto      lightPos         = -1000.0f * directionalLight.Direction; // simulate directional light position
         glm::mat4 lightView        = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-        // If RT is set, render to RT.
-        auto rt = pipeline->GetRenderTarget();
-        if (rt != nullptr)
-        {
-            rt->Bind();
-        }
 
         // for each mesh in the scene, request draw call.
         registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(

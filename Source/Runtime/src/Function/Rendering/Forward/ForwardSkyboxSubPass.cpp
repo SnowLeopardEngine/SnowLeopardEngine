@@ -35,6 +35,13 @@ namespace SnowLeopardEngine
 
         auto& registry = activeScene->GetRegistry();
 
+        // If RT is set, render to RT.
+        auto rt = pipeline->GetRenderTarget();
+        if (rt != nullptr)
+        {
+            rt->Bind();
+        }
+
         // TODO: Ziyu Min
 
         // Get camera component, currently we pick the first one as main camera.
@@ -89,13 +96,6 @@ namespace SnowLeopardEngine
         // Calculate up
         glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
         glm::vec3 up    = glm::normalize(glm::cross(right, forward));
-
-        // If RT is set, render to RT.
-        auto rt = pipeline->GetRenderTarget();
-        if (rt != nullptr)
-        {
-            rt->Bind();
-        }
 
         m_Shader->Bind();
 

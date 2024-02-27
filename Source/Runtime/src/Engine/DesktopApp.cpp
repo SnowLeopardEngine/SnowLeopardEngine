@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
+#include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Event/WindowEvents.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
@@ -27,6 +28,7 @@ namespace SnowLeopardEngine
 
         // subscribe events
         Subscribe(m_WindowCloseHandler);
+        Subscribe(m_WindowResizeHandler);
 
         m_IsRunning = true;
 
@@ -75,6 +77,7 @@ namespace SnowLeopardEngine
     void DesktopApp::Shutdown()
     {
         // unsubscribe events
+        Unsubscribe(m_WindowResizeHandler);
         Unsubscribe(m_WindowCloseHandler);
 
         // shutdown the engine
@@ -85,5 +88,16 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_CORE_INFO("[App] OnWindowClose");
         Quit();
+    }
+
+    void DesktopApp::OnWindowResize(const WindowResizeEvent& e)
+    {
+        SNOW_LEOPARD_CORE_INFO("[App] OnWindowResize, {0}", e.ToString());
+
+        auto w = e.GetWidth();
+        auto h = e.GetHeight();
+
+        SNOW_LEOPARD_CORE_ASSERT(w != 0 && h != 0, "[App] Window size must be greater than (0, 0)");
+        g_EngineContext->RenderSys->GetAPI()->UpdateViewport(0, 0, w, h);
     }
 } // namespace SnowLeopardEngine

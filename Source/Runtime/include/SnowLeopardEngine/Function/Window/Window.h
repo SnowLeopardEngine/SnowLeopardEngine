@@ -68,6 +68,7 @@ namespace SnowLeopardEngine
         virtual uint32_t GetHeight() const = 0;
 
         virtual bool ShouldClose() const = 0;
+        virtual bool IsMinimized() const = 0;
 
         virtual void MakeCurrentContext() = 0;
         virtual void SwapBuffers()        = 0;
