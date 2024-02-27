@@ -160,7 +160,9 @@ namespace SnowLeopardEngine
 
         RigidBodyComponent()                          = default;
         RigidBodyComponent(const RigidBodyComponent&) = default;
-        explicit RigidBodyComponent(float mass) : Mass(mass) {}
+        explicit RigidBodyComponent(float mass, float linear, float augular, bool ccd) :
+            Mass(mass), LinearDamping(linear), AngularDamping(augular), EnableCCD(ccd)
+        {}
     };
 
     struct SphereColliderComponent
