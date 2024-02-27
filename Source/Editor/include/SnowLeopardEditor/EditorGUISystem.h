@@ -8,6 +8,7 @@ namespace SnowLeopardEngine::Editor
         void Init();
         void Shutdown();
 
+        void OnFixedTick();
         void OnTick(float deltaTime);
 
         void Begin();

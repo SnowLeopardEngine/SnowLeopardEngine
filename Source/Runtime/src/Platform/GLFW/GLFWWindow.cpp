@@ -83,6 +83,15 @@ namespace SnowLeopardEngine
             data.Width       = width;
             data.Height      = height;
 
+            // if it's minimize
+            if (width == 0 && height == 0)
+            {
+                data.IsMinimized = true;
+                WindowMinimizeEvent minimizeEvent;
+                TriggerEvent(minimizeEvent);
+                return;
+            }
+
             // Trigger event
             WindowResizeEvent event(width, height);
             TriggerEvent(event);
@@ -153,6 +162,8 @@ namespace SnowLeopardEngine
     }
 
     bool GLFWWindow::ShouldClose() const { return glfwWindowShouldClose(m_Window); }
+
+    bool GLFWWindow::IsMinimized() const { return m_Data.IsMinimized; }
 
     void GLFWWindow::MakeCurrentContext() { glfwMakeContextCurrent(m_Window); }
 

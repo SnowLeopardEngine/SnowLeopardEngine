@@ -58,7 +58,7 @@ namespace SnowLeopardEngine::Editor
             fixedTimer += dt;
             while (fixedTimer >= Time::FixedDeltaTime)
             {
-                // TODO: Tick Logic & Physics
+                m_GUISystem.OnFixedTick();
                 fixedTimer -= Time::FixedDeltaTime;
             }
 

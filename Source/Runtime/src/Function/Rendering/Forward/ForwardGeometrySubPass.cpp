@@ -69,9 +69,16 @@ namespace SnowLeopardEngine
             }
         }
 
-        // after shadow-mapping, update the viewport use the size of the window
-        pipeline->GetAPI()->UpdateViewport(
-            0, 0, g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight());
+        // after shadow-mapping, update the viewport use the size of the window, if RT is not set
+        if (rt == nullptr)
+        {
+            pipeline->GetAPI()->UpdateViewport(
+                0, 0, g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight());
+        }
+        else
+        {
+            pipeline->GetAPI()->UpdateViewport(0, 0, rt->GetDesc().Width, rt->GetDesc().Height);
+        }
 
         // filter the first directional light
         DirectionalLightComponent directionalLight;

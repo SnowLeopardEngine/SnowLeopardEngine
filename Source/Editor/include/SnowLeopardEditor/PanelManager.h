@@ -9,6 +9,7 @@ namespace SnowLeopardEngine::Editor
     {
     public:
         static void Init();
+        static void OnFixedTick();
         static void OnTick(float deltaTime);
 
     private:

@@ -6,7 +6,6 @@
 #include "SnowLeopardEngine/Core/Time/Timer.h"
 #include "SnowLeopardEngine/Engine/Engine.h"
 
-
 namespace SnowLeopardEngine
 {
     struct DesktopAppInitInfo
@@ -74,10 +73,21 @@ namespace SnowLeopardEngine
          */
         virtual void OnWindowClose(const WindowCloseEvent& e);
 
+        /**
+         * @brief Event callback when window is resizing
+         *
+         * @param e
+         */
+        void OnWindowResize(const WindowResizeEvent& e);
+
     protected:
         Ref<Engine> m_Engine = nullptr;
         Timer       m_Timer;
-        bool        m_IsRunning = false;
+        bool        m_IsRunning         = false;
+
+        EventHandler<WindowResizeEvent> m_WindowResizeHandler = [this](const WindowResizeEvent& e) {
+            OnWindowResize(e);
+        };
 
         EventHandler<WindowCloseEvent> m_WindowCloseHandler = [this](const WindowCloseEvent& e) { OnWindowClose(e); };
 

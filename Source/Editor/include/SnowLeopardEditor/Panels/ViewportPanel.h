@@ -10,6 +10,7 @@ namespace SnowLeopardEngine::Editor
     {
     public:
         virtual void Init() override final;
+        virtual void OnFixedTick() override final;
         virtual void OnTick(float deltaTime) override final;
 
     private:

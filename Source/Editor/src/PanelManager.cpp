@@ -18,6 +18,14 @@ namespace SnowLeopardEngine::Editor
         }
     }
 
+    void PanelManager::OnFixedTick()
+    {
+        for (auto& panel : s_Panels)
+        {
+            panel->OnFixedTick();
+        }
+    }
+
     void PanelManager::OnTick(float deltaTime)
     {
         for (auto& panel : s_Panels)

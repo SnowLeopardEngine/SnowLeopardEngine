@@ -4,6 +4,16 @@
 
 namespace SnowLeopardEngine
 {
+    class WindowMinimizeEvent final : public Event
+    {
+    public:
+        DECLARE_EVENT_TYPE(WindowMinimizeEvent)
+
+        WindowMinimizeEvent() = default;
+
+        virtual const std::string ToString() const override { return "WindowMinimizeEvent"; }
+    };
+
     class WindowResizeEvent final : public Event
     {
     public:

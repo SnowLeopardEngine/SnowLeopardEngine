@@ -62,6 +62,11 @@ namespace SnowLeopardEngine::Editor
         ImGui::DestroyContext();
     }
 
+    void EditorGUISystem::OnFixedTick()
+    {
+        PanelManager::OnFixedTick();
+    }
+
     void EditorGUISystem::OnTick(float deltaTime)
     {
         static bool               dockSpaceOpen  = true;
