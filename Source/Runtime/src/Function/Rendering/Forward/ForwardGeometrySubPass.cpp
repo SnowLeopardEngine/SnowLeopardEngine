@@ -100,6 +100,13 @@ namespace SnowLeopardEngine
         glm::mat4 lightView        = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
+        // If RT is set, render to RT.
+        auto rt = pipeline->GetRenderTarget();
+        if (rt != nullptr)
+        {
+            rt->Bind();
+        }
+
         // for each mesh in the scene, request draw call.
         registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
             [this, pipeline, mainCameraTransform, mainCamera, directionalLight, ownerPass, lightSpaceMatrix](
@@ -172,5 +179,10 @@ namespace SnowLeopardEngine
                     m_Shader->Unbind();
                 }
             });
+
+        if (rt != nullptr)
+        {
+            rt->Unbind();
+        }
     }
 } // namespace SnowLeopardEngine

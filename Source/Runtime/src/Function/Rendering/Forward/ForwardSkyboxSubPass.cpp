@@ -1,7 +1,7 @@
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSkyboxSubPass.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
-#include "SnowLeopardEngine/Function/Rendering/Pass/RenderPass.h"
+#include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSinglePass.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 
@@ -14,8 +14,10 @@ namespace SnowLeopardEngine
 
     void ForwardSkyboxSubPass::Draw()
     {
+        auto* ownerPass = static_cast<ForwardSinglePass*>(m_OwnerPass);
+
         // Get pipeline
-        auto* pipeline = m_OwnerPass->GetPipeline();
+        auto* pipeline = ownerPass->GetPipeline();
 
         // Get pipeline state & set
         auto pipelineState = pipeline->GetStateManager()->GetState("Skybox");
@@ -88,6 +90,13 @@ namespace SnowLeopardEngine
         glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
         glm::vec3 up    = glm::normalize(glm::cross(right, forward));
 
+        // If RT is set, render to RT.
+        auto rt = pipeline->GetRenderTarget();
+        if (rt != nullptr)
+        {
+            rt->Bind();
+        }
+
         m_Shader->Bind();
 
         auto viewMatrix       = glm::lookAt(mainCameraTransform.Position, mainCameraTransform.Position + forward, up);
@@ -108,5 +117,10 @@ namespace SnowLeopardEngine
 
         vertexArray->Unbind();
         m_Shader->Unbind();
+
+        if (rt != nullptr)
+        {
+            rt->Unbind();
+        }
     }
 } // namespace SnowLeopardEngine
