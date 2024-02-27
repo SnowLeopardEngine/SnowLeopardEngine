@@ -40,5 +40,8 @@ namespace SnowLeopardEngine
 
         std::vector<uint32_t> m_ColorAttachments;
         uint32_t              m_DepthAttachment = 0;
+
+        std::vector<uint32_t> m_ColorAttachmentsToDelete;
+        uint32_t              m_DepthAttachmentToDelete = 0;
     };
 } // namespace SnowLeopardEngine

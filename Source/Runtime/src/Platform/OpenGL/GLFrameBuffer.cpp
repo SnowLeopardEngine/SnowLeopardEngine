@@ -128,8 +128,18 @@ namespace SnowLeopardEngine
         if (m_Name)
         {
             glDeleteFramebuffers(1, &m_Name);
-            glDeleteTextures(m_ColorAttachments.size(), m_ColorAttachments.data());
-            glDeleteTextures(1, &m_DepthAttachment);
+
+            if (!m_ColorAttachmentsToDelete.empty())
+            {
+                glDeleteTextures(m_ColorAttachmentsToDelete.size(), m_ColorAttachmentsToDelete.data());
+            }
+            if (m_DepthAttachmentToDelete != 0)
+            {
+                glDeleteTextures(1, &m_DepthAttachmentToDelete);
+            }
+
+            m_ColorAttachmentsToDelete.assign(m_ColorAttachments.begin(), m_ColorAttachments.end());
+            m_DepthAttachmentToDelete = m_DepthAttachment;
 
             m_ColorAttachments.clear();
             m_DepthAttachment = 0;
