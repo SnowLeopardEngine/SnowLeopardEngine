@@ -301,6 +301,17 @@ namespace SnowLeopardEngine
 
         MeshFilterComponent()                           = default;
         MeshFilterComponent(const MeshFilterComponent&) = default;
+
+        void AssignEntityID(int entityID)
+        {
+            for (auto& meshItem : Meshes.Items)
+            {
+                for (auto& vertex : meshItem.Data.Vertices)
+                {
+                    vertex.EntityID = entityID;
+                }
+            }
+        }
     };
 
     struct MeshRendererComponent

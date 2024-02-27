@@ -1,6 +1,7 @@
 #include "SnowLeopardEditor/Panels/ViewportPanel.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "entt/entity/fwd.hpp"
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
 #include <imgui.h>
@@ -11,16 +12,21 @@ namespace SnowLeopardEngine::Editor
     {
         // Create RT
 
-        // Color Attachment
-        FrameBufferTextureDesc rtColorAttachmentDesc = {};
-        rtColorAttachmentDesc.TextureFormat          = FrameBufferTextureFormat::RGBA8;
+        // Color Attachment 0 - main target color
+        FrameBufferTextureDesc rtColorAttachment0Desc = {};
+        rtColorAttachment0Desc.TextureFormat          = FrameBufferTextureFormat::RGBA8;
+
+        // Color Attachment 1 - picking objects, back buffer hack
+        FrameBufferTextureDesc rtColorAttachment1Desc = {};
+        rtColorAttachment1Desc.TextureFormat          = FrameBufferTextureFormat::RED_INTEGER;
 
         // Depth Attachment
         FrameBufferTextureDesc rtDepthAttachmentDesc;
         rtDepthAttachmentDesc.TextureFormat = FrameBufferTextureFormat::DEPTH24_STENCIL8;
 
         FrameBufferAttachmentDesc rtAttachmentDesc = {};
-        rtAttachmentDesc.Attachments.emplace_back(rtColorAttachmentDesc);
+        rtAttachmentDesc.Attachments.emplace_back(rtColorAttachment0Desc);
+        rtAttachmentDesc.Attachments.emplace_back(rtColorAttachment1Desc);
         rtAttachmentDesc.Attachments.emplace_back(rtDepthAttachmentDesc);
 
         FrameBufferDesc rtDesc = {};
@@ -98,6 +104,10 @@ namespace SnowLeopardEngine::Editor
         // Tick logic
         g_EngineContext->SceneMngr->OnTick(deltaTime);
 
+        m_RenderTarget->Bind();
+        m_RenderTarget->ClearColorAttachment(1, 0); // Clear RED buffer (picking buffer)
+        m_RenderTarget->Unbind();
+
         if (!g_EngineContext->WindowSys->IsMinimized())
         {
             // Tick rendering system
@@ -108,7 +118,6 @@ namespace SnowLeopardEngine::Editor
         ImGui::Begin("Viewport");
         ImGui::PopStyleVar();
 
-        // TODO: Double buffering
         uint32_t colorAttachment0 = m_RenderTarget->GetColorAttachmentID(0);
         if (colorAttachment0)
         {
@@ -124,6 +133,32 @@ namespace SnowLeopardEngine::Editor
 
             // Render Framebuffer to an image.
             ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<intptr_t>(colorAttachment0)), size, {0, 1}, {1, 0});
+        }
+
+        // Get mouse relative position (Origin is left bottom) to the viewport window
+        auto      viewportMinRegion = ImGui::GetWindowContentRegionMin();
+        auto      viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+        auto      viewportOffset    = ImGui::GetWindowPos();
+        glm::vec2 bounds0           = {viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
+        glm::vec2 bounds1           = {viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
+        ImVec2    mousePos          = ImGui::GetMousePos();
+        mousePos.x -= bounds0.x;
+        mousePos.y -= bounds0.y;
+        auto viewportTotalSize = bounds1 - bounds0;
+        mousePos.y             = viewportTotalSize.y - mousePos.y;
+
+        if (mousePos.x >= 0 && mousePos.x < viewportTotalSize.x && mousePos.y >= 0 && mousePos.y < viewportTotalSize.y)
+        {
+            m_RenderTarget->Bind();
+            int entityID = m_RenderTarget->ReadPixelRedOnly(1, mousePos.x, mousePos.y);
+            if (entityID != -1)
+            {
+                Entity hoveredEntity = {static_cast<entt::entity>(entityID),
+                                        g_EngineContext->SceneMngr->GetActiveScene().get()};
+                SNOW_LEOPARD_INFO("[Editor][Viewport] Hovered on entity: Name={0}",
+                                  hoveredEntity.GetComponent<NameComponent>().Name);
+            }
+            m_RenderTarget->Unbind();
         }
 
         ImGui::End();

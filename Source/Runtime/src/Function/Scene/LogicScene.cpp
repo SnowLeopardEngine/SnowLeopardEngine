@@ -138,6 +138,8 @@ namespace SnowLeopardEngine
                         break;
                 }
             }
+
+            meshFilter.AssignEntityID(static_cast<int>(entity));
         });
         m_Registry.view<TerrainComponent>().each([](entt::entity entity, TerrainComponent& terrain) {
             // TODO: Move to AssetManager
