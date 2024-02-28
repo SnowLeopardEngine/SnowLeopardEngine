@@ -264,17 +264,17 @@ namespace SnowLeopardEngine::Editor
             }
         }
 
-        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::W) && !ImGuizmo::IsUsing())
+        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::W) && m_IsWindowHovered && !ImGuizmo::IsUsing())
         {
             m_GuizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
         }
 
-        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::E) && !ImGuizmo::IsUsing())
+        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::E) && m_IsWindowHovered && !ImGuizmo::IsUsing())
         {
             m_GuizmoOperation = ImGuizmo::OPERATION::ROTATE;
         }
 
-        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::R) && !ImGuizmo::IsUsing())
+        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::R) && m_IsWindowHovered && !ImGuizmo::IsUsing())
         {
             m_GuizmoOperation = ImGuizmo::OPERATION::SCALE;
         }
