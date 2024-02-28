@@ -22,7 +22,7 @@ target("SnowLeopardEditor")
     add_packages("imgui", { public = true })
 
     -- add dependencies
-    add_deps("SnowLeopardEngine")
+    add_deps("SnowLeopardEngine", "ImGuizmo")
 
     -- set target directory
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/SnowLeopardEditor")
