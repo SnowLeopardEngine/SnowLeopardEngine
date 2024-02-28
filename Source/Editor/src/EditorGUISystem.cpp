@@ -4,8 +4,9 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 
-#include "imgui.h"
 #include <GLFW/glfw3.h>
+#include <ImGuizmo.h>
+#include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
@@ -62,10 +63,7 @@ namespace SnowLeopardEngine::Editor
         ImGui::DestroyContext();
     }
 
-    void EditorGUISystem::OnFixedTick()
-    {
-        PanelManager::OnFixedTick();
-    }
+    void EditorGUISystem::OnFixedTick() { PanelManager::OnFixedTick(); }
 
     void EditorGUISystem::OnTick(float deltaTime)
     {
@@ -127,6 +125,7 @@ namespace SnowLeopardEngine::Editor
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGuizmo::BeginFrame();
     }
 
     void EditorGUISystem::End()

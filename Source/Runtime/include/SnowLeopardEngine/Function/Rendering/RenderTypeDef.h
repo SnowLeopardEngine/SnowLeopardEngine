@@ -75,6 +75,8 @@ namespace SnowLeopardEngine
 
         // weights from each bone
         float Weights[MaxBoneInfluence];
+
+        int EntityID = -1;
     };
 
     struct MeshData

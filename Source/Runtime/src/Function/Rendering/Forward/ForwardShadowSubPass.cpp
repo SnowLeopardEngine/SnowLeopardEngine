@@ -29,35 +29,13 @@ namespace SnowLeopardEngine
         }
 
         auto& registry = activeScene->GetRegistry();
+        
+        auto  view     = registry.view<TransformComponent, CameraComponent>();
 
-        // Get camera component, currently we pick the first one as main camera.
-        // TODO: filter main camera & other cameras
-        TransformComponent mainCameraTransform;
-        CameraComponent    mainCamera;
+        // No Camera, return
+        if (view.size_hint() == 0)
         {
-            bool isFirst = true;
-            auto view    = registry.view<TransformComponent, CameraComponent>();
-
-            // No Camera, return
-            if (view.size_hint() == 0)
-            {
-                return;
-            }
-
-            for (const auto& cameraEntity : view)
-            {
-                if (isFirst)
-                {
-                    auto [transform, camera] = view.get<TransformComponent, CameraComponent>(cameraEntity);
-                    isFirst                  = false;
-                    mainCameraTransform      = transform;
-                    mainCamera               = camera;
-                }
-                else
-                {
-                    break;
-                }
-            }
+            return;
         }
 
         // filter the first directional light

@@ -255,12 +255,13 @@ namespace SnowLeopardEngine
 
     struct CameraComponent
     {
-        CameraClearFlags ClearFlags = CameraClearFlags::Color;
-        glm::vec4        ClearColor = glm::vec4(0.192157f, 0.301961f, 0.47451f, 1.0f);
-        CameraProjection Projection = CameraProjection::Perspective;
-        float            FOV        = 60.0f;
-        float            Near       = 0.1f;
-        float            Far        = 1000.0f;
+        CameraClearFlags ClearFlags  = CameraClearFlags::Color;
+        glm::vec4        ClearColor  = glm::vec4(0.192157f, 0.301961f, 0.47451f, 1.0f);
+        CameraProjection Projection  = CameraProjection::Perspective;
+        float            FOV         = 60.0f;
+        float            Near        = 0.1f;
+        float            Far         = 1000.0f;
+        float            AspectRatio = 16.0f / 9.0f;
 
         std::vector<std::filesystem::path> CubemapFilePaths;
         Ref<Texture3D>                     Cubemap = nullptr;
@@ -301,6 +302,17 @@ namespace SnowLeopardEngine
 
         MeshFilterComponent()                           = default;
         MeshFilterComponent(const MeshFilterComponent&) = default;
+
+        void AssignEntityID(int entityID)
+        {
+            for (auto& meshItem : Meshes.Items)
+            {
+                for (auto& vertex : meshItem.Data.Vertices)
+                {
+                    vertex.EntityID = entityID;
+                }
+            }
+        }
     };
 
     struct MeshRendererComponent

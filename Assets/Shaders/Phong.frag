@@ -2,10 +2,12 @@
 
 in vec2 varingTexCoords;
 in vec3 varingNormal;
+in flat int varingEntityID;
 in vec3 fragPos;
 in vec4 fragPosLightSpace;
 
-out vec4 FragColor;
+layout(location = 0) out vec4 color0;
+layout(location = 1) out int color1;
 
 uniform vec4 baseColor;
 uniform vec3 viewPos;
@@ -69,5 +71,6 @@ void main() {
     vec3 viewDir = normalize(viewPos - fragPos);
     vec3 finalColor = CalculateDirectionalLight(directionalLight, varingNormal, viewDir);
 
-    FragColor = vec4(finalColor, 1);
+    color0 = vec4(finalColor, 1);
+    color1 = varingEntityID;
 }

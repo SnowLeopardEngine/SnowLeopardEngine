@@ -81,29 +81,15 @@ namespace SnowLeopardEngine
             }
         }
 
-        auto viewPortDesc = pipeline->GetAPI()->GetViewport();
-
-        // Setup camera matrices
-        auto eulerAngles = mainCameraTransform.GetRotationEuler();
-
-        // Calculate forward (Yaw - 90 to adjust)
-        glm::vec3 forward;
-        forward.x = cos(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
-        forward.y = sin(glm::radians(eulerAngles.x));
-        forward.z = sin(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
-        forward   = glm::normalize(forward);
-
-        // Calculate up
-        glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
-        glm::vec3 up    = glm::normalize(glm::cross(right, forward));
+        auto viewPortDesc      = pipeline->GetAPI()->GetViewport();
+        mainCamera.AspectRatio = viewPortDesc.Width / viewPortDesc.Height;
 
         m_Shader->Bind();
 
-        auto viewMatrix       = glm::lookAt(mainCameraTransform.Position, mainCameraTransform.Position + forward, up);
-        auto projectionMatrix = glm::perspective(
-            glm::radians(mainCamera.FOV), viewPortDesc.Width / viewPortDesc.Height, mainCamera.Near, mainCamera.Far);
-        auto view = glm::mat4(glm::mat3(viewMatrix));
-        auto vp   = projectionMatrix * view;
+        auto viewMatrix       = g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform);
+        auto projectionMatrix = g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera);
+        auto view             = glm::mat4(glm::mat3(viewMatrix));
+        auto vp               = projectionMatrix * view;
         m_Shader->SetMat4("VP", vp);
 
         // Bind cubemap

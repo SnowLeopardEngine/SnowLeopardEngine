@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Core/Event/EventSystem.h"
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
 #include "SnowLeopardEngine/Function/Audio/AudioSystem.h"
+#include "SnowLeopardEngine/Function/Camera/CameraSystem.h"
 #include "SnowLeopardEngine/Function/Input/InputSystem.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderSystem.h"
@@ -22,6 +23,7 @@ namespace SnowLeopardEngine
         SingletonWrapper<InputSystem>   InputSys;
         SingletonWrapper<SceneManager>  SceneMngr;
         SingletonWrapper<RenderSystem>  RenderSys;
+        SingletonWrapper<CameraSystem>  CameraSys;
     };
 
     extern EngineContext* g_EngineContext;

@@ -120,7 +120,8 @@ namespace SnowLeopardEngine
                                {ShaderDataType::Float3, "a_Normal"},
                                {ShaderDataType::Float2, "a_TexCoords"},
                                {ShaderDataType::Int4, "a_BoneIDs"},
-                               {ShaderDataType::Float4, "a_Weights"}};
+                               {ShaderDataType::Float4, "a_Weights"},
+                               {ShaderDataType::Int, "a_EntityID"}};
 
         return CreateVertexArray(meshItem, layout);
     }
