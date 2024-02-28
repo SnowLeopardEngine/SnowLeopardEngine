@@ -18,6 +18,7 @@ namespace SnowLeopardEngine::Editor
 
     private:
         void HandleInput();
+        void DrawToolbar();
 
     private:
         Ref<FrameBuffer> m_RenderTarget = nullptr;

@@ -121,6 +121,11 @@ namespace SnowLeopardEngine::Editor
         ImGui::Begin("Viewport");
         ImGui::PopStyleVar();
 
+        ImGui::BeginChild("ViewportToolbar", ImVec2(0, 30), false, ImGuiWindowFlags_NoScrollbar);
+        DrawToolbar();
+        ImGui::EndChild();
+
+        ImGui::BeginChild("ViewportMain", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar);
         uint32_t colorAttachment0 = m_RenderTarget->GetColorAttachmentID(0);
         if (colorAttachment0)
         {
@@ -217,6 +222,7 @@ namespace SnowLeopardEngine::Editor
                 }
             }
         }
+        ImGui::EndChild();
 
         ImGui::End();
     }
@@ -278,5 +284,26 @@ namespace SnowLeopardEngine::Editor
         {
             m_GuizmoOperation = ImGuizmo::OPERATION::SCALE;
         }
+    }
+
+    void ViewportPanel::DrawToolbar()
+    {
+        float windowHeight = ImGui::GetWindowHeight();
+
+        float centerHeight = windowHeight * 0.5f;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 3));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 3));
+
+        float offsetY = (windowHeight - centerHeight) * 0.5f;
+        ImGui::SetCursorPos(ImVec2(0, offsetY));
+
+        ImGui::RadioButton("Translate", reinterpret_cast<int*>(&m_GuizmoOperation), ImGuizmo::OPERATION::TRANSLATE);
+        ImGui::SameLine();
+        ImGui::RadioButton("Rotate", reinterpret_cast<int*>(&m_GuizmoOperation), ImGuizmo::OPERATION::ROTATE);
+        ImGui::SameLine();
+        ImGui::RadioButton("Scale", reinterpret_cast<int*>(&m_GuizmoOperation), ImGuizmo::OPERATION::SCALE);
+
+        ImGui::PopStyleVar(2);
     }
 } // namespace SnowLeopardEngine::Editor
