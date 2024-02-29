@@ -23,7 +23,7 @@ namespace SnowLeopardEngine::Editor
 
     private:
         float m_Sensitivity = 0.05f;
-        float m_Speed       = 0.1f;
+        float m_BaseSpeed   = 0.1f;
 
         bool      m_IsFirstTime = true;
         glm::vec2 m_LastFrameMousePosition;

@@ -1,4 +1,5 @@
 #include "SnowLeopardEditor/EditorCamera/EditorCameraScript.h"
+#include "SnowLeopardEditor/Selector.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
@@ -72,34 +73,52 @@ namespace SnowLeopardEngine::Editor
 
                 glm::vec3 right = glm::normalize(glm::cross(forward, up));
 
+                float speed = m_BaseSpeed;
+
+                // Speed Up
+                if (inputSystem->GetKey(KeyCode::LeftShift))
+                {
+                    speed *= 2;
+                }
+                else
+                {
+                    speed = m_BaseSpeed;
+                }
+
+                // Forward
                 if (inputSystem->GetKey(KeyCode::W))
                 {
-                    transform.Position += forward * m_Speed;
+                    transform.Position += forward * speed;
                 }
 
+                // Backward
                 if (inputSystem->GetKey(KeyCode::S))
                 {
-                    transform.Position -= forward * m_Speed;
+                    transform.Position -= forward * speed;
                 }
 
+                // Left
                 if (inputSystem->GetKey(KeyCode::A))
                 {
-                    transform.Position -= right * m_Speed;
+                    transform.Position -= right * speed;
                 }
 
+                // Right
                 if (inputSystem->GetKey(KeyCode::D))
                 {
-                    transform.Position += right * m_Speed;
+                    transform.Position += right * speed;
                 }
 
+                // Upward
                 if (inputSystem->GetKey(KeyCode::Q))
                 {
-                    transform.Position += up * m_Speed;
+                    transform.Position += up * speed;
                 }
 
+                // Downward
                 if (inputSystem->GetKey(KeyCode::E))
                 {
-                    transform.Position -= up * m_Speed;
+                    transform.Position -= up * speed;
                 }
             }
 
@@ -117,15 +136,30 @@ namespace SnowLeopardEngine::Editor
             // TODO: GrabMove
         }
 
-        // Zoom in / out
         if (m_IsWindowHovered)
         {
+            // Zoom in / out
             auto cameraRotationEuler = transform.GetRotationEuler();
 
             glm::vec3 forward = GetForward(cameraRotationEuler);
 
             float yOffset = inputSystem->GetMouseScrollDelta().y;
             transform.Position += yOffset * forward;
+
+            // Focus
+            if (inputSystem->GetKeyDown(KeyCode::F))
+            {
+                auto selectedEntityUUID = Selector::GetLastSelection(SelectionCategory::Viewport);
+                if (selectedEntityUUID.has_value())
+                {
+                    auto selectedEntity = g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithCoreUUID(selectedEntityUUID.value());
+                    if (selectedEntity)
+                    {
+                        auto selectedEntityTransform = selectedEntity.GetComponent<TransformComponent>();
+                        transform.Position = selectedEntityTransform.Position - 10.0f * forward;
+                    }
+                }
+            }
         }
     }
 
