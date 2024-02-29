@@ -47,8 +47,8 @@ namespace SnowLeopardEngine::Editor
         m_EditorCamera                                             = scene->CreateEntity("MainCamera");
         m_EditorCamera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                                      = m_EditorCamera.AddComponent<CameraComponent>();
-        // TODO: Add editor camera controller script
-        cameraComponent.ClearFlags = CameraClearFlags::Skybox; // Enable skybox
+        cameraComponent.ClearFlags                                 = CameraClearFlags::Skybox; // Enable skybox
+
         // clang-format off
         cameraComponent.CubemapFilePaths = {
             "Assets/Textures/Skybox001/right.jpg",
@@ -59,6 +59,10 @@ namespace SnowLeopardEngine::Editor
             "Assets/Textures/Skybox001/back.jpg"
         };
         // clang-format on
+
+        // Attach a editor camera script
+        m_EditorCameraScript = CreateRef<EditorCameraScript>();
+        m_EditorCamera.AddComponent<NativeScriptingComponent>(m_EditorCameraScript);
 
         // Create cubes to test shadow
         Entity cube1            = scene->CreateEntity("Cube1");
@@ -121,6 +125,11 @@ namespace SnowLeopardEngine::Editor
         ImGui::Begin("Viewport");
         ImGui::PopStyleVar();
 
+        ImGui::BeginChild("ViewportToolbar", ImVec2(0, 30), false, ImGuiWindowFlags_NoScrollbar);
+        DrawToolbar();
+        ImGui::EndChild();
+
+        ImGui::BeginChild("ViewportMain", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar);
         uint32_t colorAttachment0 = m_RenderTarget->GetColorAttachmentID(0);
         if (colorAttachment0)
         {
@@ -152,15 +161,21 @@ namespace SnowLeopardEngine::Editor
 
         if (mousePos.x >= 0 && mousePos.x < viewportTotalSize.x && mousePos.y >= 0 && mousePos.y < viewportTotalSize.y)
         {
+            // Get picking buffer pixel value (entity ID)
             m_RenderTarget->Bind();
-            int entityID    = m_RenderTarget->ReadPixelRedOnly(1, mousePos.x, mousePos.y);
-            m_HoveredEntity = entityID == -1 ? Entity() :
-                                               Entity(static_cast<entt::entity>(entityID),
-                                                      g_EngineContext->SceneMngr->GetActiveScene().get());
+            int entityID = m_RenderTarget->ReadPixelRedOnly(1, mousePos.x, mousePos.y);
+            m_HoveredEntity =
+                (entityID == -1 || m_GuizmoOperation == -1) ?
+                    Entity() :
+                    Entity(static_cast<entt::entity>(entityID), g_EngineContext->SceneMngr->GetActiveScene().get());
             m_RenderTarget->Unbind();
         }
 
         m_IsWindowHovered = ImGui::IsWindowHovered();
+
+        // Set EditorCamera states
+        m_EditorCameraScript->SetWindowHovered(m_IsWindowHovered);
+        m_EditorCameraScript->SetGrabMoveEnabled(m_GuizmoOperation == -1);
 
         // Gizmos
         auto selectedEntityUUID = Selector::GetLastSelection(SelectionCategory::Viewport);
@@ -168,7 +183,7 @@ namespace SnowLeopardEngine::Editor
         {
             Entity selectedEntity =
                 g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithCoreUUID(selectedEntityUUID.value());
-            if (selectedEntity)
+            if (selectedEntity && m_GuizmoOperation != -1)
             {
                 ImGuizmo::SetOrthographic(false);
                 ImGuizmo::SetDrawlist();
@@ -200,7 +215,7 @@ namespace SnowLeopardEngine::Editor
 
                 ImGuizmo::Manipulate(glm::value_ptr(cameraView),
                                      glm::value_ptr(cameraProjection),
-                                     m_GuizmoOperation,
+                                     static_cast<ImGuizmo::OPERATION>(m_GuizmoOperation),
                                      ImGuizmo::LOCAL,
                                      glm::value_ptr(transform),
                                      nullptr,
@@ -217,6 +232,7 @@ namespace SnowLeopardEngine::Editor
                 }
             }
         }
+        ImGui::EndChild();
 
         ImGui::End();
     }
@@ -240,7 +256,7 @@ namespace SnowLeopardEngine::Editor
             {
                 // https://github.com/CedricGuillemet/ImGuizmo/issues/133#issuecomment-708083755
                 auto selectedEntityUUID = Selector::GetLastSelection(SelectionCategory::Viewport);
-                if (selectedEntityUUID.has_value())
+                if (selectedEntityUUID.has_value() && m_GuizmoOperation != -1)
                 {
                     auto entityCache =
                         g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithCoreUUID(selectedEntityUUID.value());
@@ -255,7 +271,7 @@ namespace SnowLeopardEngine::Editor
                     transform           = glm::translate(transform, glm::vec3(0.0f, -10000.0f, 0.0f));
                     ImGuizmo::Manipulate(glm::value_ptr(cameraView),
                                          glm::value_ptr(cameraProjection),
-                                         m_GuizmoOperation,
+                                         static_cast<ImGuizmo::OPERATION>(m_GuizmoOperation),
                                          m_GuizmoMode,
                                          glm::value_ptr(transform));
                 }
@@ -264,19 +280,47 @@ namespace SnowLeopardEngine::Editor
             }
         }
 
-        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::W) && !ImGuizmo::IsUsing())
+        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::Q) && m_IsWindowHovered && !ImGuizmo::IsUsing())
+        {
+            m_GuizmoOperation = -1;
+        }
+
+        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::W) && m_IsWindowHovered && !ImGuizmo::IsUsing())
         {
             m_GuizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
         }
 
-        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::E) && !ImGuizmo::IsUsing())
+        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::E) && m_IsWindowHovered && !ImGuizmo::IsUsing())
         {
             m_GuizmoOperation = ImGuizmo::OPERATION::ROTATE;
         }
 
-        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::R) && !ImGuizmo::IsUsing())
+        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::R) && m_IsWindowHovered && !ImGuizmo::IsUsing())
         {
             m_GuizmoOperation = ImGuizmo::OPERATION::SCALE;
         }
+    }
+
+    void ViewportPanel::DrawToolbar()
+    {
+        float windowHeight = ImGui::GetWindowHeight();
+
+        float centerHeight = windowHeight * 0.5f;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 3));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 3));
+
+        float offsetY = (windowHeight - centerHeight) * 0.5f;
+        ImGui::SetCursorPos(ImVec2(0, offsetY));
+
+        ImGui::RadioButton("GrabMove", reinterpret_cast<int*>(&m_GuizmoOperation), -1);
+        ImGui::SameLine();
+        ImGui::RadioButton("Translate", reinterpret_cast<int*>(&m_GuizmoOperation), ImGuizmo::OPERATION::TRANSLATE);
+        ImGui::SameLine();
+        ImGui::RadioButton("Rotate", reinterpret_cast<int*>(&m_GuizmoOperation), ImGuizmo::OPERATION::ROTATE);
+        ImGui::SameLine();
+        ImGui::RadioButton("Scale", reinterpret_cast<int*>(&m_GuizmoOperation), ImGuizmo::OPERATION::SCALE);
+
+        ImGui::PopStyleVar(2);
     }
 } // namespace SnowLeopardEngine::Editor
