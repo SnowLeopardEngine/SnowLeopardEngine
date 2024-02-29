@@ -19,6 +19,9 @@ namespace SnowLeopardEngine::Editor
         void SetWindowHovered(bool windowHovered) { m_IsWindowHovered = windowHovered; }
 
     private:
+        glm::vec3 GetForward(const glm::vec3& cameraRotationEuler) const;
+
+    private:
         float m_Sensitivity = 0.05f;
         float m_Speed       = 0.1f;
 

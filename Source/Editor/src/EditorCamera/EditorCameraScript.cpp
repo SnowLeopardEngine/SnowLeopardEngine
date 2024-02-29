@@ -10,15 +10,18 @@ namespace SnowLeopardEngine::Editor
 {
     void EditorCameraScript::OnTick(float deltaTime)
     {
-        auto& inputSystem   = g_EngineContext->InputSys;
-        auto  mousePosition = inputSystem->GetMousePosition();
+        auto& inputSystem = g_EngineContext->InputSys;
+        auto& camera      = m_OwnerEntity->GetComponent<CameraComponent>();
+        auto& transform   = m_OwnerEntity->GetComponent<TransformComponent>();
+
+        auto mousePosition = inputSystem->GetMousePosition();
 
         if (m_Mode == EditorCameraMode::FreeMove)
         {
             if (inputSystem->GetMouseButtonDown(MouseCode::ButtonRight) && m_IsWindowHovered)
             {
                 m_LastFrameMousePosition = mousePosition;
-                m_IsFreeMoveValid                = true;
+                m_IsFreeMoveValid        = true;
             }
 
             // When pressing mouse button right:
@@ -40,8 +43,7 @@ namespace SnowLeopardEngine::Editor
                     m_IsFirstTime = false;
                 }
 
-                auto& transform           = m_OwnerEntity->GetComponent<TransformComponent>();
-                auto  cameraRotationEuler = transform.GetRotationEuler();
+                auto cameraRotationEuler = transform.GetRotationEuler();
 
                 float yaw   = cameraRotationEuler.y;
                 float pitch = cameraRotationEuler.x;
@@ -65,13 +67,8 @@ namespace SnowLeopardEngine::Editor
                 transform.SetRotationEuler(cameraRotationEuler);
                 m_LastFrameMousePosition = mousePosition;
 
-                // Calculate forward (Yaw - 90 to adjust)
-                glm::vec3 forward;
-                forward.x = cos(glm::radians(cameraRotationEuler.y - 90)) * cos(glm::radians(cameraRotationEuler.x));
-                forward.y = sin(glm::radians(cameraRotationEuler.x));
-                forward.z = sin(glm::radians(cameraRotationEuler.y - 90)) * cos(glm::radians(cameraRotationEuler.x));
-                forward   = glm::normalize(forward);
-                glm::vec3 up = glm::vec3(0, 1, 0);
+                glm::vec3 forward = GetForward(cameraRotationEuler);
+                glm::vec3 up      = glm::vec3(0, 1, 0);
 
                 glm::vec3 right = glm::normalize(glm::cross(forward, up));
 
@@ -119,5 +116,29 @@ namespace SnowLeopardEngine::Editor
         {
             // TODO: GrabMove
         }
+
+        // Zoom in / out
+        if (m_IsWindowHovered)
+        {
+            auto cameraRotationEuler = transform.GetRotationEuler();
+
+            glm::vec3 forward = GetForward(cameraRotationEuler);
+
+            float yOffset = inputSystem->GetMouseScrollDelta().y;
+            transform.Position += yOffset * forward;
+        }
+    }
+
+    // TODO: Move to CameraSystem
+    glm::vec3 EditorCameraScript::GetForward(const glm::vec3& cameraRotationEuler) const
+    {
+        // Calculate forward (Yaw - 90 to adjust)
+        glm::vec3 forward;
+        forward.x = cos(glm::radians(cameraRotationEuler.y - 90)) * cos(glm::radians(cameraRotationEuler.x));
+        forward.y = sin(glm::radians(cameraRotationEuler.x));
+        forward.z = sin(glm::radians(cameraRotationEuler.y - 90)) * cos(glm::radians(cameraRotationEuler.x));
+        forward   = glm::normalize(forward);
+
+        return forward;
     }
 } // namespace SnowLeopardEngine::Editor

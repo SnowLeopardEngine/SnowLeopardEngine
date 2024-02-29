@@ -98,5 +98,6 @@ namespace SnowLeopardEngine
         m_KeyUpStates.clear();
         m_MouseButtonDownStates.clear();
         m_MouseButtonUpStates.clear();
+        m_MouseScrollDelta = glm::vec2(0, 0);
     }
 } // namespace SnowLeopardEngine
