@@ -163,15 +163,19 @@ namespace SnowLeopardEngine::Editor
         {
             // Get picking buffer pixel value (entity ID)
             m_RenderTarget->Bind();
-            int entityID    = m_RenderTarget->ReadPixelRedOnly(1, mousePos.x, mousePos.y);
-            m_HoveredEntity = entityID == -1 ? Entity() :
-                                               Entity(static_cast<entt::entity>(entityID),
-                                                      g_EngineContext->SceneMngr->GetActiveScene().get());
+            int entityID = m_RenderTarget->ReadPixelRedOnly(1, mousePos.x, mousePos.y);
+            m_HoveredEntity =
+                (entityID == -1 || m_GuizmoOperation == -1) ?
+                    Entity() :
+                    Entity(static_cast<entt::entity>(entityID), g_EngineContext->SceneMngr->GetActiveScene().get());
             m_RenderTarget->Unbind();
         }
 
         m_IsWindowHovered = ImGui::IsWindowHovered();
+
+        // Set EditorCamera states
         m_EditorCameraScript->SetWindowHovered(m_IsWindowHovered);
+        m_EditorCameraScript->SetGrabMoveEnabled(m_GuizmoOperation == -1);
 
         // Gizmos
         auto selectedEntityUUID = Selector::GetLastSelection(SelectionCategory::Viewport);

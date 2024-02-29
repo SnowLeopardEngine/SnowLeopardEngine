@@ -17,7 +17,8 @@ namespace SnowLeopardEngine::Editor
 
         auto mousePosition = inputSystem->GetMousePosition();
 
-        if (m_Mode == EditorCameraMode::FreeMove)
+        // FreeMove
+        if (!m_IsGrabMoveValid)
         {
             if (inputSystem->GetMouseButtonDown(MouseCode::ButtonRight) && m_IsWindowHovered)
             {
@@ -37,12 +38,6 @@ namespace SnowLeopardEngine::Editor
 
                 auto offset = mousePosition - m_LastFrameMousePosition;
                 offset *= m_Sensitivity;
-
-                if (m_IsFirstTime)
-                {
-                    offset        = {0, 0};
-                    m_IsFirstTime = false;
-                }
 
                 auto cameraRotationEuler = transform.GetRotationEuler();
 
@@ -131,9 +126,41 @@ namespace SnowLeopardEngine::Editor
                 m_IsFreeMoveValid = false;
             }
         }
-        else if (m_Mode == EditorCameraMode::GrabMove)
+
+        // GrabMove
+        if (m_IsGrabMoveEnabled)
         {
-            // TODO: GrabMove
+            if (inputSystem->GetMouseButtonDown(MouseCode::ButtonLeft) && m_IsWindowHovered)
+            {
+                m_LastFrameMousePosition = mousePosition;
+                m_IsGrabMoveValid        = true;
+            }
+
+            // When pressing mouse button left:
+            //  drag mouse to grab the view
+            if (inputSystem->GetMouseButton(MouseCode::ButtonLeft) && m_IsGrabMoveValid)
+            {
+                // Block imgui mouse events
+                ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+
+                auto offset = mousePosition - m_LastFrameMousePosition;
+                offset *= m_Sensitivity;
+
+                auto viewMatrix = g_EngineContext->CameraSys->GetViewMatrix(transform);
+
+                auto viewOffset = viewMatrix * glm::vec4(-offset.x, offset.y, 0, 0);
+
+                m_LastFrameMousePosition = mousePosition;
+                transform.Position += glm::vec3(viewOffset);
+            }
+
+            if (inputSystem->GetMouseButtonUp(MouseCode::ButtonLeft) && m_IsGrabMoveValid)
+            {
+                // Re-enable ImGui mouse events
+                ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+
+                m_IsGrabMoveValid = false;
+            }
         }
 
         if (m_IsWindowHovered)
@@ -152,11 +179,12 @@ namespace SnowLeopardEngine::Editor
                 auto selectedEntityUUID = Selector::GetLastSelection(SelectionCategory::Viewport);
                 if (selectedEntityUUID.has_value())
                 {
-                    auto selectedEntity = g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithCoreUUID(selectedEntityUUID.value());
+                    auto selectedEntity =
+                        g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithCoreUUID(selectedEntityUUID.value());
                     if (selectedEntity)
                     {
                         auto selectedEntityTransform = selectedEntity.GetComponent<TransformComponent>();
-                        transform.Position = selectedEntityTransform.Position - 10.0f * forward;
+                        transform.Position           = selectedEntityTransform.Position - 10.0f * forward;
                     }
                 }
             }
