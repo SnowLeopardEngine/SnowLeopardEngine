@@ -42,7 +42,7 @@ namespace SnowLeopardEngine
         skybox->FragmentShaderName = "Skybox.frag";
         // https://learnopengl.com/Advanced-OpenGL/Cubemaps
         skybox->DepthTest = DepthTestMode::LessEqual;
-        skybox->CullFace  = CullFaceMode::None;
+        skybox->CullFace  = CullFaceMode::NoCull;
         m_StateManager->RegisterState(skybox);
 
         // Add forward single pass

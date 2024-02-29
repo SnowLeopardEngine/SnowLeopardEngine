@@ -93,7 +93,7 @@ namespace SnowLeopardEngine
                     return GL_DEPTH24_STENCIL8;
                 case FrameBufferTextureFormat::DEPTH24:
                     return GL_DEPTH_COMPONENT24;
-                case FrameBufferTextureFormat::None:
+                case FrameBufferTextureFormat::Invalid:
                     SNOW_LEOPARD_CORE_ASSERT(false, "[GLFrameBuffer] Unsupported framebuffer texture format!");
                     break;
             }
@@ -179,7 +179,7 @@ namespace SnowLeopardEngine
                                                   i,
                                                   m_Name);
                         break;
-                    case FrameBufferTextureFormat::None:
+                    case FrameBufferTextureFormat::Invalid:
                     case FrameBufferTextureFormat::DEPTH24_STENCIL8:
                     case FrameBufferTextureFormat::DEPTH24:
                         break;
@@ -187,7 +187,7 @@ namespace SnowLeopardEngine
             }
         }
 
-        if (m_DepthAttachmentDesc.TextureFormat != FrameBufferTextureFormat::None)
+        if (m_DepthAttachmentDesc.TextureFormat != FrameBufferTextureFormat::Invalid)
         {
             Utils::CreateTextures(multisample, &m_DepthAttachment, 1);
             switch (m_DepthAttachmentDesc.TextureFormat)
@@ -210,7 +210,7 @@ namespace SnowLeopardEngine
                                               m_Desc.Height,
                                               m_Name);
                     break;
-                case FrameBufferTextureFormat::None:
+                case FrameBufferTextureFormat::Invalid:
                 case FrameBufferTextureFormat::RGBA8:
                 case FrameBufferTextureFormat::RED_INTEGER:
                     break;

@@ -7,7 +7,7 @@ namespace SnowLeopardEngine
 {
     enum class FrameBufferTextureFormat : uint8_t
     {
-        None = 0,
+        Invalid = 0,
 
         // Color
         RGBA8,
@@ -26,7 +26,7 @@ namespace SnowLeopardEngine
         FrameBufferTextureDesc(FrameBufferTextureFormat format) : TextureFormat(format) {}
         // NOLINTEND
 
-        FrameBufferTextureFormat TextureFormat = FrameBufferTextureFormat::None;
+        FrameBufferTextureFormat TextureFormat = FrameBufferTextureFormat::Invalid;
         // TODO: filtering/wrap
     };
 

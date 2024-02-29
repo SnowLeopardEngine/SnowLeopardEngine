@@ -14,7 +14,7 @@ namespace SnowLeopardEngine
 
     enum class ClearBit : uint32_t
     {
-        None    = 0,
+        Invalid = 0,
         Color   = 1 << 0,
         Depth   = 1 << 1,
         Default = Color | Depth

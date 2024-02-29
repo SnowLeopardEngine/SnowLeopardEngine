@@ -69,7 +69,7 @@ namespace SnowLeopardEngine
                 glTextureParameteri(m_Name, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
                 glTextureParameteri(m_Name, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
                 break;
-            case TextureWrapMode::None:
+            case TextureWrapMode::Invalid:
                 // Handle the case when no wrap mode is specified
                 break;
         }
@@ -88,7 +88,7 @@ namespace SnowLeopardEngine
                 glTextureParameteri(m_Name, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
                 glTextureParameteri(m_Name, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 break;
-            case TextureFilterMode::None:
+            case TextureFilterMode::Invalid:
                 // Handle the case when no filter mode is specified
                 break;
         }
@@ -133,7 +133,7 @@ namespace SnowLeopardEngine
                 glTextureParameteri(m_Name, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
                 glTextureParameteri(m_Name, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 break;
-            case TextureFilterMode::None:
+            case TextureFilterMode::Invalid:
                 // Handle the case when no filter mode is specified
                 break;
         }

@@ -17,7 +17,7 @@ namespace SnowLeopardEngine
 
     enum class PixelColorFormat : uint8_t
     {
-        None = 0,
+        Invalid = 0,
         RGB8,
         RGBA8,
         RGB32,
@@ -26,14 +26,14 @@ namespace SnowLeopardEngine
 
     enum class TextureType : uint8_t
     {
-        None = 0,
+        Invalid = 0,
         Texture2D,
         Texture3D // Cubemap
     };
 
     enum class TextureWrapMode : uint8_t
     {
-        None = 0,
+        Invalid = 0,
         Clamp,
         Repeat,
         Mirror
@@ -41,7 +41,7 @@ namespace SnowLeopardEngine
 
     enum class TextureFilterMode : uint8_t
     {
-        None = 0,
+        Invalid = 0,
         Point,
         Linear,
         Nearest

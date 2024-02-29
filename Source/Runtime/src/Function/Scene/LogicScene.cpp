@@ -108,7 +108,7 @@ namespace SnowLeopardEngine
                 meshFilter.Meshes = model.Meshes;
             }
 
-            if (meshFilter.PrimitiveType != MeshPrimitiveType::None)
+            if (meshFilter.PrimitiveType != MeshPrimitiveType::Invalid)
             {
                 switch (meshFilter.PrimitiveType)
                 {
@@ -135,7 +135,7 @@ namespace SnowLeopardEngine
                         meshFilter.Meshes.Items.emplace_back(meshItem);
                         break;
                     }
-                    case MeshPrimitiveType::None:
+                    case MeshPrimitiveType::Invalid:
                         break;
                 }
             }

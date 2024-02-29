@@ -8,7 +8,7 @@ namespace SnowLeopardEngine
 {
     enum class MeshPrimitiveType : uint8_t
     {
-        None = 0,
+        Invalid = 0,
         Cube,
         Sphere,
         Capsule,

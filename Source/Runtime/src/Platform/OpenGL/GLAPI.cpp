@@ -8,7 +8,7 @@ namespace SnowLeopardEngine
     {
         switch (pipelineState->DepthTest)
         {
-            case DepthTestMode::None:
+            case DepthTestMode::Disable:
                 glDisable(GL_DEPTH_TEST);
                 break;
             case DepthTestMode::Greater:
@@ -39,7 +39,7 @@ namespace SnowLeopardEngine
                 glEnable(GL_DEPTH_TEST);
                 glDepthFunc(GL_NEVER);
                 break;
-            case DepthTestMode::Always:
+            case DepthTestMode::AlwaysPass:
                 glEnable(GL_DEPTH_TEST);
                 glDepthFunc(GL_ALWAYS);
                 break;
@@ -58,7 +58,7 @@ namespace SnowLeopardEngine
 
         switch (pipelineState->CullFace)
         {
-            case CullFaceMode::None:
+            case CullFaceMode::NoCull:
                 glDisable(GL_CULL_FACE);
                 break;
             case CullFaceMode::Front:

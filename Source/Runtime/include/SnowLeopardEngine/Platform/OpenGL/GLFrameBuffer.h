@@ -39,7 +39,7 @@ namespace SnowLeopardEngine
         FrameBufferDesc m_Desc;
 
         std::vector<FrameBufferTextureDesc> m_ColorAttachmentDescs;
-        FrameBufferTextureDesc              m_DepthAttachmentDesc = FrameBufferTextureFormat::None;
+        FrameBufferTextureDesc              m_DepthAttachmentDesc = FrameBufferTextureFormat::Invalid;
 
         std::vector<uint32_t> m_ColorAttachments;
         uint32_t              m_DepthAttachment = 0;

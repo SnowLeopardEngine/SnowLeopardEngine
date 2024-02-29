@@ -6,7 +6,7 @@ namespace SnowLeopardEngine::Editor
 {
     enum class SelectionCategory
     {
-        None = 0,
+        Invalid = 0,
         Viewport,
         // TODO: More categories
     };

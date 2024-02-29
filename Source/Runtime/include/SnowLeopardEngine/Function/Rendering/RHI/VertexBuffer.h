@@ -19,7 +19,7 @@ namespace SnowLeopardEngine
         Int2,
         Int3,
         Int4,
-        Bool
+        Boolean
     };
 
     static uint32_t ShaderDataTypeSize(ShaderDataType type)
@@ -46,7 +46,7 @@ namespace SnowLeopardEngine
                 return 4 * 3;
             case ShaderDataType::Int4:
                 return 4 * 4;
-            case ShaderDataType::Bool:
+            case ShaderDataType::Boolean:
                 return 1;
             case ShaderDataType::Unknown:
                 break;
@@ -94,7 +94,7 @@ namespace SnowLeopardEngine
                     return 3;
                 case ShaderDataType::Int4:
                     return 4;
-                case ShaderDataType::Bool:
+                case ShaderDataType::Boolean:
                     return 1;
                 case ShaderDataType::Unknown:
                     break;
