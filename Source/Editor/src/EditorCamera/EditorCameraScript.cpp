@@ -14,6 +14,7 @@ namespace SnowLeopardEngine::Editor
         auto& inputSystem = g_EngineContext->InputSys;
         auto& camera      = m_OwnerEntity->GetComponent<CameraComponent>();
         auto& transform   = m_OwnerEntity->GetComponent<TransformComponent>();
+        auto  viewMatrix  = g_EngineContext->CameraSys->GetViewMatrix(transform);
 
         auto mousePosition = inputSystem->GetMousePosition();
 
@@ -137,7 +138,7 @@ namespace SnowLeopardEngine::Editor
             }
 
             // When pressing mouse button left:
-            //  drag mouse to grab the view
+            // drag mouse to grab the view
             if (inputSystem->GetMouseButton(MouseCode::ButtonLeft) && m_IsGrabMoveValid)
             {
                 // Block imgui mouse events
@@ -146,12 +147,20 @@ namespace SnowLeopardEngine::Editor
                 auto offset = mousePosition - m_LastFrameMousePosition;
                 offset *= m_Sensitivity;
 
-                auto viewMatrix = g_EngineContext->CameraSys->GetViewMatrix(transform);
+                // Assuming transform is the camera's transform
+                auto& transform = m_OwnerEntity->GetComponent<TransformComponent>();
 
-                auto viewOffset = viewMatrix * glm::vec4(-offset.x, offset.y, 0, 0);
+                // Calculate the right and up vectors of the view matrix
+                glm::vec3 right = glm::vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
+                glm::vec3 up    = glm::vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+
+                // Calculate the translation based on offset
+                glm::vec3 translation = -right * offset.x + up * offset.y;
+
+                // Apply translation to the camera position
+                transform.Position += translation;
 
                 m_LastFrameMousePosition = mousePosition;
-                transform.Position += glm::vec3(viewOffset);
             }
 
             if (inputSystem->GetMouseButtonUp(MouseCode::ButtonLeft) && m_IsGrabMoveValid)
