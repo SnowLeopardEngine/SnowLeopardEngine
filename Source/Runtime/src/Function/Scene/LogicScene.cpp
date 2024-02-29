@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
+#include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
@@ -180,7 +181,10 @@ namespace SnowLeopardEngine
         // TODO: If time is enough, integrate Lua or C# Scripting.
         m_Registry.view<NativeScriptingComponent>().each(
             [deltaTime](entt::entity entity, NativeScriptingComponent& nativeScript) {
-                nativeScript.ScriptInstance->OnTick(deltaTime);
+                if (nativeScript.ScriptInstance->GetEnabled())
+                {
+                    nativeScript.ScriptInstance->OnTick(deltaTime);
+                }
             });
 
         // Built-in camera controllers
@@ -260,7 +264,10 @@ namespace SnowLeopardEngine
     {
         m_Registry.view<NativeScriptingComponent>().each(
             [](entt::entity entity, NativeScriptingComponent& nativeScript) {
-                nativeScript.ScriptInstance->OnFixedTick();
+                if (nativeScript.ScriptInstance->GetEnabled())
+                {
+                    nativeScript.ScriptInstance->OnFixedTick();
+                }
             });
     }
 
@@ -330,7 +337,12 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(TransformComponent) {}
     ON_COMPONENT_ADDED(EntityStatusComponent) {}
 
-    ON_COMPONENT_ADDED(NativeScriptingComponent) {}
+    ON_COMPONENT_ADDED(NativeScriptingComponent)
+    {
+        // Bind entity
+        Ref<Entity> entityCopy                  = CreateRef<Entity>(entity);
+        component.ScriptInstance->m_OwnerEntity = entityCopy;
+    }
 
     ON_COMPONENT_ADDED(RigidBodyComponent) {}
     ON_COMPONENT_ADDED(SphereColliderComponent) {}
