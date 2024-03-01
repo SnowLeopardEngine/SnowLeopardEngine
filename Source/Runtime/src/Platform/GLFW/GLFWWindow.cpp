@@ -1,5 +1,4 @@
 #include "SnowLeopardEngine/Platform/GLFW/GLFWWindow.h"
-#include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Event/WindowEvents.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
