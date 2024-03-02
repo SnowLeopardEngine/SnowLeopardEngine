@@ -1,11 +1,17 @@
+#include "PxScene.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "characterkinematic/PxController.h"
+#include "characterkinematic/PxControllerManager.h"
+#include "foundation/Px.h"
+#include "glm/fwd.hpp"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 #include <cstdint>
+#include <winnt.h>
 
 using namespace SnowLeopardEngine;
 
@@ -17,15 +23,24 @@ public:
         SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter");
         DesktopApp::GetInstance()->GetEngine()->GetContext()->AudioSys->Play("sounds/jump.mp3");
     }
-
+ 
     virtual void OnTick(float deltaTime) override
     {
         auto& inputSystem = DesktopApp::GetInstance()->GetEngine()->GetContext()->InputSys;
-
-        if (inputSystem->GetKey(KeyCode::Escape))
+        
+        //  Character Controller Test Code
+        // auto& t = m_OwnerEntity->GetComponent<CharacterControllerComponent>().Ctrl;
+        // physx::PxControllerFilters filters;
+        // physx::PxVec3 movement(15 * deltaTime, 0,0);
+        // t->move(movement, 0.01, deltaTime, filters);
+        //------End------------
+        
+        if (inputSystem->GetKey(KeyCode::Backspace))
         {
             DesktopApp::GetInstance()->Quit();
-        }
+
+        }      
+
     }
 };
 
@@ -72,7 +87,7 @@ public:
         sphereTransform.Position = {5, 15, 0};
         sphereTransform.Scale *= 3;
 
-        sphere.AddComponent<RigidBodyComponent>(1.0f);
+        sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
         sphere.AddComponent<SphereColliderComponent>(normalMaterial);
         auto& sphereMeshFilter                    = sphere.AddComponent<MeshFilterComponent>();
         sphereMeshFilter.PrimitiveType            = MeshPrimitiveType::Sphere;
@@ -83,7 +98,7 @@ public:
 
         auto scriptInstance = CreateRef<SphereScript>();
         sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
-
+        
         // // Create a floor with RigidBodyComponent & BoxColliderComponent
         // Entity floor = scene->CreateEntity("Floor");
 
@@ -100,7 +115,9 @@ public:
         // floorMeshRenderer.BaseColor              = {1, 1, 1, 1}; // Pure White
         // floorMeshRenderer.UseDiffuse             = true;
         // floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
-
+        
+        sphere.AddComponent<CharacterControllerComponent>();
+        
         // Create a terrain
         int    heightMapWidth                               = 100;
         int    heightMapHeight                              = 100;

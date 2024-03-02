@@ -1,8 +1,15 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
+#include "PxMaterial.h"
+#include "PxSceneDesc.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "characterkinematic/PxCapsuleController.h"
+#include "characterkinematic/PxController.h"
+#include "characterkinematic/PxControllerManager.h"
 #include "cooking/PxCooking.h"
+#include "entt/entity/fwd.hpp"
+#include "foundation/Px.h"
 #include "geometry/PxHeightFieldGeometry.h"
 #include <cstdint>
 #include <exception>
@@ -358,6 +365,45 @@ namespace SnowLeopardEngine
                 m_Scene->addActor(*body);
 
                 terrainCollider.InternalBody = body;
+            });
+
+        // case5: CharacterController
+        registry.view<TransformComponent, CharacterControllerComponent>().each(
+            [this](
+                entt::entity entity, TransformComponent& transform, 
+                CharacterControllerComponent& characterController
+                ) {
+                
+                // Create Controller Manager
+                PxControllerManager* cM = PxCreateControllerManager(*m_Scene);
+                
+                PxMaterial* material;
+                if (characterController.Material == nullptr)
+                {
+                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
+                }
+                else
+                {
+                    material = m_Physics->createMaterial(characterController.Material->DynamicFriction,
+                                                         characterController.Material->StaticFriction,
+                                                         characterController.Material->Bounciness);
+                }
+
+                // Set Controller Descripoter
+                PxCapsuleControllerDesc desc;
+                desc.height   = characterController.Height;
+                desc.radius   = characterController.Radius;
+                desc.material = material;
+                desc.position.set(transform.Position.x + characterController.Offset.x,
+                                  transform.Position.y + characterController.Offset.y,
+                                  transform.Position.z + characterController.Offset.z);
+                desc.upDirection = PxVec3(0, 1, 0);
+                desc.slopeLimit  = cosf(characterController.MaxSlope);
+                desc.material    = material;
+
+                PxController* controller = cM->createController(desc);
+                
+                characterController.Ctrl = controller;
             });
         // TODO: More cases
     }
