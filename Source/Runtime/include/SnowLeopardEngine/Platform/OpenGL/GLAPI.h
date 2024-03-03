@@ -18,6 +18,8 @@ namespace SnowLeopardEngine
         virtual ViewportDesc GetViewport() override final;
 
         virtual Ref<VertexArray> CreateVertexArray(const MeshItem& meshItem) override final;
+        virtual Ref<VertexArray> CreateStaticMeshVertexArray(const MeshItem& meshItem) override final;
+        virtual Ref<VertexArray> CreateAnimatedMeshVertexArray(const MeshItem& meshItem) override final;
         virtual Ref<VertexArray> CreateVertexArray(const MeshItem&     meshItem,
                                                    const BufferLayout& inputLayout) override final;
 

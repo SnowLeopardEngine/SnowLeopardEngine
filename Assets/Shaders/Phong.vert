@@ -3,9 +3,7 @@
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aTexCoords;
-// 3 - boneIDs
-// 4 - weights
-layout(location = 5) in int aEntityID;
+layout(location = 3) in int aEntityID;
 
 out vec2 varingTexCoords;
 out vec3 varingNormal;

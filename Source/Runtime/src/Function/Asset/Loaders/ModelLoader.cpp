@@ -2,7 +2,6 @@
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
-#include <cstdint>
 
 namespace SnowLeopardEngine
 {
@@ -51,12 +50,14 @@ namespace SnowLeopardEngine
         MeshItem meshItem = {};
         meshItem.Name     = mesh->mName.C_Str();
 
+        bool hasBones = mesh->HasBones();
+
         // Load vertices
         for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
         {
-            VertexData vertex;
-            vertex.Position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-            vertex.Normal   = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+            AnimatedMeshVertexData vertex = {};
+            vertex.Position               = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
+            vertex.Normal                 = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
 
             if (mesh->HasTextureCoords(0))
             {
@@ -64,9 +65,20 @@ namespace SnowLeopardEngine
             }
 
             // Set default bone data
-            SetVertexBoneDataToDefault(vertex);
+            if (hasBones)
+            {
+                SetVertexBoneDataToDefault(vertex);
+            }
 
-            meshItem.Data.Vertices.push_back(vertex);
+            if (hasBones)
+            {
+                meshItem.Data.AnimatedVertices.push_back({vertex});
+            }
+            else
+            {
+                meshItem.Data.StaticVertices.push_back(
+                    StaticMeshVertexData {vertex.Position, vertex.Normal, vertex.TexCoord, vertex.EntityID});
+            }
         }
 
         // Load indices
@@ -80,68 +92,75 @@ namespace SnowLeopardEngine
         }
 
         // Process bones
-        ExtractBoneWeightForVertices(meshItem.Data.Vertices, mesh, model);
+        if (hasBones)
+        {
+            ExtractBoneWeightForVertices(meshItem.Data.AnimatedVertices, mesh, model);
+        }
 
         model.Meshes.Items.emplace_back(meshItem);
     }
 
-    void ModelLoader::SetVertexBoneDataToDefault(VertexData& vertex)
+    void ModelLoader::SetVertexBoneDataToDefault(AnimatedMeshVertexData& vertex)
     {
         // Setup default bone data
         for (uint32_t i = 0; i < MaxBoneInfluence; ++i)
         {
-            vertex.BoneIDs[i] = -1;
-            vertex.Weights[i] = 0.0f;
+            PerVertexAnimationAttributes attributes = {};
+            attributes.BoneIDs[i]                   = -1;
+            attributes.Weights[i]                   = 0;
+            vertex.AnimationAttributes              = attributes;
         }
     }
 
-    void ModelLoader::SetVertexBoneData(VertexData& vertex, int boneID, float weight)
+    void ModelLoader::SetVertexBoneData(AnimatedMeshVertexData& vertex, int boneID, float weight)
     {
         for (uint32_t i = 0; i < MaxBoneInfluence; ++i)
         {
-            if (vertex.BoneIDs[i] < 0)
+            if (vertex.AnimationAttributes.BoneIDs[i] < 0)
             {
-                vertex.Weights[i] = weight;
-                vertex.BoneIDs[i] = boneID;
+                vertex.AnimationAttributes.Weights[i] = weight;
+                vertex.AnimationAttributes.BoneIDs[i] = boneID;
                 break;
             }
         }
     }
 
-    void ModelLoader::ExtractBoneWeightForVertices(std::vector<VertexData>& vertices, const aiMesh* mesh, Model& model)
+    void ModelLoader::ExtractBoneWeightForVertices(std::vector<AnimatedMeshVertexData>& vertices,
+                                                   const aiMesh*                        mesh,
+                                                   Model&                               model)
     {
         for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
         {
             int         boneID   = -1;
             std::string boneName = mesh->mBones[boneIndex]->mName.C_Str();
-            if (model.BoneInfoMap.find(boneName) == model.BoneInfoMap.end())
+            if (model.AnimationData.BoneInfoMap.find(boneName) == model.AnimationData.BoneInfoMap.end())
             {
                 BoneInfo newBoneInfo;
-                newBoneInfo.Id              = model.BoneCounter;
-                auto offsetMatrix           = mesh->mBones[boneIndex]->mOffsetMatrix;
-                newBoneInfo.Offset          = {offsetMatrix.a1,
-                                               offsetMatrix.b1,
-                                               offsetMatrix.c1,
-                                               offsetMatrix.d1,
-                                               offsetMatrix.a2,
-                                               offsetMatrix.b2,
-                                               offsetMatrix.c2,
-                                               offsetMatrix.d2,
-                                               offsetMatrix.a3,
-                                               offsetMatrix.b3,
-                                               offsetMatrix.c3,
-                                               offsetMatrix.d3,
-                                               offsetMatrix.a4,
-                                               offsetMatrix.b4,
-                                               offsetMatrix.c4,
-                                               offsetMatrix.d4};
-                model.BoneInfoMap[boneName] = newBoneInfo;
-                boneID                      = model.BoneCounter;
-                model.BoneCounter++;
+                newBoneInfo.Id                            = model.AnimationData.BoneCounter;
+                auto offsetMatrix                         = mesh->mBones[boneIndex]->mOffsetMatrix;
+                newBoneInfo.Offset                        = {offsetMatrix.a1,
+                                                             offsetMatrix.b1,
+                                                             offsetMatrix.c1,
+                                                             offsetMatrix.d1,
+                                                             offsetMatrix.a2,
+                                                             offsetMatrix.b2,
+                                                             offsetMatrix.c2,
+                                                             offsetMatrix.d2,
+                                                             offsetMatrix.a3,
+                                                             offsetMatrix.b3,
+                                                             offsetMatrix.c3,
+                                                             offsetMatrix.d3,
+                                                             offsetMatrix.a4,
+                                                             offsetMatrix.b4,
+                                                             offsetMatrix.c4,
+                                                             offsetMatrix.d4};
+                model.AnimationData.BoneInfoMap[boneName] = newBoneInfo;
+                boneID                                    = model.AnimationData.BoneCounter;
+                model.AnimationData.BoneCounter++;
             }
             else
             {
-                boneID = model.BoneInfoMap[boneName].Id;
+                boneID = model.AnimationData.BoneInfoMap[boneName].Id;
             }
             SNOW_LEOPARD_CORE_ASSERT(boneID != -1, "[ModelLoader] Bone ID is -1!");
             auto* weights    = mesh->mBones[boneIndex]->mWeights;

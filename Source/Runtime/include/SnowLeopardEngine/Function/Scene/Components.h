@@ -307,7 +307,12 @@ namespace SnowLeopardEngine
         {
             for (auto& meshItem : Meshes.Items)
             {
-                for (auto& vertex : meshItem.Data.Vertices)
+                for (auto& vertex : meshItem.Data.StaticVertices)
+                {
+                    vertex.EntityID = entityID;
+                }
+
+                for (auto& vertex : meshItem.Data.AnimatedVertices)
                 {
                     vertex.EntityID = entityID;
                 }

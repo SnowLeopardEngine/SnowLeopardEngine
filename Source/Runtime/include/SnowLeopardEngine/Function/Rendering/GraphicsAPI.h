@@ -35,6 +35,8 @@ namespace SnowLeopardEngine
         virtual ViewportDesc GetViewport()                                                           = 0;
 
         virtual Ref<VertexArray> CreateVertexArray(const MeshItem& meshItem)                                  = 0;
+        virtual Ref<VertexArray> CreateStaticMeshVertexArray(const MeshItem& meshItem)                        = 0;
+        virtual Ref<VertexArray> CreateAnimatedMeshVertexArray(const MeshItem& meshItem)                      = 0;
         virtual Ref<VertexArray> CreateVertexArray(const MeshItem& meshItem, const BufferLayout& inputLayout) = 0;
 
         virtual void DrawIndexed(uint32_t indexCount) = 0;

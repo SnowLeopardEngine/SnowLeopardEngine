@@ -154,6 +154,7 @@ namespace SnowLeopardEngine
 
         static Ref<VertexBuffer> Create(uint32_t size);
         static Ref<VertexBuffer> Create(float* vertices, uint32_t size);
-        static Ref<VertexBuffer> Create(std::vector<VertexData> vertices);
+        static Ref<VertexBuffer> Create(std::vector<StaticMeshVertexData> vertices);
+        static Ref<VertexBuffer> Create(std::vector<AnimatedMeshVertexData> vertices);
     };
 } // namespace SnowLeopardEngine
