@@ -2,6 +2,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
@@ -96,7 +97,7 @@ namespace SnowLeopardEngine
             [](entt::entity entity, NativeScriptingComponent& nativeScript) { nativeScript.ScriptInstance->OnLoad(); });
 
         // Mesh Loading (dirty code for now)
-        m_Registry.view<MeshFilterComponent>().each([](entt::entity entity, MeshFilterComponent& meshFilter) {
+        m_Registry.view<MeshFilterComponent>().each([this](entt::entity entity, MeshFilterComponent& meshFilter) {
             // TODO: Move to AssetManager
             if (FileSystem::Exists(meshFilter.FilePath))
             {
@@ -106,6 +107,29 @@ namespace SnowLeopardEngine
                     SNOW_LEOPARD_CORE_ERROR("Failed to load {0}!", meshFilter.FilePath.generic_string());
                 }
                 meshFilter.Meshes = model.Meshes;
+
+                // load animation if possible
+                if (m_Registry.any_of<AnimatorComponent>(entity))
+                {
+                    auto& animatorComponent = m_Registry.get<AnimatorComponent>(entity);
+
+                    if (!model.Animations.empty())
+                    {
+                        animatorComponent.Animator = CreateRef<Animator>(model.Animations[0]);
+                    }
+                }
+
+                // assign textures to mesh renderer if possible
+                if (m_Registry.any_of<MeshRendererComponent>(entity))
+                {
+                    auto& meshRenderer = m_Registry.get<MeshRendererComponent>(entity);
+
+                    if (model.Textures.count("diffuseMap") > 0)
+                    {
+                        meshRenderer.UseDiffuse     = true;
+                        meshRenderer.DiffuseTexture = model.Textures["diffuseMap"][0];
+                    }
+                }
             }
 
             if (meshFilter.PrimitiveType != MeshPrimitiveType::Invalid)
@@ -151,7 +175,7 @@ namespace SnowLeopardEngine
         // Texture Loading (dirty code for now)
         m_Registry.view<MeshRendererComponent>().each([](entt::entity entity, MeshRendererComponent& meshRenderer) {
             // TODO: Move to AssetManager
-            if (meshRenderer.UseDiffuse)
+            if (meshRenderer.UseDiffuse && meshRenderer.DiffuseTexture == nullptr)
             {
                 meshRenderer.DiffuseTexture = TextureLoader::LoadTexture2D(meshRenderer.DiffuseTextureFilePath, false);
             }
@@ -258,6 +282,14 @@ namespace SnowLeopardEngine
                     transform.Position += right * freeMoveController.Speed;
                 }
             });
+
+        // Animators
+        m_Registry.view<AnimatorComponent>().each([deltaTime](entt::entity entity, AnimatorComponent& animator) {
+            if (animator.Animator != nullptr)
+            {
+                animator.Animator->UpdateAnimation(deltaTime);
+            }
+        });
     }
 
     void LogicScene::OnFixedTick()
@@ -357,4 +389,6 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(MeshRendererComponent) {}
     ON_COMPONENT_ADDED(TerrainComponent) {}
     ON_COMPONENT_ADDED(TerrainRendererComponent) {}
+
+    ON_COMPONENT_ADDED(AnimatorComponent) {}
 } // namespace SnowLeopardEngine

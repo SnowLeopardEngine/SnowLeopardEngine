@@ -1,8 +1,11 @@
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
+#include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Animation/Animation.h"
+#include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
-#include <cstdint>
+#include "SnowLeopardEngine/Function/Util/Util.h"
 
 namespace SnowLeopardEngine
 {
@@ -10,6 +13,8 @@ namespace SnowLeopardEngine
 
     bool ModelLoader::LoadModel(const std::filesystem::path& path, Model& model)
     {
+        model.SourcePath = path.generic_string();
+
         // Get aiScene
         const auto* scene = g_Importer.ReadFile(path.generic_string(),
                                                 aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals |
@@ -27,7 +32,25 @@ namespace SnowLeopardEngine
         // Process root node
         ProcessNode(scene, scene->mRootNode, model);
 
+        // Process animations
+        ProcessAnimation(scene, model);
+
         return true;
+    }
+
+    void ModelLoader::ProcessAnimation(const aiScene* scene, Model& model)
+    {
+        // Process animations
+        if (scene->HasAnimations())
+        {
+            for (uint32_t i = 0; i < scene->mNumAnimations; ++i)
+            {
+                auto* aiAnimation = scene->mAnimations[i];
+
+                auto animation = CreateRef<Animation>(scene, aiAnimation, &model);
+                model.Animations.emplace_back(animation);
+            }
+        }
     }
 
     void ModelLoader::ProcessNode(const aiScene* scene, const aiNode* node, Model& model)
@@ -51,12 +74,14 @@ namespace SnowLeopardEngine
         MeshItem meshItem = {};
         meshItem.Name     = mesh->mName.C_Str();
 
+        bool hasBones = mesh->HasBones();
+
         // Load vertices
         for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
         {
-            VertexData vertex;
-            vertex.Position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-            vertex.Normal   = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+            AnimatedMeshVertexData vertex = {};
+            vertex.Position               = AssimpGLMHelpers::GetGLMVec(mesh->mVertices[i]);
+            vertex.Normal                 = AssimpGLMHelpers::GetGLMVec(mesh->mNormals[i]);
 
             if (mesh->HasTextureCoords(0))
             {
@@ -64,9 +89,20 @@ namespace SnowLeopardEngine
             }
 
             // Set default bone data
-            SetVertexBoneDataToDefault(vertex);
+            if (hasBones)
+            {
+                SetVertexBoneDataToDefault(vertex);
+            }
 
-            meshItem.Data.Vertices.push_back(vertex);
+            if (hasBones)
+            {
+                meshItem.Data.AnimatedVertices.push_back({vertex});
+            }
+            else
+            {
+                meshItem.Data.StaticVertices.push_back(
+                    StaticMeshVertexData {vertex.Position, vertex.Normal, vertex.TexCoord, vertex.EntityID});
+            }
         }
 
         // Load indices
@@ -79,36 +115,51 @@ namespace SnowLeopardEngine
             }
         }
 
+        // Load textures
+        auto* material = scene->mMaterials[mesh->mMaterialIndex];
+
+        LoadMaterialTextures(material, aiTextureType_DIFFUSE, "diffuseMap", model);
+        LoadMaterialTextures(material, aiTextureType_SPECULAR, "specularMap", model);
+        LoadMaterialTextures(material, aiTextureType_HEIGHT, "normalMap", model);
+        LoadMaterialTextures(material, aiTextureType_AMBIENT, "heightMap", model);
+
         // Process bones
-        ExtractBoneWeightForVertices(meshItem.Data.Vertices, mesh, model);
+        if (hasBones)
+        {
+            ExtractBoneWeightForVertices(meshItem.Data.AnimatedVertices, mesh, model);
+        }
 
         model.Meshes.Items.emplace_back(meshItem);
     }
 
-    void ModelLoader::SetVertexBoneDataToDefault(VertexData& vertex)
+    void ModelLoader::SetVertexBoneDataToDefault(AnimatedMeshVertexData& vertex)
     {
         // Setup default bone data
         for (uint32_t i = 0; i < MaxBoneInfluence; ++i)
         {
-            vertex.BoneIDs[i] = -1;
-            vertex.Weights[i] = 0.0f;
+            PerVertexAnimationAttributes attributes = {};
+            attributes.BoneIDs[i]                   = -1;
+            attributes.Weights[i]                   = 0;
+            vertex.AnimationAttributes              = attributes;
         }
     }
 
-    void ModelLoader::SetVertexBoneData(VertexData& vertex, int boneID, float weight)
+    void ModelLoader::SetVertexBoneData(AnimatedMeshVertexData& vertex, int boneID, float weight)
     {
         for (uint32_t i = 0; i < MaxBoneInfluence; ++i)
         {
-            if (vertex.BoneIDs[i] < 0)
+            if (vertex.AnimationAttributes.BoneIDs[i] < 0)
             {
-                vertex.Weights[i] = weight;
-                vertex.BoneIDs[i] = boneID;
+                vertex.AnimationAttributes.Weights[i] = weight;
+                vertex.AnimationAttributes.BoneIDs[i] = boneID;
                 break;
             }
         }
     }
 
-    void ModelLoader::ExtractBoneWeightForVertices(std::vector<VertexData>& vertices, const aiMesh* mesh, Model& model)
+    void ModelLoader::ExtractBoneWeightForVertices(std::vector<AnimatedMeshVertexData>& vertices,
+                                                   const aiMesh*                        mesh,
+                                                   Model&                               model)
     {
         for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
         {
@@ -119,22 +170,7 @@ namespace SnowLeopardEngine
                 BoneInfo newBoneInfo;
                 newBoneInfo.Id              = model.BoneCounter;
                 auto offsetMatrix           = mesh->mBones[boneIndex]->mOffsetMatrix;
-                newBoneInfo.Offset          = {offsetMatrix.a1,
-                                               offsetMatrix.b1,
-                                               offsetMatrix.c1,
-                                               offsetMatrix.d1,
-                                               offsetMatrix.a2,
-                                               offsetMatrix.b2,
-                                               offsetMatrix.c2,
-                                               offsetMatrix.d2,
-                                               offsetMatrix.a3,
-                                               offsetMatrix.b3,
-                                               offsetMatrix.c3,
-                                               offsetMatrix.d3,
-                                               offsetMatrix.a4,
-                                               offsetMatrix.b4,
-                                               offsetMatrix.c4,
-                                               offsetMatrix.d4};
+                newBoneInfo.Offset          = AssimpGLMHelpers::ConvertMatrixToGLMFormat(offsetMatrix);
                 model.BoneInfoMap[boneName] = newBoneInfo;
                 boneID                      = model.BoneCounter;
                 model.BoneCounter++;
@@ -155,5 +191,22 @@ namespace SnowLeopardEngine
                 SetVertexBoneData(vertices[vertexId], boneID, weight);
             }
         }
+    }
+
+    void ModelLoader::LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, Model& model)
+    {
+        std::vector<Ref<Texture2D>> textures;
+        for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
+        {
+            aiString str;
+            mat->GetTexture(type, i, &str);
+
+            // TODO: Cache textures
+            std::filesystem::path texturePath = model.SourcePath.parent_path() / str.C_Str();
+            auto texture = TextureLoader::LoadTexture2D(texturePath, false);
+            textures.emplace_back(texture);
+        }
+
+        model.Textures[typeName] = textures;
     }
 } // namespace SnowLeopardEngine

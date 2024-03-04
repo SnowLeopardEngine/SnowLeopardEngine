@@ -2,6 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
+#include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
@@ -307,7 +308,12 @@ namespace SnowLeopardEngine
         {
             for (auto& meshItem : Meshes.Items)
             {
-                for (auto& vertex : meshItem.Data.Vertices)
+                for (auto& vertex : meshItem.Data.StaticVertices)
+                {
+                    vertex.EntityID = entityID;
+                }
+
+                for (auto& vertex : meshItem.Data.AnimatedVertices)
                 {
                     vertex.EntityID = entityID;
                 }
@@ -360,4 +366,16 @@ namespace SnowLeopardEngine
         TerrainRendererComponent(const TerrainRendererComponent&) = default;
     };
     // -------- Rendering Components DEFINITION END --------
+
+    // -------- Animation Components DEFINITION START --------
+    struct AnimatorComponent
+    {
+        // TODO: Animator Controller
+        // Now, we just load the first animation and create relevant animator, play on awake and loop forever.
+        Ref<Animator> Animator;
+
+        AnimatorComponent()                         = default;
+        AnimatorComponent(const AnimatorComponent&) = default;
+    };
+    // -------- Animation Components DEFINITION END --------
 } // namespace SnowLeopardEngine

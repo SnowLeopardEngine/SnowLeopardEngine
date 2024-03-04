@@ -3,10 +3,10 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
 
-const uint32_t MaxBoneInfluence = 4;
-
 namespace SnowLeopardEngine
 {
+    const uint32_t MaxBoneInfluence = 4;
+
     struct ViewportDesc
     {
         float X;
@@ -64,25 +64,45 @@ namespace SnowLeopardEngine
         TextureConfig Config;
     };
 
-    struct VertexData
+    struct StaticMeshVertexData
     {
         glm::vec3 Position;
         glm::vec3 Normal;
         glm::vec2 TexCoord;
 
+        // for picking object using back buffer hack
+        int EntityID = -1;
+    };
+
+    struct PerVertexAnimationAttributes
+    {
         // bone indexes which will influence this vertex
         int BoneIDs[MaxBoneInfluence];
 
         // weights from each bone
         float Weights[MaxBoneInfluence];
+    };
 
+    struct AnimatedMeshVertexData
+    {
+        glm::vec3 Position;
+        glm::vec3 Normal;
+        glm::vec2 TexCoord;
+
+        // for picking object using back buffer hack
         int EntityID = -1;
+
+        // attributes for animation
+        PerVertexAnimationAttributes AnimationAttributes;
     };
 
     struct MeshData
     {
-        std::vector<VertexData> Vertices;
-        std::vector<uint32_t>   Indices;
+        std::vector<StaticMeshVertexData>   StaticVertices;
+        std::vector<AnimatedMeshVertexData> AnimatedVertices;
+        std::vector<uint32_t>               Indices;
+
+        bool HasAnimationInfo() const { return !AnimatedVertices.empty(); }
     };
 
     struct MeshItem
@@ -94,26 +114,5 @@ namespace SnowLeopardEngine
     struct MeshGroup
     {
         std::vector<MeshItem> Items;
-    };
-
-    struct BoneInfo
-    {
-        // id is index in finalBoneMatrices
-        int Id = -1;
-
-        // offset matrix transforms vertex from model space to bone space
-        glm::mat4 Offset;
-    };
-
-    struct AnimationClip
-    {};
-
-    struct Model
-    {
-        MeshGroup Meshes;
-
-        std::vector<AnimationClip>      AnimationClips;
-        std::map<std::string, BoneInfo> BoneInfoMap;
-        int                             BoneCounter = 0;
     };
 } // namespace SnowLeopardEngine
