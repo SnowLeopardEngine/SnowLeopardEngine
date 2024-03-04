@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSinglePass.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardGeometrySubPass.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardShadowSubPass.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSkyboxSubPass.h"
@@ -9,6 +10,8 @@ namespace SnowLeopardEngine
 {
     ForwardSinglePass::ForwardSinglePass()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+
         // Add sub-passes
 
         // Shadow
