@@ -11,5 +11,6 @@ namespace SnowLeopardEngine::Editor
         virtual void Init() {}
         virtual void OnFixedTick() {}
         virtual void OnTick(float deltaTime) {}
+        virtual void Shutdown() {}
     };
 } // namespace SnowLeopardEngine::Editor

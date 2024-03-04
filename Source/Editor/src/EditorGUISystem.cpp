@@ -58,6 +58,7 @@ namespace SnowLeopardEngine::Editor
     void EditorGUISystem::Shutdown()
     {
         SNOW_LEOPARD_INFO("[EditorGUISystem] Shutting Down...");
+        PanelManager::Shutdown();
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();

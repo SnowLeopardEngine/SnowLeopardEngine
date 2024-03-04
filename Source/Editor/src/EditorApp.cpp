@@ -1,7 +1,6 @@
 #include "SnowLeopardEditor/EditorApp.h"
 #include "SnowLeopardEditor/EditorGUISystem.h"
 #include "SnowLeopardEditor/PanelManager.h"
-#include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
 
