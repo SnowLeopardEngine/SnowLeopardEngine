@@ -1,9 +1,12 @@
 #pragma once
 
-#include "SnowLeopardEngine/Function/Animation/AnimationTypeDef.h"
+#include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Math/Math.h"
 
 namespace SnowLeopardEngine
 {
+    const uint32_t MaxBoneInfluence = 4;
+
     struct ViewportDesc
     {
         float X;
@@ -68,7 +71,16 @@ namespace SnowLeopardEngine
         glm::vec2 TexCoord;
 
         // for picking object using back buffer hack
-        int EntityID = -1; 
+        int EntityID = -1;
+    };
+
+    struct PerVertexAnimationAttributes
+    {
+        // bone indexes which will influence this vertex
+        int BoneIDs[MaxBoneInfluence];
+
+        // weights from each bone
+        float Weights[MaxBoneInfluence];
     };
 
     struct AnimatedMeshVertexData
@@ -90,10 +102,7 @@ namespace SnowLeopardEngine
         std::vector<AnimatedMeshVertexData> AnimatedVertices;
         std::vector<uint32_t>               Indices;
 
-        bool HasAnimationInfo() const
-        {
-            return !AnimatedVertices.empty();
-        }
+        bool HasAnimationInfo() const { return !AnimatedVertices.empty(); }
     };
 
     struct MeshItem
@@ -105,13 +114,5 @@ namespace SnowLeopardEngine
     struct MeshGroup
     {
         std::vector<MeshItem> Items;
-    };
-
-    struct Model
-    {
-        MeshGroup Meshes;
-
-        // per model animation data
-        PerModelAnimationData AnimationData;
     };
 } // namespace SnowLeopardEngine

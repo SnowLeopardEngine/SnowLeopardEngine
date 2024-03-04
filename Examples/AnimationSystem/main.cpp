@@ -68,9 +68,10 @@ public:
         characterTransform.Position.y   = 0.6;
         characterTransform.Scale        = {10, 10, 10};
         auto& characterMeshFilter       = character.AddComponent<MeshFilterComponent>();
-        characterMeshFilter.FilePath    = "Assets/Models/Walking.fbx";
+        characterMeshFilter.FilePath    = "Assets/Models/Vampire_Idle.dae";
         auto& characterMeshRenderer     = character.AddComponent<MeshRendererComponent>();
         characterMeshRenderer.BaseColor = {0.1, 0.1, 0.7, 1};
+        character.AddComponent<AnimatorComponent>();
     }
 
 private:
