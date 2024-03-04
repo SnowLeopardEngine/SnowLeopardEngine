@@ -2,10 +2,7 @@
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
-#include "cooking/PxCooking.h"
-#include "geometry/PxHeightFieldGeometry.h"
-#include <cstdint>
-#include <exception>
+#include "SnowLeopardEngine/Function/Util/Util.h"
 
 using namespace physx;
 
@@ -68,8 +65,6 @@ namespace SnowLeopardEngine
 
         m_State = SystemState::ShutdownOk;
     }
-
-    physx::PxVec3 FromGlmVec3(const glm::vec3& glmVec) { return physx::PxVec3(glmVec.x, glmVec.y, glmVec.z); }
 
     void PhysicsSystem::CookPhysicsScene(const Ref<LogicScene>& logicScene)
     {
@@ -351,7 +346,8 @@ namespace SnowLeopardEngine
                                                          terrainCollider.Material->Bounciness);
                 }
 
-                PxRigidStatic* body = m_Physics->createRigidStatic(PxTransform(FromGlmVec3(transform.Position)));
+                PxRigidStatic* body =
+                    m_Physics->createRigidStatic(PxTransform(PhysXGLMHelpers::GetPhysXVec3(transform.Position)));
 
                 PxShape* shape = m_Physics->createShape(hfGeometry, *material);
                 body->attachShape(*shape);
@@ -363,13 +359,10 @@ namespace SnowLeopardEngine
         // case5: CharacterController
         registry.view<TransformComponent, CharacterControllerComponent>().each(
             [this](
-                entt::entity entity, TransformComponent& transform, 
-                CharacterControllerComponent& characterController
-                ) {
-                
+                entt::entity entity, TransformComponent& transform, CharacterControllerComponent& characterController) {
                 // Create Controller Manager
-                PxControllerManager* cM = PxCreateControllerManager(*m_Scene);
-                
+                PxControllerManager* controllerManager = PxCreateControllerManager(*m_Scene);
+
                 PxMaterial* material;
                 if (characterController.Material == nullptr)
                 {
@@ -391,12 +384,13 @@ namespace SnowLeopardEngine
                                   transform.Position.y + characterController.Offset.y,
                                   transform.Position.z + characterController.Offset.z);
                 desc.upDirection = PxVec3(0, 1, 0);
-                desc.slopeLimit  = cosf(characterController.MaxSlope);
+                desc.slopeLimit  = cosf(characterController.SlopeLimit);
+                desc.stepOffset  = characterController.StepOffset;
                 desc.material    = material;
 
-                PxController* controller = cM->createController(desc);
-                
-                characterController.Ctrl = controller;
+                PxController* controller = controllerManager->createController(desc);
+
+                characterController.InternalController = controller;
             });
         // TODO: More cases
     }
@@ -410,6 +404,8 @@ namespace SnowLeopardEngine
             m_Scene->fetchResults(true);
 
             auto& registry = m_LogicScene->GetRegistry();
+
+            // Fetch rigid bodies
             registry.view<TransformComponent, RigidBodyComponent>().each(
                 [](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody) {
                     PxTransform pxTransform = rigidBody.InternalBody->getGlobalPose();
@@ -418,6 +414,13 @@ namespace SnowLeopardEngine
                     transform.Position      = {pxPosition.x, pxPosition.y, pxPosition.z};
                     glm::quat rotation      = {pxRotation.w, pxRotation.x, pxRotation.y, pxRotation.z};
                     transform.SetRotation(rotation);
+                });
+
+            // Fetch character controllers
+            registry.view<TransformComponent, CharacterControllerComponent>().each(
+                [](entt::entity entity, TransformComponent& transform, CharacterControllerComponent& controller) {
+                    auto position      = controller.InternalController->getPosition();
+                    transform.Position = {position.x, position.y, position.z};
                 });
         }
     }
@@ -462,5 +465,26 @@ namespace SnowLeopardEngine
                                   const physx::PxU32               count)
     {
         SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onAdvance");
+    }
+
+    /** APIs **/
+
+    /** Character Controller **/
+    void
+    PhysicsSystem::Move(const CharacterControllerComponent& component, const glm::vec3& movement, float deltaTime) const
+    {
+        component.InternalController->move(
+            PhysXGLMHelpers::GetPhysXVec3(movement), component.MinMoveDisp, deltaTime, component.Filters);
+    }
+
+    /** RigidBody **/
+    void PhysicsSystem::AddForce(const RigidBodyComponent& component, const glm::vec3& force) const
+    {
+        // TODO: Jubiao Lin
+    }
+
+    void PhysicsSystem::AddTorque(const RigidBodyComponent& component, const glm::vec3& torque) const
+    {
+        // TODO: Jubiao Lin
     }
 } // namespace SnowLeopardEngine

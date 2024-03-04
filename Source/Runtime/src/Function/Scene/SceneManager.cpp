@@ -39,10 +39,10 @@ namespace SnowLeopardEngine
     {
         if (m_ActiveScene)
         {
-            m_ActiveScene->OnLoad();
-
             // Cook PhysicsScene!
             g_EngineContext->PhysicsSys->CookPhysicsScene(m_ActiveScene);
+
+            m_ActiveScene->OnLoad();
         }
     }
 

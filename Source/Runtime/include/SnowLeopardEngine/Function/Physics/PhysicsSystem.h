@@ -1,14 +1,17 @@
 #pragma once
 
-#include <PxPhysicsAPI.h>
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Base/EngineSubSystem.h"
+#include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsErrorCallback.h"
+#include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
+
+#include <PxPhysicsAPI.h>
 
 namespace SnowLeopardEngine
 {
-    class PhysicsSystem final : public EngineSubSystem , public physx::PxSimulationEventCallback
+    class PhysicsSystem final : public EngineSubSystem, public physx::PxSimulationEventCallback
     {
     public:
         DECLARE_SUBSYSTEM(PhysicsSystem)
@@ -26,6 +29,15 @@ namespace SnowLeopardEngine
         void onAdvance(const physx::PxRigidBody* const* bodyBuffer,
                        const physx::PxTransform*        poseBuffer,
                        physx::PxU32                     count) override;
+
+        /** APIs **/
+
+        /** Character Controller **/
+        void Move(const CharacterControllerComponent& component, const glm::vec3& movement, float deltaTime) const;
+
+        /** RigidBody **/
+        void AddForce(const RigidBodyComponent& component, const glm::vec3& force) const;
+        void AddTorque(const RigidBodyComponent& component, const glm::vec3& torque) const;
 
     private:
         physx::PxDefaultAllocator   m_Allocator;

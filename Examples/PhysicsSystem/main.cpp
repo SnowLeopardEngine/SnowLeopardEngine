@@ -10,28 +10,28 @@ using namespace SnowLeopardEngine;
 class SphereScript : public NativeScriptInstance
 {
 public:
+    virtual void OnLoad() override { m_Controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>(); }
+
     virtual void OnColliderEnter() override
     {
         SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter");
-        DesktopApp::GetInstance()->GetEngine()->GetContext()->AudioSys->Play("sounds/jump.mp3");
+        m_EngineContext->AudioSys->Play("sounds/jump.mp3");
     }
- 
+
     virtual void OnTick(float deltaTime) override
     {
-        auto& inputSystem = DesktopApp::GetInstance()->GetEngine()->GetContext()->InputSys;
-        
-        //  Character Controller Test Code
-        auto& t = m_OwnerEntity->GetComponent<CharacterControllerComponent>().Ctrl;
-        physx::PxControllerFilters filters;
-        physx::PxVec3 movement(15 * deltaTime, 0,0);
-        t->move(movement, 0.01, deltaTime, filters);
-        //------End------------
-        
+        auto& inputSystem = m_EngineContext->InputSys;
+
         if (inputSystem->GetKey(KeyCode::Escape))
         {
             DesktopApp::GetInstance()->Quit();
         }
+
+        m_EngineContext->PhysicsSys->Move(m_Controller, glm::vec3(-0.05f, -0.05f, 0), deltaTime);
     }
+
+private:
+    CharacterControllerComponent m_Controller;
 };
 
 class CustomLifeTime final : public LifeTimeComponent
@@ -77,8 +77,9 @@ public:
         sphereTransform.Position = {5, 15, 0};
         sphereTransform.Scale *= 3;
 
-        sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
-        sphere.AddComponent<SphereColliderComponent>(normalMaterial);
+        // sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
+        // sphere.AddComponent<SphereColliderComponent>(normalMaterial);
+        sphere.AddComponent<CharacterControllerComponent>();
         auto& sphereMeshFilter                    = sphere.AddComponent<MeshFilterComponent>();
         sphereMeshFilter.PrimitiveType            = MeshPrimitiveType::Sphere;
         auto& sphereMeshRenderer                  = sphere.AddComponent<MeshRendererComponent>();
@@ -88,7 +89,7 @@ public:
 
         auto scriptInstance = CreateRef<SphereScript>();
         sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
-        
+
         // // Create a floor with RigidBodyComponent & BoxColliderComponent
         // Entity floor = scene->CreateEntity("Floor");
 
@@ -105,9 +106,7 @@ public:
         // floorMeshRenderer.BaseColor              = {1, 1, 1, 1}; // Pure White
         // floorMeshRenderer.UseDiffuse             = true;
         // floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
-        
-        sphere.AddComponent<CharacterControllerComponent>();
-        
+
         // Create a terrain
         int    heightMapWidth                               = 100;
         int    heightMapHeight                              = 100;

@@ -216,11 +216,11 @@ namespace SnowLeopardEngine
 
         CapsuleColliderComponent()                                = default;
         CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
-        explicit CapsuleColliderComponent(float                      radius,
-                                          float                      height,
-                                          const glm::vec3&           offset    = {0, 0, 0},
-                                          const Ref<PhysicsMaterial> material  = nullptr,
-                                          bool                       isTrigger = false) :
+        explicit CapsuleColliderComponent(float                       radius,
+                                          float                       height,
+                                          const glm::vec3&            offset    = {0, 0, 0},
+                                          const Ref<PhysicsMaterial>& material  = nullptr,
+                                          bool                        isTrigger = false) :
             Radius(radius),
             Height(height), Offset(offset), Material(material), IsTrigger(isTrigger)
         {}
@@ -240,46 +240,28 @@ namespace SnowLeopardEngine
         {}
     };
 
-    enum class CharacterInteraction
-    {
-        None,
-        Interacting,
-        Completed
-    };
-
     struct CharacterControllerComponent
     {
-        // Capsule
-        float                Height = 5.0f;
-        float                Radius = 5.0f;
-        glm::vec3            Offset = {0, 0, 0};
-        glm::vec3            Velocity;
-        glm::vec3            MoveDirection;
-        bool                 IsGrounded = true;
-        float                JumpPower  = 0.5;
-        float                MaxSlope   = 75.0f;
-        Ref<PhysicsMaterial> Material   = nullptr;
-        physx::PxController* Ctrl = nullptr;
-        
-        // todo
-        float                Health = 100.0f;
-        float                Damage = 1.0f;
-        CharacterInteraction CI;
+        float     SlopeLimit  = 45.0f;
+        float     StepOffset  = 0.3;
+        float     Height      = 1.0f;
+        float     Radius      = 0.5f;
+        float     MinMoveDisp = 0;
+        glm::vec3 Offset      = {0, 0, 0};
+
+        Ref<PhysicsMaterial>       Material           = nullptr;
+        physx::PxController*       InternalController = nullptr;
+        physx::PxControllerFilters Filters;
 
         CharacterControllerComponent()                                    = default;
         CharacterControllerComponent(const CharacterControllerComponent&) = default;
         explicit CharacterControllerComponent(float                       height,
                                               float                       radius,
                                               glm::vec3                   offset,
-                                              glm::vec3                   velocity,
-                                              glm::vec3                   moveDirection,
-                                              bool                        isGrounded,
-                                              float                       jumpPower,
-                                              float                       maxSlope,
+                                              float                       slopeLimit,
                                               const Ref<PhysicsMaterial>& material) :
-            Health(height),
-            Radius(radius), Velocity(velocity), Offset(offset), MoveDirection(moveDirection), IsGrounded(isGrounded),
-            JumpPower(jumpPower), MaxSlope(maxSlope), Material(material)
+            Height(height),
+            Radius(radius), Offset(offset), SlopeLimit(slopeLimit), Material(material)
         {}
     };
 
