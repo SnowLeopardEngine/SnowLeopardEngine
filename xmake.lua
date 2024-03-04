@@ -12,6 +12,10 @@ option("examples") -- build examples?
     set_default(true)
 option_end()
 
+option("demos") -- build demos?
+    set_default(true)
+option_end()
+
 -- if build on windows
 if is_host("windows") then
     add_cxxflags("/Zc:__cplusplus", {tools = {"msvc", "cl"}}) -- fix __cplusplus == 199711L error
@@ -51,4 +55,9 @@ includes("Tests")
 -- if build examples, then include examples
 if has_config("examples") then
     includes("Examples")
+end
+
+-- if build demos, then include demos
+if has_config("demos") then
+    includes("Demos")
 end
