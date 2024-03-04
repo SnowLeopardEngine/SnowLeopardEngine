@@ -14,7 +14,7 @@ namespace SnowLeopardEngine
 
     enum class ClearBit : uint32_t
     {
-        None    = 0,
+        Invalid = 0,
         Color   = 1 << 0,
         Depth   = 1 << 1,
         Default = Color | Depth
@@ -35,6 +35,8 @@ namespace SnowLeopardEngine
         virtual ViewportDesc GetViewport()                                                           = 0;
 
         virtual Ref<VertexArray> CreateVertexArray(const MeshItem& meshItem)                                  = 0;
+        virtual Ref<VertexArray> CreateStaticMeshVertexArray(const MeshItem& meshItem)                        = 0;
+        virtual Ref<VertexArray> CreateAnimatedMeshVertexArray(const MeshItem& meshItem)                      = 0;
         virtual Ref<VertexArray> CreateVertexArray(const MeshItem& meshItem, const BufferLayout& inputLayout) = 0;
 
         virtual void DrawIndexed(uint32_t indexCount) = 0;

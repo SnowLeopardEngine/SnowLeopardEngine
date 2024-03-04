@@ -16,10 +16,16 @@ namespace SnowLeopardEngine
         glNamedBufferStorage(m_BufferName, size, vertices, GL_DYNAMIC_STORAGE_BIT);
     }
 
-    GLVertexBuffer::GLVertexBuffer(std::vector<VertexData> vertices)
+    GLVertexBuffer::GLVertexBuffer(std::vector<StaticMeshVertexData> vertices)
     {
         glCreateBuffers(1, &m_BufferName);
-        glNamedBufferStorage(m_BufferName, vertices.size() * sizeof(VertexData), &vertices[0], GL_DYNAMIC_STORAGE_BIT);
+        glNamedBufferStorage(m_BufferName, vertices.size() * sizeof(StaticMeshVertexData), &vertices[0], GL_DYNAMIC_STORAGE_BIT);
+    }
+
+    GLVertexBuffer::GLVertexBuffer(std::vector<AnimatedMeshVertexData> vertices)
+    {
+        glCreateBuffers(1, &m_BufferName);
+        glNamedBufferStorage(m_BufferName, vertices.size() * sizeof(AnimatedMeshVertexData), &vertices[0], GL_DYNAMIC_STORAGE_BIT);
     }
 
     GLVertexBuffer::~GLVertexBuffer() { glDeleteBuffers(1, &m_BufferName); }

@@ -13,6 +13,6 @@ namespace SnowLeopardEngine
         Ref<FrameBuffer> GetShadowDepthBuffer() const { return m_DepthBuffer; }
 
     private:
-        Ref<FrameBuffer> m_DepthBuffer;
+        Ref<FrameBuffer> m_DepthBuffer = nullptr;
     };
 } // namespace SnowLeopardEngine

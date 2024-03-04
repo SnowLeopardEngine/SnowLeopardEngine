@@ -31,6 +31,13 @@ namespace SnowLeopardEngine
 
         auto& registry = activeScene->GetRegistry();
 
+        // If RT is set, render to RT.
+        auto rt = pipeline->GetRenderTarget();
+        if (rt != nullptr)
+        {
+            rt->Bind();
+        }
+
         // Get camera component, currently we pick the first one as main camera.
         // TODO: filter main camera & other cameras
         TransformComponent mainCameraTransform;
@@ -62,9 +69,19 @@ namespace SnowLeopardEngine
             }
         }
 
-        // after shadow-mapping, update the viewport use the size of the window
-        pipeline->GetAPI()->UpdateViewport(
-            0, 0, g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight());
+        // after shadow-mapping, update the viewport use the size of the window, if RT is not set
+        if (rt == nullptr)
+        {
+            pipeline->GetAPI()->UpdateViewport(
+                0, 0, g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight());
+        }
+        else
+        {
+            pipeline->GetAPI()->UpdateViewport(0, 0, rt->GetDesc().Width, rt->GetDesc().Height);
+        }
+
+        auto viewPortDesc      = pipeline->GetAPI()->GetViewport();
+        mainCamera.AspectRatio = viewPortDesc.Width / viewPortDesc.Height;
 
         // filter the first directional light
         DirectionalLightComponent directionalLight;
@@ -100,48 +117,31 @@ namespace SnowLeopardEngine
         glm::mat4 lightView        = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
-        // for each mesh in the scene, request draw call.
-        registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
-            [this, pipeline, mainCameraTransform, mainCamera, directionalLight, ownerPass, lightSpaceMatrix](
-                TransformComponent& transform, MeshFilterComponent& meshFilter, MeshRendererComponent& meshRenderer) {
+        // for each static mesh in the scene, request draw call.
+        // entt::exclude: https://github.com/skypjack/entt/issues/929
+        registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>(entt::exclude<AnimatorComponent>)
+            .each([this, pipeline, mainCameraTransform, mainCamera, directionalLight, ownerPass, lightSpaceMatrix](
+                      TransformComponent&    transform,
+                      MeshFilterComponent&   meshFilter,
+                      MeshRendererComponent& meshRenderer) {
                 // No meshes, skip...
                 if (meshFilter.Meshes.Items.empty())
                 {
                     return;
                 }
 
-                auto viewPortDesc = pipeline->GetAPI()->GetViewport();
-
-                // Setup camera matrices
-                auto eulerAngles = mainCameraTransform.GetRotationEuler();
-
-                // Calculate forward (Yaw - 90 to adjust)
-                glm::vec3 forward;
-                forward.x = cos(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
-                forward.y = sin(glm::radians(eulerAngles.x));
-                forward.z = sin(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
-                forward   = glm::normalize(forward);
-
-                // Calculate up
-                glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
-                glm::vec3 up    = glm::normalize(glm::cross(right, forward));
-
                 for (const auto& meshItem : meshFilter.Meshes.Items)
                 {
                     m_Shader->Bind();
                     m_Shader->SetMat4("model", transform.GetTransform());
-                    m_Shader->SetMat4(
-                        "view", glm::lookAt(mainCameraTransform.Position, mainCameraTransform.Position + forward, up));
-                    m_Shader->SetMat4("projection",
-                                      glm::perspective(glm::radians(mainCamera.FOV),
-                                                       viewPortDesc.Width / viewPortDesc.Height,
-                                                       mainCamera.Near,
-                                                       mainCamera.Far));
+                    m_Shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
+                    m_Shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
                     m_Shader->SetFloat4("baseColor", meshRenderer.BaseColor);
                     m_Shader->SetFloat3("viewPos", mainCameraTransform.Position);
                     m_Shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
                     m_Shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
                     m_Shader->SetFloat3("directionalLight.color", directionalLight.Color);
+                    m_Shader->SetInt("hasAnimation", 0);
 
                     // Bind diffuse texture
                     if (meshRenderer.UseDiffuse && meshRenderer.DiffuseTexture != nullptr)
@@ -161,7 +161,7 @@ namespace SnowLeopardEngine
                     m_Shader->SetInt("shadowMap", 1);
                     m_Shader->SetInt("castShadow", meshRenderer.CastShadow);
 
-                    // Currently, no static batching.leave temp test code here auto vertexArray =
+                    // Currently, no static batching.leave temp test code here
                     auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
                     vertexArray->Bind();
 
@@ -172,5 +172,72 @@ namespace SnowLeopardEngine
                     m_Shader->Unbind();
                 }
             });
+
+        // for each animated mesh in the scene, request draw call.
+        registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent, AnimatorComponent>().each(
+            [this, pipeline, mainCameraTransform, mainCamera, directionalLight, ownerPass, lightSpaceMatrix](
+                TransformComponent&    transform,
+                MeshFilterComponent&   meshFilter,
+                MeshRendererComponent& meshRenderer,
+                AnimatorComponent&     animator) {
+                // No meshes, skip...
+                if (meshFilter.Meshes.Items.empty())
+                {
+                    return;
+                }
+
+                for (const auto& meshItem : meshFilter.Meshes.Items)
+                {
+                    m_Shader->Bind();
+                    m_Shader->SetMat4("model", transform.GetTransform());
+                    m_Shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
+                    m_Shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
+                    m_Shader->SetFloat4("baseColor", meshRenderer.BaseColor);
+                    m_Shader->SetFloat3("viewPos", mainCameraTransform.Position);
+                    m_Shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
+                    m_Shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
+                    m_Shader->SetFloat3("directionalLight.color", directionalLight.Color);
+                    m_Shader->SetInt("hasAnimation", 1);
+
+                    auto boneMatrices = animator.Animator->GetFinalBoneMatrices();
+                    for (uint32_t i = 0; i < boneMatrices.size(); ++i)
+                    {
+                        m_Shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
+                    }
+
+                    // Bind diffuse texture
+                    if (meshRenderer.UseDiffuse && meshRenderer.DiffuseTexture != nullptr)
+                    {
+                        meshRenderer.DiffuseTexture->Bind(0);
+                        m_Shader->SetInt("diffuseMap", 0);
+                        m_Shader->SetInt("useDiffuse", 1);
+                    }
+                    else
+                    {
+                        m_Shader->SetInt("useDiffuse", 0);
+                    }
+
+                    // Bind shadow map
+                    m_Shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+                    ownerPass->GetShadowDepthBuffer()->BindDepthAttachmentTexture(1);
+                    m_Shader->SetInt("shadowMap", 1);
+                    m_Shader->SetInt("castShadow", meshRenderer.CastShadow);
+
+                    // Currently, no static batching.leave temp test code here
+                    auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
+                    vertexArray->Bind();
+
+                    pipeline->GetAPI()->DrawIndexed(meshItem.Data.Indices.size());
+
+                    vertexArray->Unbind();
+
+                    m_Shader->Unbind();
+                }
+            });
+
+        if (rt != nullptr)
+        {
+            rt->Unbind();
+        }
     }
 } // namespace SnowLeopardEngine

@@ -30,34 +30,12 @@ namespace SnowLeopardEngine
 
         auto& registry = activeScene->GetRegistry();
 
-        // Get camera component, currently we pick the first one as main camera.
-        // TODO: filter main camera & other cameras
-        TransformComponent mainCameraTransform;
-        CameraComponent    mainCamera;
+        auto view = registry.view<TransformComponent, CameraComponent>();
+
+        // No Camera, return
+        if (view.size_hint() == 0)
         {
-            bool isFirst = true;
-            auto view    = registry.view<TransformComponent, CameraComponent>();
-
-            // No Camera, return
-            if (view.size_hint() == 0)
-            {
-                return;
-            }
-
-            for (const auto& cameraEntity : view)
-            {
-                if (isFirst)
-                {
-                    auto [transform, camera] = view.get<TransformComponent, CameraComponent>(cameraEntity);
-                    isFirst                  = false;
-                    mainCameraTransform      = transform;
-                    mainCamera               = camera;
-                }
-                else
-                {
-                    break;
-                }
-            }
+            return;
         }
 
         // filter the first directional light
@@ -97,8 +75,8 @@ namespace SnowLeopardEngine
         glm::mat4 lightView        = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
-        // for each mesh in the scene, request draw call.
-        registry.view<TransformComponent, MeshFilterComponent>().each(
+        // for each static mesh in the scene, request draw call.
+        registry.view<TransformComponent, MeshFilterComponent>(entt::exclude<AnimatorComponent>).each(
             [this, pipeline, lightSpaceMatrix](TransformComponent& transform, MeshFilterComponent& meshFilter) {
                 // No meshes, skip...
                 if (meshFilter.Meshes.Items.empty())
@@ -112,8 +90,46 @@ namespace SnowLeopardEngine
 
                     m_Shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
                     m_Shader->SetMat4("model", transform.GetTransform());
+                    m_Shader->SetInt("hasAnimation", 0);
 
-                    // Currently, no static batching.leave temp test code here auto vertexArray =
+                    // Currently, no static batching.leave temp test code here
+                    auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
+                    vertexArray->Bind();
+
+                    pipeline->GetAPI()->DrawIndexed(meshItem.Data.Indices.size());
+
+                    vertexArray->Unbind();
+
+                    m_Shader->Unbind();
+                }
+            });
+
+        // for each animated mesh in the scene, request draw call.
+        registry.view<TransformComponent, MeshFilterComponent, AnimatorComponent>().each(
+            [this, pipeline, directionalLight, ownerPass, lightSpaceMatrix](
+                TransformComponent&    transform,
+                MeshFilterComponent&   meshFilter,
+                AnimatorComponent&     animator) {
+                // No meshes, skip...
+                if (meshFilter.Meshes.Items.empty())
+                {
+                    return;
+                }
+
+                for (const auto& meshItem : meshFilter.Meshes.Items)
+                {
+                    m_Shader->Bind();
+                    m_Shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+                    m_Shader->SetMat4("model", transform.GetTransform());
+                    m_Shader->SetInt("hasAnimation", 1);
+
+                    auto boneMatrices = animator.Animator->GetFinalBoneMatrices();
+                    for (uint32_t i = 0; i < boneMatrices.size(); ++i)
+                    {
+                        m_Shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
+                    }
+
+                    // Currently, no static batching.leave temp test code here
                     auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
                     vertexArray->Bind();
 

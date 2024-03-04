@@ -8,7 +8,7 @@ namespace SnowLeopardEngine
     {
         switch (pipelineState->DepthTest)
         {
-            case DepthTestMode::None:
+            case DepthTestMode::Disable:
                 glDisable(GL_DEPTH_TEST);
                 break;
             case DepthTestMode::Greater:
@@ -39,7 +39,7 @@ namespace SnowLeopardEngine
                 glEnable(GL_DEPTH_TEST);
                 glDepthFunc(GL_NEVER);
                 break;
-            case DepthTestMode::Always:
+            case DepthTestMode::AlwaysPass:
                 glEnable(GL_DEPTH_TEST);
                 glDepthFunc(GL_ALWAYS);
                 break;
@@ -58,7 +58,7 @@ namespace SnowLeopardEngine
 
         switch (pipelineState->CullFace)
         {
-            case CullFaceMode::None:
+            case CullFaceMode::NoCull:
                 glDisable(GL_CULL_FACE);
                 break;
             case CullFaceMode::Front:
@@ -115,10 +115,34 @@ namespace SnowLeopardEngine
 
     Ref<VertexArray> OpenGLAPI::CreateVertexArray(const MeshItem& meshItem)
     {
-        // Create a default layout and set it
+        if (meshItem.Data.HasAnimationInfo())
+        {
+            return CreateAnimatedMeshVertexArray(meshItem);
+        }
+        else
+        {
+            return CreateStaticMeshVertexArray(meshItem);
+        }
+    }
+
+    Ref<VertexArray> OpenGLAPI::CreateStaticMeshVertexArray(const MeshItem& meshItem)
+    {
+        // Create a default layout for static meshes and set it
         BufferLayout layout = {{ShaderDataType::Float3, "a_Position"},
                                {ShaderDataType::Float3, "a_Normal"},
                                {ShaderDataType::Float2, "a_TexCoords"},
+                               {ShaderDataType::Int, "a_EntityID"}};
+
+        return CreateVertexArray(meshItem, layout);
+    }
+
+    Ref<VertexArray> OpenGLAPI::CreateAnimatedMeshVertexArray(const MeshItem& meshItem)
+    {
+        // Create a default layout for static meshes and set it
+        BufferLayout layout = {{ShaderDataType::Float3, "a_Position"},
+                               {ShaderDataType::Float3, "a_Normal"},
+                               {ShaderDataType::Float2, "a_TexCoords"},
+                               {ShaderDataType::Int, "a_EntityID"},
                                {ShaderDataType::Int4, "a_BoneIDs"},
                                {ShaderDataType::Float4, "a_Weights"}};
 
@@ -131,8 +155,15 @@ namespace SnowLeopardEngine
         auto vertexArray = VertexArray::Create();
 
         // Create vertices and the vertex buffer
-        auto vertices     = meshItem.Data.Vertices;
-        auto vertexBuffer = VertexBuffer::Create(vertices);
+        Ref<VertexBuffer> vertexBuffer;
+        if (meshItem.Data.HasAnimationInfo())
+        {
+            vertexBuffer = VertexBuffer::Create(meshItem.Data.AnimatedVertices);
+        }
+        else
+        {
+            vertexBuffer = VertexBuffer::Create(meshItem.Data.StaticVertices);
+        }
 
         vertexBuffer->SetLayout(inputLayout);
 

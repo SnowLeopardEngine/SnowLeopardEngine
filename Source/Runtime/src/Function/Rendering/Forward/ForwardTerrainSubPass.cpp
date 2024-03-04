@@ -29,6 +29,13 @@ namespace SnowLeopardEngine
 
         auto& registry = activeScene->GetRegistry();
 
+        // If RT is set, render to RT.
+        auto rt = pipeline->GetRenderTarget();
+        if (rt != nullptr)
+        {
+            rt->Bind();
+        }
+
         // TODO: Ziyu Min
 
         // Get camera component, currently we pick the first one as main camera.
@@ -60,6 +67,9 @@ namespace SnowLeopardEngine
                 }
             }
         }
+
+        auto viewPortDesc      = pipeline->GetAPI()->GetViewport();
+        mainCamera.AspectRatio = viewPortDesc.Width / viewPortDesc.Height;
 
         // filter the first directional light
         DirectionalLightComponent directionalLight;
@@ -105,31 +115,10 @@ namespace SnowLeopardEngine
                     return;
                 }
 
-                auto viewPortDesc = pipeline->GetAPI()->GetViewport();
-
-                // Setup camera matrices
-                auto eulerAngles = mainCameraTransform.GetRotationEuler();
-
-                // Calculate forward (Yaw - 90 to adjust)
-                glm::vec3 forward;
-                forward.x = cos(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
-                forward.y = sin(glm::radians(eulerAngles.x));
-                forward.z = sin(glm::radians(eulerAngles.y - 90)) * cos(glm::radians(eulerAngles.x));
-                forward   = glm::normalize(forward);
-
-                // Calculate up
-                glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
-                glm::vec3 up    = glm::normalize(glm::cross(right, forward));
-
                 m_Shader->Bind();
                 m_Shader->SetMat4("model", transform.GetTransform());
-                m_Shader->SetMat4(
-                    "view", glm::lookAt(mainCameraTransform.Position, mainCameraTransform.Position + forward, up));
-                m_Shader->SetMat4("projection",
-                                  glm::perspective(glm::radians(mainCamera.FOV),
-                                                   viewPortDesc.Width / viewPortDesc.Height,
-                                                   mainCamera.Near,
-                                                   mainCamera.Far));
+                m_Shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
+                m_Shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
                 m_Shader->SetFloat4("baseColor", terrainRenderer.BaseColor);
                 m_Shader->SetFloat3("viewPos", mainCameraTransform.Position);
                 m_Shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
@@ -163,5 +152,10 @@ namespace SnowLeopardEngine
                 vertexArray->Unbind();
                 m_Shader->Unbind();
             });
+
+        if (rt != nullptr)
+        {
+            rt->Unbind();
+        }
     }
 } // namespace SnowLeopardEngine

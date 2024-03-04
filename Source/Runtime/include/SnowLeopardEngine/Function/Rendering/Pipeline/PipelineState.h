@@ -6,7 +6,8 @@ namespace SnowLeopardEngine
 {
     enum class DepthTestMode : uint16_t
     {
-        None = 0,
+        Invalid = 0,
+        Disable,
         Greater,
         GreaterEqual,
         Equal,
@@ -14,30 +15,32 @@ namespace SnowLeopardEngine
         Less,
         NotEqual,
         Never,
-        Always
+        AlwaysPass
     };
 
     enum class StencilTestMode : uint16_t
     {
-        None = 0
+        Invalid = 0
     };
 
     enum class CullFaceMode : uint16_t
     {
-        None = 0,
+        Invalid = 0,
+        NoCull,
         Front,
         Back
     };
 
     enum class PipelineType : uint8_t
     {
-        Graphics = 0,
+        Invalid = 0,
+        Graphics,
         Compute
     };
 
     enum class PipelineFlag : uint8_t
     {
-        None      = 0x0000,
+        Invalid   = 0x0000,
         Shadow    = 0x0001,
         DebugDraw = 0x0010
     };
@@ -56,10 +59,10 @@ namespace SnowLeopardEngine
         DepthTestMode DepthTest  = DepthTestMode::Less;
         bool          DepthWrite = true;
 
-        StencilTestMode StencilTest = StencilTestMode::None;
+        StencilTestMode StencilTest = StencilTestMode::Invalid;
 
         CullFaceMode CullFace = CullFaceMode::Back;
 
-        PipelineFlag Flag = PipelineFlag::None;
+        PipelineFlag Flag = PipelineFlag::Invalid;
     };
 } // namespace SnowLeopardEngine

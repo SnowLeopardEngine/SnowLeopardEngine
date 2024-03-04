@@ -9,7 +9,8 @@ namespace SnowLeopardEngine
     public:
         explicit GLVertexBuffer(uint32_t size);
         GLVertexBuffer(float* vertices, uint32_t size);
-        explicit GLVertexBuffer(std::vector<VertexData> vertices);
+        explicit GLVertexBuffer(std::vector<StaticMeshVertexData> vertices);
+        explicit GLVertexBuffer(std::vector<AnimatedMeshVertexData> vertices);
 
         virtual ~GLVertexBuffer();
 

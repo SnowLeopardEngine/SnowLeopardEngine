@@ -8,7 +8,7 @@ namespace SnowLeopardEngine
 {
     enum class MeshPrimitiveType : uint8_t
     {
-        None = 0,
+        Invalid = 0,
         Cube,
         Sphere,
         Capsule,
@@ -29,7 +29,7 @@ namespace SnowLeopardEngine
             // Define vertices for a unit cube
             const float side = l / 2.0f;
 
-            cubeData.Vertices = {
+            cubeData.StaticVertices = {
                 {{-side, -side, -side}, {0, 0, -1}, {0, 0}}, {{-side, side, -side}, {0, 0, -1}, {0, 1}},
                 {{side, side, -side}, {0, 0, -1}, {1, 1}},   {{side, -side, -side}, {0, 0, -1}, {1, 0}},
 
@@ -90,7 +90,7 @@ namespace SnowLeopardEngine
                     glm::vec3 normal = glm::normalize(position);
                     glm::vec2 texCoord(static_cast<float>(lon) / segments, static_cast<float>(lat) / segments);
 
-                    sphereData.Vertices.push_back({position, normal, texCoord});
+                    sphereData.StaticVertices.push_back({position, normal, texCoord});
                 }
             }
 
@@ -130,7 +130,7 @@ namespace SnowLeopardEngine
             capsuleMesh.Name = "Capsule";
 
             MeshData                 capsuleData;
-            std::vector<VertexData>& vertices = capsuleData.Vertices;
+            std::vector<StaticMeshVertexData>& vertices = capsuleData.StaticVertices;
             std::vector<uint32_t>&   indices  = capsuleData.Indices;
 
             // Calculate the actual height excluding the caps
@@ -317,7 +317,7 @@ namespace SnowLeopardEngine
                     glm::vec2 texCoord(static_cast<float>(column) / heightMap.Width,
                                        static_cast<float>(row) / heightMap.Height);
 
-                    heightfieldData.Vertices.push_back({position, normal, texCoord});
+                    heightfieldData.StaticVertices.push_back({position, normal, texCoord});
                 }
             }
 

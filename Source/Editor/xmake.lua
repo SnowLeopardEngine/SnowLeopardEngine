@@ -1,5 +1,5 @@
 -- add requirements
-add_requires("imgui v1.90-docking")
+add_requires("imgui v1.90-docking", {configs = {glfw = true, opengl3 = true}})
 
 -- target defination, name: SnowLeopardEditor
 target("SnowLeopardEditor")
@@ -22,7 +22,12 @@ target("SnowLeopardEditor")
     add_packages("imgui", { public = true })
 
     -- add dependencies
-    add_deps("SnowLeopardEngine")
+    add_deps("SnowLeopardEngine", "ImGuizmo")
 
     -- set target directory
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/SnowLeopardEditor")
+
+    -- copy config
+    after_build(function(target)
+        os.cp("$(scriptdir)/config/*", target:targetdir())
+    end)

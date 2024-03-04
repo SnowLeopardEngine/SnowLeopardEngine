@@ -10,7 +10,12 @@ namespace SnowLeopardEngine
         return CreateRef<GLVertexBuffer>(vertices, size);
     }
 
-    Ref<VertexBuffer> VertexBuffer::Create(std::vector<VertexData> vertices)
+    Ref<VertexBuffer> VertexBuffer::Create(std::vector<StaticMeshVertexData> vertices)
+    {
+        return CreateRef<GLVertexBuffer>(vertices);
+    }
+
+    Ref<VertexBuffer> VertexBuffer::Create(std::vector<AnimatedMeshVertexData> vertices)
     {
         return CreateRef<GLVertexBuffer>(vertices);
     }

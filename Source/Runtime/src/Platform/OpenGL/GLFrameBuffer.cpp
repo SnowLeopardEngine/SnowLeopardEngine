@@ -93,7 +93,7 @@ namespace SnowLeopardEngine
                     return GL_DEPTH24_STENCIL8;
                 case FrameBufferTextureFormat::DEPTH24:
                     return GL_DEPTH_COMPONENT24;
-                case FrameBufferTextureFormat::None:
+                case FrameBufferTextureFormat::Invalid:
                     SNOW_LEOPARD_CORE_ASSERT(false, "[GLFrameBuffer] Unsupported framebuffer texture format!");
                     break;
             }
@@ -128,8 +128,18 @@ namespace SnowLeopardEngine
         if (m_Name)
         {
             glDeleteFramebuffers(1, &m_Name);
-            glDeleteTextures(m_ColorAttachments.size(), m_ColorAttachments.data());
-            glDeleteTextures(1, &m_DepthAttachment);
+
+            if (!m_ColorAttachmentsToDelete.empty())
+            {
+                glDeleteTextures(m_ColorAttachmentsToDelete.size(), m_ColorAttachmentsToDelete.data());
+            }
+            if (m_DepthAttachmentToDelete != 0)
+            {
+                glDeleteTextures(1, &m_DepthAttachmentToDelete);
+            }
+
+            m_ColorAttachmentsToDelete.assign(m_ColorAttachments.begin(), m_ColorAttachments.end());
+            m_DepthAttachmentToDelete = m_DepthAttachment;
 
             m_ColorAttachments.clear();
             m_DepthAttachment = 0;
@@ -169,7 +179,7 @@ namespace SnowLeopardEngine
                                                   i,
                                                   m_Name);
                         break;
-                    case FrameBufferTextureFormat::None:
+                    case FrameBufferTextureFormat::Invalid:
                     case FrameBufferTextureFormat::DEPTH24_STENCIL8:
                     case FrameBufferTextureFormat::DEPTH24:
                         break;
@@ -177,7 +187,7 @@ namespace SnowLeopardEngine
             }
         }
 
-        if (m_DepthAttachmentDesc.TextureFormat != FrameBufferTextureFormat::None)
+        if (m_DepthAttachmentDesc.TextureFormat != FrameBufferTextureFormat::Invalid)
         {
             Utils::CreateTextures(multisample, &m_DepthAttachment, 1);
             switch (m_DepthAttachmentDesc.TextureFormat)
@@ -200,18 +210,21 @@ namespace SnowLeopardEngine
                                               m_Desc.Height,
                                               m_Name);
                     break;
-                case FrameBufferTextureFormat::None:
+                case FrameBufferTextureFormat::Invalid:
                 case FrameBufferTextureFormat::RGBA8:
                 case FrameBufferTextureFormat::RED_INTEGER:
                     break;
             }
         }
 
+        glBindFramebuffer(GL_FRAMEBUFFER, m_Name);
+
         if (m_ColorAttachments.size() > 1)
         {
             SNOW_LEOPARD_CORE_ASSERT(
                 m_ColorAttachments.size() <= 4,
                 "[GLFrameBuffer] Currently we only accept 4 color attachments in a single FrameBuffer.");
+
             GLenum buffers[4] = {
                 GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
             glDrawBuffers(m_ColorAttachments.size(), buffers);
@@ -227,7 +240,6 @@ namespace SnowLeopardEngine
                                  "[GLFrameBuffer] FrameBuffer is incomplete!");
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDrawBuffer(GL_BACK);
     }
 
     void GLFrameBuffer::Bind()
@@ -256,19 +268,46 @@ namespace SnowLeopardEngine
         SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
 
         glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
-        GLubyte pixelData[4];
-        glReadPixels(x, y, 1, 1, GL_RGBA, GL_INT, pixelData);
+        float pixelData[4];
+        glReadPixels(x, y, 1, 1, GL_RGBA, GL_FLOAT, pixelData);
         return glm::vec4(pixelData[0], pixelData[1], pixelData[2], pixelData[3]);
     }
 
-    void GLFrameBuffer::ClearAttachment(uint32_t attachmentIndex, const glm::vec4& color)
+    glm::ivec4 GLFrameBuffer::ReadPixelInt(uint32_t attachmentIndex, int x, int y)
+    {
+        SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
+
+        glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
+        int pixelData[4];
+        glReadPixels(x, y, 1, 1, GL_RGBA, GL_INT, pixelData);
+        return glm::ivec4(pixelData[0], pixelData[1], pixelData[2], pixelData[3]);
+    }
+
+    int GLFrameBuffer::ReadPixelRedOnly(uint32_t attachmentIndex, int x, int y)
+    {
+        SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
+
+        glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
+        int pixelData;
+        glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
+        return pixelData;
+    }
+
+    void GLFrameBuffer::ClearColorAttachment(uint32_t attachmentIndex, const glm::vec4& color)
+    {
+        SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
+
+        float newColor[4] = {color.r, color.g, color.b, color.a};
+        glClearNamedFramebufferfv(m_Name, GL_COLOR, attachmentIndex, newColor);
+    }
+
+    void GLFrameBuffer::ClearColorAttachment(uint32_t attachmentIndex, int value)
     {
         SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
 
         auto& spec = m_ColorAttachmentDescs[attachmentIndex];
-
-        float newColor[4] = {color.r, color.g, color.b, color.a};
-        glClearNamedFramebufferfv(m_Name, GL_COLOR, attachmentIndex, newColor);
+        glClearTexImage(
+            m_ColorAttachments[attachmentIndex], 0, Utils::FBTextureFormatToGL(spec.TextureFormat), GL_INT, &value);
     }
 
     void GLFrameBuffer::BindColorAttachmentTexture(uint32_t index, uint32_t slot) const

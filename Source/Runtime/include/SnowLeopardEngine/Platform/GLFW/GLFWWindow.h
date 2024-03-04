@@ -31,6 +31,7 @@ namespace SnowLeopardEngine
         virtual unsigned int GetHeight() const override { return m_Data.Height; }
 
         virtual bool ShouldClose() const override;
+        virtual bool IsMinimized() const override;
 
         virtual void MakeCurrentContext() override;
         virtual void SwapBuffers() override;
@@ -58,6 +59,7 @@ namespace SnowLeopardEngine
             std::string  Title;
             unsigned int Width, Height;
             GLFWWindow*  WindowSys;
+            bool         IsMinimized;
         };
 
         WindowData m_Data;

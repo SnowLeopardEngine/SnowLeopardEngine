@@ -2,10 +2,12 @@
 
 in vec3 cubeMapTextureCoords;
 
-out vec4 FragColor;
+layout(location = 0) out vec4 color0;
+layout(location = 1) out int color1;
 
 uniform samplerCube cubeMap;
 
 void main() {
-    FragColor = texture(cubeMap, cubeMapTextureCoords);
+    color0 = texture(cubeMap, cubeMapTextureCoords);
+    color1 = -1;
 }

@@ -31,7 +31,7 @@ namespace SnowLeopardEngine
                 return GL_INT;
             case ShaderDataType::Int4:
                 return GL_INT;
-            case ShaderDataType::Bool:
+            case ShaderDataType::Boolean:
                 return GL_BOOL;
             case ShaderDataType::Unknown:
                 break;
@@ -85,7 +85,7 @@ namespace SnowLeopardEngine
                 case ShaderDataType::Int2:
                 case ShaderDataType::Int3:
                 case ShaderDataType::Int4:
-                case ShaderDataType::Bool: {
+                case ShaderDataType::Boolean: {
                     glEnableVertexArrayAttrib(m_VertexArrayName, m_VertexBufferIndex);
                     glVertexArrayAttribIFormat(m_VertexArrayName,
                                                m_VertexBufferIndex,
