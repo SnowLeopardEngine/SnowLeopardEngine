@@ -7,6 +7,9 @@ namespace SnowLeopardEngine
 {
     const uint32_t MaxBoneInfluence = 4;
 
+    // forward
+    class VertexArray;
+
     struct ViewportDesc
     {
         float X;
@@ -101,6 +104,8 @@ namespace SnowLeopardEngine
         std::vector<StaticMeshVertexData>   StaticVertices;
         std::vector<AnimatedMeshVertexData> AnimatedVertices;
         std::vector<uint32_t>               Indices;
+
+        Ref<VertexArray> VertexArray = nullptr;
 
         bool HasAnimationInfo() const { return !AnimatedVertices.empty(); }
     };
