@@ -161,7 +161,9 @@ namespace SnowLeopardEngine
 
         RigidBodyComponent()                          = default;
         RigidBodyComponent(const RigidBodyComponent&) = default;
-        explicit RigidBodyComponent(float mass) : Mass(mass) {}
+        explicit RigidBodyComponent(float mass, float linear, float augular, bool ccd) :
+            Mass(mass), LinearDamping(linear), AngularDamping(augular), EnableCCD(ccd)
+        {}
     };
 
     struct SphereColliderComponent
@@ -214,11 +216,11 @@ namespace SnowLeopardEngine
 
         CapsuleColliderComponent()                                = default;
         CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
-        explicit CapsuleColliderComponent(float                      radius,
-                                          float                      height,
-                                          const glm::vec3&           offset    = {0, 0, 0},
-                                          const Ref<PhysicsMaterial> material  = nullptr,
-                                          bool                       isTrigger = false) :
+        explicit CapsuleColliderComponent(float                       radius,
+                                          float                       height,
+                                          const glm::vec3&            offset    = {0, 0, 0},
+                                          const Ref<PhysicsMaterial>& material  = nullptr,
+                                          bool                        isTrigger = false) :
             Radius(radius),
             Height(height), Offset(offset), Material(material), IsTrigger(isTrigger)
         {}
@@ -235,6 +237,31 @@ namespace SnowLeopardEngine
         TerrainColliderComponent(const TerrainColliderComponent&) = default;
         explicit TerrainColliderComponent(const Ref<PhysicsMaterial>& material, bool isTrigger = false) :
             Material(material), IsTrigger(isTrigger)
+        {}
+    };
+
+    struct CharacterControllerComponent
+    {
+        float     SlopeLimit  = 45.0f;
+        float     StepOffset  = 0.3;
+        float     Height      = 1.0f;
+        float     Radius      = 0.5f;
+        float     MinMoveDisp = 0;
+        glm::vec3 Offset      = {0, 0, 0};
+
+        Ref<PhysicsMaterial>       Material           = nullptr;
+        physx::PxController*       InternalController = nullptr;
+        physx::PxControllerFilters Filters;
+
+        CharacterControllerComponent()                                    = default;
+        CharacterControllerComponent(const CharacterControllerComponent&) = default;
+        explicit CharacterControllerComponent(float                       height,
+                                              float                       radius,
+                                              glm::vec3                   offset,
+                                              float                       slopeLimit,
+                                              const Ref<PhysicsMaterial>& material) :
+            Height(height),
+            Radius(radius), Offset(offset), SlopeLimit(slopeLimit), Material(material)
         {}
     };
 
