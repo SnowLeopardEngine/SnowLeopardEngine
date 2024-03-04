@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Scene/SceneManager.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
@@ -37,6 +38,7 @@ namespace SnowLeopardEngine
 
     void SceneManager::OnLoad()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         if (m_ActiveScene)
         {
             // Cook PhysicsScene!
@@ -48,6 +50,7 @@ namespace SnowLeopardEngine
 
     void SceneManager::OnTick(float deltaTime)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         if (m_ActiveScene)
         {
             m_ActiveScene->OnTick(deltaTime);
@@ -56,6 +59,7 @@ namespace SnowLeopardEngine
 
     void SceneManager::OnFixedTick()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         if (m_ActiveScene)
         {
             m_ActiveScene->OnFixedTick();
@@ -64,6 +68,7 @@ namespace SnowLeopardEngine
 
     void SceneManager::OnUnload()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         if (m_ActiveScene)
         {
             m_ActiveScene->OnUnload();

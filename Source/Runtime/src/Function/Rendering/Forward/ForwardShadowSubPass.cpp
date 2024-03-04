@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardShadowSubPass.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSinglePass.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
@@ -9,6 +10,7 @@ namespace SnowLeopardEngine
 {
     void ForwardShadowSubPass::Draw()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         auto* ownerPass = static_cast<ForwardSinglePass*>(m_OwnerPass);
 
         // Get pipeline
@@ -76,8 +78,8 @@ namespace SnowLeopardEngine
         glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
         // for each static mesh in the scene, request draw call.
-        registry.view<TransformComponent, MeshFilterComponent>(entt::exclude<AnimatorComponent>).each(
-            [this, pipeline, lightSpaceMatrix](TransformComponent& transform, MeshFilterComponent& meshFilter) {
+        registry.view<TransformComponent, MeshFilterComponent>(entt::exclude<AnimatorComponent>)
+            .each([this, pipeline, lightSpaceMatrix](TransformComponent& transform, MeshFilterComponent& meshFilter) {
                 // No meshes, skip...
                 if (meshFilter.Meshes.Items.empty())
                 {
@@ -107,9 +109,7 @@ namespace SnowLeopardEngine
         // for each animated mesh in the scene, request draw call.
         registry.view<TransformComponent, MeshFilterComponent, AnimatorComponent>().each(
             [this, pipeline, directionalLight, ownerPass, lightSpaceMatrix](
-                TransformComponent&    transform,
-                MeshFilterComponent&   meshFilter,
-                AnimatorComponent&     animator) {
+                TransformComponent& transform, MeshFilterComponent& meshFilter, AnimatorComponent& animator) {
                 // No meshes, skip...
                 if (meshFilter.Meshes.Items.empty())
                 {

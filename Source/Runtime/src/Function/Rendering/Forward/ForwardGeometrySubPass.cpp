@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardGeometrySubPass.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSinglePass.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
@@ -10,6 +11,7 @@ namespace SnowLeopardEngine
 {
     void ForwardGeometrySubPass::Draw()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         auto* ownerPass = static_cast<ForwardSinglePass*>(m_OwnerPass);
 
         // Get pipeline
