@@ -86,7 +86,7 @@ namespace SnowLeopardEngine
                     return;
                 }
 
-                for (const auto& meshItem : meshFilter.Meshes.Items)
+                for (auto& meshItem : meshFilter.Meshes.Items)
                 {
                     m_Shader->Bind();
 
@@ -94,13 +94,16 @@ namespace SnowLeopardEngine
                     m_Shader->SetMat4("model", transform.GetTransform());
                     m_Shader->SetInt("hasAnimation", 0);
 
-                    // Currently, no static batching.leave temp test code here
-                    auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
-                    vertexArray->Bind();
+                    // lazy load
+                    if (meshItem.Data.VertexArray == nullptr)
+                    {
+                        meshItem.Data.VertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
+                    }
+                    meshItem.Data.VertexArray->Bind();
 
                     pipeline->GetAPI()->DrawIndexed(meshItem.Data.Indices.size());
 
-                    vertexArray->Unbind();
+                    meshItem.Data.VertexArray->Unbind();
 
                     m_Shader->Unbind();
                 }
@@ -116,7 +119,7 @@ namespace SnowLeopardEngine
                     return;
                 }
 
-                for (const auto& meshItem : meshFilter.Meshes.Items)
+                for (auto& meshItem : meshFilter.Meshes.Items)
                 {
                     m_Shader->Bind();
                     m_Shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
@@ -129,13 +132,16 @@ namespace SnowLeopardEngine
                         m_Shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
                     }
 
-                    // Currently, no static batching.leave temp test code here
-                    auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
-                    vertexArray->Bind();
+                    // lazy load
+                    if (meshItem.Data.VertexArray == nullptr)
+                    {
+                        meshItem.Data.VertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
+                    }
+                    meshItem.Data.VertexArray->Bind();
 
                     pipeline->GetAPI()->DrawIndexed(meshItem.Data.Indices.size());
 
-                    vertexArray->Unbind();
+                    meshItem.Data.VertexArray->Unbind();
 
                     m_Shader->Unbind();
                 }
@@ -155,13 +161,16 @@ namespace SnowLeopardEngine
                 m_Shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
                 m_Shader->SetMat4("model", transform.GetTransform());
 
-                // Currently, no static batching.leave temp test code here auto vertexArray =
-                auto vertexArray = pipeline->GetAPI()->CreateVertexArray(terrain.Mesh);
-                vertexArray->Bind();
+                // lazy load
+                if (terrain.Mesh.Data.VertexArray == nullptr)
+                {
+                    terrain.Mesh.Data.VertexArray = pipeline->GetAPI()->CreateVertexArray(terrain.Mesh);
+                }
+                terrain.Mesh.Data.VertexArray->Bind();
 
                 pipeline->GetAPI()->DrawIndexed(terrain.Mesh.Data.Indices.size());
 
-                vertexArray->Unbind();
+                terrain.Mesh.Data.VertexArray->Unbind();
 
                 m_Shader->Unbind();
             });

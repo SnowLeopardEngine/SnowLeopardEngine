@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Platform/OpenGL/GLAPI.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 
 #include <glad/glad.h>
 
@@ -6,6 +7,7 @@ namespace SnowLeopardEngine
 {
     void OpenGLAPI::SetPipelineState(const Ref<PipelineState>& pipelineState)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         switch (pipelineState->DepthTest)
         {
             case DepthTestMode::Disable:
@@ -91,16 +93,19 @@ namespace SnowLeopardEngine
 
     void OpenGLAPI::ClearColor(const glm::vec4& color, ClearBit clearBit)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         ClearColor(color.r, color.g, color.b, color.a, clearBit);
     }
 
     void OpenGLAPI::UpdateViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         glViewport(x, y, width, height);
     }
 
     ViewportDesc OpenGLAPI::GetViewport()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
 
@@ -151,6 +156,7 @@ namespace SnowLeopardEngine
 
     Ref<VertexArray> OpenGLAPI::CreateVertexArray(const MeshItem& meshItem, const BufferLayout& inputLayout)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         // Create the vertex array
         auto vertexArray = VertexArray::Create();
 
@@ -178,6 +184,7 @@ namespace SnowLeopardEngine
 
     void OpenGLAPI::DrawIndexed(uint32_t indexCount)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
     }
 } // namespace SnowLeopardEngine
