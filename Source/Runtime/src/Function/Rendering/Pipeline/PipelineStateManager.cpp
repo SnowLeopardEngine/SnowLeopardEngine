@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineStateManager.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Platform/OpenGL/GLPipelineStateManager.h"
 
 namespace SnowLeopardEngine
@@ -27,6 +28,7 @@ namespace SnowLeopardEngine
 
     const Ref<PipelineState>& PipelineStateManager::GetState(const std::string& name) const
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         const auto& it = m_States.find(name);
         SNOW_LEOPARD_CORE_ASSERT(it != m_States.end(), "[Rendering][Pipeline] Pipeline state {0} not found!", name);
 

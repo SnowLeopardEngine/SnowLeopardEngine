@@ -98,12 +98,17 @@ namespace SnowLeopardEngine
         mainCamera.Cubemap->Bind(0);
         m_Shader->SetInt("cubeMap", 0);
 
-        auto vertexArray = pipeline->GetAPI()->CreateVertexArray(m_SkyboxCubeMesh);
-        vertexArray->Bind();
+        // lazy load
+        if (m_SkyboxCubeMesh.Data.VertexArray == nullptr)
+        {
+            m_SkyboxCubeMesh.Data.VertexArray = pipeline->GetAPI()->CreateVertexArray(m_SkyboxCubeMesh);
+        }
+        m_SkyboxCubeMesh.Data.VertexArray->Bind();
 
         pipeline->GetAPI()->DrawIndexed(m_SkyboxCubeMesh.Data.Indices.size());
 
-        vertexArray->Unbind();
+        m_SkyboxCubeMesh.Data.VertexArray->Unbind();
+
         m_Shader->Unbind();
 
         if (rt != nullptr)

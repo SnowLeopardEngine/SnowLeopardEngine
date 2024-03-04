@@ -126,13 +126,14 @@ namespace SnowLeopardEngine
                       TransformComponent&    transform,
                       MeshFilterComponent&   meshFilter,
                       MeshRendererComponent& meshRenderer) {
+                SNOW_LEOPARD_PROFILE_FUNCTION
                 // No meshes, skip...
                 if (meshFilter.Meshes.Items.empty())
                 {
                     return;
                 }
 
-                for (const auto& meshItem : meshFilter.Meshes.Items)
+                for (auto& meshItem : meshFilter.Meshes.Items)
                 {
                     m_Shader->Bind();
                     m_Shader->SetMat4("model", transform.GetTransform());
@@ -163,13 +164,16 @@ namespace SnowLeopardEngine
                     m_Shader->SetInt("shadowMap", 1);
                     m_Shader->SetInt("castShadow", meshRenderer.CastShadow);
 
-                    // Currently, no static batching.leave temp test code here
-                    auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
-                    vertexArray->Bind();
+                    // lazy load
+                    if (meshItem.Data.VertexArray == nullptr)
+                    {
+                        meshItem.Data.VertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
+                    }
+                    meshItem.Data.VertexArray->Bind();
 
                     pipeline->GetAPI()->DrawIndexed(meshItem.Data.Indices.size());
 
-                    vertexArray->Unbind();
+                    meshItem.Data.VertexArray->Unbind();
 
                     m_Shader->Unbind();
                 }
@@ -182,13 +186,14 @@ namespace SnowLeopardEngine
                 MeshFilterComponent&   meshFilter,
                 MeshRendererComponent& meshRenderer,
                 AnimatorComponent&     animator) {
+                SNOW_LEOPARD_PROFILE_FUNCTION
                 // No meshes, skip...
                 if (meshFilter.Meshes.Items.empty())
                 {
                     return;
                 }
 
-                for (const auto& meshItem : meshFilter.Meshes.Items)
+                for (auto& meshItem : meshFilter.Meshes.Items)
                 {
                     m_Shader->Bind();
                     m_Shader->SetMat4("model", transform.GetTransform());
@@ -225,13 +230,16 @@ namespace SnowLeopardEngine
                     m_Shader->SetInt("shadowMap", 1);
                     m_Shader->SetInt("castShadow", meshRenderer.CastShadow);
 
-                    // Currently, no static batching.leave temp test code here
-                    auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
-                    vertexArray->Bind();
+                    // lazy load
+                    if (meshItem.Data.VertexArray == nullptr)
+                    {
+                        meshItem.Data.VertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
+                    }
+                    meshItem.Data.VertexArray->Bind();
 
                     pipeline->GetAPI()->DrawIndexed(meshItem.Data.Indices.size());
 
-                    vertexArray->Unbind();
+                    meshItem.Data.VertexArray->Unbind();
 
                     m_Shader->Unbind();
                 }

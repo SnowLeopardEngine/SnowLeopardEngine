@@ -145,13 +145,17 @@ namespace SnowLeopardEngine
                 m_Shader->SetInt("shadowMap", 1);
                 m_Shader->SetInt("castShadow", terrainRenderer.CastShadow);
 
-                // Currently, no static batching. leave temp test code here
-                auto vertexArray = pipeline->GetAPI()->CreateVertexArray(terrain.Mesh);
-                vertexArray->Bind();
+                // lazy load
+                if (terrain.Mesh.Data.VertexArray == nullptr)
+                {
+                    terrain.Mesh.Data.VertexArray = pipeline->GetAPI()->CreateVertexArray(terrain.Mesh);
+                }
+                terrain.Mesh.Data.VertexArray->Bind();
 
                 pipeline->GetAPI()->DrawIndexed(terrain.Mesh.Data.Indices.size());
 
-                vertexArray->Unbind();
+                terrain.Mesh.Data.VertexArray->Unbind();
+
                 m_Shader->Unbind();
             });
 

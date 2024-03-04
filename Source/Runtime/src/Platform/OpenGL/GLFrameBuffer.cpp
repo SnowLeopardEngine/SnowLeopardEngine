@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Platform/OpenGL/GLFrameBuffer.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 #include <glad/glad.h>
@@ -28,6 +29,7 @@ namespace SnowLeopardEngine
                                        int      index,
                                        uint32_t fboName)
         {
+            SNOW_LEOPARD_PROFILE_FUNCTION
             bool multisampled = samples > 1;
             if (multisampled)
             {
@@ -55,6 +57,7 @@ namespace SnowLeopardEngine
                                        uint32_t height,
                                        uint32_t fboName)
         {
+            SNOW_LEOPARD_PROFILE_FUNCTION
             bool multisampled = samples > 1;
             if (multisampled)
             {
@@ -105,6 +108,7 @@ namespace SnowLeopardEngine
 
     GLFrameBuffer::GLFrameBuffer(const FrameBufferDesc& spec) : m_Desc(spec)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         for (auto spec : m_Desc.AttachmentDesc.Attachments)
         {
             if (!Utils::IsDepthFormat(spec.TextureFormat))
@@ -118,6 +122,7 @@ namespace SnowLeopardEngine
 
     GLFrameBuffer::~GLFrameBuffer()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         glDeleteFramebuffers(1, &m_Name);
         glDeleteTextures(m_ColorAttachments.size(), m_ColorAttachments.data());
         glDeleteTextures(1, &m_DepthAttachment);
@@ -125,6 +130,7 @@ namespace SnowLeopardEngine
 
     void GLFrameBuffer::Invalidate()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         if (m_Name)
         {
             glDeleteFramebuffers(1, &m_Name);
@@ -244,14 +250,20 @@ namespace SnowLeopardEngine
 
     void GLFrameBuffer::Bind()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         glBindFramebuffer(GL_FRAMEBUFFER, m_Name);
         glViewport(0, 0, m_Desc.Width, m_Desc.Height);
     }
 
-    void GLFrameBuffer::Unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+    void GLFrameBuffer::Unbind()
+    {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 
     void GLFrameBuffer::Resize(uint32_t width, uint32_t height)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         if (width == 0 || height == 0 || width > s_MaxFrameBufferSize || height > s_MaxFrameBufferSize)
         {
             SNOW_LEOPARD_CORE_WARN("[GLFrameBuffer] Attempted to rezize framebuffer to {0}, {1}", width, height);
@@ -265,6 +277,7 @@ namespace SnowLeopardEngine
 
     glm::vec4 GLFrameBuffer::ReadPixel(uint32_t attachmentIndex, int x, int y)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
 
         glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
@@ -275,6 +288,7 @@ namespace SnowLeopardEngine
 
     glm::ivec4 GLFrameBuffer::ReadPixelInt(uint32_t attachmentIndex, int x, int y)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
 
         glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
@@ -285,6 +299,7 @@ namespace SnowLeopardEngine
 
     int GLFrameBuffer::ReadPixelRedOnly(uint32_t attachmentIndex, int x, int y)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
 
         glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
@@ -295,6 +310,7 @@ namespace SnowLeopardEngine
 
     void GLFrameBuffer::ClearColorAttachment(uint32_t attachmentIndex, const glm::vec4& color)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
 
         float newColor[4] = {color.r, color.g, color.b, color.a};
@@ -303,6 +319,7 @@ namespace SnowLeopardEngine
 
     void GLFrameBuffer::ClearColorAttachment(uint32_t attachmentIndex, int value)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
 
         auto& spec = m_ColorAttachmentDescs[attachmentIndex];
@@ -312,9 +329,14 @@ namespace SnowLeopardEngine
 
     void GLFrameBuffer::BindColorAttachmentTexture(uint32_t index, uint32_t slot) const
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         SNOW_LEOPARD_CORE_ASSERT(index < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
         glBindTextureUnit(slot, m_ColorAttachments[index]);
     }
 
-    void GLFrameBuffer::BindDepthAttachmentTexture(uint32_t slot) const { glBindTextureUnit(slot, m_DepthAttachment); }
+    void GLFrameBuffer::BindDepthAttachmentTexture(uint32_t slot) const
+    {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+        glBindTextureUnit(slot, m_DepthAttachment);
+    }
 } // namespace SnowLeopardEngine
