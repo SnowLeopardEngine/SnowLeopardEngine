@@ -1,5 +1,5 @@
 -- add requirements
-add_requires("spdlog", "fmt 9.1.0", "glfw", "glm", "stduuid", "entt v3.10.0", "miniaudio", "stb")
+add_requires("spdlog", "fmt 9.1.0", "glfw", "glm", "stduuid", "entt v3.10.0", "miniaudio", "stb", "tracy")
 add_requires("sphysx-cross", { configs = { debug = is_mode("debug") }})
 add_requireconfs("assimp.zlib", {system = false}) -- https://github.com/xmake-io/xmake-repo/issues/1855
 add_requires("assimp", { configs = { debug = is_mode("debug") }})
@@ -30,6 +30,7 @@ target("SnowLeopardEngine")
     add_packages("entt", { public = true })
     add_packages("miniaudio", { public = true })
     add_packages("stb", { public = true })
+    add_packages("tracy", { public = true })
     add_packages("assimp", { public = true })
     add_packages("sphysx-cross", { public = true })
 
@@ -43,6 +44,9 @@ target("SnowLeopardEngine")
     else
         add_defines("NDEBUG")
     end
+
+    -- enable tracy profiler
+    add_defines("TRACY_ENABLE")
 
     -- set target directory
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/SnowLeopardEngine")

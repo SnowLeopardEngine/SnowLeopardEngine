@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
@@ -68,6 +69,7 @@ namespace SnowLeopardEngine
 
     void PhysicsSystem::CookPhysicsScene(const Ref<LogicScene>& logicScene)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         m_LogicScene = logicScene;
         // Create a scene
         PxSceneDesc sceneDesc(m_Physics->getTolerancesScale());
@@ -397,9 +399,9 @@ namespace SnowLeopardEngine
 
     void PhysicsSystem::OnFixedTick()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         if (m_Scene != nullptr)
         {
-
             m_Scene->simulate(Time::FixedDeltaTime);
             m_Scene->fetchResults(true);
 

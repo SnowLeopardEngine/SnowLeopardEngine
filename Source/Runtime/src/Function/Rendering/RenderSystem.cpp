@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderSystem.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardPipeline.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
@@ -37,6 +38,7 @@ namespace SnowLeopardEngine
 
     void RenderSystem::OnTick(float deltaTime)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         // Draw Built-in Deferred Pipeline
         // Now, draw forward instead for testing
         m_Pipeline->Tick(deltaTime);
