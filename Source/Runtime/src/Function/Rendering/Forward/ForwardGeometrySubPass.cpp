@@ -161,7 +161,7 @@ namespace SnowLeopardEngine
                     m_Shader->SetInt("shadowMap", 1);
                     m_Shader->SetInt("castShadow", meshRenderer.CastShadow);
 
-                    // Currently, no static batching.leave temp test code here auto vertexArray =
+                    // Currently, no static batching.leave temp test code here
                     auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
                     vertexArray->Bind();
 
@@ -223,7 +223,7 @@ namespace SnowLeopardEngine
                     m_Shader->SetInt("shadowMap", 1);
                     m_Shader->SetInt("castShadow", meshRenderer.CastShadow);
 
-                    // Currently, no static batching.leave temp test code here auto vertexArray =
+                    // Currently, no static batching.leave temp test code here
                     auto vertexArray = pipeline->GetAPI()->CreateVertexArray(meshItem);
                     vertexArray->Bind();
 

@@ -1,7 +1,9 @@
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
+#include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animation.h"
+#include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Util/Util.h"
 
@@ -11,6 +13,8 @@ namespace SnowLeopardEngine
 
     bool ModelLoader::LoadModel(const std::filesystem::path& path, Model& model)
     {
+        model.SourcePath = path.generic_string();
+
         // Get aiScene
         const auto* scene = g_Importer.ReadFile(path.generic_string(),
                                                 aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals |
@@ -111,6 +115,14 @@ namespace SnowLeopardEngine
             }
         }
 
+        // Load textures
+        auto* material = scene->mMaterials[mesh->mMaterialIndex];
+
+        LoadMaterialTextures(material, aiTextureType_DIFFUSE, "diffuseMap", model);
+        LoadMaterialTextures(material, aiTextureType_SPECULAR, "specularMap", model);
+        LoadMaterialTextures(material, aiTextureType_HEIGHT, "normalMap", model);
+        LoadMaterialTextures(material, aiTextureType_AMBIENT, "heightMap", model);
+
         // Process bones
         if (hasBones)
         {
@@ -179,5 +191,22 @@ namespace SnowLeopardEngine
                 SetVertexBoneData(vertices[vertexId], boneID, weight);
             }
         }
+    }
+
+    void ModelLoader::LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, Model& model)
+    {
+        std::vector<Ref<Texture2D>> textures;
+        for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
+        {
+            aiString str;
+            mat->GetTexture(type, i, &str);
+
+            // TODO: Cache textures
+            std::filesystem::path texturePath = model.SourcePath.parent_path() / str.C_Str();
+            auto texture = TextureLoader::LoadTexture2D(texturePath, false);
+            textures.emplace_back(texture);
+        }
+
+        model.Textures[typeName] = textures;
     }
 } // namespace SnowLeopardEngine

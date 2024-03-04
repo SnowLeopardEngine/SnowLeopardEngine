@@ -23,5 +23,7 @@ namespace SnowLeopardEngine
         static void SetVertexBoneData(AnimatedMeshVertexData& vertex, int boneID, float weight);
         static void
         ExtractBoneWeightForVertices(std::vector<AnimatedMeshVertexData>& vertices, const aiMesh* mesh, Model& model);
+
+        static void LoadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName, Model& model);
     };
 } // namespace SnowLeopardEngine

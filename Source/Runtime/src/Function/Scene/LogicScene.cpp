@@ -118,6 +118,18 @@ namespace SnowLeopardEngine
                         animatorComponent.Animator = CreateRef<Animator>(model.Animations[0]);
                     }
                 }
+
+                // assign textures to mesh renderer if possible
+                if (m_Registry.any_of<MeshRendererComponent>(entity))
+                {
+                    auto& meshRenderer = m_Registry.get<MeshRendererComponent>(entity);
+
+                    if (model.Textures.count("diffuseMap") > 0)
+                    {
+                        meshRenderer.UseDiffuse     = true;
+                        meshRenderer.DiffuseTexture = model.Textures["diffuseMap"][0];
+                    }
+                }
             }
 
             if (meshFilter.PrimitiveType != MeshPrimitiveType::Invalid)
@@ -163,7 +175,7 @@ namespace SnowLeopardEngine
         // Texture Loading (dirty code for now)
         m_Registry.view<MeshRendererComponent>().each([](entt::entity entity, MeshRendererComponent& meshRenderer) {
             // TODO: Move to AssetManager
-            if (meshRenderer.UseDiffuse)
+            if (meshRenderer.UseDiffuse && meshRenderer.DiffuseTexture == nullptr)
             {
                 meshRenderer.DiffuseTexture = TextureLoader::LoadTexture2D(meshRenderer.DiffuseTextureFilePath, false);
             }
