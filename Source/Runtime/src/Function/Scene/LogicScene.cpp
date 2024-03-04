@@ -327,6 +327,7 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(TreeNodeComponent) {}
     ON_COMPONENT_ADDED(TransformComponent) {}
     ON_COMPONENT_ADDED(EntityStatusComponent) {}
+    ON_COMPONENT_ADDED(CharacterControllerComponent){}
 
     ON_COMPONENT_ADDED(NativeScriptingComponent) {}
 

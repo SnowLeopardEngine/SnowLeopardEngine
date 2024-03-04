@@ -6,9 +6,12 @@
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
+#include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
+#include "characterkinematic/PxController.h"
+#include "glm/fwd.hpp"
 #include <PxPhysicsAPI.h>
 
 namespace SnowLeopardEngine
@@ -236,6 +239,49 @@ namespace SnowLeopardEngine
         TerrainColliderComponent(const TerrainColliderComponent&) = default;
         explicit TerrainColliderComponent(const Ref<PhysicsMaterial>& material, bool isTrigger = false) :
             Material(material), IsTrigger(isTrigger)
+        {}
+    };
+
+    enum class CharacterInteraction
+    {
+        None,
+        Interacting,
+        Completed
+    };
+
+    struct CharacterControllerComponent
+    {
+        // Capsule
+        float                Height = 5.0f;
+        float                Radius = 5.0f;
+        glm::vec3            Offset = {0, 0, 0};
+        glm::vec3            Velocity;
+        glm::vec3            MoveDirection;
+        bool                 IsGrounded = true;
+        float                JumpPower  = 0.5;
+        float                MaxSlope   = 75.0f;
+        Ref<PhysicsMaterial> Material   = nullptr;
+        physx::PxController* Ctrl = nullptr;
+        
+        // todo
+        float                Health = 100.0f;
+        float                Damage = 1.0f;
+        CharacterInteraction CI;
+
+        CharacterControllerComponent()                                    = default;
+        CharacterControllerComponent(const CharacterControllerComponent&) = default;
+        explicit CharacterControllerComponent(float                       height,
+                                              float                       radius,
+                                              glm::vec3                   offset,
+                                              glm::vec3                   velocity,
+                                              glm::vec3                   moveDirection,
+                                              bool                        isGrounded,
+                                              float                       jumpPower,
+                                              float                       maxSlope,
+                                              const Ref<PhysicsMaterial>& material) :
+            Health(height),
+            Radius(radius), Velocity(velocity), Offset(offset), MoveDirection(moveDirection), IsGrounded(isGrounded),
+            JumpPower(jumpPower), MaxSlope(maxSlope), Material(material)
         {}
     };
 
