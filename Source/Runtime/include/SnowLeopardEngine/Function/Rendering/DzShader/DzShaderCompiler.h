@@ -29,11 +29,12 @@ namespace SnowLeopardEngine
         static DzShaderCompileResult Compile(const DzShader& shader);
 
     private:
-        static bool CompileGLSL2SPV(const std::string&     glslSourceText,
-                                    const std::string&     stageName,
-                                    const std::string&     shaderName,
-                                    std::vector<uint32_t>& spvBinary,
-                                    std::string&           message);
+        static bool CompileGLSL2SPV(const std::string&              glslSourceText,
+                                    const std::string&              stageName,
+                                    const std::string&              shaderName,
+                                    const std::vector<std::string>& keywords,
+                                    std::vector<uint32_t>&          spvBinary,
+                                    std::string&                    message);
 
         static void CompileSPV2GLSL(const std::vector<uint32_t>& spvBinary, std::string& glslSource);
     };

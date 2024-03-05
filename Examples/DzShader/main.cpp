@@ -1,11 +1,13 @@
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderCompiler.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderTypeDef.h"
 
+#include <exception>
 #include <fstream>
 
 using namespace SnowLeopardEngine;
 
 int main()
+try
 {
     std::stringstream ss;
 
@@ -19,7 +21,7 @@ int main()
         vertexStage.ShaderSource = R"(
 #version 450
 
-#include "common.vert"
+#include "common.glsl"
 
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec2 aTexCoords;
@@ -42,6 +44,8 @@ void main()
         fragmentStage.ShaderSource = R"(
 #version 450
 
+#include "common.glsl"
+
 layout(location = 0) in vec2 v2fTexCoords;
 layout(location = 1) in vec3 v2fCameraPos;
 
@@ -53,6 +57,7 @@ uniform sampler2D Diffuse;
 void main()
 {
     vec4 diffuseColor = texture(Diffuse, v2fTexCoords);
+    vec3 light = CalculateLighting(); // test macro definition
     fragColor = mix(diffuseColor, BaseColor, 0.5);
 }
 )";
@@ -73,6 +78,7 @@ void main()
         shader.Properties.emplace_back(
             DzShaderProperty("Diffuse", magic_enum::enum_name(DzShaderPropertyType::Texture2D), ""));
         shader.PipelineStates.ZWrite = "On";
+        shader.Keywords              = {"DEFERRED_LIGHTING"};
         shader.Passes.emplace_back(geometryPass);
         cereal::JSONOutputArchive oarchive(ss);
 
@@ -112,4 +118,8 @@ void main()
     archive(shaderFromFile);
 
     return 0;
+}
+catch (std::exception& e)
+{
+    std::cerr << e.what() << std::endl;
 }

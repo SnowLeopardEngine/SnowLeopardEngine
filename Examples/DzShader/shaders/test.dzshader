@@ -24,6 +24,9 @@
         "Tags": {
             "RenderQueue": "Geometry"
         },
+        "Keywords": [
+            "DEFERRED_LIGHTING"
+        ],
         "Passes": [
             {
                 "Name": "GeometryPass",

@@ -17,12 +17,15 @@ if is_host("windows") then
     add_cxxflags("/Zc:__cplusplus", {tools = {"msvc", "cl"}}) -- fix __cplusplus == 199711L error
     add_cxxflags("/bigobj") -- avoid big obj
     add_cxxflags("-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING")
+    add_cxxflags("/EHsc")
     if is_mode("debug") then
         set_runtimes("MDd")
         add_links("ucrtd")
     else
         set_runtimes("MD")
     end
+else
+    add_cxxflags("fexceptions")
 end
 
 -- global rules

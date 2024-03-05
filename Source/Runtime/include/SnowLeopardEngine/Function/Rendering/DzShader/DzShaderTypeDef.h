@@ -138,8 +138,9 @@ namespace SnowLeopardEngine
 
         std::vector<DzShaderProperty> Properties;
 
-        DzPipelineStates PipelineStates;
-        DzTags           Tags;
+        DzPipelineStates         PipelineStates;
+        DzTags                   Tags;
+        std::vector<std::string> Keywords; // aka. Macros
 
         std::vector<DzPass> Passes;
 
@@ -153,6 +154,7 @@ namespace SnowLeopardEngine
                     CEREAL_NVP(Properties),
                     CEREAL_NVP(PipelineStates),
                     CEREAL_NVP(Tags),
+                    CEREAL_NVP(Keywords),
                     CEREAL_NVP(Passes));
         }
         // NOLINTEND

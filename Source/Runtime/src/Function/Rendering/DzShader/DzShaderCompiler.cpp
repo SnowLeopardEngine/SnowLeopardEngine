@@ -98,8 +98,8 @@ namespace SnowLeopardEngine
                 // use Google's shaderc to compile source to get SPV
                 std::vector<uint32_t> spvBinary;
                 std::string           shadercMessage;
-                bool                  shadercOK =
-                    CompileGLSL2SPV(stage.ShaderSource, stage.Name, shader.Name, spvBinary, shadercMessage);
+                bool                  shadercOK = CompileGLSL2SPV(
+                    stage.ShaderSource, stage.Name, shader.Name, shader.Keywords, spvBinary, shadercMessage);
 
                 if (!shadercOK)
                 {
@@ -128,11 +128,12 @@ namespace SnowLeopardEngine
         return result;
     }
 
-    bool DzShaderCompiler::CompileGLSL2SPV(const std::string&     glslSourceText,
-                                           const std::string&     stageName,
-                                           const std::string&     shaderName,
-                                           std::vector<uint32_t>& spvBinary,
-                                           std::string&           message)
+    bool DzShaderCompiler::CompileGLSL2SPV(const std::string&              glslSourceText,
+                                           const std::string&              stageName,
+                                           const std::string&              shaderName,
+                                           const std::vector<std::string>& keywords,
+                                           std::vector<uint32_t>&          spvBinary,
+                                           std::string&                    message)
     {
         shaderc::Compiler       compiler;
         shaderc::CompileOptions options;
@@ -141,6 +142,12 @@ namespace SnowLeopardEngine
         options.SetAutoMapLocations(true);
         options.SetAutoBindUniforms(true);
         options.SetIncluder(CreateScope<MyIncluder>());
+
+        // Setup keywords
+        for (const auto& keyword : keywords)
+        {
+            options.AddMacroDefinition(keyword);
+        }
 
         // Preprocess
         auto preResult =
