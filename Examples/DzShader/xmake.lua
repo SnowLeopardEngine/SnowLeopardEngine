@@ -16,6 +16,6 @@ target("DzShader")
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Examples/DzShader")
 
     -- copy shaders
-    after_build(function(target)
+    on_load(function(target)
         os.cp("$(scriptdir)/shaders", target:targetdir())
     end)

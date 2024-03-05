@@ -1,9 +1,8 @@
 #pragma once
 
+#include "SnowLeopardEngine/Core/Serialization/CerealMap.h"
+
 #include <cereal/archives/json.hpp>
-#include <cereal/cereal.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 
 #include <fmt/core.h>
@@ -52,52 +51,12 @@ namespace SnowLeopardEngine
         // NOLINTEND
     };
 
-    struct DzPipelineStates
-    {
-        std::string CullFaceMode    = "Back";
-        std::string ZTest           = "On";
-        std::string ZTestMode       = "LessEqual";
-        std::string ZWrite          = "On";
-        std::string StencilTest     = "Off";
-        std::string StencilTestMode = "Invalid";
-
-        // TODO: more pipeline states
-
-        // NOLINTBEGIN
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(CullFaceMode),
-                    CEREAL_NVP(ZTest),
-                    CEREAL_NVP(ZTestMode),
-                    CEREAL_NVP(ZWrite),
-                    CEREAL_NVP(StencilTest),
-                    CEREAL_NVP(StencilTestMode));
-        }
-        // NOLINTEND
-    };
-
-    struct DzTags
-    {
-        std::string RenderQueue = "Geometry";
-
-        // TODO: more tags
-
-        // NOLINTBEGIN
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(RenderQueue));
-        }
-        // NOLINTEND
-    };
-
     struct DzPass
     {
         std::string Name;
 
-        DzPipelineStates PipelineStates;
-        DzTags           Tags;
+        std::map<std::string, std::string> PipelineStates;
+        std::map<std::string, std::string> Tags;
 
         std::vector<DzStage> Stages;
 
@@ -138,9 +97,9 @@ namespace SnowLeopardEngine
 
         std::vector<DzShaderProperty> Properties;
 
-        DzPipelineStates         PipelineStates;
-        DzTags                   Tags;
-        std::vector<std::string> Keywords; // aka. Macros
+        std::map<std::string, std::string> PipelineStates;
+        std::map<std::string, std::string> Tags;
+        std::vector<std::string>           Keywords; // aka. Macros
 
         std::vector<DzPass> Passes;
 

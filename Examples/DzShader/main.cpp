@@ -62,12 +62,12 @@ void main()
 }
 )";
 
-        DzPass geometryPass                      = {};
-        geometryPass.Name                        = "GeometryPass";
-        geometryPass.PipelineStates.CullFaceMode = "Back";
-        geometryPass.PipelineStates.ZTest        = "On";
-        geometryPass.PipelineStates.ZTestMode    = "LessEqual";
-        geometryPass.Tags.RenderQueue            = "Geometry";
+        DzPass geometryPass                         = {};
+        geometryPass.Name                           = "GeometryPass";
+        geometryPass.PipelineStates["CullFaceMode"] = "Back";
+        geometryPass.PipelineStates["ZTest"]        = "On";
+        geometryPass.PipelineStates["ZTestMode"]    = "LessEqual";
+        geometryPass.Tags["RenderQueue"]            = "Geometry";
         geometryPass.Stages.emplace_back(vertexStage);
         geometryPass.Stages.emplace_back(fragmentStage);
 
@@ -77,8 +77,8 @@ void main()
             DzShaderProperty("BaseColor", magic_enum::enum_name(DzShaderPropertyType::Color), "(1, 1, 1, 1)"));
         shader.Properties.emplace_back(
             DzShaderProperty("Diffuse", magic_enum::enum_name(DzShaderPropertyType::Texture2D), ""));
-        shader.PipelineStates.ZWrite = "On";
-        shader.Keywords              = {"DEFERRED_LIGHTING"};
+        shader.PipelineStates["ZWrite"] = "On";
+        shader.Keywords                 = {"DEFERRED_LIGHTING"};
         shader.Passes.emplace_back(geometryPass);
         cereal::JSONOutputArchive oarchive(ss);
 
