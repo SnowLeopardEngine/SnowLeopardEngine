@@ -7,6 +7,7 @@
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
@@ -359,6 +360,9 @@ namespace SnowLeopardEngine
 
         bool CastShadow = true;
 
+        std::filesystem::path MaterialFilePath;
+        Ref<DzMaterial>       Material;
+
         MeshRendererComponent()                             = default;
         MeshRendererComponent(const MeshRendererComponent&) = default;
     };
@@ -388,6 +392,9 @@ namespace SnowLeopardEngine
         Ref<Texture2D>        DiffuseTexture = nullptr;
 
         bool CastShadow = true;
+
+        std::filesystem::path MaterialFilePath;
+        Ref<DzMaterial>       Material;
 
         TerrainRendererComponent()                                = default;
         TerrainRendererComponent(const TerrainRendererComponent&) = default;

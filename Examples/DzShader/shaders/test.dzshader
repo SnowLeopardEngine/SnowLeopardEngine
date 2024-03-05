@@ -43,13 +43,13 @@
                         "Name": "vertex",
                         "LanguageType": "GLSL",
                         "EntryPoint": "main",
-                        "ShaderSource": "\n#version 330\n\nlayout(location = 0) in vec3 aPos;\n\nvoid main()\n{\n    gl_Position = vec4(aPos, 1.0);\n}\n"
+                        "ShaderSource": "\n#version 450\n\n#include \"common.vert\"\n\nlayout(location = 0) in vec3 aPos;\nlayout(location = 1) in vec2 aTexCoords;\n\nlayout(location = 0) out vec2 v2fTexCoords;\nlayout(location = 1) out vec3 v2fCameraPos;\n\nvoid main()\n{\n    v2fTexCoords = aTexCoords; // Varying\n    v2fCameraPos = uScene.cameraPos; // Varying\n    gl_Position = uScene.projection * uScene.view * uScene.model * vec4(aPos, 1.0);\n}\n"
                     },
                     {
                         "Name": "fragment",
                         "LanguageType": "GLSL",
                         "EntryPoint": "main",
-                        "ShaderSource": "\n#version 330\n\nlayout(location = 0) out vec4 fragColor;\n\nvoid main()\n{\n    fragColor = vec4(1, 1, 1, 1);\n}\n"
+                        "ShaderSource": "\n#version 450\n\nlayout(location = 0) in vec2 v2fTexCoords;\nlayout(location = 1) in vec3 v2fCameraPos;\n\nlayout(location = 0) out vec4 fragColor;\n\nuniform vec4 BaseColor;\nuniform sampler2D Diffuse;\n\nvoid main()\n{\n    vec4 diffuseColor = texture(Diffuse, v2fTexCoords);\n    fragColor = mix(diffuseColor, BaseColor, 0.5);\n}\n"
                     }
                 ]
             }

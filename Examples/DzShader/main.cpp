@@ -17,13 +17,21 @@ int main()
         vertexStage.LanguageType = magic_enum::enum_name(languageType);
         vertexStage.EntryPoint   = "main"; // optional
         vertexStage.ShaderSource = R"(
-#version 330
+#version 450
+
+#include "common.vert"
 
 layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec2 aTexCoords;
+
+layout(location = 0) out vec2 v2fTexCoords;
+layout(location = 1) out vec3 v2fCameraPos;
 
 void main()
 {
-    gl_Position = vec4(aPos, 1.0);
+    v2fTexCoords = aTexCoords; // Varying
+    v2fCameraPos = uScene.cameraPos; // Varying
+    gl_Position = uScene.projection * uScene.view * uScene.model * vec4(aPos, 1.0);
 }
 )";
 
@@ -32,13 +40,20 @@ void main()
         fragmentStage.LanguageType = magic_enum::enum_name(languageType);
         fragmentStage.EntryPoint   = "main"; // optional
         fragmentStage.ShaderSource = R"(
-#version 330
+#version 450
+
+layout(location = 0) in vec2 v2fTexCoords;
+layout(location = 1) in vec3 v2fCameraPos;
 
 layout(location = 0) out vec4 fragColor;
 
+uniform vec4 BaseColor;
+uniform sampler2D Diffuse;
+
 void main()
 {
-    fragColor = vec4(1, 1, 1, 1);
+    vec4 diffuseColor = texture(Diffuse, v2fTexCoords);
+    fragColor = mix(diffuseColor, BaseColor, 0.5);
 }
 )";
 
@@ -78,16 +93,19 @@ void main()
             return 1;
         }
 
+        std::cout << "Compile Result:" << std::endl;
+
         for (const auto& passResult : compileResult.PassResults)
         {
             for (const auto& [stageName, glslSource] : passResult.ShaderStageSources)
             {
-                std::cout << "Stage: " << stageName << ", Source:\n" << glslSource << std::endl;
+                std::cout << "Stage: " << stageName << ", Source:\n\n" << glslSource << std::endl;
             }
+            std::cout << std::endl;
         }
     }
 
-    std::ifstream shaderFile("shaders/test.dzshader");
+    std::ifstream            shaderFile("shaders/test.dzshader");
     cereal::JSONInputArchive archive(shaderFile);
 
     DzShader shaderFromFile;
