@@ -37,9 +37,9 @@ namespace SnowLeopardEngine
     {
         std::string Name;
 
-        DzShaderLanguageType LanguageType;
-        std::string          EntryPoint = "main";
-        std::string          ShaderSource;
+        std::string LanguageType;
+        std::string EntryPoint = "main";
+        std::string ShaderSource;
 
         DzStage() = default;
 
@@ -52,12 +52,52 @@ namespace SnowLeopardEngine
         // NOLINTEND
     };
 
+    struct DzPipelineStates
+    {
+        std::string CullFaceMode    = "Back";
+        std::string ZTest           = "On";
+        std::string ZTestMode       = "LessEqual";
+        std::string ZWrite          = "On";
+        std::string StencilTest     = "Off";
+        std::string StencilTestMode = "Invalid";
+
+        // TODO: more pipeline states
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(CullFaceMode),
+                    CEREAL_NVP(ZTest),
+                    CEREAL_NVP(ZTestMode),
+                    CEREAL_NVP(ZWrite),
+                    CEREAL_NVP(StencilTest),
+                    CEREAL_NVP(StencilTestMode));
+        }
+        // NOLINTEND
+    };
+
+    struct DzTags
+    {
+        std::string RenderQueue = "Geometry";
+
+        // TODO: more tags
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(RenderQueue));
+        }
+        // NOLINTEND
+    };
+
     struct DzPass
     {
         std::string Name;
 
-        std::unordered_map<std::string, std::string> PipelineStates;
-        std::unordered_map<std::string, std::string> Tags;
+        DzPipelineStates PipelineStates;
+        DzTags           Tags;
 
         std::vector<DzStage> Stages;
 
@@ -74,12 +114,12 @@ namespace SnowLeopardEngine
 
     struct DzShaderProperty
     {
-        std::string          Name;
-        DzShaderPropertyType Type;
-        std::string          Value;
+        std::string Name;
+        std::string Type;
+        std::string Value;
 
         DzShaderProperty() = default;
-        DzShaderProperty(const std::string& name, DzShaderPropertyType type, const std::string& value) :
+        DzShaderProperty(std::string_view name, std::string_view type, const std::string& value) :
             Name(name), Type(type), Value(value)
         {}
 
@@ -98,8 +138,8 @@ namespace SnowLeopardEngine
 
         std::vector<DzShaderProperty> Properties;
 
-        std::unordered_map<std::string, std::string> PipelineStates;
-        std::unordered_map<std::string, std::string> Tags;
+        DzPipelineStates PipelineStates;
+        DzTags           Tags;
 
         std::vector<DzPass> Passes;
 

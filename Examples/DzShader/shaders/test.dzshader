@@ -1,0 +1,58 @@
+{
+    "DzShader": {
+        "Name": "Opaque/Legacy",
+        "Properties": [
+            {
+                "Name": "BaseColor",
+                "Type": "Color",
+                "Value": "(1, 1, 1, 1)"
+            },
+            {
+                "Name": "Diffuse",
+                "Type": "Texture2D",
+                "Value": ""
+            }
+        ],
+        "PipelineStates": {
+            "CullFaceMode": "Back",
+            "ZTest": "On",
+            "ZTestMode": "LessEqual",
+            "ZWrite": "On",
+            "StencilTest": "Off",
+            "StencilTestMode": "Invalid"
+        },
+        "Tags": {
+            "RenderQueue": "Geometry"
+        },
+        "Passes": [
+            {
+                "Name": "GeometryPass",
+                "PipelineStates": {
+                    "CullFaceMode": "Back",
+                    "ZTest": "On",
+                    "ZTestMode": "LessEqual",
+                    "ZWrite": "On",
+                    "StencilTest": "Off",
+                    "StencilTestMode": "Invalid"
+                },
+                "Tags": {
+                    "RenderQueue": "Geometry"
+                },
+                "Stages": [
+                    {
+                        "Name": "vertex",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "\n#version 330\n\nlayout(location = 0) in vec3 aPos;\n\nvoid main()\n{\n    gl_Position = vec4(aPos, 1.0);\n}\n"
+                    },
+                    {
+                        "Name": "fragment",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "\n#version 330\n\nlayout(location = 0) out vec4 fragColor;\n\nvoid main()\n{\n    fragColor = vec4(1, 1, 1, 1);\n}\n"
+                    }
+                ]
+            }
+        ]
+    }
+}
