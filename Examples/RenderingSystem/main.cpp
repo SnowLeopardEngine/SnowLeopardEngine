@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
@@ -59,6 +60,21 @@ public:
         camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
 
+        std::ifstream            redFile("Assets/Materials/Red.dzmaterial");
+        cereal::JSONInputArchive archiveRed(redFile);
+        auto                     red = CreateRef<DzMaterial>();
+        archiveRed(*red);
+
+        std::ifstream            greenFile("Assets/Materials/Green.dzmaterial");
+        cereal::JSONInputArchive archiveGreen(greenFile);
+        auto                     green = CreateRef<DzMaterial>();
+        archiveGreen(*green);
+
+        std::ifstream            blueFile("Assets/Materials/Blue.dzmaterial");
+        cereal::JSONInputArchive archiveBlue(blueFile);
+        auto                     blue = CreateRef<DzMaterial>();
+        archiveBlue(*blue);
+
         // Create cubes to test shadow
         Entity cube1            = scene->CreateEntity("Cube1");
         auto&  cubeTransform1   = cube1.GetComponent<TransformComponent>();
@@ -67,7 +83,8 @@ public:
         auto& cubeMeshFilter1         = cube1.AddComponent<MeshFilterComponent>();
         cubeMeshFilter1.PrimitiveType = MeshPrimitiveType::Cube;
         auto& cubeMeshRenderer1       = cube1.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer1.BaseColor   = {1, 0, 0, 1};
+        // cubeMeshRenderer1.BaseColor   = {1, 0, 0, 1};
+        cubeMeshRenderer1.Material = red;
 
         Entity cube2            = scene->CreateEntity("Cube2");
         auto&  cubeTransform2   = cube2.GetComponent<TransformComponent>();
@@ -77,7 +94,8 @@ public:
         auto& cubeMeshFilter2         = cube2.AddComponent<MeshFilterComponent>();
         cubeMeshFilter2.PrimitiveType = MeshPrimitiveType::Cube;
         auto& cubeMeshRenderer2       = cube2.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer2.BaseColor   = {0, 1, 0, 1};
+        // cubeMeshRenderer2.BaseColor   = {0, 1, 0, 1};
+        cubeMeshRenderer2.Material = green;
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
@@ -87,7 +105,8 @@ public:
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.BaseColor   = {1, 1, 1, 1}; // Pure White
+        // floorMeshRenderer.BaseColor   = {1, 1, 1, 1}; // Pure White
+        floorMeshRenderer.Material = blue;
     }
 
 private:

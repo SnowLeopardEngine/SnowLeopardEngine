@@ -121,15 +121,6 @@ void main()
 
         DzShader shaderFromFile;
         archive(shaderFromFile);
-
-        // Test compile GL shaders
-        DzShaderManager::AddShader("Assets/Shaders/Phong.dzshader");
-        if (!DzShaderManager::Compile())
-        {
-            return;
-        }
-
-        auto glPhongShader = DzShaderManager::GetCompiledPassShader("GeometryPass");
     }
 };
 

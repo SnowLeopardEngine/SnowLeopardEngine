@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderManager.h"
+#include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderCompiler.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Shader.h"
@@ -6,11 +7,16 @@
 namespace SnowLeopardEngine
 {
     DzShaderCompiler                             DzShaderManager::s_Compiler;
-    std::vector<DzShader>                        DzShaderManager::s_DzShaders;
+    std::unordered_map<std::string, DzShader>    DzShaderManager::s_DzShaders;
     std::unordered_map<std::string, Ref<Shader>> DzShaderManager::s_CompiledShaders;
 
-    void DzShaderManager::AddShader(const std::filesystem::path& dzShaderFilePath)
+    void DzShaderManager::AddShader(const std::string& dzShaderName, const std::filesystem::path& dzShaderFilePath)
     {
+        if (s_DzShaders.count(dzShaderName) > 0)
+        {
+            return;
+        }
+        
         std::ifstream            shaderFile(dzShaderFilePath);
         cereal::JSONInputArchive archive(shaderFile);
 
@@ -20,13 +26,22 @@ namespace SnowLeopardEngine
         AddShader(shaderFromFile);
     }
 
-    void DzShaderManager::AddShader(const DzShader& dzShader) { s_DzShaders.emplace_back(dzShader); }
+    void DzShaderManager::AddShader(const DzShader& dzShader) { s_DzShaders[dzShader.Name] = dzShader; }
+
+    DzShader& DzShaderManager::GetShader(const std::string& dzShaderName)
+    {
+        SNOW_LEOPARD_CORE_ASSERT(s_DzShaders.count(dzShaderName) > 0,
+                                 "[DzShaderManager] Failed to get DzShader {0}. Not found!",
+                                 dzShaderName);
+
+        return s_DzShaders[dzShaderName];
+    }
 
     bool DzShaderManager::Compile()
     {
         bool hasError = false;
 
-        for (const auto& dzShader : s_DzShaders)
+        for (const auto& [dzShaderName, dzShader] : s_DzShaders)
         {
             auto compileResult = s_Compiler.Compile(dzShader);
             if (!compileResult.Success)
@@ -35,6 +50,7 @@ namespace SnowLeopardEngine
                                         dzShader.Name,
                                         compileResult.Message);
                 hasError = true;
+                continue;
             }
 
             for (const auto& passResult : compileResult.PassResults)
@@ -55,5 +71,14 @@ namespace SnowLeopardEngine
         }
 
         return s_CompiledShaders[dzPassName];
+    }
+
+    void DzShaderManager::SetInt(const std::string& dzShaderName, const std::string& propertyName, int value)
+    {
+        for (const auto& pass : s_DzShaders[dzShaderName].Passes)
+        {
+            auto& compiledShader = s_CompiledShaders[pass.Name];
+            compiledShader->SetInt(propertyName, value);
+        }
     }
 } // namespace SnowLeopardEngine

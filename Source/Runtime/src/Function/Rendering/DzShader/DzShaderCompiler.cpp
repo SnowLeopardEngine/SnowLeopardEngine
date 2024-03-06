@@ -177,10 +177,8 @@ namespace SnowLeopardEngine
     {
         spirv_cross::CompilerGLSL::Options options;
         options.es = false;
-#if SNOW_LEOPARD_PLATFORM_WINDOWS || SNOW_LEOPARD_PLATFORM_LINUX
-        options.version = 450;
-#elif SNOW_LEOPARD_PLATFORM_DARWIN
-        options.version = 410; // MacOS
+#if SNOW_LEOPARD_PLATFORM_WINDOWS || SNOW_LEOPARD_PLATFORM_LINUX || SNOW_LEOPARD_PLATFORM_DARWIN
+        options.version = 420;
 #else
         options.version = 330; // fall back
 #endif

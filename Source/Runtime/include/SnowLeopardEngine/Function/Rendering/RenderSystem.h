@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
+#include "entt/entity/fwd.hpp"
 
 namespace SnowLeopardEngine
 {
@@ -25,5 +26,9 @@ namespace SnowLeopardEngine
         Ref<GraphicsContext> m_Context;
         Ref<GraphicsAPI>     m_API;
         Ref<Pipeline>        m_Pipeline;
+
+        // TODO: Clean code
+        bool                      m_LoadedScene = false;
+        std::vector<entt::entity> m_GeometryGroup;
     };
 } // namespace SnowLeopardEngine
