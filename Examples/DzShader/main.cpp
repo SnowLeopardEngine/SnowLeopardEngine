@@ -1,4 +1,7 @@
+#include "SnowLeopardEngine/Engine/DesktopApp.h"
+#include "SnowLeopardEngine/Engine/LifeTimeComponent.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderCompiler.h"
+#include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderManager.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderTypeDef.h"
 
 #include <exception>
@@ -6,19 +9,21 @@
 
 using namespace SnowLeopardEngine;
 
-int main()
-try
+class CustomLifeTime final : public LifeTimeComponent
 {
-    std::stringstream ss;
-
+public:
+    virtual void OnLoad() override final
     {
-        DzShaderLanguageType languageType = DzShaderLanguageType::GLSL;
+        std::stringstream ss;
 
-        DzStage vertexStage      = {};
-        vertexStage.Name         = "vertex";
-        vertexStage.LanguageType = magic_enum::enum_name(languageType);
-        vertexStage.EntryPoint   = "main"; // optional
-        vertexStage.ShaderSource = R"(
+        {
+            DzShaderLanguageType languageType = DzShaderLanguageType::GLSL;
+
+            DzStage vertexStage      = {};
+            vertexStage.Name         = "vertex";
+            vertexStage.LanguageType = magic_enum::enum_name(languageType);
+            vertexStage.EntryPoint   = "main"; // optional
+            vertexStage.ShaderSource = R"(
 #version 450
 
 #include "common.glsl"
@@ -37,11 +42,11 @@ void main()
 }
 )";
 
-        DzStage fragmentStage      = {};
-        fragmentStage.Name         = "fragment";
-        fragmentStage.LanguageType = magic_enum::enum_name(languageType);
-        fragmentStage.EntryPoint   = "main"; // optional
-        fragmentStage.ShaderSource = R"(
+            DzStage fragmentStage      = {};
+            fragmentStage.Name         = "fragment";
+            fragmentStage.LanguageType = magic_enum::enum_name(languageType);
+            fragmentStage.EntryPoint   = "main"; // optional
+            fragmentStage.ShaderSource = R"(
 #version 450
 
 #include "common.glsl"
@@ -62,60 +67,95 @@ void main()
 }
 )";
 
-        DzPass geometryPass                         = {};
-        geometryPass.Name                           = "GeometryPass";
-        geometryPass.PipelineStates["CullFaceMode"] = "Back";
-        geometryPass.PipelineStates["ZTest"]        = "On";
-        geometryPass.PipelineStates["ZTestMode"]    = "LessEqual";
-        geometryPass.Tags["RenderQueue"]            = "Geometry";
-        geometryPass.Stages.emplace_back(vertexStage);
-        geometryPass.Stages.emplace_back(fragmentStage);
+            DzPass geometryPass                         = {};
+            geometryPass.Name                           = "GeometryPass";
+            geometryPass.PipelineStates["CullFaceMode"] = "Back";
+            geometryPass.PipelineStates["ZTest"]        = "On";
+            geometryPass.PipelineStates["ZTestMode"]    = "LessEqual";
+            geometryPass.Tags["RenderQueue"]            = "Geometry";
+            geometryPass.Stages.emplace_back(vertexStage);
+            geometryPass.Stages.emplace_back(fragmentStage);
 
-        DzShader shader = {};
-        shader.Name     = "Opaque/Legacy";
-        shader.Properties.emplace_back(
-            DzShaderProperty("BaseColor", magic_enum::enum_name(DzShaderPropertyType::Color), "(1, 1, 1, 1)"));
-        shader.Properties.emplace_back(
-            DzShaderProperty("Diffuse", magic_enum::enum_name(DzShaderPropertyType::Texture2D), ""));
-        shader.PipelineStates["ZWrite"] = "On";
-        shader.Keywords                 = {"DEFERRED_LIGHTING"};
-        shader.Passes.emplace_back(geometryPass);
-        cereal::JSONOutputArchive oarchive(ss);
+            DzShader shader = {};
+            shader.Name     = "Opaque/Legacy";
+            shader.Properties.emplace_back(
+                DzShaderProperty("BaseColor", magic_enum::enum_name(DzShaderPropertyType::Color), "(1, 1, 1, 1)"));
+            shader.Properties.emplace_back(
+                DzShaderProperty("Diffuse", magic_enum::enum_name(DzShaderPropertyType::Texture2D), ""));
+            shader.PipelineStates["ZWrite"] = "On";
+            shader.Keywords                 = {"DEFERRED_LIGHTING"};
+            shader.Passes.emplace_back(geometryPass);
+            cereal::JSONOutputArchive oarchive(ss);
 
-        oarchive(cereal::make_nvp("DzShader", shader));
-    }
-
-    std::cout << ss.str() << std::endl;
-
-    {
-        cereal::JSONInputArchive iarchive(ss);
-        DzShader                 shader;
-        iarchive(shader);
-
-        auto compileResult = DzShaderCompiler::Compile(shader);
-        if (!compileResult.Success)
-        {
-            std::cerr << compileResult.Message << std::endl;
-            return 1;
+            oarchive(cereal::make_nvp("DzShader", shader));
         }
 
-        std::cout << "Compile Result:" << std::endl;
+        std::cout << ss.str() << std::endl;
 
-        for (const auto& passResult : compileResult.PassResults)
         {
-            for (const auto& [stageName, glslSource] : passResult.ShaderStageSources)
+            cereal::JSONInputArchive iarchive(ss);
+            DzShader                 shader;
+            iarchive(shader);
+
+            auto compileResult = DzShaderCompiler::Compile(shader);
+            if (!compileResult.Success)
             {
-                std::cout << "Stage: " << stageName << ", Source:\n\n" << glslSource << std::endl;
+                std::cerr << compileResult.Message << std::endl;
+                return;
             }
-            std::cout << std::endl;
+
+            std::cout << "Compile Result:" << std::endl;
+
+            for (const auto& passResult : compileResult.PassResults)
+            {
+                for (const auto& [stageName, glslSource] : passResult.ShaderStageSources)
+                {
+                    std::cout << "Stage: " << stageName << ", Source:\n\n" << glslSource << std::endl;
+                }
+                std::cout << std::endl;
+            }
         }
+
+        std::ifstream            shaderFile("shaders/test.dzshader");
+        cereal::JSONInputArchive archive(shaderFile);
+
+        DzShader shaderFromFile;
+        archive(shaderFromFile);
+
+        // Test compile GL shaders
+        DzShaderManager::AddShader("Assets/Shaders/Phong.dzshader");
+        if (!DzShaderManager::Compile())
+        {
+            return;
+        }
+
+        auto glPhongShader = DzShaderManager::GetCompiledPassShader("GeometryPass");
+    }
+};
+
+int main(int argc, char** argv)
+try
+{
+    DesktopAppInitInfo initInfo {};
+    initInfo.Engine.Window.Title = "Example - DzShader";
+    DesktopApp app(argc, argv);
+
+    if (!app.Init(initInfo))
+    {
+        std::cerr << "Failed to initialize the application!" << std::endl;
+        return 1;
     }
 
-    std::ifstream            shaderFile("shaders/test.dzshader");
-    cereal::JSONInputArchive archive(shaderFile);
+    // add a custom lifeTimeComponent to the engine
+    app.GetEngine()->AddLifeTimeComponent(CreateRef<CustomLifeTime>());
 
-    DzShader shaderFromFile;
-    archive(shaderFromFile);
+    if (!app.PostInit())
+    {
+        std::cerr << "Failed to post initialize the application!" << std::endl;
+        return 1;
+    }
+
+    app.Run();
 
     return 0;
 }

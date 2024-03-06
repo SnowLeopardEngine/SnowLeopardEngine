@@ -24,6 +24,10 @@ namespace SnowLeopardEngine
         virtual void SetMat3(const std::string& name, const glm::mat3& value) const = 0;
         virtual void SetMat4(const std::string& name, const glm::mat4& value) const = 0;
 
+        // obsolete
         static Ref<Shader> Create(const std::string& vertexSource, const std::string& fragmentSource);
+
+        // new API
+        static Ref<Shader> Create(const std::unordered_map<std::string, std::string>& shaderStageSources);
     };
 } // namespace SnowLeopardEngine

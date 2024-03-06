@@ -1,4 +1,4 @@
-uniform UScene {
+layout(binding = 0, std140) uniform UScene {
     mat4 model;
     mat4 view;
     mat4 projection;

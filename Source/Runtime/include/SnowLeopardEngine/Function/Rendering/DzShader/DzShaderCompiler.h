@@ -6,6 +6,8 @@ namespace SnowLeopardEngine
 {
     struct DzShaderCompilePassResult
     {
+        std::string PassName;
+
         // key: stage name; value: shader source (text)
         std::unordered_map<std::string, std::string> ShaderStageSources;
 

@@ -7,7 +7,11 @@ namespace SnowLeopardEngine
     class GLShader : public Shader
     {
     public:
+        // obsolete
         GLShader(const std::string& vertexSource, const std::string& fragmentSource);
+
+        // new API
+        explicit GLShader(const std::unordered_map<std::string, std::string>& shaderStageSources);
         virtual ~GLShader();
 
         virtual void Bind() const override;
