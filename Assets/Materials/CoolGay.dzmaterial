@@ -6,12 +6,12 @@
                 {
                     "Name": "baseColor",
                     "Type": "Color",
-                    "Value": "(0.1, 0.6, 0.1, 1)"
+                    "Value": "(1, 1, 1, 1)"
                 },
                 {
                     "Name": "diffuseMap",
                     "Type": "Texture2D",
-                    "Value": ""
+                    "Value": "Assets/Textures/CoolGay.png"
                 }
             ],
             "ReadOnly": true

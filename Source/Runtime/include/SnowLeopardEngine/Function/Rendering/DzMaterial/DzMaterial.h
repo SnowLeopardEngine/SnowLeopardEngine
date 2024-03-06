@@ -5,6 +5,8 @@
 
 namespace SnowLeopardEngine
 {
+    class Texture2D;
+
     struct DzMaterialPropertyBlock
     {
         std::vector<DzShaderProperty> ShaderProperties;
@@ -22,14 +24,20 @@ namespace SnowLeopardEngine
     class DzMaterial
     {
     public:
+        static Ref<DzMaterial> LoadFromPath(const std::filesystem::path& path);
+        static void            SaveToPath(const Ref<DzMaterial>& material, const std::filesystem::path& path);
+
         void SetInt(const std::string& propertyName, int value);
         void SetFloat(const std::string& propertyName, float value);
         void SetColor(const std::string& propertyName, const glm::vec4& value);
         void SetTexture(const std::string& propertyName, const std::string& texturePath);
         void SetVector(const std::string& propertyName, const glm::vec4& value);
 
-        glm::vec4 GetColor(const std::string& propertyName);
-        // TODO: More Getters
+        int            GetInt(const std::string& propertyName);
+        float          GetFloat(const std::string& propertyName);
+        glm::vec4      GetColor(const std::string& propertyName);
+        Ref<Texture2D> GetTexture(const std::string& propertyName);
+        glm::vec4      GetVector(const std::string& propertyName);
 
         std::string GetTag(const std::string& key);
 

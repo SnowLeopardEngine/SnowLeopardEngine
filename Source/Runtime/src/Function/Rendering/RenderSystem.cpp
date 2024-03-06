@@ -159,7 +159,8 @@ namespace SnowLeopardEngine
                     // Ignore for now, need to update pipeline state manager
                 }
 
-                auto shader = DzShaderManager::GetCompiledPassShader(dzPass.Name);
+                int  textureLocator = 0;
+                auto shader         = DzShaderManager::GetCompiledPassShader(dzPass.Name);
                 shader->Bind();
 
                 shader->SetMat4("model", transform.GetTransform());
@@ -171,16 +172,25 @@ namespace SnowLeopardEngine
                 {
                     if (property.Type == "Int")
                     {
-                        // TODO
+                        auto value = meshRenderer.Material->GetInt(property.Name);
+                        shader->SetInt(property.Name, value);
                     }
                     else if (property.Type == "Float")
                     {
-                        // TODO
+                        auto value = meshRenderer.Material->GetFloat(property.Name);
+                        shader->SetFloat(property.Name, value);
                     }
                     else if (property.Type == "Color")
                     {
                         auto value = meshRenderer.Material->GetColor(property.Name);
                         shader->SetFloat4(property.Name, value);
+                    }
+                    else if (property.Type == "Texture2D")
+                    {
+                        auto texture = meshRenderer.Material->GetTexture(property.Name);
+                        shader->SetInt(property.Name, textureLocator);
+                        texture->Bind(textureLocator);
+                        textureLocator++;
                     }
                 }
 

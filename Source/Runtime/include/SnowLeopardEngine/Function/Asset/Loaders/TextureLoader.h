@@ -26,5 +26,9 @@ namespace SnowLeopardEngine
 
         static Ref<Texture2D> LoadTexture2D(const std::filesystem::path& path, bool flip);
         static Ref<Texture3D> LoadTexture3D(std::vector<std::filesystem::path> facePaths, bool flip);
+
+    private:
+        static std::unordered_map<std::string, Ref<Texture2D>> s_Texture2DCache;
+        static std::unordered_map<size_t, Ref<Texture3D>>      s_Texture3DCache;
     };
 } // namespace SnowLeopardEngine

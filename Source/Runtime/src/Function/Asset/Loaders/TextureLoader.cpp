@@ -7,6 +7,9 @@
 
 namespace SnowLeopardEngine
 {
+    std::unordered_map<std::string, Ref<Texture2D>> TextureLoader::s_Texture2DCache;
+    std::unordered_map<size_t, Ref<Texture3D>>      TextureLoader::s_Texture3DCache;
+
     bool TextureLoader::LoadTexture2D(const std::filesystem::path& path, bool flip, TextureLoadingOutput& output)
     {
         std::string pathString = path.generic_string();
@@ -67,17 +70,37 @@ namespace SnowLeopardEngine
 
     Ref<Texture2D> TextureLoader::LoadTexture2D(const std::filesystem::path& path, bool flip)
     {
+        if (s_Texture2DCache.count(path.generic_string()) > 0)
+        {
+            return s_Texture2DCache[path.generic_string()];
+        }
+
         TextureLoadingOutput output;
         if (!LoadTexture2D(path, flip, output))
         {
             return nullptr;
         }
 
-        return Texture2D::Create(output.GetDesc(), &output.OutBuffer);
+        auto texture = Texture2D::Create(output.GetDesc(), &output.OutBuffer);
+
+        s_Texture2DCache[path.generic_string()] = texture;
+
+        return texture;
     }
 
     Ref<Texture3D> TextureLoader::LoadTexture3D(std::vector<std::filesystem::path> facePaths, bool flip)
     {
+        size_t hashValue = 0;
+        for (const auto& path : facePaths)
+        {
+            hashValue ^= std::hash<std::filesystem::path> {}(path) + 0x9e3779b9 + (hashValue << 6) + (hashValue >> 2);
+        }
+
+        if (s_Texture3DCache.count(hashValue) > 0)
+        {
+            return s_Texture3DCache[hashValue];
+        }
+
         std::vector<TextureLoadingOutput> outputs;
         if (!LoadTexture3D(facePaths, flip, outputs))
         {
@@ -96,6 +119,10 @@ namespace SnowLeopardEngine
             dataList.emplace_back(&output.OutBuffer);
         }
 
-        return Texture3D::Create(outputs[0].GetDesc(), dataList);
+        auto texture = Texture3D::Create(outputs[0].GetDesc(), dataList);
+
+        s_Texture3DCache[hashValue] = texture;
+
+        return texture;
     }
 } // namespace SnowLeopardEngine

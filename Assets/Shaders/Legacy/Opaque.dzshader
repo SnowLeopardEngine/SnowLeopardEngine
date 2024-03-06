@@ -42,7 +42,7 @@
                         "Name": "fragment",
                         "LanguageType": "GLSL",
                         "EntryPoint": "main",
-                        "ShaderSource": "#version 450\n\nin vec2 varingTexCoords;\nin vec3 varingNormal;\n\nout vec4 fragColor;\n\nuniform vec4 baseColor;\nuniform sampler2D diffuseMap;\n\nvoid main() {\n    fragColor = baseColor;\n}\n"
+                        "ShaderSource": "#version 450\n\nin vec2 varingTexCoords;\nin vec3 varingNormal;\n\nout vec4 fragColor;\n\nuniform vec4 baseColor;\nuniform sampler2D diffuseMap;\n\nvoid main() {\n    fragColor = baseColor * texture(diffuseMap, varingTexCoords);\n}"
                     }
                 ]
             }

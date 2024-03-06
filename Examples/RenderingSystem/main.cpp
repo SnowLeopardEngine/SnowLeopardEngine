@@ -60,21 +60,6 @@ public:
         camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
 
-        std::ifstream            redFile("Assets/Materials/Red.dzmaterial");
-        cereal::JSONInputArchive archiveRed(redFile);
-        auto                     red = CreateRef<DzMaterial>();
-        archiveRed(*red);
-
-        std::ifstream            greenFile("Assets/Materials/Green.dzmaterial");
-        cereal::JSONInputArchive archiveGreen(greenFile);
-        auto                     green = CreateRef<DzMaterial>();
-        archiveGreen(*green);
-
-        std::ifstream            blueFile("Assets/Materials/Blue.dzmaterial");
-        cereal::JSONInputArchive archiveBlue(blueFile);
-        auto                     blue = CreateRef<DzMaterial>();
-        archiveBlue(*blue);
-
         // Create cubes to test shadow
         Entity cube1            = scene->CreateEntity("Cube1");
         auto&  cubeTransform1   = cube1.GetComponent<TransformComponent>();
@@ -84,7 +69,7 @@ public:
         cubeMeshFilter1.PrimitiveType = MeshPrimitiveType::Cube;
         auto& cubeMeshRenderer1       = cube1.AddComponent<MeshRendererComponent>();
         // cubeMeshRenderer1.BaseColor   = {1, 0, 0, 1};
-        cubeMeshRenderer1.Material = red;
+        cubeMeshRenderer1.Material = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
 
         Entity cube2            = scene->CreateEntity("Cube2");
         auto&  cubeTransform2   = cube2.GetComponent<TransformComponent>();
@@ -95,7 +80,7 @@ public:
         cubeMeshFilter2.PrimitiveType = MeshPrimitiveType::Cube;
         auto& cubeMeshRenderer2       = cube2.AddComponent<MeshRendererComponent>();
         // cubeMeshRenderer2.BaseColor   = {0, 1, 0, 1};
-        cubeMeshRenderer2.Material = green;
+        cubeMeshRenderer2.Material = DzMaterial::LoadFromPath("Assets/Materials/Green.dzmaterial");
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
@@ -106,7 +91,7 @@ public:
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
         // floorMeshRenderer.BaseColor   = {1, 1, 1, 1}; // Pure White
-        floorMeshRenderer.Material = blue;
+        floorMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/CoolGay.dzmaterial");
     }
 
 private:
