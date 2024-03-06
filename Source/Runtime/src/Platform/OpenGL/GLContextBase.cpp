@@ -104,6 +104,8 @@ namespace SnowLeopardEngine
             int  minMinor = GetMinMinor();
             SNOW_LEOPARD_CORE_INFO("[{0}Context] Loaded {1} {2}.{3}", glName, glName, GLVersion.major, GLVersion.minor);
 
+            m_SupportDSA = minMajor >= 4 && minMinor >= 5;
+
             std::stringstream ss;
             ss << "    Vendor:       " << glGetString(GL_VENDOR) << std::endl;
             ss << "    Version:      " << glGetString(GL_VERSION) << std::endl;
@@ -128,9 +130,13 @@ namespace SnowLeopardEngine
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifndef NDEBUG
+#if SNOW_LEOPARD_PLATFORM_WINDOWS || SNOW_LEOPARD_PLATFORM_LINUX
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
         glDebugMessageCallback(GLMessageCallback, nullptr);
+#elif SNOW_LEOPARD_PLATFORM_DARWIN
+        // TODO: Old API of GL DebugMessages
+#endif
 #endif
     }
 

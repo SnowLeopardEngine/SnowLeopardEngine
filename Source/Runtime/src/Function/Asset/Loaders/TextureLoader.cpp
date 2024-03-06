@@ -1,9 +1,21 @@
 #include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
+#include "SnowLeopardEngine/Platform/Platform.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+
+#if SNOW_LEOPARD_PLATFORM_DARWIN
+namespace std
+{
+    template<>
+    struct hash<filesystem::path>
+    {
+        size_t operator()(const filesystem::path& p) const { return hash<filesystem::path::string_type>()(p.native()); }
+    };
+} // namespace std
+#endif
 
 namespace SnowLeopardEngine
 {

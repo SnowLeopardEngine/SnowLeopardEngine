@@ -4,5 +4,7 @@
 
 namespace SnowLeopardEngine
 {
+    bool GraphicsContext::s_SupportDSA = false;
+
     Ref<GraphicsContext> GraphicsContext::Create() { return CreateRef<GLContext>(); }
 } // namespace SnowLeopardEngine

@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Platform/OpenGL/GLTexture.h"
+#include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
 
 #include <glad/glad.h>
 

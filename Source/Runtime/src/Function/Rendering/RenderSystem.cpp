@@ -17,10 +17,10 @@ namespace SnowLeopardEngine
 
         m_API = GraphicsAPI::Create(GraphicsBackend::OpenGL);
 
-        PipelineInitInfo pipelineInitInfo = {};
-        pipelineInitInfo.API              = m_API;
-        m_Pipeline                        = CreateRef<ForwardPipeline>();
-        m_Pipeline->Init(pipelineInitInfo);
+        // PipelineInitInfo pipelineInitInfo = {};
+        // pipelineInitInfo.API              = m_API;
+        // m_Pipeline                        = CreateRef<ForwardPipeline>();
+        // m_Pipeline->Init(pipelineInitInfo);
 
         // TODO: Remove old pipeline & pass code. Totally switch to data-driven (shader-driven) pipeline.
 
@@ -32,7 +32,7 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Shutting Down...");
 
-        m_Pipeline->Shutdown();
+        // m_Pipeline->Shutdown();
 
         m_Context->Shutdown();
         m_Context.reset();
