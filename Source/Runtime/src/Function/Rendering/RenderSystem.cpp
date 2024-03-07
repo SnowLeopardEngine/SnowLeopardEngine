@@ -6,6 +6,7 @@
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardPipeline.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
+#include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 
 namespace SnowLeopardEngine
@@ -60,6 +61,23 @@ namespace SnowLeopardEngine
             if (scene != nullptr)
             {
                 auto& registry = scene->GetRegistry();
+
+                registry.view<TransformComponent, CameraComponent>().each(
+                    [this](entt::entity entity, TransformComponent& transform, CameraComponent& camera) {
+                        if (camera.ClearFlags != CameraClearFlags::Skybox || camera.SkyboxMaterial == nullptr)
+                        {
+                            return;
+                        }
+
+                        DzShaderManager::AddShader(camera.SkyboxMaterial->GetShaderName(),
+                                                   camera.SkyboxMaterial->GetShaderPath());
+
+                        auto queue = camera.SkyboxMaterial->GetTag("RenderQueue");
+                        if (queue == "Sky")
+                        {
+                            m_SkyGroup.emplace_back(entity);
+                        }
+                    });
 
                 registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
                     [this](entt::entity           entity,
@@ -134,30 +152,97 @@ namespace SnowLeopardEngine
             }
         }
 
+        // filter the first directional light
+        DirectionalLightComponent directionalLight;
+        {
+            bool isFirst = true;
+            auto view    = registry.view<TransformComponent, DirectionalLightComponent>();
+
+            // No Directional light
+            if (view.size_hint() == 0)
+            {
+                directionalLight.Intensity = 0;
+            }
+
+            for (const auto& directionalLightEntity : view)
+            {
+                if (isFirst)
+                {
+                    auto light       = view.get<DirectionalLightComponent>(directionalLightEntity);
+                    isFirst          = false;
+                    directionalLight = light;
+                }
+                else
+                {
+                    SNOW_LEOPARD_CORE_WARN("[Rendering][Forward][Geometry] There must be only 1 directional light!");
+                    break;
+                }
+            }
+        }
+
         for (auto& geometry : m_GeometryGroup)
         {
             auto& transform    = registry.get<TransformComponent>(geometry);
             auto& meshFilter   = registry.get<MeshFilterComponent>(geometry);
             auto& meshRenderer = registry.get<MeshRendererComponent>(geometry);
-            auto  dzShaderName = meshRenderer.Material->GetShaderName();
-            auto& dzShader     = DzShaderManager::GetShader(dzShaderName);
 
             if (meshFilter.Meshes.Items.empty() || meshRenderer.Material == nullptr)
             {
                 continue;
             }
 
+            auto  dzShaderName = meshRenderer.Material->GetShaderName();
+            auto& dzShader     = DzShaderManager::GetShader(dzShaderName);
+
+            PipelineState pipelineState;
+
             for (const auto& [pipelineStateName, pipelineStateValue] : dzShader.PipelineStates)
             {
-                // Ignore for now, need to update pipeline state manager
+                if (pipelineStateName == "CullFaceMode")
+                {
+                    auto optional          = magic_enum::enum_cast<CullFaceMode>(pipelineStateValue);
+                    pipelineState.CullFace = optional.has_value() ? optional.value() : CullFaceMode::Back;
+                }
+
+                if (pipelineStateName == "DepthTestMode")
+                {
+                    auto optional           = magic_enum::enum_cast<DepthTestMode>(pipelineStateValue);
+                    pipelineState.DepthTest = optional.has_value() ? optional.value() : DepthTestMode::Less;
+                }
+
+                if (pipelineStateName == "DepthWrite")
+                {
+                    pipelineState.DepthWrite = pipelineStateValue == "On";
+                }
+
+                // TODO: Handle more pipeline states
             }
 
             for (const auto& dzPass : dzShader.Passes)
             {
                 for (const auto& [pipelineStateName, pipelineStateValue] : dzPass.PipelineStates)
                 {
-                    // Ignore for now, need to update pipeline state manager
+                    if (pipelineStateName == "CullFaceMode")
+                    {
+                        auto optional          = magic_enum::enum_cast<CullFaceMode>(pipelineStateValue);
+                        pipelineState.CullFace = optional.has_value() ? optional.value() : CullFaceMode::Back;
+                    }
+
+                    if (pipelineStateName == "DepthTestMode")
+                    {
+                        auto optional           = magic_enum::enum_cast<DepthTestMode>(pipelineStateValue);
+                        pipelineState.DepthTest = optional.has_value() ? optional.value() : DepthTestMode::Less;
+                    }
+
+                    if (pipelineStateName == "DepthWrite")
+                    {
+                        pipelineState.DepthWrite = pipelineStateValue == "On";
+                    }
+
+                    // TODO: Handle more pipeline states
                 }
+
+                m_API->SetPipelineState(pipelineState);
 
                 int  textureLocator = 0;
                 auto shader         = DzShaderManager::GetCompiledPassShader(dzPass.Name);
@@ -166,6 +251,10 @@ namespace SnowLeopardEngine
                 shader->SetMat4("model", transform.GetTransform());
                 shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
                 shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
+                shader->SetFloat3("viewPos", mainCameraTransform.Position);
+                shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
+                shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
+                shader->SetFloat3("directionalLight.color", directionalLight.Color);
 
                 // Auto set material properties
                 for (const auto& property : meshRenderer.Material->GetPropertyBlock().ShaderProperties)
@@ -187,14 +276,147 @@ namespace SnowLeopardEngine
                     }
                     else if (property.Type == "Texture2D")
                     {
-                        auto texture = meshRenderer.Material->GetTexture(property.Name);
+                        auto texture = meshRenderer.Material->GetTexture2D(property.Name);
                         shader->SetInt(property.Name, textureLocator);
                         texture->Bind(textureLocator);
+                        textureLocator++;
+                    }
+                    else if (property.Type == "Cubemap")
+                    {
+                        auto cubemap = meshRenderer.Material->GetCubemap(property.Name);
+                        shader->SetInt(property.Name, textureLocator);
+                        cubemap->Bind(textureLocator);
                         textureLocator++;
                     }
                 }
 
                 auto& meshItem = meshFilter.Meshes.Items[0];
+
+                // lazy load
+                if (meshItem.Data.VertexArray == nullptr)
+                {
+                    meshItem.Data.VertexArray = m_API->CreateVertexArray(meshItem);
+                }
+                meshItem.Data.VertexArray->Bind();
+
+                m_API->DrawIndexed(meshItem.Data.Indices.size());
+
+                meshItem.Data.VertexArray->Unbind();
+
+                shader->Unbind();
+            }
+        }
+
+        for (auto& sky : m_SkyGroup)
+        {
+            auto& transform = registry.get<TransformComponent>(sky);
+            auto& camera    = registry.get<CameraComponent>(sky);
+
+            if (!camera.IsPrimary || camera.SkyboxMaterial == nullptr)
+            {
+                return;
+            }
+
+            auto  dzShaderName = camera.SkyboxMaterial->GetShaderName();
+            auto& dzShader     = DzShaderManager::GetShader(dzShaderName);
+
+            PipelineState pipelineState;
+
+            for (const auto& [pipelineStateName, pipelineStateValue] : dzShader.PipelineStates)
+            {
+                if (pipelineStateName == "CullFaceMode")
+                {
+                    auto optional          = magic_enum::enum_cast<CullFaceMode>(pipelineStateValue);
+                    pipelineState.CullFace = optional.has_value() ? optional.value() : CullFaceMode::Back;
+                }
+
+                if (pipelineStateName == "DepthTestMode")
+                {
+                    auto optional           = magic_enum::enum_cast<DepthTestMode>(pipelineStateValue);
+                    pipelineState.DepthTest = optional.has_value() ? optional.value() : DepthTestMode::Less;
+                }
+
+                if (pipelineStateName == "DepthWrite")
+                {
+                    pipelineState.DepthWrite = pipelineStateValue == "On";
+                }
+
+                // TODO: Handle more pipeline states
+            }
+
+            for (const auto& dzPass : dzShader.Passes)
+            {
+                for (const auto& [pipelineStateName, pipelineStateValue] : dzPass.PipelineStates)
+                {
+                    if (pipelineStateName == "CullFaceMode")
+                    {
+                        auto optional          = magic_enum::enum_cast<CullFaceMode>(pipelineStateValue);
+                        pipelineState.CullFace = optional.has_value() ? optional.value() : CullFaceMode::Back;
+                    }
+
+                    if (pipelineStateName == "DepthTestMode")
+                    {
+                        auto optional           = magic_enum::enum_cast<DepthTestMode>(pipelineStateValue);
+                        pipelineState.DepthTest = optional.has_value() ? optional.value() : DepthTestMode::Less;
+                    }
+
+                    if (pipelineStateName == "DepthWrite")
+                    {
+                        pipelineState.DepthWrite = pipelineStateValue == "On";
+                    }
+
+                    // TODO: Handle more pipeline states
+                }
+
+                m_API->SetPipelineState(pipelineState);
+
+                int  textureLocator = 0;
+                auto shader         = DzShaderManager::GetCompiledPassShader(dzPass.Name);
+                shader->Bind();
+
+                shader->SetMat4("model", transform.GetTransform());
+                shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
+                shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
+                shader->SetFloat3("viewPos", mainCameraTransform.Position);
+                shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
+                shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
+                shader->SetFloat3("directionalLight.color", directionalLight.Color);
+
+                // Auto set material properties
+                for (const auto& property : camera.SkyboxMaterial->GetPropertyBlock().ShaderProperties)
+                {
+                    if (property.Type == "Int")
+                    {
+                        auto value = camera.SkyboxMaterial->GetInt(property.Name);
+                        shader->SetInt(property.Name, value);
+                    }
+                    else if (property.Type == "Float")
+                    {
+                        auto value = camera.SkyboxMaterial->GetFloat(property.Name);
+                        shader->SetFloat(property.Name, value);
+                    }
+                    else if (property.Type == "Color")
+                    {
+                        auto value = camera.SkyboxMaterial->GetColor(property.Name);
+                        shader->SetFloat4(property.Name, value);
+                    }
+                    else if (property.Type == "Texture2D")
+                    {
+                        auto texture = camera.SkyboxMaterial->GetTexture2D(property.Name);
+                        shader->SetInt(property.Name, textureLocator);
+                        texture->Bind(textureLocator);
+                        textureLocator++;
+                    }
+                    else if (property.Type == "Cubemap")
+                    {
+                        auto cubemap = camera.SkyboxMaterial->GetCubemap(property.Name);
+                        shader->SetInt(property.Name, textureLocator);
+                        cubemap->Bind(textureLocator);
+                        textureLocator++;
+                    }
+                }
+
+                auto& meshItem = camera.SkyboxCubeMesh;
 
                 // lazy load
                 if (meshItem.Data.VertexArray == nullptr)

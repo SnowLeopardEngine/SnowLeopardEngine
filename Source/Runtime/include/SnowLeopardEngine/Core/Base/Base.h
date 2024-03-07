@@ -31,13 +31,13 @@ namespace SnowLeopardEngine
     }
 
     // Split string by comma
-    static std::vector<std::string> split(const std::string& s)
+    static std::vector<std::string> split(const std::string& s, const char& delim = ',')
     {
         std::vector<std::string> result;
         std::istringstream       iss(s);
         std::string              token;
 
-        while (std::getline(iss, token, ','))
+        while (std::getline(iss, token, delim))
         {
             trim(token);
             result.push_back(token);

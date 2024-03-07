@@ -28,7 +28,8 @@ namespace SnowLeopardEngine
         Ref<Pipeline>        m_Pipeline;
 
         // TODO: Clean code
-        bool                      m_LoadedScene = false;
+        bool                      m_LoadedScene  = false;
         std::vector<entt::entity> m_GeometryGroup;
+        std::vector<entt::entity> m_SkyGroup;
     };
 } // namespace SnowLeopardEngine

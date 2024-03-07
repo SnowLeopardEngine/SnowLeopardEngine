@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
+#include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderManager.h"
@@ -89,15 +90,13 @@ namespace SnowLeopardEngine
         findProperty->Value = fmt::format("({0}, {1}, {2}, {3})", value.r, value.g, value.b, value.a);
     }
 
-    void DzMaterial::SetTexture(const std::string& propertyName, const std::string& texturePath)
+    void DzMaterial::SetTexture2D(const std::string& propertyName, const std::string& texturePath)
     {
         // Update property block
         std::optional<DzShaderProperty> findProperty;
         for (auto& property : m_PropertyBlock.ShaderProperties)
         {
-            if (property.Name == propertyName &&
-                (property.Type == "Texture2D" || property.Type == "Texture2DArray" || property.Type == "Texture3D" ||
-                 property.Type == "Cubemap" || property.Type == "CubemapArray"))
+            if (property.Name == propertyName && property.Type == "Texture2D")
             {
                 findProperty = property;
                 break;
@@ -106,12 +105,35 @@ namespace SnowLeopardEngine
 
         if (!findProperty.has_value())
         {
-            SNOW_LEOPARD_CORE_ERROR("[DzMaterialPropertyBlock] Failed to set texture value, property ({0}) not found!",
-                                    propertyName);
+            SNOW_LEOPARD_CORE_ERROR(
+                "[DzMaterialPropertyBlock] Failed to set texture2d value, property ({0}) not found!", propertyName);
             return;
         }
 
         findProperty->Value = texturePath;
+    }
+
+    void DzMaterial::SetCubemap(const std::string& propertyName, const std::string& cubemapInfo)
+    {
+        // Update property block
+        std::optional<DzShaderProperty> findProperty;
+        for (auto& property : m_PropertyBlock.ShaderProperties)
+        {
+            if (property.Name == propertyName && property.Type == "Cubemap")
+            {
+                findProperty = property;
+                break;
+            }
+        }
+
+        if (!findProperty.has_value())
+        {
+            SNOW_LEOPARD_CORE_ERROR("[DzMaterialPropertyBlock] Failed to set cubemap value, property ({0}) not found!",
+                                    propertyName);
+            return;
+        }
+
+        findProperty->Value = cubemapInfo;
     }
 
     void DzMaterial::SetVector(const std::string& propertyName, const glm::vec4& value)
@@ -213,14 +235,12 @@ namespace SnowLeopardEngine
         return glm::vec4(r, g, b, a);
     }
 
-    Ref<Texture2D> DzMaterial::GetTexture(const std::string& propertyName)
+    Ref<Texture2D> DzMaterial::GetTexture2D(const std::string& propertyName)
     {
         std::optional<DzShaderProperty> findProperty;
         for (auto& property : m_PropertyBlock.ShaderProperties)
         {
-            if (property.Name == propertyName &&
-                (property.Type == "Texture2D" || property.Type == "Texture2DArray" || property.Type == "Texture3D" ||
-                 property.Type == "Cubemap" || property.Type == "CubemapArray"))
+            if (property.Name == propertyName && property.Type == "Texture2D")
             {
                 findProperty = property;
                 break;
@@ -229,8 +249,8 @@ namespace SnowLeopardEngine
 
         if (!findProperty.has_value())
         {
-            SNOW_LEOPARD_CORE_ERROR("[DzMaterialPropertyBlock] Failed to get texture value, property ({0}) not found!",
-                                    propertyName);
+            SNOW_LEOPARD_CORE_ERROR(
+                "[DzMaterialPropertyBlock] Failed to get texture2d value, property ({0}) not found!", propertyName);
             return nullptr;
         }
 
@@ -240,6 +260,53 @@ namespace SnowLeopardEngine
         }
 
         return TextureLoader::LoadTexture2D(findProperty->Value, false);
+    }
+
+    Ref<Cubemap> DzMaterial::GetCubemap(const std::string& propertyName)
+    {
+        std::optional<DzShaderProperty> findProperty;
+        for (auto& property : m_PropertyBlock.ShaderProperties)
+        {
+            if (property.Name == propertyName && property.Type == "Cubemap")
+            {
+                findProperty = property;
+                break;
+            }
+        }
+
+        if (!findProperty.has_value())
+        {
+            SNOW_LEOPARD_CORE_ERROR("[DzMaterialPropertyBlock] Failed to get cubemap value, property ({0}) not found!",
+                                    propertyName);
+            return nullptr;
+        }
+
+        if (findProperty->Value.empty())
+        {
+            findProperty->Value = "Assets/Textures/Skybox001;right,left,top,bottom,front,back;.jpg";
+        }
+
+        auto value = findProperty->Value;
+        trim(value);
+
+        auto tokens = split(value, ';');
+
+        auto pathPrefix = std::filesystem::path(tokens[0]);
+        auto faces      = tokens[1];
+        auto suffix     = tokens[2];
+
+        auto faceTokens = split(faces);
+
+        std::vector<std::filesystem::path> facePaths = {
+            pathPrefix / (faceTokens[0] + suffix),
+            pathPrefix / (faceTokens[1] + suffix),
+            pathPrefix / (faceTokens[2] + suffix),
+            pathPrefix / (faceTokens[3] + suffix),
+            pathPrefix / (faceTokens[4] + suffix),
+            pathPrefix / (faceTokens[5] + suffix),
+        };
+
+        return TextureLoader::LoadCubemap(facePaths, false);
     }
 
     glm::vec4 DzMaterial::GetVector(const std::string& propertyName)

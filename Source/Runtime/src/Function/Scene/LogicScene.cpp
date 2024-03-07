@@ -191,7 +191,7 @@ namespace SnowLeopardEngine
             // TODO: Move to AssetManager
             if (camera.ClearFlags == CameraClearFlags::Skybox)
             {
-                camera.Cubemap = TextureLoader::LoadTexture3D(camera.CubemapFilePaths, false);
+                camera.Cubemap = TextureLoader::LoadCubemap(camera.CubemapFilePaths, false);
             }
         });
 

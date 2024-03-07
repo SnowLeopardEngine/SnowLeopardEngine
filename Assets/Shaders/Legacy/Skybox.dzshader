@@ -1,0 +1,43 @@
+{
+    "DzShader": {
+        "Name": "Legacy/Skybox",
+        "Properties": [
+            {
+                "Name": "cubeMap",
+                "Type": "Cubemap",
+                "Value": ""
+            }
+        ],
+        "PipelineStates": {
+            "DepthTestMode": "LessEqual",
+            "CullFaceMode": "NoCull"
+        },
+        "Tags": {
+            "RenderQueue": "Sky"
+        },
+        "Keywords": [
+            "FORWARD_LIGHTING"
+        ],
+        "Passes": [
+            {
+                "Name": "SkyboxPass",
+                "PipelineStates": {},
+                "Tags": {},
+                "Stages": [
+                    {
+                        "Name": "vertex",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "#version 450\n\n#include \"LegacySceneUniform.glsl\"\n\nlayout(location = 0) in vec3 aPos;\n\nlayout(location = 0) out vec3 cubeMapTextureCoords;\n\nvoid main() {\n    cubeMapTextureCoords = aPos;\n    vec4 pos = projection * mat4(mat3(view)) * vec4(aPos, 1.0);\n    gl_Position = pos.xyww;\n}"
+                    },
+                    {
+                        "Name": "fragment",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "#version 450\n\nlayout(location = 0) in vec3 cubeMapTextureCoords;\n\nlayout(location = 0) out vec4 fragColor;\n\nuniform samplerCube cubeMap;\n\nvoid main() {\n    fragColor = texture(cubeMap, cubeMapTextureCoords);\n}"
+                    }
+                ]
+            }
+        ]
+    }
+}
