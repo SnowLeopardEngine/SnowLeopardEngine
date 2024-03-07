@@ -2,6 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Math/Math.h"
 
+#include <PxPhysicsAPI.h>
 #include <assimp/scene.h>
 
 namespace SnowLeopardEngine
@@ -28,5 +29,12 @@ namespace SnowLeopardEngine
         {
             return glm::quat(pOrientation.w, pOrientation.x, pOrientation.y, pOrientation.z);
         }
+    };
+
+    class PhysXGLMHelpers
+    {
+    public:
+        static inline physx::PxVec3 GetPhysXVec3(const glm::vec3& vec) { return physx::PxVec3(vec.x, vec.y, vec.z); }
+        static inline glm::vec3     GetGLMVec3(const physx::PxVec3& vec) { return glm::vec3(vec.x, vec.y, vec.z); }
     };
 } // namespace SnowLeopardEngine

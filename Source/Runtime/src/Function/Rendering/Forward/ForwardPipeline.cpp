@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardPipeline.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSinglePass.h"
 #include "SnowLeopardEngine/Function/Rendering/Pass/RenderPass.h"
@@ -8,6 +9,7 @@ namespace SnowLeopardEngine
 {
     bool ForwardPipeline::Init(const PipelineInitInfo& initInfo)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         Pipeline::Init(initInfo);
 
         // Create and register pipeline states

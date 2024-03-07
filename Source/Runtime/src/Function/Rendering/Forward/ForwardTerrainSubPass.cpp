@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardTerrainSubPass.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSinglePass.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
@@ -8,6 +9,7 @@ namespace SnowLeopardEngine
 {
     void ForwardTerrainSubPass::Draw()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         auto* ownerPass = static_cast<ForwardSinglePass*>(m_OwnerPass);
 
         // Get pipeline
@@ -143,13 +145,17 @@ namespace SnowLeopardEngine
                 m_Shader->SetInt("shadowMap", 1);
                 m_Shader->SetInt("castShadow", terrainRenderer.CastShadow);
 
-                // Currently, no static batching. leave temp test code here
-                auto vertexArray = pipeline->GetAPI()->CreateVertexArray(terrain.Mesh);
-                vertexArray->Bind();
+                // lazy load
+                if (terrain.Mesh.Data.VertexArray == nullptr)
+                {
+                    terrain.Mesh.Data.VertexArray = pipeline->GetAPI()->CreateVertexArray(terrain.Mesh);
+                }
+                terrain.Mesh.Data.VertexArray->Bind();
 
                 pipeline->GetAPI()->DrawIndexed(terrain.Mesh.Data.Indices.size());
 
-                vertexArray->Unbind();
+                terrain.Mesh.Data.VertexArray->Unbind();
+
                 m_Shader->Unbind();
             });
 

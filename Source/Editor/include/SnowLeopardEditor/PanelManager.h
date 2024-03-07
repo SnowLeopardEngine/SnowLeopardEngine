@@ -11,6 +11,7 @@ namespace SnowLeopardEngine::Editor
         static void Init();
         static void OnFixedTick();
         static void OnTick(float deltaTime);
+        static void Shutdown();
 
     private:
         static std::vector<Ref<PanelBase>> s_Panels;

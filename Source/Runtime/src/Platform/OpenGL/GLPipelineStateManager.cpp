@@ -1,11 +1,13 @@
 #include "SnowLeopardEngine/Platform/OpenGL/GLPipelineStateManager.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 
 namespace SnowLeopardEngine
 {
     Ref<Shader> GLPipelineStateManager::GetShaderProgram(const Ref<PipelineState>& state)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         auto it = m_ShaderLibrary.find(state->Name);
         SNOW_LEOPARD_CORE_ASSERT(
             it != m_ShaderLibrary.end(), "[GLPipelineStateManager] State {0} not found!", state->Name);

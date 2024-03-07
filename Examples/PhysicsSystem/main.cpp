@@ -1,32 +1,37 @@
-#include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
-#include <cstdint>
 
 using namespace SnowLeopardEngine;
 
 class SphereScript : public NativeScriptInstance
 {
 public:
+    virtual void OnLoad() override { m_Controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>(); }
+
     virtual void OnColliderEnter() override
     {
         SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter");
-        DesktopApp::GetInstance()->GetEngine()->GetContext()->AudioSys->Play("sounds/jump.mp3");
+        m_EngineContext->AudioSys->Play("sounds/jump.mp3");
     }
 
     virtual void OnTick(float deltaTime) override
     {
-        auto& inputSystem = DesktopApp::GetInstance()->GetEngine()->GetContext()->InputSys;
+        auto& inputSystem = m_EngineContext->InputSys;
 
         if (inputSystem->GetKey(KeyCode::Escape))
         {
             DesktopApp::GetInstance()->Quit();
         }
+
+        m_EngineContext->PhysicsSys->Move(m_Controller, glm::vec3(-0.05f, -0.05f, 0), deltaTime);
     }
+
+private:
+    CharacterControllerComponent m_Controller;
 };
 
 class CustomLifeTime final : public LifeTimeComponent
@@ -72,8 +77,9 @@ public:
         sphereTransform.Position = {5, 15, 0};
         sphereTransform.Scale *= 3;
 
-        sphere.AddComponent<RigidBodyComponent>(1.0f);
-        sphere.AddComponent<SphereColliderComponent>(normalMaterial);
+        // sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
+        // sphere.AddComponent<SphereColliderComponent>(normalMaterial);
+        sphere.AddComponent<CharacterControllerComponent>();
         auto& sphereMeshFilter                    = sphere.AddComponent<MeshFilterComponent>();
         sphereMeshFilter.PrimitiveType            = MeshPrimitiveType::Sphere;
         auto& sphereMeshRenderer                  = sphere.AddComponent<MeshRendererComponent>();

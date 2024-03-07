@@ -6,6 +6,7 @@
 namespace SnowLeopardEngine
 {
     class Entity;
+    class EngineContext;
 
     class NativeScriptInstance : public LifeTimeComponent
     {
@@ -24,8 +25,9 @@ namespace SnowLeopardEngine
         bool GetEnabled() const { return m_Enabled; }
 
     protected:
-        Ref<Entity> m_OwnerEntity = nullptr;
-        bool        m_Enabled     = true;
+        EngineContext* m_EngineContext = nullptr;
+        Ref<Entity>    m_OwnerEntity   = nullptr;
+        bool           m_Enabled       = true;
         friend class LogicScene;
     };
 } // namespace SnowLeopardEngine

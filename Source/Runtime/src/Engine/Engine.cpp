@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Engine/Engine.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 
 namespace SnowLeopardEngine
 {
@@ -85,6 +86,8 @@ namespace SnowLeopardEngine
             // Present
             g_EngineContext->RenderSys->Present();
         }
+
+        SNOW_LEOPARD_PROFILE_END_OF_FRAME
     }
 
     void Engine::FixedTickOneFrame()

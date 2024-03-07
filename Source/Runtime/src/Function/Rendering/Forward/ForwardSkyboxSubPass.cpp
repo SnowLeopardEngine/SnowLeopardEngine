@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSkyboxSubPass.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Rendering/Forward/ForwardSinglePass.h"
@@ -14,6 +15,7 @@ namespace SnowLeopardEngine
 
     void ForwardSkyboxSubPass::Draw()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         auto* ownerPass = static_cast<ForwardSinglePass*>(m_OwnerPass);
 
         // Get pipeline
@@ -96,12 +98,17 @@ namespace SnowLeopardEngine
         mainCamera.Cubemap->Bind(0);
         m_Shader->SetInt("cubeMap", 0);
 
-        auto vertexArray = pipeline->GetAPI()->CreateVertexArray(m_SkyboxCubeMesh);
-        vertexArray->Bind();
+        // lazy load
+        if (m_SkyboxCubeMesh.Data.VertexArray == nullptr)
+        {
+            m_SkyboxCubeMesh.Data.VertexArray = pipeline->GetAPI()->CreateVertexArray(m_SkyboxCubeMesh);
+        }
+        m_SkyboxCubeMesh.Data.VertexArray->Bind();
 
         pipeline->GetAPI()->DrawIndexed(m_SkyboxCubeMesh.Data.Indices.size());
 
-        vertexArray->Unbind();
+        m_SkyboxCubeMesh.Data.VertexArray->Unbind();
+
         m_Shader->Unbind();
 
         if (rt != nullptr)

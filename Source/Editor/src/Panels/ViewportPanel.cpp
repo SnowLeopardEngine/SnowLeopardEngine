@@ -216,7 +216,7 @@ namespace SnowLeopardEngine::Editor
                 ImGuizmo::Manipulate(glm::value_ptr(cameraView),
                                      glm::value_ptr(cameraProjection),
                                      static_cast<ImGuizmo::OPERATION>(m_GuizmoOperation),
-                                     ImGuizmo::LOCAL,
+                                     m_GuizmoMode,
                                      glm::value_ptr(transform),
                                      nullptr,
                                      snap ? snapValues : nullptr);

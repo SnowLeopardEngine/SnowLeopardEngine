@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
@@ -92,10 +93,7 @@ namespace SnowLeopardEngine
 
     void LogicScene::OnLoad()
     {
-        // Scripting Callback
-        m_Registry.view<NativeScriptingComponent>().each(
-            [](entt::entity entity, NativeScriptingComponent& nativeScript) { nativeScript.ScriptInstance->OnLoad(); });
-
+        SNOW_LEOPARD_PROFILE_FUNCTION
         // Mesh Loading (dirty code for now)
         m_Registry.view<MeshFilterComponent>().each([this](entt::entity entity, MeshFilterComponent& meshFilter) {
             // TODO: Move to AssetManager
@@ -196,10 +194,15 @@ namespace SnowLeopardEngine
                 camera.Cubemap = TextureLoader::LoadTexture3D(camera.CubemapFilePaths, false);
             }
         });
+
+        // Scripting Callback
+        m_Registry.view<NativeScriptingComponent>().each(
+            [](entt::entity entity, NativeScriptingComponent& nativeScript) { nativeScript.ScriptInstance->OnLoad(); });
     }
 
     void LogicScene::OnTick(float deltaTime)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         // Tick NativeScriptingComponents for now
         // TODO: Consider Script Tick Priority
         // TODO: If time is enough, integrate Lua or C# Scripting.
@@ -294,6 +297,7 @@ namespace SnowLeopardEngine
 
     void LogicScene::OnFixedTick()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         m_Registry.view<NativeScriptingComponent>().each(
             [](entt::entity entity, NativeScriptingComponent& nativeScript) {
                 if (nativeScript.ScriptInstance->GetEnabled())
@@ -305,6 +309,7 @@ namespace SnowLeopardEngine
 
     void LogicScene::OnUnload()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
         m_Registry.view<NativeScriptingComponent>().each(
             [](entt::entity entity, NativeScriptingComponent& nativeScript) {
                 nativeScript.ScriptInstance->OnUnload();
@@ -372,8 +377,9 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(NativeScriptingComponent)
     {
         // Bind entity
-        Ref<Entity> entityCopy                  = CreateRef<Entity>(entity);
-        component.ScriptInstance->m_OwnerEntity = entityCopy;
+        Ref<Entity> entityCopy                    = CreateRef<Entity>(entity);
+        component.ScriptInstance->m_OwnerEntity   = entityCopy;
+        component.ScriptInstance->m_EngineContext = g_EngineContext;
     }
 
     ON_COMPONENT_ADDED(RigidBodyComponent) {}
@@ -381,6 +387,7 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(BoxColliderComponent) {}
     ON_COMPONENT_ADDED(CapsuleColliderComponent) {}
     ON_COMPONENT_ADDED(TerrainColliderComponent) {}
+    ON_COMPONENT_ADDED(CharacterControllerComponent) {}
 
     ON_COMPONENT_ADDED(CameraComponent) {}
     ON_COMPONENT_ADDED(FreeMoveCameraControllerComponent) {}
