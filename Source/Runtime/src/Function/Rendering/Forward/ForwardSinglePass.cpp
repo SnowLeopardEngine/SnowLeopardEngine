@@ -38,8 +38,8 @@ namespace SnowLeopardEngine
 
         // Depth frame buffer
         FrameBufferDesc frameBufferDesc = {};
-        frameBufferDesc.Width           = 1024;
-        frameBufferDesc.Height          = 1024;
+        frameBufferDesc.Width           = 4096;
+        frameBufferDesc.Height          = 4096;
 
         FrameBufferTextureDesc depthTexture = {};
         depthTexture.TextureFormat          = FrameBufferTextureFormat::DEPTH24;
