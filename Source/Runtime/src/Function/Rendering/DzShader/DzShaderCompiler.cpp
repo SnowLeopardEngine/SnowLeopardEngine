@@ -99,8 +99,13 @@ namespace SnowLeopardEngine
                 // use Google's shaderc to compile source to get SPV
                 std::vector<uint32_t> spvBinary;
                 std::string           shadercMessage;
-                bool                  shadercOK = CompileGLSL2SPV(
-                    stage.ShaderSource, stage.Name, shader.Name, shader.Keywords, spvBinary, shadercMessage);
+                bool                  shadercOK = CompileGLSL2SPV(stage.ShaderSource,
+                                                 stage.Name,
+                                                 stage.EntryPoint,
+                                                 shader.Name,
+                                                 shader.Keywords,
+                                                 spvBinary,
+                                                 shadercMessage);
 
                 if (!shadercOK)
                 {
@@ -131,6 +136,7 @@ namespace SnowLeopardEngine
 
     bool DzShaderCompiler::CompileGLSL2SPV(const std::string&              glslSourceText,
                                            const std::string&              stageName,
+                                           const std::string&              stageEntryPoint,
                                            const std::string&              shaderName,
                                            const std::vector<std::string>& keywords,
                                            std::vector<uint32_t>&          spvBinary,
@@ -162,7 +168,7 @@ namespace SnowLeopardEngine
 
         // Compile
         auto compileResult = compiler.CompileGlslToSpv(
-            prePassesString, ShaderStageToShaderCKind(stageName), shaderName.c_str(), options);
+            prePassesString, ShaderStageToShaderCKind(stageName), shaderName.c_str(), stageEntryPoint.c_str(), options);
         if (compileResult.GetCompilationStatus() != shaderc_compilation_status_success)
         {
             message = compileResult.GetErrorMessage();

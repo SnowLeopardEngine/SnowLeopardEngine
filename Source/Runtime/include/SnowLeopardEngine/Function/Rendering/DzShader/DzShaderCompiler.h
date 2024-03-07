@@ -33,6 +33,7 @@ namespace SnowLeopardEngine
     private:
         static bool CompileGLSL2SPV(const std::string&              glslSourceText,
                                     const std::string&              stageName,
+                                    const std::string&              stageEntryPoint,
                                     const std::string&              shaderName,
                                     const std::vector<std::string>& keywords,
                                     std::vector<uint32_t>&          spvBinary,
