@@ -10,6 +10,7 @@
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
+#include "entt/entity/fwd.hpp"
 #include <PxPhysicsAPI.h>
 
 namespace SnowLeopardEngine
@@ -292,7 +293,7 @@ namespace SnowLeopardEngine
         float            AspectRatio = 16.0f / 9.0f;
 
         std::vector<std::filesystem::path> CubemapFilePaths;
-        Ref<Texture3D>                     Cubemap = nullptr;
+        Ref<Cubemap>                       Cubemap = nullptr;
 
         CameraComponent()                       = default;
         CameraComponent(const CameraComponent&) = default;
@@ -308,6 +309,19 @@ namespace SnowLeopardEngine
 
         FreeMoveCameraControllerComponent()                                         = default;
         FreeMoveCameraControllerComponent(const FreeMoveCameraControllerComponent&) = default;
+    };
+
+    struct ThirdPersonFollowCameraControllerComponent
+    {
+        float Sensitivity = 0.05f;
+        float Speed       = 0.1f;
+
+        glm::vec3 Offset = {0, 20, 45};
+
+        entt::entity FollowEntity;
+
+        ThirdPersonFollowCameraControllerComponent()                                                  = default;
+        ThirdPersonFollowCameraControllerComponent(const ThirdPersonFollowCameraControllerComponent&) = default;
     };
 
     struct DirectionalLightComponent
@@ -399,7 +413,8 @@ namespace SnowLeopardEngine
     {
         // TODO: Animator Controller
         // Now, we just load the first animation and create relevant animator, play on awake and loop forever.
-        Ref<Animator> Animator;
+        Ref<Animator>              CurrentAnimator;
+        std::vector<Ref<Animator>> Animators;
 
         AnimatorComponent()                         = default;
         AnimatorComponent(const AnimatorComponent&) = default;

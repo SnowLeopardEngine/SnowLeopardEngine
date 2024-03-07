@@ -129,9 +129,9 @@ namespace SnowLeopardEngine
             MeshItem capsuleMesh;
             capsuleMesh.Name = "Capsule";
 
-            MeshData                 capsuleData;
+            MeshData                           capsuleData;
             std::vector<StaticMeshVertexData>& vertices = capsuleData.StaticVertices;
-            std::vector<uint32_t>&   indices  = capsuleData.Indices;
+            std::vector<uint32_t>&             indices  = capsuleData.Indices;
 
             // Calculate the actual height excluding the caps
             float cylinderHeight = height - 2 * radius;
@@ -276,18 +276,45 @@ namespace SnowLeopardEngine
             return map;
         }
 
-        static HeightMap GenerateWaveHeightMap(int xSize, int ySize)
+        static float PerlinNoise(float x, float y) { return std::sin(x * 0.2f) + std::cos(y * 0.2f); }
+
+        static HeightMap GenerateSmoothTerrain(uint32_t xSize, uint32_t ySize)
         {
-            auto map = GenerateBlankHeightMap(xSize, ySize);
-            for (int x = 0; x < xSize; ++x)
+            HeightMap map;
+            map.Data.resize(ySize, std::vector<float>(xSize, 0.0f));
+            map.Width  = xSize;
+            map.Height = ySize;
+
+            for (uint32_t y = 0; y < ySize; ++y)
             {
-                for (int y = 0; y < ySize; ++y)
+                for (uint32_t x = 0; x < xSize; ++x)
                 {
-                    float waveHeight = std::sin(x / static_cast<float>(ySize) * 2.0f * M_PI) *
-                                       std::cos(y / static_cast<float>(xSize) * 2.0f * M_PI);
-                    map.Set(y, x, waveHeight * 10.0f);
+                    float perlinValue = PerlinNoise(x, y);
+                    map.Set(x, y, perlinValue * 2.0f);
                 }
             }
+
+            return map;
+        }
+
+        static HeightMap GenerateTerrainWithFalloff(uint32_t xSize, uint32_t ySize, float falloff)
+        {
+            HeightMap map;
+            map.Data.resize(ySize, std::vector<float>(xSize, 0.0f));
+            map.Width  = xSize;
+            map.Height = ySize;
+
+            for (uint32_t y = 0; y < ySize; ++y)
+            {
+                for (uint32_t x = 0; x < xSize; ++x)
+                {
+                    float distanceToCenter   = std::sqrt(std::pow(x - xSize / 2.0f, 2) + std::pow(y - ySize / 2.0f, 2));
+                    float normalizedDistance = distanceToCenter / (std::min(xSize, ySize) / 2.0f);
+
+                    map.Set(x, y, falloff * normalizedDistance + rand() % 10 / 10.0f);
+                }
+            }
+
             return map;
         }
     } // namespace Utils

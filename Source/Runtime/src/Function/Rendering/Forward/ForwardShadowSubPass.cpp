@@ -114,7 +114,7 @@ namespace SnowLeopardEngine
             [this, pipeline, directionalLight, ownerPass, lightSpaceMatrix](
                 TransformComponent& transform, MeshFilterComponent& meshFilter, AnimatorComponent& animator) {
                 // No meshes, skip...
-                if (meshFilter.Meshes.Items.empty())
+                if (meshFilter.Meshes.Items.empty() || animator.CurrentAnimator == nullptr)
                 {
                     return;
                 }
@@ -126,7 +126,7 @@ namespace SnowLeopardEngine
                     m_Shader->SetMat4("model", transform.GetTransform());
                     m_Shader->SetInt("hasAnimation", 1);
 
-                    auto boneMatrices = animator.Animator->GetFinalBoneMatrices();
+                    auto boneMatrices = animator.CurrentAnimator->GetFinalBoneMatrices();
                     for (uint32_t i = 0; i < boneMatrices.size(); ++i)
                     {
                         m_Shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);

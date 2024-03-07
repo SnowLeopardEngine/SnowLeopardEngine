@@ -106,17 +106,6 @@ namespace SnowLeopardEngine
                 }
                 meshFilter.Meshes = model.Meshes;
 
-                // load animation if possible
-                if (m_Registry.any_of<AnimatorComponent>(entity))
-                {
-                    auto& animatorComponent = m_Registry.get<AnimatorComponent>(entity);
-
-                    if (!model.Animations.empty())
-                    {
-                        animatorComponent.Animator = CreateRef<Animator>(model.Animations[0]);
-                    }
-                }
-
                 // assign textures to mesh renderer if possible
                 if (m_Registry.any_of<MeshRendererComponent>(entity))
                 {
@@ -191,7 +180,7 @@ namespace SnowLeopardEngine
             // TODO: Move to AssetManager
             if (camera.ClearFlags == CameraClearFlags::Skybox)
             {
-                camera.Cubemap = TextureLoader::LoadTexture3D(camera.CubemapFilePaths, false);
+                camera.Cubemap = TextureLoader::LoadCubemap(camera.CubemapFilePaths, false);
             }
         });
 
@@ -286,11 +275,36 @@ namespace SnowLeopardEngine
                 }
             });
 
+        // Built-in camera controllers
+        m_Registry.view<TransformComponent, CameraComponent, ThirdPersonFollowCameraControllerComponent>().each(
+            [this](entt::entity                                entity,
+                   TransformComponent&                         transform,
+                   CameraComponent&                            camera,
+                   ThirdPersonFollowCameraControllerComponent& thirdPersonController) {
+                auto& inputSystem   = g_EngineContext->InputSys;
+                auto  mousePosition = inputSystem->GetMousePosition();
+
+                auto targetTransform     = m_Registry.get<TransformComponent>(thirdPersonController.FollowEntity);
+                auto targetRotationEuler = targetTransform.GetRotationEuler();
+                // Calculate forward (Yaw - 90 to adjust)
+                glm::vec3 forward;
+                forward.x = cos(glm::radians(targetRotationEuler.y - 90)) * cos(glm::radians(targetRotationEuler.x));
+                forward.y = sin(glm::radians(targetRotationEuler.x));
+                forward.z = sin(glm::radians(targetRotationEuler.y - 90)) * cos(glm::radians(targetRotationEuler.x));
+                forward   = glm::normalize(forward);
+                auto up   = glm::vec3(0, 1, 0);
+
+                transform.Position = targetTransform.Position + forward * thirdPersonController.Offset.z +
+                                     up * thirdPersonController.Offset.y;
+                transform.SetRotationEuler(
+                    glm::vec3(targetRotationEuler.x, targetRotationEuler.y - 180, targetRotationEuler.z));
+            });
+
         // Animators
         m_Registry.view<AnimatorComponent>().each([deltaTime](entt::entity entity, AnimatorComponent& animator) {
-            if (animator.Animator != nullptr)
+            if (animator.CurrentAnimator != nullptr)
             {
-                animator.Animator->UpdateAnimation(deltaTime);
+                animator.CurrentAnimator->UpdateAnimation(deltaTime);
             }
         });
     }
@@ -391,6 +405,7 @@ namespace SnowLeopardEngine
 
     ON_COMPONENT_ADDED(CameraComponent) {}
     ON_COMPONENT_ADDED(FreeMoveCameraControllerComponent) {}
+    ON_COMPONENT_ADDED(ThirdPersonFollowCameraControllerComponent) {}
     ON_COMPONENT_ADDED(DirectionalLightComponent) {}
     ON_COMPONENT_ADDED(MeshFilterComponent) {}
     ON_COMPONENT_ADDED(MeshRendererComponent) {}

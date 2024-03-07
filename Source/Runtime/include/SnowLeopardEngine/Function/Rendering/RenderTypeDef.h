@@ -31,7 +31,7 @@ namespace SnowLeopardEngine
     {
         Invalid = 0,
         Texture2D,
-        Texture3D // Cubemap
+        Cubemap // Cubemap
     };
 
     enum class TextureWrapMode : uint8_t

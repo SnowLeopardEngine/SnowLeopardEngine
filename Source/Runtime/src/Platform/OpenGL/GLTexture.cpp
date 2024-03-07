@@ -106,7 +106,7 @@ namespace SnowLeopardEngine
 
     void GLTexture2D::Bind(uint32_t slot) const { glBindTextureUnit(slot, m_Name); }
 
-    GLTexture3D::GLTexture3D(const TextureDesc& desc, std::vector<Buffer*> dataList) : m_Desc(desc)
+    GLCubemap::GLCubemap(const TextureDesc& desc, std::vector<Buffer*> dataList) : m_Desc(desc)
     {
         m_InternalFormat = PixelColorFormatToInternalFormat(m_Desc.Format);
         m_DataFormat     = PixelColorFormatToDataFormat(m_Desc.Format);
@@ -161,7 +161,7 @@ namespace SnowLeopardEngine
         }
     }
 
-    GLTexture3D::~GLTexture3D() { glDeleteTextures(1, &m_Name); }
+    GLCubemap::~GLCubemap() { glDeleteTextures(1, &m_Name); }
 
-    void GLTexture3D::Bind(uint32_t slot) const { glBindTextureUnit(slot, m_Name); }
+    void GLCubemap::Bind(uint32_t slot) const { glBindTextureUnit(slot, m_Name); }
 } // namespace SnowLeopardEngine

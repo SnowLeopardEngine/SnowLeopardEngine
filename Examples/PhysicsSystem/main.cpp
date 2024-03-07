@@ -118,7 +118,7 @@ public:
             -heightMapWidth * 0.5f * xScale, 0, -heightMapHeight * 0.5f * zScale}; // fix center
         auto& terrainComponent = terrain.AddComponent<TerrainComponent>();
         terrainComponent.TerrainHeightMap =
-            Utils::GenerateWaveHeightMap(heightMapWidth, heightMapHeight); // create a 100 x 100 height map
+            Utils::GenerateSmoothTerrain(heightMapWidth, heightMapHeight); // create a 100 x 100 height map
         terrainComponent.XScale = xScale;
         terrainComponent.YScale = yScale;
         terrainComponent.ZScale = zScale;
