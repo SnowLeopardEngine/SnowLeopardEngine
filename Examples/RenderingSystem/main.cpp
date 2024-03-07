@@ -92,7 +92,7 @@ public:
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
         // floorMeshRenderer.BaseColor   = {1, 1, 1, 1}; // Pure White
-        floorMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/CoolGay.dzmaterial");
+        floorMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
     }
 
 private:

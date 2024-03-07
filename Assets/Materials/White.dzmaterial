@@ -6,7 +6,7 @@
                 {
                     "Name": "baseColor",
                     "Type": "Color",
-                    "Value": "(1, 0.1, 0.1, 1)"
+                    "Value": "(1, 1, 1, 1)"
                 },
                 {
                     "Name": "diffuseMap",

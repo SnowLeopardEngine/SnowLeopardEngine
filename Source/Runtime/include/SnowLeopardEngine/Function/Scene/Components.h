@@ -322,6 +322,8 @@ namespace SnowLeopardEngine
         float     Intensity = 0.8;
         glm::vec3 Color     = {1, 0.996, 0.885};
 
+        Ref<DzMaterial> ShadowMaterial = nullptr;
+
         DirectionalLightComponent()                                 = default;
         DirectionalLightComponent(const DirectionalLightComponent&) = default;
     };

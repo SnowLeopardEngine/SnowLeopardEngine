@@ -7,6 +7,7 @@
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/FrameBuffer.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 
 namespace SnowLeopardEngine
@@ -55,6 +56,7 @@ namespace SnowLeopardEngine
             //    Divide entities into different groups by material.
 
             // 2. For each type of material in groups, compile relevant shaders.
+            //    Setup shader resources (e.g. FrameBuffers)
 
             // TODO: Clean code
             auto scene = g_EngineContext->SceneMngr->GetActiveScene();
@@ -76,6 +78,25 @@ namespace SnowLeopardEngine
                         if (queue == "Sky")
                         {
                             m_SkyGroup.emplace_back(entity);
+                        }
+                    });
+
+                registry.view<TransformComponent, DirectionalLightComponent>().each(
+                    [this](entt::entity               entity,
+                           TransformComponent&        transform,
+                           DirectionalLightComponent& directionalLight) {
+                        if (directionalLight.ShadowMaterial == nullptr)
+                        {
+                            return;
+                        }
+
+                        DzShaderManager::AddShader(directionalLight.ShadowMaterial->GetShaderName(),
+                                                   directionalLight.ShadowMaterial->GetShaderPath());
+
+                        auto queue = directionalLight.ShadowMaterial->GetTag("RenderQueue");
+                        if (queue == "Shadow")
+                        {
+                            m_ShadowGroup.emplace_back(entity);
                         }
                     });
 
@@ -180,6 +201,112 @@ namespace SnowLeopardEngine
             }
         }
 
+        // TODO: View frustum get AABB and set borders.
+        glm::mat4 lightProjection  = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 1.0f, 10000.0f);
+        auto      lightPos         = -1000.0f * directionalLight.Direction; // simulate directional light position
+        glm::mat4 lightView        = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+        if (directionalLight.ShadowMaterial != nullptr)
+        {
+            auto  shadowShaderName = directionalLight.ShadowMaterial->GetShaderName();
+            auto& shadowShader     = DzShaderManager::GetShader(shadowShaderName);
+
+            PipelineState pipelineState;
+
+            for (const auto& [pipelineStateName, pipelineStateValue] : shadowShader.PipelineStates)
+            {
+                if (pipelineStateName == "CullFaceMode")
+                {
+                    auto optional          = magic_enum::enum_cast<CullFaceMode>(pipelineStateValue);
+                    pipelineState.CullFace = optional.has_value() ? optional.value() : CullFaceMode::Back;
+                }
+
+                if (pipelineStateName == "DepthTestMode")
+                {
+                    auto optional           = magic_enum::enum_cast<DepthTestMode>(pipelineStateValue);
+                    pipelineState.DepthTest = optional.has_value() ? optional.value() : DepthTestMode::Less;
+                }
+
+                if (pipelineStateName == "DepthWrite")
+                {
+                    pipelineState.DepthWrite = pipelineStateValue == "On";
+                }
+
+                // TODO: Handle more pipeline states
+            }
+
+            for (auto& shadowPass : shadowShader.Passes)
+            {
+                for (const auto& [pipelineStateName, pipelineStateValue] : shadowPass.PipelineStates)
+                {
+                    if (pipelineStateName == "CullFaceMode")
+                    {
+                        auto optional          = magic_enum::enum_cast<CullFaceMode>(pipelineStateValue);
+                        pipelineState.CullFace = optional.has_value() ? optional.value() : CullFaceMode::Back;
+                    }
+
+                    if (pipelineStateName == "DepthTestMode")
+                    {
+                        auto optional           = magic_enum::enum_cast<DepthTestMode>(pipelineStateValue);
+                        pipelineState.DepthTest = optional.has_value() ? optional.value() : DepthTestMode::Less;
+                    }
+
+                    if (pipelineStateName == "DepthWrite")
+                    {
+                        pipelineState.DepthWrite = pipelineStateValue == "On";
+                    }
+
+                    // TODO: Handle more pipeline states
+                }
+
+                m_API->SetPipelineState(pipelineState);
+
+                DzShaderManager::BindPassResources(shadowPass);
+
+                int  resourceLocator = 0;
+                auto shader          = DzShaderManager::GetCompiledPassShader(shadowPass.Name);
+
+                for (auto& geometry : m_GeometryGroup)
+                {
+                    auto& meshFilter = registry.get<MeshFilterComponent>(geometry);
+                    auto& transform  = registry.get<TransformComponent>(geometry);
+
+                    if (meshFilter.Meshes.Items.empty())
+                    {
+                        continue;
+                    }
+
+                    for (auto& meshItem : meshFilter.Meshes.Items)
+                    {
+                        shader->Bind();
+                        shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+                        shader->SetMat4("model", transform.GetTransform());
+
+                        // lazy load
+                        if (meshItem.Data.VertexArray == nullptr)
+                        {
+                            meshItem.Data.VertexArray = m_API->CreateVertexArray(meshItem);
+                        }
+                        meshItem.Data.VertexArray->Bind();
+
+                        m_API->DrawIndexed(meshItem.Data.Indices.size());
+
+                        meshItem.Data.VertexArray->Unbind();
+                        shader->Unbind();
+                    }
+                }
+
+                DzShaderManager::UnbindPassResources(shadowPass);
+            }
+
+            // After shadow mapping, restore view port size
+            m_API->UpdateViewport(
+                0, 0, g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight());
+            mainCamera.AspectRatio =
+                g_EngineContext->WindowSys->GetWidth() * 1.0f / g_EngineContext->WindowSys->GetHeight();
+        }
+
         for (auto& geometry : m_GeometryGroup)
         {
             auto& transform    = registry.get<TransformComponent>(geometry);
@@ -244,66 +371,75 @@ namespace SnowLeopardEngine
 
                 m_API->SetPipelineState(pipelineState);
 
-                int  textureLocator = 0;
-                auto shader         = DzShaderManager::GetCompiledPassShader(dzPass.Name);
-                shader->Bind();
+                DzShaderManager::BindPassResources(dzPass);
 
-                shader->SetMat4("model", transform.GetTransform());
-                shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
-                shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
-                shader->SetFloat3("viewPos", mainCameraTransform.Position);
-                shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
-                shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
-                shader->SetFloat3("directionalLight.color", directionalLight.Color);
+                int  resourceBinding = 0;
+                auto shader          = DzShaderManager::GetCompiledPassShader(dzPass.Name);
 
-                // Auto set material properties
-                for (const auto& property : meshRenderer.Material->GetPropertyBlock().ShaderProperties)
+                for (auto& meshItem : meshFilter.Meshes.Items)
                 {
-                    if (property.Type == "Int")
+                    shader->Bind();
+
+                    shader->SetMat4("model", transform.GetTransform());
+                    shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
+                    shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
+                    shader->SetFloat3("viewPos", mainCameraTransform.Position);
+                    shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
+                    shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
+                    shader->SetFloat3("directionalLight.color", directionalLight.Color);
+                    shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+                    // Auto set material properties
+                    for (const auto& property : meshRenderer.Material->GetPropertyBlock().ShaderProperties)
                     {
-                        auto value = meshRenderer.Material->GetInt(property.Name);
-                        shader->SetInt(property.Name, value);
+                        if (property.Type == "Int")
+                        {
+                            auto value = meshRenderer.Material->GetInt(property.Name);
+                            shader->SetInt(property.Name, value);
+                        }
+                        else if (property.Type == "Float")
+                        {
+                            auto value = meshRenderer.Material->GetFloat(property.Name);
+                            shader->SetFloat(property.Name, value);
+                        }
+                        else if (property.Type == "Color")
+                        {
+                            auto value = meshRenderer.Material->GetColor(property.Name);
+                            shader->SetFloat4(property.Name, value);
+                        }
+                        else if (property.Type == "Texture2D")
+                        {
+                            auto texture = meshRenderer.Material->GetTexture2D(property.Name);
+                            shader->SetInt(property.Name, resourceBinding);
+                            texture->Bind(resourceBinding);
+                            resourceBinding++;
+                        }
+                        else if (property.Type == "Cubemap")
+                        {
+                            auto cubemap = meshRenderer.Material->GetCubemap(property.Name);
+                            shader->SetInt(property.Name, resourceBinding);
+                            cubemap->Bind(resourceBinding);
+                            resourceBinding++;
+                        }
                     }
-                    else if (property.Type == "Float")
+
+                    DzShaderManager::UsePassResources(dzPass, shader, resourceBinding);
+
+                    // lazy load
+                    if (meshItem.Data.VertexArray == nullptr)
                     {
-                        auto value = meshRenderer.Material->GetFloat(property.Name);
-                        shader->SetFloat(property.Name, value);
+                        meshItem.Data.VertexArray = m_API->CreateVertexArray(meshItem);
                     }
-                    else if (property.Type == "Color")
-                    {
-                        auto value = meshRenderer.Material->GetColor(property.Name);
-                        shader->SetFloat4(property.Name, value);
-                    }
-                    else if (property.Type == "Texture2D")
-                    {
-                        auto texture = meshRenderer.Material->GetTexture2D(property.Name);
-                        shader->SetInt(property.Name, textureLocator);
-                        texture->Bind(textureLocator);
-                        textureLocator++;
-                    }
-                    else if (property.Type == "Cubemap")
-                    {
-                        auto cubemap = meshRenderer.Material->GetCubemap(property.Name);
-                        shader->SetInt(property.Name, textureLocator);
-                        cubemap->Bind(textureLocator);
-                        textureLocator++;
-                    }
+                    meshItem.Data.VertexArray->Bind();
+
+                    m_API->DrawIndexed(meshItem.Data.Indices.size());
+
+                    meshItem.Data.VertexArray->Unbind();
+
+                    shader->Unbind();
+
+                    DzShaderManager::UnbindPassResources(dzPass);
                 }
-
-                auto& meshItem = meshFilter.Meshes.Items[0];
-
-                // lazy load
-                if (meshItem.Data.VertexArray == nullptr)
-                {
-                    meshItem.Data.VertexArray = m_API->CreateVertexArray(meshItem);
-                }
-                meshItem.Data.VertexArray->Bind();
-
-                m_API->DrawIndexed(meshItem.Data.Indices.size());
-
-                meshItem.Data.VertexArray->Unbind();
-
-                shader->Unbind();
             }
         }
 
@@ -370,6 +506,8 @@ namespace SnowLeopardEngine
 
                 m_API->SetPipelineState(pipelineState);
 
+                DzShaderManager::BindPassResources(dzPass);
+
                 int  textureLocator = 0;
                 auto shader         = DzShaderManager::GetCompiledPassShader(dzPass.Name);
                 shader->Bind();
@@ -416,6 +554,8 @@ namespace SnowLeopardEngine
                     }
                 }
 
+                DzShaderManager::UsePassResources(dzPass, shader, textureLocator);
+
                 auto& meshItem = camera.SkyboxCubeMesh;
 
                 // lazy load
@@ -430,6 +570,8 @@ namespace SnowLeopardEngine
                 meshItem.Data.VertexArray->Unbind();
 
                 shader->Unbind();
+
+                DzShaderManager::UnbindPassResources(dzPass);
             }
         }
     }

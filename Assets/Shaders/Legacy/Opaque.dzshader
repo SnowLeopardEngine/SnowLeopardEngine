@@ -13,6 +13,7 @@
                 "Value": ""
             }
         ],
+        "Resources": [],
         "PipelineStates": {},
         "Tags": {
             "RenderQueue": "Geometry"
@@ -25,18 +26,22 @@
                 "Name": "GeometryPass",
                 "PipelineStates": {},
                 "Tags": {},
+                "ResourcesToBind": [],
+                "ResourcesToUse": [
+                    "shadowMap"
+                ],
                 "Stages": [
                     {
                         "Name": "vertex",
                         "LanguageType": "GLSL",
                         "EntryPoint": "main",
-                        "ShaderSource": "#version 450\n\n#include \"LegacySceneUniform.glsl\"\n\nlayout(location = 0) in vec3 aPos;\nlayout(location = 1) in vec3 aNormal;\nlayout(location = 2) in vec2 aTexCoords;\n\nlayout(location = 0) out vec2 varingTexCoords;\nlayout(location = 1) out vec3 varingNormal;\nlayout(location = 2) out vec3 fragPos;\n\nvoid main() {\n    varingNormal = aNormal;\n    varingTexCoords = aTexCoords;\n    fragPos = vec3(model * vec4(aPos, 1.0));\n    gl_Position = projection * view * model * vec4(aPos, 1.0);\n}"
+                        "ShaderSource": "#version 450\n\n#include \"LegacySceneUniform.glsl\"\n#include \"LegacyShadow.glsl\"\n\nlayout(location = 0) in vec3 aPos;\nlayout(location = 1) in vec3 aNormal;\nlayout(location = 2) in vec2 aTexCoords;\n\nlayout(location = 0) out vec2 varingTexCoords;\nlayout(location = 1) out vec3 varingNormal;\nlayout(location = 2) out vec3 fragPos;\nlayout(location = 3) out vec4 fragPosLightSpace;\n\nvoid main() {\n    varingNormal = aNormal;\n    varingTexCoords = aTexCoords;\n    fragPos = vec3(model * vec4(aPos, 1.0));\n    fragPosLightSpace = lightSpaceMatrix * vec4(fragPos, 1.0);\n    gl_Position = projection * view * model * vec4(aPos, 1.0);\n}"
                     },
                     {
                         "Name": "fragment",
                         "LanguageType": "GLSL",
                         "EntryPoint": "main",
-                        "ShaderSource": "#version 450\n\n#include \"LegacyLighting.glsl\"\n\nlayout(location = 0) in vec2 varingTexCoords;\nlayout(location = 1) in vec3 varingNormal;\nlayout(location = 2) in vec3 fragPos;\n\nlayout(location = 0) out vec4 fragColor;\n\nuniform vec4 baseColor;\nuniform sampler2D diffuseMap;\n\nvoid main() {\n    vec3 viewDir = normalize(viewPos - fragPos);\n    vec3 diffuseColor = (baseColor * texture(diffuseMap, varingTexCoords)).xyz;\n    fragColor = vec4(CalculateDirectionalLight(directionalLight, varingNormal, viewDir, diffuseColor), 1);\n}"
+                        "ShaderSource": "#version 450\n\n#include \"LegacyLighting.glsl\"\n\nlayout(location = 0) in vec2 varingTexCoords;\nlayout(location = 1) in vec3 varingNormal;\nlayout(location = 2) in vec3 fragPos;\nlayout(location = 3) in vec4 fragPosLightSpace;\n\nlayout(location = 0) out vec4 fragColor;\n\nlayout(location = 0) uniform vec4 baseColor;\nlayout(location = 1) uniform sampler2D shadowMap;\nlayout(location = 2) uniform sampler2D diffuseMap;\n\nvoid main() {\n    vec3 viewDir = normalize(viewPos - fragPos);\n    vec3 diffuseColor = (baseColor * texture(diffuseMap, varingTexCoords)).xyz;\n    fragColor = vec4(CalculateDirectionalLight(directionalLight, varingNormal, viewDir, diffuseColor, fragPosLightSpace, shadowMap), 1);\n}"
                     }
                 ]
             }

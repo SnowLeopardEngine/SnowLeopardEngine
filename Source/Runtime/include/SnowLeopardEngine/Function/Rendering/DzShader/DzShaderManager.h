@@ -2,10 +2,12 @@
 
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderCompiler.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderTypeDef.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
 namespace SnowLeopardEngine
 {
     class Shader;
+    class FrameBuffer;
 
     class DzShaderManager
     {
@@ -17,6 +19,11 @@ namespace SnowLeopardEngine
 
         static bool Compile();
 
+        static void BindPassResources(const DzPass& dzPass);
+        static void UnbindPassResources(const DzPass& dzPass);
+
+        static void UsePassResources(const DzPass& dzPass, const Ref<Shader>& shader, int& resourceBinding);
+
         static Ref<Shader> GetCompiledPassShader(const std::string& dzPassName);
 
         static void SetInt(const std::string& dzShaderName, const std::string& propertyName, int value);
@@ -25,5 +32,6 @@ namespace SnowLeopardEngine
         static DzShaderCompiler                             s_Compiler;
         static std::unordered_map<std::string, DzShader>    s_DzShaders;
         static std::unordered_map<std::string, Ref<Shader>> s_CompiledShaders;
+        static std::unordered_map<std::string, DzResource>  s_RenderResources;
     };
 } // namespace SnowLeopardEngine

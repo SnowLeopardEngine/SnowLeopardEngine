@@ -146,7 +146,8 @@ namespace SnowLeopardEngine
         shaderc::CompileOptions options;
         options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
         // options.SetOptimizationLevel(shaderc_optimization_level_performance);
-        options.SetAutoMapLocations(true);
+        options.SetAutoMapLocations(false);
+        options.SetAutoBindUniforms(false);
         options.SetIncluder(CreateScope<MyIncluder>());
 
         // Setup keywords
@@ -184,7 +185,7 @@ namespace SnowLeopardEngine
         spirv_cross::CompilerGLSL::Options options;
         options.es = false;
 #if SNOW_LEOPARD_PLATFORM_WINDOWS || SNOW_LEOPARD_PLATFORM_LINUX
-        options.version = 420;
+        options.version = 450;
 #elif SNOW_LEOPARD_PLATFORM_DARWIN
         options.version = 410;
 #else

@@ -1,0 +1,44 @@
+{
+    "DzShader": {
+        "Name": "Legacy/ShadowMapping",
+        "Properties": [],
+        "Resources": [
+            {
+                "Name": "shadowMap",
+                "Type": "DepthBuffer"
+            }
+        ],
+        "PipelineStates": {
+            "CullFaceMode": "Front"
+        },
+        "Tags": {
+            "RenderQueue": "Shadow"
+        },
+        "Keywords": [],
+        "Passes": [
+            {
+                "Name": "ShadowPass",
+                "PipelineStates": {},
+                "Tags": {},
+                "ResourcesToBind": [
+                    "shadowMap"
+                ],
+                "ResourcesToUse": [],
+                "Stages": [
+                    {
+                        "Name": "vertex",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "#version 450\n\n#include \"LegacySceneUniform.glsl\"\n#include \"LegacyShadow.glsl\"\n\nlayout(location = 0) in vec3 aPos;\n\nvoid main() {\n    gl_Position = lightSpaceMatrix * model * vec4(aPos, 1);\n}"
+                    },
+                    {
+                        "Name": "fragment",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "#version 450\n\nvoid main() { }"
+                    }
+                ]
+            }
+        ]
+    }
+}

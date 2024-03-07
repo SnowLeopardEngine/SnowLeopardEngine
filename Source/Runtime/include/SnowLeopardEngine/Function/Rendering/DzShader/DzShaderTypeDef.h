@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Serialization/CerealMap.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
 #include <cereal/archives/json.hpp>
 #include <cereal/types/vector.hpp>
@@ -32,6 +33,42 @@ namespace SnowLeopardEngine
         Range
     };
 
+    struct DzResource
+    {
+        std::string Name;
+        std::string Type;
+
+        Ref<RenderResource> ResourceHandle; // it will be arranged at runtime
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(Name), CEREAL_NVP(Type));
+        }
+        // NOLINTEND
+    };
+
+    struct DzShaderProperty
+    {
+        std::string Name;
+        std::string Type;
+        std::string Value;
+
+        DzShaderProperty() = default;
+        DzShaderProperty(std::string_view name, std::string_view type, const std::string& value) :
+            Name(name), Type(type), Value(value)
+        {}
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(Name), CEREAL_NVP(Type), CEREAL_NVP(Value));
+        }
+        // NOLINTEND
+    };
+
     struct DzStage
     {
         std::string Name;
@@ -57,6 +94,8 @@ namespace SnowLeopardEngine
 
         std::map<std::string, std::string> PipelineStates;
         std::map<std::string, std::string> Tags;
+        std::vector<std::string>           ResourcesToBind;
+        std::vector<std::string>           ResourcesToUse;
 
         std::vector<DzStage> Stages;
 
@@ -66,27 +105,12 @@ namespace SnowLeopardEngine
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(Name), CEREAL_NVP(PipelineStates), CEREAL_NVP(Tags), CEREAL_NVP(Stages));
-        }
-        // NOLINTEND
-    };
-
-    struct DzShaderProperty
-    {
-        std::string Name;
-        std::string Type;
-        std::string Value;
-
-        DzShaderProperty() = default;
-        DzShaderProperty(std::string_view name, std::string_view type, const std::string& value) :
-            Name(name), Type(type), Value(value)
-        {}
-
-        // NOLINTBEGIN
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(Name), CEREAL_NVP(Type), CEREAL_NVP(Value));
+            archive(CEREAL_NVP(Name),
+                    CEREAL_NVP(PipelineStates),
+                    CEREAL_NVP(Tags),
+                    CEREAL_NVP(ResourcesToBind),
+                    CEREAL_NVP(ResourcesToUse),
+                    CEREAL_NVP(Stages));
         }
         // NOLINTEND
     };
@@ -96,6 +120,7 @@ namespace SnowLeopardEngine
         std::string Name;
 
         std::vector<DzShaderProperty> Properties;
+        std::vector<DzResource>       Resources;
 
         std::map<std::string, std::string> PipelineStates;
         std::map<std::string, std::string> Tags;
@@ -111,6 +136,7 @@ namespace SnowLeopardEngine
         {
             archive(CEREAL_NVP(Name),
                     CEREAL_NVP(Properties),
+                    CEREAL_NVP(Resources),
                     CEREAL_NVP(PipelineStates),
                     CEREAL_NVP(Tags),
                     CEREAL_NVP(Keywords),

@@ -8,6 +8,7 @@
                 "Value": ""
             }
         ],
+        "Resources": [],
         "PipelineStates": {
             "DepthTestMode": "LessEqual",
             "CullFaceMode": "NoCull"
@@ -23,6 +24,8 @@
                 "Name": "SkyboxPass",
                 "PipelineStates": {},
                 "Tags": {},
+                "ResourcesToBind": [],
+                "ResourcesToUse": [],
                 "Stages": [
                     {
                         "Name": "vertex",
@@ -34,7 +37,7 @@
                         "Name": "fragment",
                         "LanguageType": "GLSL",
                         "EntryPoint": "main",
-                        "ShaderSource": "#version 450\n\nlayout(location = 0) in vec3 cubeMapTextureCoords;\n\nlayout(location = 0) out vec4 fragColor;\n\nuniform samplerCube cubeMap;\n\nvoid main() {\n    fragColor = texture(cubeMap, cubeMapTextureCoords);\n}"
+                        "ShaderSource": "#version 450\n\nlayout(location = 0) in vec3 cubeMapTextureCoords;\nlayout(location = 0) out vec4 fragColor;\n\nlayout(location = 0) uniform samplerCube cubeMap;\n\nvoid main() {\n    fragColor = texture(cubeMap, cubeMapTextureCoords);\n}"
                     }
                 ]
             }

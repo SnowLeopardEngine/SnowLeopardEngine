@@ -2,13 +2,18 @@
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderCompiler.h"
+#include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderTypeDef.h"
+#include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/FrameBuffer.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Shader.h"
+#include <memory>
 
 namespace SnowLeopardEngine
 {
     DzShaderCompiler                             DzShaderManager::s_Compiler;
     std::unordered_map<std::string, DzShader>    DzShaderManager::s_DzShaders;
     std::unordered_map<std::string, Ref<Shader>> DzShaderManager::s_CompiledShaders;
+    std::unordered_map<std::string, DzResource>  DzShaderManager::s_RenderResources;
 
     void DzShaderManager::AddShader(const std::string& dzShaderName, const std::filesystem::path& dzShaderFilePath)
     {
@@ -16,7 +21,7 @@ namespace SnowLeopardEngine
         {
             return;
         }
-        
+
         std::ifstream            shaderFile(dzShaderFilePath);
         cereal::JSONInputArchive archive(shaderFile);
 
@@ -41,7 +46,7 @@ namespace SnowLeopardEngine
     {
         bool hasError = false;
 
-        for (const auto& [dzShaderName, dzShader] : s_DzShaders)
+        for (auto& [dzShaderName, dzShader] : s_DzShaders)
         {
             auto compileResult = s_Compiler.Compile(dzShader);
             if (!compileResult.Success)
@@ -57,9 +62,96 @@ namespace SnowLeopardEngine
             {
                 s_CompiledShaders[passResult.PassName] = Shader::Create(passResult.ShaderStageSources);
             }
+
+            for (auto& resource : dzShader.Resources)
+            {
+                if (resource.Type == "DepthBuffer")
+                {
+                    // Depth frame buffer
+                    FrameBufferDesc frameBufferDesc = {};
+                    frameBufferDesc.Width           = 1024;
+                    frameBufferDesc.Height          = 1024;
+
+                    FrameBufferTextureDesc depthTexture = {};
+                    depthTexture.TextureFormat          = FrameBufferTextureFormat::DEPTH24;
+                    frameBufferDesc.AttachmentDesc.Attachments.emplace_back(depthTexture);
+                    resource.ResourceHandle = FrameBuffer::Create(frameBufferDesc);
+
+                    s_RenderResources[resource.Name] = resource;
+                }
+
+                // TODO: Handler more types of resources
+            }
         }
 
         return !hasError;
+    }
+
+    void DzShaderManager::BindPassResources(const DzPass& dzPass)
+    {
+        // Bind resources if there are some resources
+        for (const auto& resourceName : dzPass.ResourcesToBind)
+        {
+            if (s_RenderResources.count(resourceName) == 0)
+            {
+                SNOW_LEOPARD_CORE_ERROR("[DzShaderManager] Resource {0} not found!", resourceName);
+            }
+
+            auto resource = s_RenderResources[resourceName];
+
+            // Handle Depth Buffer
+            if (resource.Type == "DepthBuffer")
+            {
+                auto depthBuffer = std::dynamic_pointer_cast<FrameBuffer>(resource.ResourceHandle);
+                depthBuffer->Bind();
+
+                g_EngineContext->RenderSys->GetAPI()->ClearColor({0, 0, 0, 0}, ClearBit::Depth);
+            }
+        }
+    }
+
+    void DzShaderManager::UnbindPassResources(const DzPass& dzPass)
+    {
+        // Unbind resources if there are some resources
+        for (const auto& resourceName : dzPass.ResourcesToBind)
+        {
+            if (s_RenderResources.count(resourceName) == 0)
+            {
+                SNOW_LEOPARD_CORE_ERROR("[DzShaderManager] Resource {0} not found!", resourceName);
+            }
+
+            auto resource = s_RenderResources[resourceName];
+
+            // Handle Depth Buffer
+            if (resource.Type == "DepthBuffer")
+            {
+                auto depthBuffer = std::dynamic_pointer_cast<FrameBuffer>(resource.ResourceHandle);
+                depthBuffer->Unbind();
+            }
+        }
+    }
+
+    void DzShaderManager::UsePassResources(const DzPass& dzPass, const Ref<Shader>& shader, int& resourceBinding)
+    {
+        // Use resources if there are some resources
+        for (const auto& resourceName : dzPass.ResourcesToUse)
+        {
+            if (s_RenderResources.count(resourceName) == 0)
+            {
+                SNOW_LEOPARD_CORE_ERROR("[DzShaderManager] Resource {0} not found!", resourceName);
+            }
+
+            auto resource = s_RenderResources[resourceName];
+
+            // Handle Depth Buffer
+            if (resource.Type == "DepthBuffer")
+            {
+                auto depthBuffer = std::dynamic_pointer_cast<FrameBuffer>(resource.ResourceHandle);
+                shader->SetInt(resourceName, resourceBinding);
+                depthBuffer->BindDepthAttachmentTexture(resourceBinding);
+                resourceBinding++;
+            }
+        }
     }
 
     Ref<Shader> DzShaderManager::GetCompiledPassShader(const std::string& dzPassName)
