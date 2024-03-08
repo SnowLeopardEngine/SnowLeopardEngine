@@ -76,6 +76,17 @@ namespace SnowLeopardEngine::Editor
         auto& cubeMeshRenderer2       = cube2.AddComponent<MeshRendererComponent>();
         cubeMeshRenderer2.Material    = DzMaterial::LoadFromPath("Assets/Materials/Green.dzmaterial");
 
+        // Create a character
+        Entity character                = scene->CreateEntity("Character");
+        auto&  characterTransform       = character.GetComponent<TransformComponent>();
+        characterTransform.Position.y   = 0.6;
+        characterTransform.Scale        = {10, 10, 10};
+        auto& characterMeshFilter       = character.AddComponent<MeshFilterComponent>();
+        characterMeshFilter.FilePath    = "Assets/Models/Vampire/Vampire_Idle.dae";
+        auto& characterMeshRenderer     = character.AddComponent<MeshRendererComponent>();
+        characterMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Vampire.dzmaterial");
+        character.AddComponent<AnimatorComponent>();
+
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
 

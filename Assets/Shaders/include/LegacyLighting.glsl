@@ -11,10 +11,10 @@ struct DirectionalLight {
 vec3 CalculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 diffuseColor, vec4 fragPosLightSpace, sampler2D shadowMap) {
     vec3 lightDir = normalize(-light.direction);
 
-    float diff = max(dot(normal, lightDir), 0.0);
+    float diff = max(dot(normalize(normal), lightDir), 0.0);
 
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 0.7);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
 
     vec3 ambient = 0.5 * light.intensity * diffuseColor;
     vec3 diffuse = light.intensity * light.color * diff * diffuseColor;
