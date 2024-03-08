@@ -94,6 +94,10 @@ namespace SnowLeopardEngine
                 TriggerEvent(minimizeEvent);
                 return;
             }
+            else
+            {
+                data.IsMinimized = false;
+            }
 
             // Trigger event
             WindowResizeEvent event(width, height);
