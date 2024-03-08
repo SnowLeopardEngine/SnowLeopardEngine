@@ -293,10 +293,7 @@ namespace SnowLeopardEngine
         float            AspectRatio = 16.0f / 9.0f;
         bool             IsPrimary   = true;
 
-        // TODO: Remove
-        std::vector<std::filesystem::path> CubemapFilePaths;
-        Ref<Cubemap>                       Cubemap = nullptr;
-
+        Ref<Cubemap>    Cubemap        = nullptr;
         Ref<DzMaterial> SkyboxMaterial = nullptr;
         MeshItem        SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
 
@@ -356,20 +353,19 @@ namespace SnowLeopardEngine
         }
     };
 
-    struct MeshRendererComponent
+    struct BaseRendererComponent
     {
-        glm::vec4 BaseColor;
-
-        // TODO: Add MaterialSystem & other stuff
-        bool                  UseDiffuse = false;
-        std::filesystem::path DiffuseTextureFilePath;
-        Ref<Texture2D>        DiffuseTexture = nullptr;
-
         bool CastShadow = true;
 
         std::filesystem::path MaterialFilePath;
         Ref<DzMaterial>       Material;
 
+        BaseRendererComponent()                             = default;
+        BaseRendererComponent(const BaseRendererComponent&) = default;
+    };
+
+    struct MeshRendererComponent : public BaseRendererComponent
+    {
         MeshRendererComponent()                             = default;
         MeshRendererComponent(const MeshRendererComponent&) = default;
     };
@@ -389,20 +385,8 @@ namespace SnowLeopardEngine
         TerrainComponent(const TerrainComponent&) = default;
     };
 
-    struct TerrainRendererComponent
+    struct TerrainRendererComponent : public BaseRendererComponent
     {
-        glm::vec4 BaseColor;
-
-        // TODO: Add MaterialSystem & other stuff
-        bool                  UseDiffuse = false;
-        std::filesystem::path DiffuseTextureFilePath;
-        Ref<Texture2D>        DiffuseTexture = nullptr;
-
-        bool CastShadow = true;
-
-        std::filesystem::path MaterialFilePath;
-        Ref<DzMaterial>       Material;
-
         TerrainRendererComponent()                                = default;
         TerrainRendererComponent(const TerrainRendererComponent&) = default;
     };

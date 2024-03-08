@@ -39,16 +39,6 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        // clang-format off
-        // cameraComponent.CubemapFilePaths = {
-        //     "Assets/Textures/Skybox001/right.jpg",
-        //     "Assets/Textures/Skybox001/left.jpg",
-        //     "Assets/Textures/Skybox001/top.jpg",
-        //     "Assets/Textures/Skybox001/bottom.jpg",
-        //     "Assets/Textures/Skybox001/front.jpg",
-        //     "Assets/Textures/Skybox001/back.jpg"
-        // };
-        // clang-format on
         cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
@@ -62,7 +52,6 @@ public:
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        // floorMeshRenderer.BaseColor   = {0.4, 0.1, 0.1, 1};
         floorMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
 
         // Create a character
@@ -73,7 +62,6 @@ public:
         auto& characterMeshFilter       = character.AddComponent<MeshFilterComponent>();
         characterMeshFilter.FilePath    = "Assets/Models/Vampire/Vampire_Idle.dae";
         auto& characterMeshRenderer     = character.AddComponent<MeshRendererComponent>();
-        // characterMeshRenderer.BaseColor = {0.1, 0.1, 0.7, 1};
         characterMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Vampire.dzmaterial");
         character.AddComponent<AnimatorComponent>();
     }

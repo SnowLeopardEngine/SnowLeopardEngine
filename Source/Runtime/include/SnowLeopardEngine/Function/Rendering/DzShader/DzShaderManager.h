@@ -2,7 +2,6 @@
 
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderCompiler.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderTypeDef.h"
-#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
 namespace SnowLeopardEngine
 {

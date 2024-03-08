@@ -3,12 +3,12 @@
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderManager.h"
-#include "SnowLeopardEngine/Function/Rendering/Forward/ForwardPipeline.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
-#include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/FrameBuffer.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/Shader.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "entt/entity/entity.hpp"
 
 namespace SnowLeopardEngine
 {
@@ -19,13 +19,6 @@ namespace SnowLeopardEngine
 
         m_API = GraphicsAPI::Create(GraphicsBackend::OpenGL);
 
-        // PipelineInitInfo pipelineInitInfo = {};
-        // pipelineInitInfo.API              = m_API;
-        // m_Pipeline                        = CreateRef<ForwardPipeline>();
-        // m_Pipeline->Init(pipelineInitInfo);
-
-        // TODO: Remove old pipeline & pass code. Totally switch to data-driven (shader-driven) pipeline.
-
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Initialized");
         m_State = SystemState::InitOk;
     }
@@ -33,8 +26,6 @@ namespace SnowLeopardEngine
     RenderSystem::~RenderSystem()
     {
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Shutting Down...");
-
-        // m_Pipeline->Shutdown();
 
         m_Context->Shutdown();
         m_Context.reset();
@@ -45,9 +36,6 @@ namespace SnowLeopardEngine
     void RenderSystem::OnTick(float deltaTime)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
-        // Draw Built-in Deferred Pipeline
-        // Now, draw forward instead for testing
-        // m_Pipeline->Tick(deltaTime);
 
         if (!m_LoadedScene)
         {
@@ -100,6 +88,26 @@ namespace SnowLeopardEngine
                         }
                     });
 
+                registry.view<TransformComponent, TerrainComponent, TerrainRendererComponent>().each(
+                    [this](entt::entity              entity,
+                           TransformComponent&       transform,
+                           TerrainComponent&         terrain,
+                           TerrainRendererComponent& terrainRenderer) {
+                        if (terrainRenderer.Material == nullptr)
+                        {
+                            return;
+                        }
+
+                        DzShaderManager::AddShader(terrainRenderer.Material->GetShaderName(),
+                                                   terrainRenderer.Material->GetShaderPath());
+
+                        auto queue = terrainRenderer.Material->GetTag("RenderQueue");
+                        if (queue == "Geometry")
+                        {
+                            m_GeometryGroup.emplace_back(entity);
+                        }
+                    });
+
                 registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
                     [this](entt::entity           entity,
                            TransformComponent&    transform,
@@ -141,36 +149,27 @@ namespace SnowLeopardEngine
         // TODO: Clean code
         // Let's implement a simple GeometryPass through Phong.dzshader.
 
-        auto  scene    = g_EngineContext->SceneMngr->GetActiveScene();
+        auto scene = g_EngineContext->SceneMngr->GetActiveScene();
+        if (scene == nullptr)
+        {
+            return;
+        }
+
         auto& registry = scene->GetRegistry();
 
         TransformComponent mainCameraTransform;
         CameraComponent    mainCamera;
+        auto               firstCam = registry.view<TransformComponent, CameraComponent>().front();
+        if (firstCam != entt::null)
         {
-            bool isFirst = true;
-            auto view    = registry.view<TransformComponent, CameraComponent>();
-
-            // No Camera, return
-            if (view.size_hint() == 0)
-            {
-                return;
-            }
-
-            for (const auto& cameraEntity : view)
-            {
-                if (isFirst)
-                {
-                    auto [transform, camera] = view.get<TransformComponent, CameraComponent>(cameraEntity);
-                    m_API->ClearColor(camera.ClearColor, ClearBit::Default);
-                    isFirst             = false;
-                    mainCameraTransform = transform;
-                    mainCamera          = camera;
-                }
-                else
-                {
-                    break;
-                }
-            }
+            auto [transform, camera] = registry.view<TransformComponent, CameraComponent>().get(firstCam);
+            m_API->ClearColor(camera.ClearColor, ClearBit::Default);
+            mainCameraTransform = transform;
+            mainCamera          = camera;
+        }
+        else
+        {
+            return;
         }
 
         // filter the first directional light
@@ -269,15 +268,26 @@ namespace SnowLeopardEngine
 
                 for (auto& geometry : m_GeometryGroup)
                 {
-                    auto& meshFilter = registry.get<MeshFilterComponent>(geometry);
-                    auto& transform  = registry.get<TransformComponent>(geometry);
+                    auto& transform = registry.get<TransformComponent>(geometry);
 
-                    if (meshFilter.Meshes.Items.empty())
+                    std::vector<MeshItem*> meshItemPtrs;
+
+                    if (registry.any_of<MeshFilterComponent>(geometry))
                     {
-                        continue;
+                        auto& meshFilter = registry.get<MeshFilterComponent>(geometry);
+                        for (auto& meshItem : meshFilter.Meshes.Items)
+                        {
+                            meshItemPtrs.emplace_back(&meshItem);
+                        }
                     }
 
-                    for (auto& meshItem : meshFilter.Meshes.Items)
+                    if (registry.any_of<TerrainComponent>(geometry))
+                    {
+                        auto& terrain = registry.get<TerrainComponent>(geometry);
+                        meshItemPtrs.emplace_back(&terrain.Mesh);
+                    }
+
+                    for (auto& meshItemPtr : meshItemPtrs)
                     {
                         shader->Bind();
 
@@ -290,7 +300,7 @@ namespace SnowLeopardEngine
                         shader->SetFloat3("directionalLight.color", directionalLight.Color);
                         shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
 
-                        bool hasAnimation = meshItem.Data.HasAnimationInfo();
+                        bool hasAnimation = meshItemPtr->Data.HasAnimationInfo();
                         shader->SetInt("hasAnimation", hasAnimation);
 
                         if (hasAnimation)
@@ -304,15 +314,15 @@ namespace SnowLeopardEngine
                         }
 
                         // lazy load
-                        if (meshItem.Data.VertexArray == nullptr)
+                        if (meshItemPtr->Data.VertexArray == nullptr)
                         {
-                            meshItem.Data.VertexArray = m_API->CreateVertexArray(meshItem);
+                            meshItemPtr->Data.VertexArray = m_API->CreateVertexArray(*meshItemPtr);
                         }
-                        meshItem.Data.VertexArray->Bind();
+                        meshItemPtr->Data.VertexArray->Bind();
 
-                        m_API->DrawIndexed(meshItem.Data.Indices.size());
+                        m_API->DrawIndexed(meshItemPtr->Data.Indices.size());
 
-                        meshItem.Data.VertexArray->Unbind();
+                        meshItemPtr->Data.VertexArray->Unbind();
                         shader->Unbind();
                     }
                 }
@@ -327,18 +337,45 @@ namespace SnowLeopardEngine
                 g_EngineContext->WindowSys->GetWidth() * 1.0f / g_EngineContext->WindowSys->GetHeight();
         }
 
+        if (m_RenderTarget != nullptr)
+        {
+            m_RenderTarget->Bind();
+
+            auto     desc   = m_RenderTarget->GetDesc();
+            uint32_t width  = desc.Width;
+            uint32_t height = desc.Height;
+
+            m_API->UpdateViewport(0, 0, width, height);
+            mainCamera.AspectRatio = width * 1.0f / height;
+        }
+
+        m_API->ClearColor(mainCamera.ClearColor, ClearBit::Default);
+
         for (auto& geometry : m_GeometryGroup)
         {
-            auto& transform    = registry.get<TransformComponent>(geometry);
-            auto& meshFilter   = registry.get<MeshFilterComponent>(geometry);
-            auto& meshRenderer = registry.get<MeshRendererComponent>(geometry);
+            auto& transform = registry.get<TransformComponent>(geometry);
 
-            if (meshFilter.Meshes.Items.empty() || meshRenderer.Material == nullptr)
+            std::vector<MeshItem*> meshItemPtrs;
+            BaseRendererComponent  renderer;
+
+            if (registry.any_of<MeshFilterComponent, MeshRendererComponent>(geometry))
             {
-                continue;
+                auto& meshFilter = registry.get<MeshFilterComponent>(geometry);
+                renderer         = registry.get<MeshRendererComponent>(geometry);
+                for (auto& meshItem : meshFilter.Meshes.Items)
+                {
+                    meshItemPtrs.emplace_back(&meshItem);
+                }
             }
 
-            auto  dzShaderName = meshRenderer.Material->GetShaderName();
+            if (registry.any_of<TerrainComponent, TerrainRendererComponent>(geometry))
+            {
+                auto& terrain = registry.get<TerrainComponent>(geometry);
+                renderer      = registry.get<TerrainRendererComponent>(geometry);
+                meshItemPtrs.emplace_back(&terrain.Mesh);
+            }
+
+            auto  dzShaderName = renderer.Material->GetShaderName();
             auto& dzShader     = DzShaderManager::GetShader(dzShaderName);
 
             PipelineState pipelineState;
@@ -396,7 +433,7 @@ namespace SnowLeopardEngine
                 int  resourceBinding = 0;
                 auto shader          = DzShaderManager::GetCompiledPassShader(dzPass.Name);
 
-                for (auto& meshItem : meshFilter.Meshes.Items)
+                for (auto& meshItemPtr : meshItemPtrs)
                 {
                     shader->Bind();
 
@@ -409,7 +446,7 @@ namespace SnowLeopardEngine
                     shader->SetFloat3("directionalLight.color", directionalLight.Color);
                     shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
 
-                    bool hasAnimation = meshItem.Data.HasAnimationInfo();
+                    bool hasAnimation = meshItemPtr->Data.HasAnimationInfo();
                     shader->SetInt("hasAnimation", hasAnimation);
 
                     if (hasAnimation)
@@ -423,33 +460,33 @@ namespace SnowLeopardEngine
                     }
 
                     // Auto set material properties
-                    for (const auto& property : meshRenderer.Material->GetPropertyBlock().ShaderProperties)
+                    for (const auto& property : renderer.Material->GetPropertyBlock().ShaderProperties)
                     {
                         if (property.Type == "Int")
                         {
-                            auto value = meshRenderer.Material->GetInt(property.Name);
+                            auto value = renderer.Material->GetInt(property.Name);
                             shader->SetInt(property.Name, value);
                         }
                         else if (property.Type == "Float")
                         {
-                            auto value = meshRenderer.Material->GetFloat(property.Name);
+                            auto value = renderer.Material->GetFloat(property.Name);
                             shader->SetFloat(property.Name, value);
                         }
                         else if (property.Type == "Color")
                         {
-                            auto value = meshRenderer.Material->GetColor(property.Name);
+                            auto value = renderer.Material->GetColor(property.Name);
                             shader->SetFloat4(property.Name, value);
                         }
                         else if (property.Type == "Texture2D")
                         {
-                            auto texture = meshRenderer.Material->GetTexture2D(property.Name);
+                            auto texture = renderer.Material->GetTexture2D(property.Name);
                             shader->SetInt(property.Name, resourceBinding);
                             texture->Bind(resourceBinding);
                             resourceBinding++;
                         }
                         else if (property.Type == "Cubemap")
                         {
-                            auto cubemap = meshRenderer.Material->GetCubemap(property.Name);
+                            auto cubemap = renderer.Material->GetCubemap(property.Name);
                             shader->SetInt(property.Name, resourceBinding);
                             cubemap->Bind(resourceBinding);
                             resourceBinding++;
@@ -459,15 +496,15 @@ namespace SnowLeopardEngine
                     DzShaderManager::UsePassResources(dzPass, shader, resourceBinding);
 
                     // lazy load
-                    if (meshItem.Data.VertexArray == nullptr)
+                    if (meshItemPtr->Data.VertexArray == nullptr)
                     {
-                        meshItem.Data.VertexArray = m_API->CreateVertexArray(meshItem);
+                        meshItemPtr->Data.VertexArray = m_API->CreateVertexArray(*meshItemPtr);
                     }
-                    meshItem.Data.VertexArray->Bind();
+                    meshItemPtr->Data.VertexArray->Bind();
 
-                    m_API->DrawIndexed(meshItem.Data.Indices.size());
+                    m_API->DrawIndexed(meshItemPtr->Data.Indices.size());
 
-                    meshItem.Data.VertexArray->Unbind();
+                    meshItemPtr->Data.VertexArray->Unbind();
 
                     shader->Unbind();
 
@@ -602,6 +639,11 @@ namespace SnowLeopardEngine
 
                 DzShaderManager::UnbindPassResources(dzPass);
             }
+        }
+
+        if (m_RenderTarget != nullptr)
+        {
+            m_RenderTarget->Unbind();
         }
     }
 

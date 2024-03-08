@@ -92,7 +92,7 @@ namespace SnowLeopardEngine
         bool operator!=(const Entity& other) const { return !(*this == other); }
 
     private:
-        entt::entity m_EntityHandle {entt::null};
-        LogicScene*  m_Scene = nullptr;
+        entt::entity m_EntityHandle = entt::null;
+        LogicScene*  m_Scene        = nullptr;
     };
 } // namespace SnowLeopardEngine

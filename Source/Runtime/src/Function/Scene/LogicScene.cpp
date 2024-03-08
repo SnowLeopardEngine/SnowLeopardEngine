@@ -5,7 +5,6 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
-#include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
@@ -116,18 +115,6 @@ namespace SnowLeopardEngine
                         animatorComponent.Animator = CreateRef<Animator>(model.Animations[0]);
                     }
                 }
-
-                // assign textures to mesh renderer if possible
-                if (m_Registry.any_of<MeshRendererComponent>(entity))
-                {
-                    auto& meshRenderer = m_Registry.get<MeshRendererComponent>(entity);
-
-                    if (model.Textures.count("diffuseMap") > 0)
-                    {
-                        meshRenderer.UseDiffuse     = true;
-                        meshRenderer.DiffuseTexture = model.Textures["diffuseMap"][0];
-                    }
-                }
             }
 
             if (meshFilter.PrimitiveType != MeshPrimitiveType::Invalid)
@@ -168,31 +155,6 @@ namespace SnowLeopardEngine
             // TODO: Move to AssetManager
             terrain.Mesh = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
                 terrain.TerrainHeightMap, terrain.XScale, terrain.YScale, terrain.ZScale);
-        });
-
-        // Texture Loading (dirty code for now)
-        m_Registry.view<MeshRendererComponent>().each([](entt::entity entity, MeshRendererComponent& meshRenderer) {
-            // TODO: Move to AssetManager
-            if (meshRenderer.UseDiffuse && meshRenderer.DiffuseTexture == nullptr)
-            {
-                meshRenderer.DiffuseTexture = TextureLoader::LoadTexture2D(meshRenderer.DiffuseTextureFilePath, false);
-            }
-        });
-        m_Registry.view<TerrainRendererComponent>().each(
-            [](entt::entity entity, TerrainRendererComponent& terrainRenderer) {
-                // TODO: Move to AssetManager
-                if (terrainRenderer.UseDiffuse)
-                {
-                    terrainRenderer.DiffuseTexture =
-                        TextureLoader::LoadTexture2D(terrainRenderer.DiffuseTextureFilePath, false);
-                }
-            });
-        m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
-            // TODO: Move to AssetManager
-            if (camera.ClearFlags == CameraClearFlags::Skybox)
-            {
-                camera.Cubemap = TextureLoader::LoadCubemap(camera.CubemapFilePaths, false);
-            }
         });
 
         // Scripting Callback

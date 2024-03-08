@@ -37,7 +37,7 @@
                         "Name": "fragment",
                         "LanguageType": "GLSL",
                         "EntryPoint": "main",
-                        "ShaderSource": "#version 450\n\nlayout(location = 0) in vec3 cubeMapTextureCoords;\nlayout(location = 0) out vec4 fragColor;\n\nlayout(location = 0) uniform samplerCube cubeMap;\n\nvoid main() {\n    fragColor = texture(cubeMap, cubeMapTextureCoords);\n}"
+                        "ShaderSource": "#version 450\n\nlayout(location = 0) in vec3 cubeMapTextureCoords;\n\nlayout(location = 0) out vec4 color0;\nlayout(location = 1) out int color1;\n\nlayout(location = 0) uniform samplerCube cubeMap;\n\nvoid main() {\n    color0 = texture(cubeMap, cubeMapTextureCoords);\n    color1 = -1;\n}"
                     }
                 ]
             }

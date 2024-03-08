@@ -2,8 +2,10 @@
 #include "SnowLeopardEditor/Selector.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 
+#include "entt/entt.hpp"
 #include <imgui.h>
 
 namespace SnowLeopardEngine::Editor
@@ -37,7 +39,7 @@ namespace SnowLeopardEngine::Editor
         m_RenderTarget = FrameBuffer::Create(rtDesc);
 
         // Set RT
-        g_EngineContext->RenderSys->GetPipeline()->SetRenderTarget(m_RenderTarget);
+        g_EngineContext->RenderSys->SetRenderTarget(m_RenderTarget);
 
         // TODO: remove , test only code
         // Create a scene and set active
@@ -48,17 +50,7 @@ namespace SnowLeopardEngine::Editor
         m_EditorCamera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                                      = m_EditorCamera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                                 = CameraClearFlags::Skybox; // Enable skybox
-
-        // clang-format off
-        cameraComponent.CubemapFilePaths = {
-            "Assets/Textures/Skybox001/right.jpg",
-            "Assets/Textures/Skybox001/left.jpg",
-            "Assets/Textures/Skybox001/top.jpg",
-            "Assets/Textures/Skybox001/bottom.jpg",
-            "Assets/Textures/Skybox001/front.jpg",
-            "Assets/Textures/Skybox001/back.jpg"
-        };
-        // clang-format on
+        cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
 
         // Attach a editor camera script
         m_EditorCameraScript = CreateRef<EditorCameraScript>();
@@ -72,7 +64,7 @@ namespace SnowLeopardEngine::Editor
         auto& cubeMeshFilter1         = cube1.AddComponent<MeshFilterComponent>();
         cubeMeshFilter1.PrimitiveType = MeshPrimitiveType::Cube;
         auto& cubeMeshRenderer1       = cube1.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer1.BaseColor   = {1, 0, 0, 1};
+        cubeMeshRenderer1.Material    = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
 
         Entity cube2            = scene->CreateEntity("Cube2");
         auto&  cubeTransform2   = cube2.GetComponent<TransformComponent>();
@@ -82,7 +74,7 @@ namespace SnowLeopardEngine::Editor
         auto& cubeMeshFilter2         = cube2.AddComponent<MeshFilterComponent>();
         cubeMeshFilter2.PrimitiveType = MeshPrimitiveType::Cube;
         auto& cubeMeshRenderer2       = cube2.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer2.BaseColor   = {0, 1, 0, 1};
+        cubeMeshRenderer2.Material    = DzMaterial::LoadFromPath("Assets/Materials/Green.dzmaterial");
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
@@ -92,7 +84,7 @@ namespace SnowLeopardEngine::Editor
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.BaseColor   = {1, 1, 1, 1}; // Pure White
+        floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
     }
 
     void ViewportPanel::OnFixedTick()
@@ -112,7 +104,7 @@ namespace SnowLeopardEngine::Editor
         g_EngineContext->SceneMngr->OnTick(deltaTime);
 
         m_RenderTarget->Bind();
-        m_RenderTarget->ClearColorAttachment(1, 0); // Clear RED buffer (picking buffer)
+        m_RenderTarget->ClearColorAttachment(1, -1); // Clear RED buffer (picking buffer)
         m_RenderTarget->Unbind();
 
         if (!g_EngineContext->WindowSys->IsMinimized())
