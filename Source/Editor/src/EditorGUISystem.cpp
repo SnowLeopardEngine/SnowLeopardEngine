@@ -52,7 +52,7 @@ namespace SnowLeopardEngine::Editor
         ImFontConfig         iconsConfig   = defaultConfig;
         iconsConfig.MergeMode              = true;
         iconsConfig.PixelSnapH             = true;
-        io.Fonts->AddFontFromFileTTF("Assets/Fonts/" FONT_ICON_FILE_NAME_MDI, 12, &iconsConfig, iconsRanges);
+        io.Fonts->AddFontFromFileTTF("Assets/Fonts/" FONT_ICON_FILE_NAME_MDI, 13, &iconsConfig, iconsRanges);
 
         SetupUIStyle();
 

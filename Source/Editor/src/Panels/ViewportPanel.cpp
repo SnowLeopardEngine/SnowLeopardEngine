@@ -5,6 +5,7 @@
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 
+#include "IconsMaterialDesignIcons.h"
 #include "entt/entt.hpp"
 #include <imgui.h>
 
@@ -56,34 +57,14 @@ namespace SnowLeopardEngine::Editor
         m_EditorCameraScript = CreateRef<EditorCameraScript>();
         m_EditorCamera.AddComponent<NativeScriptingComponent>(m_EditorCameraScript);
 
-        // Create cubes to test shadow
-        Entity cube1            = scene->CreateEntity("Cube1");
-        auto&  cubeTransform1   = cube1.GetComponent<TransformComponent>();
-        cubeTransform1.Position = {0, 10, 0};
-        cubeTransform1.SetRotationEuler(glm::vec3(45, 45, 45));
-        auto& cubeMeshFilter1         = cube1.AddComponent<MeshFilterComponent>();
-        cubeMeshFilter1.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& cubeMeshRenderer1       = cube1.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer1.Material    = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
-
-        Entity cube2            = scene->CreateEntity("Cube2");
-        auto&  cubeTransform2   = cube2.GetComponent<TransformComponent>();
-        cubeTransform2.Position = {-3, 5, -5};
-        cubeTransform2.SetRotationEuler(glm::vec3(135, 135, 135));
-        cubeTransform2.Scale          = {2, 2, 2};
-        auto& cubeMeshFilter2         = cube2.AddComponent<MeshFilterComponent>();
-        cubeMeshFilter2.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& cubeMeshRenderer2       = cube2.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer2.Material    = DzMaterial::LoadFromPath("Assets/Materials/Green.dzmaterial");
-
         // Create a character
-        Entity character                = scene->CreateEntity("Character");
-        auto&  characterTransform       = character.GetComponent<TransformComponent>();
-        characterTransform.Position.y   = 0.6;
-        characterTransform.Scale        = {10, 10, 10};
-        auto& characterMeshFilter       = character.AddComponent<MeshFilterComponent>();
-        characterMeshFilter.FilePath    = "Assets/Models/Vampire/Vampire_Idle.dae";
-        auto& characterMeshRenderer     = character.AddComponent<MeshRendererComponent>();
+        Entity character               = scene->CreateEntity("Character");
+        auto&  characterTransform      = character.GetComponent<TransformComponent>();
+        characterTransform.Position.y  = 0.6;
+        characterTransform.Scale       = {10, 10, 10};
+        auto& characterMeshFilter      = character.AddComponent<MeshFilterComponent>();
+        characterMeshFilter.FilePath   = "Assets/Models/Vampire/Vampire_Idle.dae";
+        auto& characterMeshRenderer    = character.AddComponent<MeshRendererComponent>();
         characterMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Vampire.dzmaterial");
         character.AddComponent<AnimatorComponent>();
 
@@ -91,7 +72,7 @@ namespace SnowLeopardEngine::Editor
         Entity floor = scene->CreateEntity("Floor");
 
         auto& floorTransform          = floor.GetComponent<TransformComponent>();
-        floorTransform.Scale          = {50, 1, 50};
+        floorTransform.Scale          = {1000, 1, 1000};
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
@@ -309,21 +290,91 @@ namespace SnowLeopardEngine::Editor
         float windowHeight = ImGui::GetWindowHeight();
 
         float centerHeight = windowHeight * 0.5f;
-
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 3));
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 3));
-
-        float offsetY = (windowHeight - centerHeight) * 0.5f;
+        float offsetY      = (windowHeight - centerHeight) * 0.5f;
         ImGui::SetCursorPos(ImVec2(0, offsetY));
 
-        ImGui::RadioButton("GrabMove", reinterpret_cast<int*>(&m_GuizmoOperation), -1);
+        ImGui::Indent();
+        ImGui::Text("");
         ImGui::SameLine();
-        ImGui::RadioButton("Translate", reinterpret_cast<int*>(&m_GuizmoOperation), ImGuizmo::OPERATION::TRANSLATE);
-        ImGui::SameLine();
-        ImGui::RadioButton("Rotate", reinterpret_cast<int*>(&m_GuizmoOperation), ImGuizmo::OPERATION::ROTATE);
-        ImGui::SameLine();
-        ImGui::RadioButton("Scale", reinterpret_cast<int*>(&m_GuizmoOperation), ImGuizmo::OPERATION::SCALE);
 
-        ImGui::PopStyleVar(2);
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+        const ImVec4 selectedColor = ImVec4(0.18f, 0.46f, 0.98f, 1.0f);
+
+        bool selected = false;
+
+        {
+            selected = m_GuizmoOperation == -1;
+            if (selected)
+                ImGui::PushStyleColor(ImGuiCol_Text, selectedColor);
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_MDI_HAND_BACK_RIGHT))
+                m_GuizmoOperation = -1;
+
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Grab the screen to move the viewport.");
+            }
+
+            if (selected)
+                ImGui::PopStyleColor();
+        }
+        ImGui::SameLine();
+
+        {
+            selected = m_GuizmoOperation == ImGuizmo::OPERATION::TRANSLATE;
+            if (selected)
+                ImGui::PushStyleColor(ImGuiCol_Text, selectedColor);
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_MDI_ARROW_ALL))
+                m_GuizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Translate the selected object.");
+            }
+
+            if (selected)
+                ImGui::PopStyleColor();
+        }
+        ImGui::SameLine();
+
+        {
+            selected = m_GuizmoOperation == ImGuizmo::OPERATION::ROTATE;
+            if (selected)
+                ImGui::PushStyleColor(ImGuiCol_Text, selectedColor);
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_MDI_ROTATE_3D_VARIANT))
+                m_GuizmoOperation = ImGuizmo::OPERATION::ROTATE;
+
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Rotate the selected object.");
+            }
+
+            if (selected)
+                ImGui::PopStyleColor();
+        }
+        ImGui::SameLine();
+
+        {
+            selected = m_GuizmoOperation == ImGuizmo::OPERATION::SCALE;
+            if (selected)
+                ImGui::PushStyleColor(ImGuiCol_Text, selectedColor);
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_MDI_ARROW_EXPAND_ALL))
+                m_GuizmoOperation = ImGuizmo::OPERATION::SCALE;
+
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Scale the selected object.");
+            }
+
+            if (selected)
+                ImGui::PopStyleColor();
+        }
+        ImGui::SameLine();
+
+        ImGui::PopStyleColor();
     }
 } // namespace SnowLeopardEngine::Editor
