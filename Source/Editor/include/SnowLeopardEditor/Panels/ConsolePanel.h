@@ -3,17 +3,10 @@
 #include "SnowLeopardEditor/PanelBase.h"
 #include "SnowLeopardEngine/Core/Event/EventHandler.h"
 #include "SnowLeopardEngine/Core/Event/LogEvents.h"
-#include <string>
-#include <vector>
+
+#include <IconsMaterialDesignIcons.h>
 #include <glm/glm.hpp>
 #include <imgui.h>
-
-#define ICON_MDI_MESSAGE_TEXT u8"\uF369"
-#define ICON_MDI_INFORMATION u8"\uF2FC"
-#define ICON_MDI_ALERT u8"\uF026"
-#define ICON_MDI_CLOSE_OCTAGON u8"\uF15C"
-#define ICON_MDI_ALERT_OCTAGRAM u8"\uF766"
-
 
 namespace SnowLeopardEngine::Editor
 {
@@ -30,9 +23,9 @@ namespace SnowLeopardEngine::Editor
         EventHandler<LogEvent> m_LogEventHandler = [this](const LogEvent& e) { OnLog(e); };
 
         std::vector<std::string> m_LogMessagesBox;
-        uint16_t m_LogMessagesEnd;
-        uint32_t m_LogMessagesFilter;
-        ImGuiTextFilter m_Filter;
+        uint16_t                 m_LogMessagesEnd;
+        uint32_t                 m_LogMessagesFilter;
+        ImGuiTextFilter          m_Filter;
 
         enum MyItemColumnID
         {
@@ -43,22 +36,13 @@ namespace SnowLeopardEngine::Editor
 
         static LogLevel stringToLogLevel(const std::string& levelStr)
         {
-            if (levelStr == "Trace")
-                return LogLevel::Trace;
-            else if (levelStr == "Info")
-                return LogLevel::Info;
-            else if (levelStr == "Warn")
-                return LogLevel::Warn;
-            else if (levelStr == "Error")
-                return LogLevel::Error;
-            //else if (levelStr == "Critical")
-            return LogLevel::Critical;
-
+            auto levelOpt = magic_enum::enum_cast<LogLevel>(levelStr);
+            return levelOpt.value_or(LogLevel::Info);
         }
 
         static const char* GetLevelIcon(LogLevel level)
         {
-            switch(level)
+            switch (level)
             {
                 case LogLevel::Trace:
                     return ICON_MDI_MESSAGE_TEXT;
@@ -77,20 +61,20 @@ namespace SnowLeopardEngine::Editor
 
         static glm::vec4 GetRenderColour(LogLevel level)
         {
-            switch(level)
+            switch (level)
             {
                 case LogLevel::Trace:
-                    return { 0.75f, 0.75f, 0.75f, 1.00f }; // Gray
+                    return {0.75f, 0.75f, 0.75f, 1.00f}; // Gray
                 case LogLevel::Info:
-                    return { 0.40f, 0.70f, 1.00f, 1.00f }; // Blue
+                    return {0.40f, 0.70f, 1.00f, 1.00f}; // Blue
                 case LogLevel::Warn:
-                    return { 1.00f, 1.00f, 0.00f, 1.00f }; // Yellow
+                    return {1.00f, 1.00f, 0.00f, 1.00f}; // Yellow
                 case LogLevel::Error:
-                    return { 1.00f, 0.25f, 0.25f, 1.00f }; // Red
+                    return {1.00f, 0.25f, 0.25f, 1.00f}; // Red
                 case LogLevel::Critical:
-                    return { 0.6f, 0.2f, 0.8f, 1.00f }; // Purple
+                    return {0.6f, 0.2f, 0.8f, 1.00f}; // Purple
                 default:
-                    return { 1.00f, 1.00f, 1.00f, 1.00f };
+                    return {1.00f, 1.00f, 1.00f, 1.00f};
             }
         }
     };
