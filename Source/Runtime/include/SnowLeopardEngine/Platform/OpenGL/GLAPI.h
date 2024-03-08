@@ -9,6 +9,7 @@ namespace SnowLeopardEngine
     public:
         virtual GraphicsBackend GetBackendType() override final { return GraphicsBackend::OpenGL; }
 
+        virtual void SetPipelineState(const PipelineState& pipelineState) override final;
         virtual void SetPipelineState(const Ref<PipelineState>& pipelineState) override final;
 
         virtual void ClearColor(float r, float g, float b, float a, ClearBit clearBit) override final;

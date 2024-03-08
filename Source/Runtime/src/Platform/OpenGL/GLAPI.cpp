@@ -5,6 +5,77 @@
 
 namespace SnowLeopardEngine
 {
+    void OpenGLAPI::SetPipelineState(const PipelineState& pipelineState)
+    {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+        switch (pipelineState.DepthTest)
+        {
+            case DepthTestMode::Disable:
+                glDisable(GL_DEPTH_TEST);
+                break;
+            case DepthTestMode::Greater:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_GREATER);
+                break;
+            case DepthTestMode::GreaterEqual:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_GEQUAL);
+                break;
+            case DepthTestMode::Less:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_LESS);
+                break;
+            case DepthTestMode::LessEqual:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_LEQUAL);
+                break;
+            case DepthTestMode::Equal:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_EQUAL);
+                break;
+            case DepthTestMode::NotEqual:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_NOTEQUAL);
+                break;
+            case DepthTestMode::Never:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_NEVER);
+                break;
+            case DepthTestMode::AlwaysPass:
+                glEnable(GL_DEPTH_TEST);
+                glDepthFunc(GL_ALWAYS);
+                break;
+            default:
+                assert(0);
+        }
+
+        if (pipelineState.DepthWrite)
+        {
+            glDepthMask(GL_TRUE);
+        }
+        else
+        {
+            glDepthMask(GL_FALSE);
+        }
+
+        switch (pipelineState.CullFace)
+        {
+            case CullFaceMode::NoCull:
+                glDisable(GL_CULL_FACE);
+                break;
+            case CullFaceMode::Front:
+                glEnable(GL_CULL_FACE);
+                glCullFace(GL_FRONT);
+                break;
+            case CullFaceMode::Back:
+                glEnable(GL_CULL_FACE);
+                glCullFace(GL_BACK);
+                break;
+            default:
+                assert(0);
+        }
+    }
+
     void OpenGLAPI::SetPipelineState(const Ref<PipelineState>& pipelineState)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION

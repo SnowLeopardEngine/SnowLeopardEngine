@@ -28,12 +28,12 @@ namespace SnowLeopardEngine
         uint32_t    m_InternalFormat, m_DataFormat;
     };
 
-    class GLTexture3D : public Texture3D
+    class GLCubemap : public Cubemap
     {
     public:
-        GLTexture3D(const TextureDesc& desc, std::vector<Buffer*> dataList);
+        GLCubemap(const TextureDesc& desc, std::vector<Buffer*> dataList);
 
-        virtual ~GLTexture3D();
+        virtual ~GLCubemap();
 
         virtual void Bind(uint32_t slot) const override;
 

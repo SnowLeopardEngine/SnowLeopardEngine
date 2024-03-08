@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Function/Scene/SceneManager.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
 namespace SnowLeopardEngine
@@ -25,7 +26,8 @@ namespace SnowLeopardEngine
 
         // Default directional light
         Entity directionalLight = scene->CreateEntity("Directional Light");
-        directionalLight.AddComponent<DirectionalLightComponent>();
+        auto& directionalLightComponent =directionalLight.AddComponent<DirectionalLightComponent>();
+        directionalLightComponent.ShadowMaterial = DzMaterial::LoadFromPath("Assets/Materials/Legacy/ShadowMapping.dzmaterial");
 
         if (active)
         {

@@ -44,7 +44,7 @@ Checks: '-*,
     readability-misplaced-array-index,
     readability-non-const-parameter,
     readability-qualified-auto,
-#    readability-redundant-access-specifiers,
+    -readability-redundant-access-specifiers,
     readability-redundant-control-flow,
     readability-redundant-function-ptr-dereference,
     readability-redundant-smartptr-get,
@@ -159,9 +159,7 @@ Checks: '-*,
     clang-analyzer-unix.Vfork,
     clang-analyzer-unix.cstring.BadSizeArg,
     clang-analyzer-unix.cstring.NullArg,
-
-    boost-use-to-string,
-'
+    boost-use-to-string'
 WarningsAsErrors: '*'
 
 CheckOptions:

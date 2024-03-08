@@ -1,6 +1,6 @@
 -- add requirements
-add_requires("spdlog", "fmt 9.1.0", "glfw", "glm", "stduuid", "entt v3.10.0", "miniaudio", "stb", "tracy")
-add_requires("spdlog", "fmt 9.1.0", "glfw", "glm", "stduuid", "entt v3.10.0", "miniaudio", "stb", "magic_enum")
+add_requires("spdlog", "fmt 9.1.0", "glfw", "glm", "stduuid", "entt v3.10.0")
+add_requires("miniaudio", "stb", "tracy", "magic_enum", "cereal", "shaderc", "spirv-cross")
 add_requires("sphysx-cross", { configs = { debug = is_mode("debug") }})
 add_requireconfs("assimp.zlib", {system = false}) -- https://github.com/xmake-io/xmake-repo/issues/1855
 add_requires("assimp", { configs = { debug = is_mode("debug") }})
@@ -33,6 +33,9 @@ target("SnowLeopardEngine")
     add_packages("stb", { public = true })
     add_packages("tracy", { public = true })
     add_packages("magic_enum", { public = true })
+    add_packages("cereal", { public = true })
+    add_packages("shaderc", { public = true })
+    add_packages("spirv-cross", { public = true })
     add_packages("assimp", { public = true })
     add_packages("sphysx-cross", { public = true })
 

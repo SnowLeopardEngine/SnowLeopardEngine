@@ -7,6 +7,7 @@
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
@@ -290,9 +291,11 @@ namespace SnowLeopardEngine
         float            Near        = 0.1f;
         float            Far         = 1000.0f;
         float            AspectRatio = 16.0f / 9.0f;
+        bool             IsPrimary   = true;
 
-        std::vector<std::filesystem::path> CubemapFilePaths;
-        Ref<Texture3D>                     Cubemap = nullptr;
+        Ref<Cubemap>    Cubemap        = nullptr;
+        Ref<DzMaterial> SkyboxMaterial = nullptr;
+        MeshItem        SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
 
         CameraComponent()                       = default;
         CameraComponent(const CameraComponent&) = default;
@@ -315,6 +318,8 @@ namespace SnowLeopardEngine
         glm::vec3 Direction = glm::normalize(glm::vec3(-0.6, -1, -1.2));
         float     Intensity = 0.8;
         glm::vec3 Color     = {1, 0.996, 0.885};
+
+        Ref<DzMaterial> ShadowMaterial = nullptr;
 
         DirectionalLightComponent()                                 = default;
         DirectionalLightComponent(const DirectionalLightComponent&) = default;
@@ -348,17 +353,19 @@ namespace SnowLeopardEngine
         }
     };
 
-    struct MeshRendererComponent
+    struct BaseRendererComponent
     {
-        glm::vec4 BaseColor;
-
-        // TODO: Add MaterialSystem & other stuff
-        bool                  UseDiffuse = false;
-        std::filesystem::path DiffuseTextureFilePath;
-        Ref<Texture2D>        DiffuseTexture = nullptr;
-
         bool CastShadow = true;
 
+        std::filesystem::path MaterialFilePath;
+        Ref<DzMaterial>       Material;
+
+        BaseRendererComponent()                             = default;
+        BaseRendererComponent(const BaseRendererComponent&) = default;
+    };
+
+    struct MeshRendererComponent : public BaseRendererComponent
+    {
         MeshRendererComponent()                             = default;
         MeshRendererComponent(const MeshRendererComponent&) = default;
     };
@@ -378,17 +385,8 @@ namespace SnowLeopardEngine
         TerrainComponent(const TerrainComponent&) = default;
     };
 
-    struct TerrainRendererComponent
+    struct TerrainRendererComponent : public BaseRendererComponent
     {
-        glm::vec4 BaseColor;
-
-        // TODO: Add MaterialSystem & other stuff
-        bool                  UseDiffuse = false;
-        std::filesystem::path DiffuseTextureFilePath;
-        Ref<Texture2D>        DiffuseTexture = nullptr;
-
-        bool CastShadow = true;
-
         TerrainRendererComponent()                                = default;
         TerrainRendererComponent(const TerrainRendererComponent&) = default;
     };

@@ -7,4 +7,9 @@ namespace SnowLeopardEngine
     {
         return CreateRef<GLShader>(vertexSource, fragmentSource);
     }
+
+    Ref<Shader> Shader::Create(const std::unordered_map<std::string, std::string>& shaderStageSources)
+    {
+        return CreateRef<GLShader>(shaderStageSources);
+    }
 } // namespace SnowLeopardEngine

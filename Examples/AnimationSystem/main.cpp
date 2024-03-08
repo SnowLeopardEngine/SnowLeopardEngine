@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
@@ -31,23 +32,14 @@ public:
         m_EngineContext->WindowSys->SetHideCursor(true);
 
         // Create a scene and set active
-        auto scene = m_EngineContext->SceneMngr->CreateScene("PhysicsSystem", true);
+        auto scene = m_EngineContext->SceneMngr->CreateScene("AnimationSystem", true);
 
         // Create a camera
         Entity camera                                      = scene->CreateEntity("MainCamera");
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        // clang-format off
-        cameraComponent.CubemapFilePaths = {
-            "Assets/Textures/Skybox001/right.jpg",
-            "Assets/Textures/Skybox001/left.jpg",
-            "Assets/Textures/Skybox001/top.jpg",
-            "Assets/Textures/Skybox001/bottom.jpg",
-            "Assets/Textures/Skybox001/front.jpg",
-            "Assets/Textures/Skybox001/back.jpg"
-        };
-        // clang-format on
+        cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
@@ -60,7 +52,7 @@ public:
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.BaseColor   = {0.4, 0.1, 0.1, 1};
+        floorMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
 
         // Create a character
         Entity character                = scene->CreateEntity("Character");
@@ -70,7 +62,7 @@ public:
         auto& characterMeshFilter       = character.AddComponent<MeshFilterComponent>();
         characterMeshFilter.FilePath    = "Assets/Models/Vampire/Vampire_Idle.dae";
         auto& characterMeshRenderer     = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.BaseColor = {0.1, 0.1, 0.7, 1};
+        characterMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Vampire.dzmaterial");
         character.AddComponent<AnimatorComponent>();
     }
 
