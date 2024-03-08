@@ -8,8 +8,6 @@ struct DirectionalLight {
     vec3 color;
 };
 
-layout(location = 105) uniform DirectionalLight directionalLight;
-
 vec3 CalculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 diffuseColor, vec4 fragPosLightSpace, sampler2D shadowMap) {
     vec3 lightDir = normalize(-light.direction);
 

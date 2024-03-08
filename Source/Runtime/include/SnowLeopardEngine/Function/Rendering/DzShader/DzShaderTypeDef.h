@@ -37,6 +37,7 @@ namespace SnowLeopardEngine
     {
         std::string Name;
         std::string Type;
+        std::string Data;
 
         Ref<RenderResource> ResourceHandle; // it will be arranged at runtime
 
@@ -44,7 +45,7 @@ namespace SnowLeopardEngine
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(Name), CEREAL_NVP(Type));
+            archive(CEREAL_NVP(Name), CEREAL_NVP(Type), CEREAL_NVP(Data));
         }
         // NOLINTEND
     };

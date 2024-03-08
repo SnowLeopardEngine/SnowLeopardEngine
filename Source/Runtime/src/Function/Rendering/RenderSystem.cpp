@@ -280,8 +280,28 @@ namespace SnowLeopardEngine
                     for (auto& meshItem : meshFilter.Meshes.Items)
                     {
                         shader->Bind();
-                        shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+
                         shader->SetMat4("model", transform.GetTransform());
+                        shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
+                        shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
+                        shader->SetFloat3("viewPos", mainCameraTransform.Position);
+                        shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
+                        shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
+                        shader->SetFloat3("directionalLight.color", directionalLight.Color);
+                        shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+                        bool hasAnimation = meshItem.Data.HasAnimationInfo();
+                        shader->SetInt("hasAnimation", hasAnimation);
+
+                        if (hasAnimation)
+                        {
+                            auto& animator     = registry.get<AnimatorComponent>(geometry);
+                            auto  boneMatrices = animator.Animator->GetFinalBoneMatrices();
+                            for (uint32_t i = 0; i < boneMatrices.size(); ++i)
+                            {
+                                shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
+                            }
+                        }
 
                         // lazy load
                         if (meshItem.Data.VertexArray == nullptr)
@@ -388,6 +408,19 @@ namespace SnowLeopardEngine
                     shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
                     shader->SetFloat3("directionalLight.color", directionalLight.Color);
                     shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+                    bool hasAnimation = meshItem.Data.HasAnimationInfo();
+                    shader->SetInt("hasAnimation", hasAnimation);
+
+                    if (hasAnimation)
+                    {
+                        auto& animator     = registry.get<AnimatorComponent>(geometry);
+                        auto  boneMatrices = animator.Animator->GetFinalBoneMatrices();
+                        for (uint32_t i = 0; i < boneMatrices.size(); ++i)
+                        {
+                            shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
+                        }
+                    }
 
                     // Auto set material properties
                     for (const auto& property : meshRenderer.Material->GetPropertyBlock().ShaderProperties)
@@ -515,10 +548,6 @@ namespace SnowLeopardEngine
                 shader->SetMat4("model", transform.GetTransform());
                 shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
                 shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
-                shader->SetFloat3("viewPos", mainCameraTransform.Position);
-                shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
-                shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
-                shader->SetFloat3("directionalLight.color", directionalLight.Color);
 
                 // Auto set material properties
                 for (const auto& property : camera.SkyboxMaterial->GetPropertyBlock().ShaderProperties)

@@ -1,5 +1,3 @@
-layout(location = 104) uniform mat4 lightSpaceMatrix;
-
 float ShadowCalculation(vec4 fragPosLightSpace, sampler2D shadowMap) {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5; // remap to [0, 1] to fit depth

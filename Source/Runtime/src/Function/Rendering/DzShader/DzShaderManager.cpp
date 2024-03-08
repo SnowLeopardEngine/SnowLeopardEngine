@@ -67,10 +67,12 @@ namespace SnowLeopardEngine
             {
                 if (resource.Type == "DepthBuffer")
                 {
+                    int size = std::stoi(resource.Data);
+
                     // Depth frame buffer
                     FrameBufferDesc frameBufferDesc = {};
-                    frameBufferDesc.Width           = 1024;
-                    frameBufferDesc.Height          = 1024;
+                    frameBufferDesc.Width           = size;
+                    frameBufferDesc.Height          = size;
 
                     FrameBufferTextureDesc depthTexture = {};
                     depthTexture.TextureFormat          = FrameBufferTextureFormat::DEPTH24;
