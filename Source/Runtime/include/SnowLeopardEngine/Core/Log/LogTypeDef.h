@@ -2,7 +2,7 @@
 
 namespace SnowLeopardEngine
 {
-    enum class LogLevel
+    enum class LogLevel : int
     {
         Trace,
         Info,
