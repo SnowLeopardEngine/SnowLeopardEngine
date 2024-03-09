@@ -49,6 +49,8 @@ namespace SnowLeopardEngine
             return;
         }
 
+        Subscribe(m_LogicScenePreloadHandler);
+
         SNOW_LEOPARD_CORE_INFO("[PhysicsSystem] Initialized");
         m_State = SystemState::InitOk;
     }
@@ -56,6 +58,8 @@ namespace SnowLeopardEngine
     PhysicsSystem::~PhysicsSystem()
     {
         SNOW_LEOPARD_CORE_INFO("[PhysicsSystem] Shutting Down...");
+
+        Unsubscribe(m_LogicScenePreloadHandler);
 
         if (m_Scene != nullptr)
         {
@@ -67,10 +71,17 @@ namespace SnowLeopardEngine
         m_State = SystemState::ShutdownOk;
     }
 
-    void PhysicsSystem::CookPhysicsScene(const Ref<LogicScene>& logicScene)
+    void PhysicsSystem::CookPhysicsScene(LogicScene* logicScene)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
         m_LogicScene = logicScene;
+
+        if (m_Scene)
+        {
+            m_Scene->release();
+            m_Scene = nullptr;
+        }
+
         // Create a scene
         PxSceneDesc sceneDesc(m_Physics->getTolerancesScale());
         sceneDesc.gravity                 = PxVec3(0.0f, -9.8f, 0.0f); // scene gravity
@@ -409,7 +420,14 @@ namespace SnowLeopardEngine
 
             // Fetch rigid bodies
             registry.view<TransformComponent, RigidBodyComponent>().each(
-                [](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody) {
+                [&registry](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody) {
+                    if (rigidBody.InternalBody == nullptr)
+                    {
+                        auto name = registry.get<NameComponent>(entity).Name;
+                        SNOW_LEOPARD_CORE_WARN("[PhysicsSystem] A rigidBody without shape! Entity name: {0}", name);
+                        return;
+                    }
+
                     PxTransform pxTransform = rigidBody.InternalBody->getGlobalPose();
                     PxVec3      pxPosition  = pxTransform.p;
                     PxQuat      pxRotation  = pxTransform.q;
@@ -489,4 +507,6 @@ namespace SnowLeopardEngine
     {
         // TODO: Jubiao Lin
     }
+
+    void PhysicsSystem::OnLogicScenePreload(const LogicScenePreLoadEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
 } // namespace SnowLeopardEngine

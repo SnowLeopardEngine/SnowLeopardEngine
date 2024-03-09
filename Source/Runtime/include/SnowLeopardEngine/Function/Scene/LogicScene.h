@@ -9,11 +9,63 @@ namespace SnowLeopardEngine
 {
     class Entity;
 
+    enum class LogicSceneSimulationMode
+    {
+        Invalid = 0,
+        Game,
+        Editor
+    };
+
+    enum class LogicSceneSimulationStatus
+    {
+        Invalid = 0,
+        Stopped,
+        Simulating,
+        Paused
+    };
+
     class LogicScene
     {
     public:
-        LogicScene(const std::string& name = "Untitled Scene");
+        explicit LogicScene(const std::string& name = "Untitled Scene");
         ~LogicScene() = default;
+
+        static Ref<LogicScene> Copy(const Ref<LogicScene>& other);
+
+        void SetSimulationMode(LogicSceneSimulationMode mode)
+        {
+            m_SimulationMode = mode;
+            if (mode == LogicSceneSimulationMode::Editor)
+            {
+                m_SimulationStatus = LogicSceneSimulationStatus::Stopped;
+            }
+        }
+        LogicSceneSimulationMode GetSimulationMode() const { return m_SimulationMode; }
+
+        void SetSimulationStatus(LogicSceneSimulationStatus status)
+        {
+            switch (m_SimulationStatus)
+            {
+                case LogicSceneSimulationStatus::Stopped:
+                case LogicSceneSimulationStatus::Paused:
+                    if (status == LogicSceneSimulationStatus::Simulating)
+                    {
+                        m_SimulationStatus = status;
+                    }
+                    break;
+
+                case LogicSceneSimulationStatus::Simulating:
+                    if (status == LogicSceneSimulationStatus::Stopped || status == LogicSceneSimulationStatus::Paused)
+                    {
+                        m_SimulationStatus = status;
+                    }
+                    break;
+
+                case LogicSceneSimulationStatus::Invalid:
+                    break;
+            }
+        }
+        LogicSceneSimulationStatus GetSimulationStatus() const { return m_SimulationStatus; }
 
         const std::string& GetName() { return m_Name; }
         std::string        GetFileName() { return m_Name + ".scene"; }
@@ -44,6 +96,9 @@ namespace SnowLeopardEngine
         entt::registry                            m_Registry;
         Ref<std::map<CoreUUID, Entity>>           m_EntityMap;
         std::unordered_map<std::string, uint32_t> m_Name2CountMap;
+
+        LogicSceneSimulationStatus m_SimulationStatus = LogicSceneSimulationStatus::Simulating;
+        LogicSceneSimulationMode   m_SimulationMode   = LogicSceneSimulationMode::Game;
 
         friend class Entity;
     };

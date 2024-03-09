@@ -6,7 +6,6 @@
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/FrameBuffer.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Shader.h"
-#include <memory>
 
 namespace SnowLeopardEngine
 {
@@ -48,6 +47,11 @@ namespace SnowLeopardEngine
 
         for (auto& [dzShaderName, dzShader] : s_DzShaders)
         {
+            if (dzShader.Compiled)
+            {
+                continue;
+            }
+
             auto compileResult = s_Compiler.Compile(dzShader);
             if (!compileResult.Success)
             {
@@ -84,6 +88,8 @@ namespace SnowLeopardEngine
 
                 // TODO: Handler more types of resources
             }
+
+            dzShader.Compiled = true;
         }
 
         return !hasError;

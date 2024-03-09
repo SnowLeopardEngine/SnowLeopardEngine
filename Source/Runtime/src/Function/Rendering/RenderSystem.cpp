@@ -19,6 +19,8 @@ namespace SnowLeopardEngine
 
         m_API = GraphicsAPI::Create(GraphicsBackend::OpenGL);
 
+        Subscribe(m_LogicSceneLoadedHandler);
+
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Initialized");
         m_State = SystemState::InitOk;
     }
@@ -26,6 +28,8 @@ namespace SnowLeopardEngine
     RenderSystem::~RenderSystem()
     {
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Shutting Down...");
+
+        Unsubscribe(m_LogicSceneLoadedHandler);
 
         m_Context->Shutdown();
         m_Context.reset();
@@ -36,103 +40,6 @@ namespace SnowLeopardEngine
     void RenderSystem::OnTick(float deltaTime)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
-
-        if (!m_LoadedScene)
-        {
-            // https://docs.unity3d.com/ScriptReference/Rendering.RenderQueue.html
-            // 1. Filter materials (shaders) that have the same render queue priority. (e.g. Geometry, Transparent)
-            //    Divide entities into different groups by material.
-
-            // 2. For each type of material in groups, compile relevant shaders.
-            //    Setup shader resources (e.g. FrameBuffers)
-
-            // TODO: Clean code
-            auto scene = g_EngineContext->SceneMngr->GetActiveScene();
-            if (scene != nullptr)
-            {
-                auto& registry = scene->GetRegistry();
-
-                registry.view<TransformComponent, CameraComponent>().each(
-                    [this](entt::entity entity, TransformComponent& transform, CameraComponent& camera) {
-                        if (camera.ClearFlags != CameraClearFlags::Skybox || camera.SkyboxMaterial == nullptr)
-                        {
-                            return;
-                        }
-
-                        DzShaderManager::AddShader(camera.SkyboxMaterial->GetShaderName(),
-                                                   camera.SkyboxMaterial->GetShaderPath());
-
-                        auto queue = camera.SkyboxMaterial->GetTag("RenderQueue");
-                        if (queue == "Sky")
-                        {
-                            m_SkyGroup.emplace_back(entity);
-                        }
-                    });
-
-                registry.view<TransformComponent, DirectionalLightComponent>().each(
-                    [this](entt::entity               entity,
-                           TransformComponent&        transform,
-                           DirectionalLightComponent& directionalLight) {
-                        if (directionalLight.ShadowMaterial == nullptr)
-                        {
-                            return;
-                        }
-
-                        DzShaderManager::AddShader(directionalLight.ShadowMaterial->GetShaderName(),
-                                                   directionalLight.ShadowMaterial->GetShaderPath());
-
-                        auto queue = directionalLight.ShadowMaterial->GetTag("RenderQueue");
-                        if (queue == "Shadow")
-                        {
-                            m_ShadowGroup.emplace_back(entity);
-                        }
-                    });
-
-                registry.view<TransformComponent, TerrainComponent, TerrainRendererComponent>().each(
-                    [this](entt::entity              entity,
-                           TransformComponent&       transform,
-                           TerrainComponent&         terrain,
-                           TerrainRendererComponent& terrainRenderer) {
-                        if (terrainRenderer.Material == nullptr)
-                        {
-                            return;
-                        }
-
-                        DzShaderManager::AddShader(terrainRenderer.Material->GetShaderName(),
-                                                   terrainRenderer.Material->GetShaderPath());
-
-                        auto queue = terrainRenderer.Material->GetTag("RenderQueue");
-                        if (queue == "Geometry")
-                        {
-                            m_GeometryGroup.emplace_back(entity);
-                        }
-                    });
-
-                registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
-                    [this](entt::entity           entity,
-                           TransformComponent&    transform,
-                           MeshFilterComponent&   meshFilter,
-                           MeshRendererComponent& meshRenderer) {
-                        if (meshRenderer.Material == nullptr)
-                        {
-                            return;
-                        }
-
-                        DzShaderManager::AddShader(meshRenderer.Material->GetShaderName(),
-                                                   meshRenderer.Material->GetShaderPath());
-
-                        auto queue = meshRenderer.Material->GetTag("RenderQueue");
-                        if (queue == "Geometry")
-                        {
-                            m_GeometryGroup.emplace_back(entity);
-                        }
-                    });
-
-                DzShaderManager::Compile();
-
-                m_LoadedScene = true;
-            }
-        }
 
         // TODO: Remove old pipeline & pass code. Totally switch to data-driven (shader-driven) pipeline.
         // Shader-driven Pipeline tick:
@@ -306,7 +213,7 @@ namespace SnowLeopardEngine
                         if (hasAnimation)
                         {
                             auto& animator     = registry.get<AnimatorComponent>(geometry);
-                            auto  boneMatrices = animator.Animator->GetFinalBoneMatrices();
+                            auto  boneMatrices = animator.CurrentAnimator->GetFinalBoneMatrices();
                             for (uint32_t i = 0; i < boneMatrices.size(); ++i)
                             {
                                 shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
@@ -452,7 +359,7 @@ namespace SnowLeopardEngine
                     if (hasAnimation)
                     {
                         auto& animator     = registry.get<AnimatorComponent>(geometry);
-                        auto  boneMatrices = animator.Animator->GetFinalBoneMatrices();
+                        auto  boneMatrices = animator.CurrentAnimator->GetFinalBoneMatrices();
                         for (uint32_t i = 0; i < boneMatrices.size(); ++i)
                         {
                             shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
@@ -648,4 +555,102 @@ namespace SnowLeopardEngine
     }
 
     void RenderSystem::Present() { m_Context->SwapBuffers(); }
+
+    void RenderSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e)
+    {
+        // https://docs.unity3d.com/ScriptReference/Rendering.RenderQueue.html
+        // 1. Filter materials (shaders) that have the same render queue priority. (e.g. Geometry, Transparent)
+        //    Divide entities into different groups by material.
+
+        // 2. For each type of material in groups, compile relevant shaders.
+        //    Setup shader resources (e.g. FrameBuffers)
+
+        // TODO: Clean code
+        auto* scene = e.GetLogicScene();
+        if (scene != nullptr)
+        {
+            m_ShadowGroup.clear();
+            m_GeometryGroup.clear();
+            m_SkyGroup.clear();
+
+            auto& registry = scene->GetRegistry();
+
+            registry.view<TransformComponent, CameraComponent>().each(
+                [this](entt::entity entity, TransformComponent& transform, CameraComponent& camera) {
+                    if (camera.ClearFlags != CameraClearFlags::Skybox || camera.SkyboxMaterial == nullptr)
+                    {
+                        return;
+                    }
+
+                    DzShaderManager::AddShader(camera.SkyboxMaterial->GetShaderName(),
+                                               camera.SkyboxMaterial->GetShaderPath());
+
+                    auto queue = camera.SkyboxMaterial->GetTag("RenderQueue");
+                    if (queue == "Sky")
+                    {
+                        m_SkyGroup.emplace_back(entity);
+                    }
+                });
+
+            registry.view<TransformComponent, DirectionalLightComponent>().each(
+                [this](
+                    entt::entity entity, TransformComponent& transform, DirectionalLightComponent& directionalLight) {
+                    if (directionalLight.ShadowMaterial == nullptr)
+                    {
+                        return;
+                    }
+
+                    DzShaderManager::AddShader(directionalLight.ShadowMaterial->GetShaderName(),
+                                               directionalLight.ShadowMaterial->GetShaderPath());
+
+                    auto queue = directionalLight.ShadowMaterial->GetTag("RenderQueue");
+                    if (queue == "Shadow")
+                    {
+                        m_ShadowGroup.emplace_back(entity);
+                    }
+                });
+
+            registry.view<TransformComponent, TerrainComponent, TerrainRendererComponent>().each(
+                [this](entt::entity              entity,
+                       TransformComponent&       transform,
+                       TerrainComponent&         terrain,
+                       TerrainRendererComponent& terrainRenderer) {
+                    if (terrainRenderer.Material == nullptr)
+                    {
+                        return;
+                    }
+
+                    DzShaderManager::AddShader(terrainRenderer.Material->GetShaderName(),
+                                               terrainRenderer.Material->GetShaderPath());
+
+                    auto queue = terrainRenderer.Material->GetTag("RenderQueue");
+                    if (queue == "Geometry")
+                    {
+                        m_GeometryGroup.emplace_back(entity);
+                    }
+                });
+
+            registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
+                [this](entt::entity           entity,
+                       TransformComponent&    transform,
+                       MeshFilterComponent&   meshFilter,
+                       MeshRendererComponent& meshRenderer) {
+                    if (meshRenderer.Material == nullptr)
+                    {
+                        return;
+                    }
+
+                    DzShaderManager::AddShader(meshRenderer.Material->GetShaderName(),
+                                               meshRenderer.Material->GetShaderPath());
+
+                    auto queue = meshRenderer.Material->GetTag("RenderQueue");
+                    if (queue == "Geometry")
+                    {
+                        m_GeometryGroup.emplace_back(entity);
+                    }
+                });
+
+            DzShaderManager::Compile();
+        }
+    }
 } // namespace SnowLeopardEngine
