@@ -11,6 +11,10 @@ namespace SnowLeopardEngine
     class NativeScriptInstance : public LifeTimeComponent
     {
     public:
+        NativeScriptInstance() = default;
+        explicit NativeScriptInstance(bool isEditorScript) : m_IsEditorScript(isEditorScript) {}
+        virtual ~NativeScriptInstance() = default;
+
         virtual void OnLoad() override {}
 
         virtual void OnTick(float deltaTime) override {}
@@ -21,13 +25,17 @@ namespace SnowLeopardEngine
 
         virtual void OnColliderEnter() {}
 
+        bool IsEditorScript() const { return m_IsEditorScript; }
+
         void SetEnabled(bool enabled) { m_Enabled = enabled; }
         bool GetEnabled() const { return m_Enabled; }
 
     protected:
-        EngineContext* m_EngineContext = nullptr;
-        Ref<Entity>    m_OwnerEntity   = nullptr;
-        bool           m_Enabled       = true;
+        EngineContext* m_EngineContext  = nullptr;
+        Ref<Entity>    m_OwnerEntity    = nullptr;
+        bool           m_Enabled        = true;
+        bool           m_IsEditorScript = false;
+
         friend class LogicScene;
     };
 } // namespace SnowLeopardEngine

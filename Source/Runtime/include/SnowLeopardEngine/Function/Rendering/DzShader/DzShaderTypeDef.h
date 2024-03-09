@@ -129,6 +129,8 @@ namespace SnowLeopardEngine
 
         std::vector<DzPass> Passes;
 
+        bool Compiled = false;
+
         DzShader() = default;
 
         // NOLINTBEGIN

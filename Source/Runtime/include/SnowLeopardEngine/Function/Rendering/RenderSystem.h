@@ -1,6 +1,8 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Base/EngineSubSystem.h"
+#include "SnowLeopardEngine/Core/Event/EventHandler.h"
+#include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
 #include "entt/entity/fwd.hpp"
@@ -22,18 +24,21 @@ namespace SnowLeopardEngine
         const Ref<GraphicsAPI>& GetAPI() const { return m_API; }
 
     private:
-        void Draw();
+        void OnLogicSceneLoaded(const LogicSceneLoadedEvent& e);
 
     protected:
         Ref<GraphicsContext> m_Context;
         Ref<GraphicsAPI>     m_API;
 
         // TODO: Clean code
-        bool                      m_LoadedScene = false;
         std::vector<entt::entity> m_ShadowGroup;
         std::vector<entt::entity> m_GeometryGroup;
         std::vector<entt::entity> m_SkyGroup;
 
         Ref<FrameBuffer> m_RenderTarget;
+
+        EventHandler<LogicSceneLoadedEvent> m_LogicSceneLoadedHandler = [this](const LogicSceneLoadedEvent& e) {
+            OnLogicSceneLoaded(e);
+        };
     };
 } // namespace SnowLeopardEngine

@@ -397,10 +397,35 @@ namespace SnowLeopardEngine
     {
         // TODO: Animator Controller
         // Now, we just load the first animation and create relevant animator, play on awake and loop forever.
-        Ref<Animator> Animator;
+        Ref<Animator> CurrentAnimator;
 
         AnimatorComponent()                         = default;
         AnimatorComponent(const AnimatorComponent&) = default;
     };
     // -------- Animation Components DEFINITION END --------
+
+    template<typename... Component>
+    struct ComponentGroup
+    {};
+
+    using AllComponents = ComponentGroup<TreeNodeComponent,
+                                         TransformComponent,
+                                         EntityStatusComponent,
+                                         NativeScriptingComponent,
+                                         RigidBodyComponent,
+                                         SphereColliderComponent,
+                                         BoxColliderComponent,
+                                         CapsuleColliderComponent,
+                                         TerrainColliderComponent,
+                                         CharacterControllerComponent,
+                                         CameraComponent,
+                                         FreeMoveCameraControllerComponent,
+                                         DirectionalLightComponent,
+                                         BaseRendererComponent,
+                                         MeshFilterComponent,
+                                         MeshRendererComponent,
+                                         TerrainComponent,
+                                         TerrainRendererComponent,
+                                         AnimatorComponent>;
+
 } // namespace SnowLeopardEngine
