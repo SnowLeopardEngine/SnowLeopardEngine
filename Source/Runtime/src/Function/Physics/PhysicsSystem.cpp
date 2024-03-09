@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Util/Util.h"
+#include "foundation/Px.h"
 
 using namespace physx;
 
@@ -110,7 +111,7 @@ namespace SnowLeopardEngine
                    RigidBodyComponent&      rigidBody,
                    SphereColliderComponent& sphereCollider) {
                 // create a rigidBody
-                PxTransform   pxTransform(transform.Position.x, transform.Position.y, transform.Position.z);
+                PxTransform   pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
                 PxRigidActor* body;
                 if (entityStatus.IsStatic)
                 {
@@ -185,9 +186,9 @@ namespace SnowLeopardEngine
                    RigidBodyComponent&    rigidBody,
                    BoxColliderComponent&  boxCollider) {
                 // create a rigidBody
-                PxTransform   pxTransform(transform.Position.x + boxCollider.Offset.x,
-                                        transform.Position.y + boxCollider.Offset.y,
-                                        transform.Position.z + boxCollider.Offset.z);
+                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
+                pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(boxCollider.Offset);
+
                 PxRigidActor* body;
                 if (entityStatus.IsStatic)
                 {
@@ -264,9 +265,9 @@ namespace SnowLeopardEngine
                    RigidBodyComponent&       rigidBody,
                    CapsuleColliderComponent& capsuleCollider) {
                 // create a rigidBody
-                PxTransform   pxTransform(transform.Position.x + capsuleCollider.Offset.x,
-                                        transform.Position.y + capsuleCollider.Offset.y,
-                                        transform.Position.z + capsuleCollider.Offset.z);
+                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
+                pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(capsuleCollider.Offset);
+
                 PxRigidActor* body;
                 if (entityStatus.IsStatic)
                 {
