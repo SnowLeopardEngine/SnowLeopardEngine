@@ -13,12 +13,20 @@
 
 #include <PxPhysicsAPI.h>
 
+// CppAst.NET Macro
+#if !defined(__cppast)
+#define __cppast(...)
+#endif
+
 namespace SnowLeopardEngine
 {
     // -------- Entity Built-in Components DEFINITION START --------
 
-    struct IDComponent
+    struct __cppast(smeta_unit) IDComponent
     {
+		__cppast(getter=GetIdString)
+		__cppast(setter=SetIdByString)
+		__cppast(tooltip="UUID of an entity")
         CoreUUID Id;
 
         IDComponent()                   = default;
@@ -35,8 +43,9 @@ namespace SnowLeopardEngine
         }
     };
 
-    struct NameComponent
+    struct __cppast(smeta_unit) NameComponent
     {
+		__cppast(tooltip="Name of an entity")
         std::string Name;
 
         NameComponent()                     = default;
@@ -44,9 +53,16 @@ namespace SnowLeopardEngine
         explicit NameComponent(const std::string& name) : Name(name) {}
     };
 
-    struct TreeNodeComponent
+    struct __cppast(smeta_unit) TreeNodeComponent
     {
+		__cppast(getter=GetParentIdString)
+		__cppast(setter=SetParentIdByString)
+		__cppast(tooltip=""UUID of parent"")
         CoreUUID              ParentId;
+		
+		__cppast(getter=GetChildrenIdsString)
+		__cppast(setter=SetChildrenIdsByStringList)
+		__cppast(tooltip="UUIDs of children")
         std::vector<CoreUUID> ChildrenIds;
 
         TreeNodeComponent()                         = default;
@@ -86,10 +102,13 @@ namespace SnowLeopardEngine
         }
     };
 
-    struct TransformComponent
+    struct __cppast(smeta_unit) TransformComponent
     {
+		__cppast(tooltip="Position of an entity")
         glm::vec3 Position = glm::vec3(0, 0, 0);
-        glm::vec3 Scale    = glm::vec3(1, 1, 1);
+		
+		__cppast(tooltip="Scale of an entity")
+        glm::vec3 Scale = glm::vec3(1, 1, 1);
 
         TransformComponent()                          = default;
         TransformComponent(const TransformComponent&) = default;
@@ -98,8 +117,15 @@ namespace SnowLeopardEngine
         {}
 
     private:
+		__cppast(getter=GetRotationEuler)
+		__cppast(setter=SetRotationEuler)
+		__cppast(tooltip="Euler angles rotation of an entity")
         glm::vec3 m_RotationEuler = glm::vec3(0, 0, 0);
-        glm::quat m_Rotation      = glm::quat(1, 0, 0, 0);
+		
+		__cppast(getter=GetRotation)
+		__cppast(setter=SetRotation)
+		__cppast(tooltip="Quaternion rotation of an entity")
+        glm::quat m_Rotation = glm::quat(1, 0, 0, 0);
 
     public:
         glm::mat4 GetTransform() const { return Math::GetTransformMatrix(Position, m_Rotation, Scale); }
@@ -121,8 +147,9 @@ namespace SnowLeopardEngine
         }
     };
 
-    struct EntityStatusComponent
+    struct __cppast(smeta_unit) EntityStatusComponent
     {
+		__cppast(tooltip="Is the entity static")
         bool IsStatic = false;
 
         EntityStatusComponent()                             = default;
@@ -134,8 +161,9 @@ namespace SnowLeopardEngine
 
     // -------- Scripting Components DEFINITION START --------
 
-    struct NativeScriptingComponent
+    struct __cppast(smeta_unit) NativeScriptingComponent
     {
+		__cppast(ignore)
         Ref<NativeScriptInstance> ScriptInstance;
 
         NativeScriptingComponent()                                = default;
@@ -151,11 +179,18 @@ namespace SnowLeopardEngine
 
     // TODO: Jubiao Lin Add more properties here
     // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
-    struct RigidBodyComponent
+    struct __cppast(smeta_unit) RigidBodyComponent
     {
-        float Mass           = 1.0f;
-        bool  EnableCCD      = false;
-        float LinearDamping  = 0.0f;
+		__cppast(tooltip="The mass of the rigidBody")
+        float Mass = 1.0f;
+		
+		__cppast(tooltip="Enable Continuous Collision Detection")
+        bool  EnableCCD = false;
+		
+		__cppast(tooltip="The linear damping of the rigidBody")
+        float LinearDamping = 0.0f;
+		
+		__cppast(tooltip="The angular damping of the rigidBody")
         float AngularDamping = 0.05f;
 
         physx::PxRigidActor* InternalBody = nullptr;
@@ -167,11 +202,16 @@ namespace SnowLeopardEngine
         {}
     };
 
-    struct SphereColliderComponent
+    struct __cppast(smeta_unit) SphereColliderComponent
     {
-        float                Radius    = 0.0f;
-        Ref<PhysicsMaterial> Material  = nullptr;
-        bool                 IsTrigger = false;
+		__cppast(tooltip="The radius of the SphereCollider")
+        float Radius = 0.0f;
+		
+		__cppast(ignore)
+		Ref<PhysicsMaterial> Material = nullptr;
+		
+		__cppast(tooltip="Is trigger")
+        bool IsTrigger = false;
 
         SphereColliderComponent()                               = default;
         SphereColliderComponent(const SphereColliderComponent&) = default;
@@ -185,6 +225,8 @@ namespace SnowLeopardEngine
             Material(material), IsTrigger(isTrigger)
         {}
     };
+	
+	// TODO: register all components for SMeta
 
     struct BoxColliderComponent
     {

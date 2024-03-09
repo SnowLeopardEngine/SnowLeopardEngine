@@ -31,7 +31,7 @@ end
 -- global rules
 rule("copy_assets")
     on_load(function(target)
-        os.cp("$(projectdir)/Assets", target:targetdir())
+        os.cp("$(projectdir)/Assets", target:targetdir() .. "/Assets")
     end)
 rule_end()
 
