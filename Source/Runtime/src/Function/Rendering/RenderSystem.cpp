@@ -17,6 +17,10 @@ namespace SnowLeopardEngine
         m_Context = GraphicsContext::Create();
         m_Context->Init();
 
+        // TODO: Configurable vsync
+        // Disable VSync
+        m_Context->SetVSync(false);
+
         m_API = GraphicsAPI::Create(GraphicsBackend::OpenGL);
 
         Subscribe(m_LogicSceneLoadedHandler);
