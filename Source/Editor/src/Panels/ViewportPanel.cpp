@@ -414,59 +414,75 @@ namespace SnowLeopardEngine::Editor
         bool isSimulating = m_ViewportMode == ViewportMode::Simulating;
         bool isPaused     = m_ViewportMode == ViewportMode::SimulationPaused;
         {
-            if (!isSimulating && ImGui::Button(ICON_MDI_PLAY))
+            if (!isSimulating)
             {
-                m_ViewportMode = ViewportMode::Simulating;
+                bool playButtonDown = ImGui::Button(ICON_MDI_PLAY);
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("Simulate the scene.");
                 }
 
-                if (m_SimulatingScene != nullptr)
+                if (playButtonDown)
                 {
-                    m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Simulating);
-                }
-                else if (m_EditingScene != nullptr)
-                {
-                    // Copy scene and set simulating
-                    m_SimulatingScene = LogicScene::Copy(m_EditingScene);
-                    m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Simulating);
-                    g_EngineContext->SceneMngr->SetActiveScene(m_SimulatingScene);
+                    m_ViewportMode = ViewportMode::Simulating;
+
+                    if (m_SimulatingScene != nullptr)
+                    {
+                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Simulating);
+                    }
+                    else if (m_EditingScene != nullptr)
+                    {
+                        // Copy scene and set simulating
+                        m_SimulatingScene = LogicScene::Copy(m_EditingScene);
+                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Simulating);
+                        g_EngineContext->SceneMngr->SetActiveScene(m_SimulatingScene);
+                    }
                 }
             }
-            if (isSimulating && ImGui::Button(ICON_MDI_PAUSE))
+
+            if (isSimulating)
             {
-                m_ViewportMode = ViewportMode::SimulationPaused;
+                bool pauseButtonDown = ImGui::Button(ICON_MDI_PAUSE);
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("Pause simulating the scene.");
                 }
 
-                if (m_SimulatingScene != nullptr)
+                if (pauseButtonDown)
                 {
-                    m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Paused);
+                    m_ViewportMode = ViewportMode::SimulationPaused;
+
+                    if (m_SimulatingScene != nullptr)
+                    {
+                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Paused);
+                    }
                 }
             }
-
             ImGui::SameLine();
-            if ((isSimulating || isPaused) && ImGui::Button(ICON_MDI_STOP))
+
+            if (isSimulating || isPaused)
             {
-                m_ViewportMode = ViewportMode::Edit;
+                bool stopButtonDown = ImGui::Button(ICON_MDI_STOP);
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("Stop simulating the scene.");
                 }
 
-                if (m_SimulatingScene != nullptr)
+                if (stopButtonDown)
                 {
-                    m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Stopped);
-                    m_SimulatingScene.reset();
-                    m_SimulatingScene = nullptr;
-                }
+                    m_ViewportMode = ViewportMode::Edit;
 
-                if (m_EditingScene != nullptr)
-                {
-                    g_EngineContext->SceneMngr->SetActiveScene(m_EditingScene);
+                    if (m_SimulatingScene != nullptr)
+                    {
+                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Stopped);
+                        m_SimulatingScene.reset();
+                        m_SimulatingScene = nullptr;
+                    }
+
+                    if (m_EditingScene != nullptr)
+                    {
+                        g_EngineContext->SceneMngr->SetActiveScene(m_EditingScene);
+                    }
                 }
             }
         }

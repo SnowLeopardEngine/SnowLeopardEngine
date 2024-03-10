@@ -12,6 +12,8 @@ namespace SnowLeopardEngine::Editor
         m_LogMessagesFilter = static_cast<uint32_t>(LogLevel::Trace) | static_cast<uint32_t>(LogLevel::Info) |
                               static_cast<uint32_t>(LogLevel::Warn) | static_cast<uint32_t>(LogLevel::Error) |
                               static_cast<uint32_t>(LogLevel::Critical);
+        m_AllowToBottom = true;
+        m_RequestToBottom = false;
         // Register log event
         Subscribe(m_LogEventHandler);
     }
@@ -117,29 +119,64 @@ namespace SnowLeopardEngine::Editor
 
             for (uint16_t i = 0; i < m_LogMessagesEnd; i += 3)
             {
-                if (m_LogMessagesFilter & static_cast<uint32_t>(stringToLogLevel(m_LogMessagesBox[i + 1])))
+                if(m_Filter.IsActive())
                 {
-                    ImGui::TableNextColumn();
-                    ImU32 iColor = ImColor(GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).r,
-                                           GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).g,
-                                           GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).b,
-                                           GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).a);
-                    ImGui::PushStyleColor(ImGuiCol_Text, iColor);
-                    const auto* levelIcon = GetLevelIcon(stringToLogLevel(m_LogMessagesBox[i + 1]));
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() -
-                                         ImGui::CalcTextSize(levelIcon).x - ImGui::GetScrollX() -
-                                         2 * ImGui::GetStyle().ItemSpacing.x);
-                    ImGui::TextUnformatted(levelIcon);
+                    if (m_Filter.PassFilter(m_LogMessagesBox[i + 2].c_str())) 
+                    {
+                        if (m_LogMessagesFilter & static_cast<uint32_t>(stringToLogLevel(m_LogMessagesBox[i + 1])))
+                        {
+                            ImGui::TableNextColumn();
+                            ImU32 iColor = ImColor(GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).r,
+                                                GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).g,
+                                                GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).b,
+                                                GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).a);
+                            ImGui::PushStyleColor(ImGuiCol_Text, iColor);
+                            const auto* levelIcon = GetLevelIcon(stringToLogLevel(m_LogMessagesBox[i + 1]));
+                            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() -
+                                                ImGui::CalcTextSize(levelIcon).x - ImGui::GetScrollX() -
+                                                2 * ImGui::GetStyle().ItemSpacing.x);
+                            ImGui::TextUnformatted(levelIcon);
 
-                    ImGui::PopStyleColor();
+                            ImGui::PopStyleColor();
 
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(m_LogMessagesBox[i].c_str());
+                            ImGui::TableNextColumn();
+                            ImGui::TextUnformatted(m_LogMessagesBox[i].c_str());
 
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(m_LogMessagesBox[i + 2].c_str());
-                    ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            ImGui::TextUnformatted(m_LogMessagesBox[i + 2].c_str());
+                            ImGui::TableNextRow();
+                        }
+                    }
+                }else{
+                    if (m_LogMessagesFilter & static_cast<uint32_t>(stringToLogLevel(m_LogMessagesBox[i + 1])))
+                    {
+                        ImGui::TableNextColumn();
+                        ImU32 iColor = ImColor(GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).r,
+                                            GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).g,
+                                            GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).b,
+                                            GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).a);
+                        ImGui::PushStyleColor(ImGuiCol_Text, iColor);
+                        const auto* levelIcon = GetLevelIcon(stringToLogLevel(m_LogMessagesBox[i + 1]));
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() -
+                                            ImGui::CalcTextSize(levelIcon).x - ImGui::GetScrollX() -
+                                            2 * ImGui::GetStyle().ItemSpacing.x);
+                        ImGui::TextUnformatted(levelIcon);
+
+                        ImGui::PopStyleColor();
+
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(m_LogMessagesBox[i].c_str());
+
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(m_LogMessagesBox[i + 2].c_str());
+                        ImGui::TableNextRow();
+                    }
                 }
+            }
+            if(m_RequestToBottom && ImGui::GetScrollMaxY() > 0)
+            {
+                ImGui::SetScrollHereY(1.0f);
+                m_RequestToBottom = false;
             }
             ImGui::EndTable();
         }
@@ -162,5 +199,7 @@ namespace SnowLeopardEngine::Editor
         m_LogMessagesBox[m_LogMessagesEnd++] = magic_enum::enum_name(e.GetRegion());
         m_LogMessagesBox[m_LogMessagesEnd++] = magic_enum::enum_name(e.GetLevel());
         m_LogMessagesBox[m_LogMessagesEnd++] = e.GetMsg();
+        if(m_AllowToBottom)
+            m_RequestToBottom = true;
     }
 } // namespace SnowLeopardEngine::Editor
