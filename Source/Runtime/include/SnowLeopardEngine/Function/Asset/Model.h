@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SnowLeopardEngine/Function/Animation/Animation.h"
-#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
 namespace SnowLeopardEngine
 {
@@ -11,9 +11,8 @@ namespace SnowLeopardEngine
 
         MeshGroup Meshes;
 
-        std::unordered_map<std::string, std::vector<Ref<Texture2D>>> Textures;
-        std::vector<Ref<Animation>>                                  Animations;
-        std::map<std::string, BoneInfo>                              BoneInfoMap;
-        int                                                          BoneCounter = 0;
+        std::vector<Ref<Animation>>     Animations;
+        std::map<std::string, BoneInfo> BoneInfoMap;
+        int                             BoneCounter = 0;
     };
 } // namespace SnowLeopardEngine

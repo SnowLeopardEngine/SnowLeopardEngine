@@ -65,7 +65,7 @@ namespace SnowLeopardEngine::Editor
         characterTransform.Position.y  = 0.6;
         characterTransform.Scale       = {10, 10, 10};
         auto& characterMeshFilter      = character.AddComponent<MeshFilterComponent>();
-        characterMeshFilter.FilePath   = "Assets/Models/Vampire/Vampire_Idle.dae";
+        characterMeshFilter.FilePath   = "Assets/Models/Vampire/Vampire_Dancing.fbx";
         auto& characterMeshRenderer    = character.AddComponent<MeshRendererComponent>();
         characterMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Vampire.dzmaterial");
         character.AddComponent<AnimatorComponent>();
