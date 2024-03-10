@@ -24,7 +24,7 @@ struct OzzRuntimeInfo
     ozz::animation::Skeleton             Skeleton;
     ozz::animation::Animation            Animation;
     ozz::animation::SamplingJob::Context SamplingJobContext;
-    ozz::vector<ozz::math::SoaTransform> LocalMatrices;
+    ozz::vector<ozz::math::SoaTransform> LocalTransforms;
     ozz::vector<ozz::math::Float4x4>     ModelMatrices;
 };
 
@@ -48,7 +48,7 @@ bool LoadSkeletonData(const std::string& fileName)
     archive >> g_Ozz->Skeleton;
     const int numSoaJoints = g_Ozz->Skeleton.num_soa_joints();
     const int numJoints    = g_Ozz->Skeleton.num_joints();
-    g_Ozz->LocalMatrices.resize(numSoaJoints);
+    g_Ozz->LocalTransforms.resize(numSoaJoints);
     g_Ozz->ModelMatrices.resize(numJoints);
     g_Ozz->SamplingJobContext.Resize(numJoints);
 
@@ -81,6 +81,22 @@ void MyDrawLine3D(const SimdFloat4& a, const SimdFloat4& b)
     Vector3 vb = {GetX(b), GetY(b), GetZ(b)};
 
     DrawLine3D(va, vb, RAYWHITE);
+}
+
+void SimpleDrawJoint(int currentJointIndex, int parentJointIndex)
+{
+    if (parentJointIndex < 0)
+    {
+        return;
+    }
+
+    const Float4x4& m0 = g_Ozz->ModelMatrices[currentJointIndex];
+    const Float4x4& m1 = g_Ozz->ModelMatrices[parentJointIndex];
+
+    const SimdFloat4 p0 = m0.cols[3];
+    const SimdFloat4 p1 = m1.cols[3];
+
+    MyDrawLine3D(p0, p1);
 }
 
 void DrawJoint(int currentJointIndex, int parentJointIndex)
@@ -120,6 +136,7 @@ void DrawSkeleton()
 
     for (int j = 0; j < numJoints; j++)
     {
+        // SimpleDrawJoint(j, jointParents[j]);
         DrawJoint(j, jointParents[j]);
     }
 }
@@ -164,13 +181,13 @@ int main()
         samplingJob.animation = &g_Ozz->Animation;
         samplingJob.context   = &g_Ozz->SamplingJobContext;
         samplingJob.ratio     = ratio;
-        samplingJob.output    = make_span(g_Ozz->LocalMatrices);
+        samplingJob.output    = make_span(g_Ozz->LocalTransforms);
         samplingJob.Run();
 
         // Local to model
         ozz::animation::LocalToModelJob localToModelJob;
         localToModelJob.skeleton = &g_Ozz->Skeleton;
-        localToModelJob.input    = make_span(g_Ozz->LocalMatrices);
+        localToModelJob.input    = make_span(g_Ozz->LocalTransforms);
         localToModelJob.output   = make_span(g_Ozz->ModelMatrices);
         localToModelJob.Run();
 
