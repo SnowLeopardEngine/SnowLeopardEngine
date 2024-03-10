@@ -60,9 +60,9 @@ public:
         characterTransform.Position.y   = 0.6;
         characterTransform.Scale        = {10, 10, 10};
         auto& characterMeshFilter       = character.AddComponent<MeshFilterComponent>();
-        characterMeshFilter.FilePath    = "Assets/Models/Vampire/Vampire_Idle.dae";
+        characterMeshFilter.FilePath    = "Assets/Models/Walking.fbx";
         auto& characterMeshRenderer     = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Vampire.dzmaterial");
+        characterMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Blue.dzmaterial");
         character.AddComponent<AnimatorComponent>();
     }
 

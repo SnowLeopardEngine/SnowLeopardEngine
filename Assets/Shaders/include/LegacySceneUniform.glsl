@@ -1,4 +1,4 @@
-const int MAX_BONES = 100;
+const int MAX_BONES = 128;
 const int MAX_BONE_INFLUENCE = 4;
 
 layout(location = 100) uniform mat4 model;
