@@ -258,9 +258,19 @@ namespace SnowLeopardEngine::Editor
         }
 
         // Select hovered entity
+
+        // Workaround for https://github.com/CedricGuillemet/ImGuizmo/issues/310
+#if NDEBUG
+        static bool isFirstTime = true;
+        if (g_EngineContext->InputSys->GetMouseButtonDown(MouseCode::ButtonLeft) && m_IsWindowHovered &&
+            (!ImGuizmo::IsOver() || isFirstTime))
+        {
+            isFirstTime = false;
+#else
         if (g_EngineContext->InputSys->GetMouseButtonDown(MouseCode::ButtonLeft) && m_IsWindowHovered &&
             !ImGuizmo::IsOver())
         {
+#endif
             if (m_HoveredEntity)
             {
                 SNOW_LEOPARD_INFO("[Editor][Viewport] Selected entity: Name = {0}",
