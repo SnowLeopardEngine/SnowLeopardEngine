@@ -46,11 +46,6 @@ bool LoadSkeletonData(const std::string& fileName)
     }
 
     archive >> g_Ozz->Skeleton;
-    const int numSoaJoints = g_Ozz->Skeleton.num_soa_joints();
-    const int numJoints    = g_Ozz->Skeleton.num_joints();
-    g_Ozz->LocalTransforms.resize(numSoaJoints);
-    g_Ozz->ModelMatrices.resize(numJoints);
-    g_Ozz->SamplingJobContext.Resize(numJoints);
 
     return true;
 }
@@ -157,7 +152,29 @@ int main()
         return 1;
     }
 
+    // Skeleton and animation needs to match.
+    if (g_Ozz->Skeleton.num_joints() != g_Ozz->Animation.num_tracks())
+    {
+        std::cerr << "Skeleton and Animation data mismatch!" << std::endl;
+        return 1;
+    }
+
+    // Allocate runtime buffers
+    const int numSoaJoints = g_Ozz->Skeleton.num_soa_joints();
+    const int numJoints    = g_Ozz->Skeleton.num_joints();
+    g_Ozz->LocalTransforms.resize(numSoaJoints);
+    g_Ozz->ModelMatrices.resize(numJoints);
+
+    // Allocates a context that matches animation requirements.
+    g_Ozz->SamplingJobContext.Resize(numJoints);
+
     InitWindow(800, 600, "ozz-animation test");
+
+    // Print joint names
+    for (uint32_t jointIndex = 0; jointIndex < g_Ozz->Skeleton.num_joints(); ++jointIndex)
+    {
+        std::cout << "Loaded Joint [" << jointIndex << "]: " << g_Ozz->Skeleton.joint_names()[jointIndex] << std::endl;
+    }
 
     float time = 0;
 

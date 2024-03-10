@@ -4,6 +4,7 @@ add_requires("miniaudio", "stb", "tracy", "magic_enum", "cereal", "shaderc", "sp
 add_requires("sphysx-cross", { configs = { debug = is_mode("debug") }})
 add_requireconfs("assimp.zlib", {system = false}) -- https://github.com/xmake-io/xmake-repo/issues/1855
 add_requires("assimp", { configs = { debug = is_mode("debug") }})
+add_requires("ozz-animation", { configs = { shared = true }})
 
 -- target defination, name: SnowLeopardEngine
 target("SnowLeopardEngine")
@@ -37,6 +38,7 @@ target("SnowLeopardEngine")
     add_packages("shaderc", { public = true })
     add_packages("spirv-cross", { public = true })
     add_packages("assimp", { public = true })
+    add_packages("ozz-animation", { public = true })
     add_packages("sphysx-cross", { public = true })
 
     -- add dependencies (inside project)
