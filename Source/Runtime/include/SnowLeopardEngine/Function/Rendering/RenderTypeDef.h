@@ -120,4 +120,10 @@ namespace SnowLeopardEngine
     {
         std::vector<MeshItem> Items;
     };
+
+    class RenderResource
+    {
+    public:
+        virtual ~RenderResource() = default;
+    };
 } // namespace SnowLeopardEngine

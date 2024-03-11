@@ -26,6 +26,7 @@ namespace SnowLeopardEngine
     public:
         virtual GraphicsBackend GetBackendType() = 0;
 
+        virtual void SetPipelineState(const PipelineState& pipelineState)      = 0;
         virtual void SetPipelineState(const Ref<PipelineState>& pipelineState) = 0;
 
         virtual void ClearColor(float r, float g, float b, float a, ClearBit clearBit) = 0;

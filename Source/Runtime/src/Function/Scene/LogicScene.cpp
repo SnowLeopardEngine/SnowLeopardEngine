@@ -5,7 +5,6 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
-#include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
@@ -16,6 +15,76 @@ namespace SnowLeopardEngine
 #define ON_COMPONENT_ADDED(comp) \
     template<> \
     void LogicScene::OnComponentAdded<comp>(Entity entity, comp & component)
+
+    template<typename... Component>
+    static void CopyComponent(entt::registry& dst, entt::registry& src, Ref<std::map<CoreUUID, Entity>>& enttMap)
+    {
+        (
+            [&]() {
+                auto view = src.view<Component>();
+                for (auto srcEntity : view)
+                {
+                    Entity dstEntity = enttMap->at(src.get<IDComponent>(srcEntity).Id);
+
+                    auto& srcComponent = src.get<Component>(srcEntity);
+                    dst.emplace_or_replace<Component>(dstEntity, srcComponent);
+                }
+            }(),
+            ...);
+    }
+
+    template<typename... Component>
+    static void CopyComponent(ComponentGroup<Component...>,
+                              entt::registry&                  dst,
+                              entt::registry&                  src,
+                              Ref<std::map<CoreUUID, Entity>>& enttMap)
+    {
+        CopyComponent<Component...>(dst, src, enttMap);
+    }
+
+    template<typename... Component>
+    static void CopyComponentIfExists(Entity dst, Entity src)
+    {
+        (
+            [&]() {
+                if (src.HasComponent<Component>())
+                    dst.AddOrReplaceComponent<Component>(src.GetComponent<Component>());
+            }(),
+            ...);
+    }
+
+    template<typename... Component>
+    static void CopyComponentIfExists(ComponentGroup<Component...>, Entity dst, Entity src)
+    {
+        CopyComponentIfExists<Component...>(dst, src);
+    }
+
+    Ref<LogicScene> LogicScene::Copy(const Ref<LogicScene>& other)
+    {
+        Ref<LogicScene> newScene     = CreateRef<LogicScene>();
+        newScene->m_Name             = other->m_Name + " (Copy)";
+        newScene->m_SimulationMode   = other->m_SimulationMode;
+        newScene->m_SimulationStatus = other->m_SimulationStatus;
+        newScene->m_Name2CountMap    = other->m_Name2CountMap;
+
+        auto& srcSceneRegistry = other->m_Registry;
+        auto& dstSceneRegistry = newScene->m_Registry;
+
+        // Create entities in new scene
+        auto idView = srcSceneRegistry.view<IDComponent>();
+        for (auto e : idView)
+        {
+            CoreUUID    uuid               = srcSceneRegistry.get<IDComponent>(e).Id;
+            const auto& name               = srcSceneRegistry.get<NameComponent>(e).Name;
+            Entity      newEntity          = newScene->CreateEntityFromContent(uuid, name);
+            (*newScene->m_EntityMap)[uuid] = newEntity;
+        }
+
+        // Copy components (except IDComponent and NameComponent)
+        CopyComponent(AllComponents {}, dstSceneRegistry, srcSceneRegistry, newScene->m_EntityMap);
+
+        return newScene;
+    }
 
     LogicScene::LogicScene(const std::string& name) : m_Name(name)
     {
@@ -94,6 +163,10 @@ namespace SnowLeopardEngine
     void LogicScene::OnLoad()
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
+
+        LogicScenePreLoadEvent preloadEvent(this);
+        TriggerEvent(preloadEvent);
+
         // Mesh Loading (dirty code for now)
         m_Registry.view<MeshFilterComponent>().each([this](entt::entity entity, MeshFilterComponent& meshFilter) {
             // TODO: Move to AssetManager
@@ -113,19 +186,7 @@ namespace SnowLeopardEngine
 
                     if (!model.Animations.empty())
                     {
-                        animatorComponent.Animator = CreateRef<Animator>(model.Animations[0]);
-                    }
-                }
-
-                // assign textures to mesh renderer if possible
-                if (m_Registry.any_of<MeshRendererComponent>(entity))
-                {
-                    auto& meshRenderer = m_Registry.get<MeshRendererComponent>(entity);
-
-                    if (model.Textures.count("diffuseMap") > 0)
-                    {
-                        meshRenderer.UseDiffuse     = true;
-                        meshRenderer.DiffuseTexture = model.Textures["diffuseMap"][0];
+                        animatorComponent.CurrentAnimator = CreateRef<Animator>(model.Animations[0]);
                     }
                 }
             }
@@ -170,49 +231,53 @@ namespace SnowLeopardEngine
                 terrain.TerrainHeightMap, terrain.XScale, terrain.YScale, terrain.ZScale);
         });
 
-        // Texture Loading (dirty code for now)
-        m_Registry.view<MeshRendererComponent>().each([](entt::entity entity, MeshRendererComponent& meshRenderer) {
-            // TODO: Move to AssetManager
-            if (meshRenderer.UseDiffuse && meshRenderer.DiffuseTexture == nullptr)
+        // Init Animators
+        m_Registry.view<AnimatorComponent>().each([](entt::entity entity, AnimatorComponent& animator) {
+            if (animator.CurrentAnimator != nullptr)
             {
-                meshRenderer.DiffuseTexture = TextureLoader::LoadTexture2D(meshRenderer.DiffuseTextureFilePath, false);
-            }
-        });
-        m_Registry.view<TerrainRendererComponent>().each(
-            [](entt::entity entity, TerrainRendererComponent& terrainRenderer) {
-                // TODO: Move to AssetManager
-                if (terrainRenderer.UseDiffuse)
-                {
-                    terrainRenderer.DiffuseTexture =
-                        TextureLoader::LoadTexture2D(terrainRenderer.DiffuseTextureFilePath, false);
-                }
-            });
-        m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
-            // TODO: Move to AssetManager
-            if (camera.ClearFlags == CameraClearFlags::Skybox)
-            {
-                camera.Cubemap = TextureLoader::LoadTexture3D(camera.CubemapFilePaths, false);
+                animator.CurrentAnimator->UpdateAnimation(0);
             }
         });
 
         // Scripting Callback
         m_Registry.view<NativeScriptingComponent>().each(
             [](entt::entity entity, NativeScriptingComponent& nativeScript) { nativeScript.ScriptInstance->OnLoad(); });
+
+        LogicSceneLoadedEvent loadedEvent(this);
+        TriggerEvent(loadedEvent);
     }
 
     void LogicScene::OnTick(float deltaTime)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
+
         // Tick NativeScriptingComponents for now
         // TODO: Consider Script Tick Priority
         // TODO: If time is enough, integrate Lua or C# Scripting.
         m_Registry.view<NativeScriptingComponent>().each(
-            [deltaTime](entt::entity entity, NativeScriptingComponent& nativeScript) {
+            [this, deltaTime](entt::entity entity, NativeScriptingComponent& nativeScript) {
                 if (nativeScript.ScriptInstance->GetEnabled())
                 {
-                    nativeScript.ScriptInstance->OnTick(deltaTime);
+                    if (m_SimulationMode == LogicSceneSimulationMode::Editor &&
+                        nativeScript.ScriptInstance->IsEditorScript())
+                    {
+                        // Tick editor scripts
+                        nativeScript.ScriptInstance->OnTick(deltaTime);
+                    }
+                    else if (m_SimulationMode == LogicSceneSimulationMode::Game &&
+                             m_SimulationStatus == LogicSceneSimulationStatus::Simulating &&
+                             !nativeScript.ScriptInstance->IsEditorScript())
+                    {
+                        // Tick game scripts
+                        nativeScript.ScriptInstance->OnTick(deltaTime);
+                    }
                 }
             });
+
+        if (m_SimulationStatus != LogicSceneSimulationStatus::Simulating)
+        {
+            return;
+        }
 
         // Built-in camera controllers
         m_Registry.view<TransformComponent, CameraComponent, FreeMoveCameraControllerComponent>().each(
@@ -288,9 +353,9 @@ namespace SnowLeopardEngine
 
         // Animators
         m_Registry.view<AnimatorComponent>().each([deltaTime](entt::entity entity, AnimatorComponent& animator) {
-            if (animator.Animator != nullptr)
+            if (animator.CurrentAnimator != nullptr)
             {
-                animator.Animator->UpdateAnimation(deltaTime);
+                animator.CurrentAnimator->UpdateAnimation(deltaTime);
             }
         });
     }
@@ -298,13 +363,21 @@ namespace SnowLeopardEngine
     void LogicScene::OnFixedTick()
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
-        m_Registry.view<NativeScriptingComponent>().each(
-            [](entt::entity entity, NativeScriptingComponent& nativeScript) {
-                if (nativeScript.ScriptInstance->GetEnabled())
-                {
-                    nativeScript.ScriptInstance->OnFixedTick();
-                }
-            });
+        m_Registry.view<NativeScriptingComponent>().each([this](entt::entity              entity,
+                                                                NativeScriptingComponent& nativeScript) {
+            if (m_SimulationMode == LogicSceneSimulationMode::Editor && nativeScript.ScriptInstance->IsEditorScript())
+            {
+                // Fixed Tick editor scripts
+                nativeScript.ScriptInstance->OnFixedTick();
+            }
+            else if (m_SimulationMode == LogicSceneSimulationMode::Game &&
+                     m_SimulationStatus == LogicSceneSimulationStatus::Simulating &&
+                     !nativeScript.ScriptInstance->IsEditorScript())
+            {
+                // Fixed Tick game scripts
+                nativeScript.ScriptInstance->OnFixedTick();
+            }
+        });
     }
 
     void LogicScene::OnUnload()
@@ -314,6 +387,9 @@ namespace SnowLeopardEngine
             [](entt::entity entity, NativeScriptingComponent& nativeScript) {
                 nativeScript.ScriptInstance->OnUnload();
             });
+
+        LogicSceneUnloadedEvent unloadedEvent(this);
+        TriggerEvent(unloadedEvent);
     }
 
     std::vector<Entity> LogicScene::GetEntitiesSortedByName()

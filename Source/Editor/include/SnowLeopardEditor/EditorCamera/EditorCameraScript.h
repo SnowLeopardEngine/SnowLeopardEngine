@@ -8,6 +8,8 @@ namespace SnowLeopardEngine::Editor
     class EditorCameraScript : public NativeScriptInstance
     {
     public:
+        EditorCameraScript() : NativeScriptInstance(true) {}
+
         virtual void OnTick(float deltaTime) override;
 
         void SetWindowHovered(bool windowHovered) { m_IsWindowHovered = windowHovered; }

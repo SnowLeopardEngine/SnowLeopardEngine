@@ -1,5 +1,5 @@
 -- add requirements
-add_requires("imgui v1.90-docking", {configs = {glfw = true, opengl3 = true}})
+add_requires("imgui v1.90.1-docking", {configs = {glfw = true, opengl3 = true, wchar32 = true}})
 
 -- define target
 target("ImGuizmo")

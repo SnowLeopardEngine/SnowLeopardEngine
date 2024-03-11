@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
@@ -45,16 +46,7 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        // clang-format off
-        cameraComponent.CubemapFilePaths = {
-            "Assets/Textures/Skybox001/right.jpg",
-            "Assets/Textures/Skybox001/left.jpg",
-            "Assets/Textures/Skybox001/top.jpg",
-            "Assets/Textures/Skybox001/bottom.jpg",
-            "Assets/Textures/Skybox001/front.jpg",
-            "Assets/Textures/Skybox001/back.jpg"
-        };
-        // clang-format on
+        cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
@@ -67,7 +59,7 @@ public:
         auto& cubeMeshFilter1         = cube1.AddComponent<MeshFilterComponent>();
         cubeMeshFilter1.PrimitiveType = MeshPrimitiveType::Cube;
         auto& cubeMeshRenderer1       = cube1.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer1.BaseColor   = {1, 0, 0, 1};
+        cubeMeshRenderer1.Material = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
 
         Entity cube2            = scene->CreateEntity("Cube2");
         auto&  cubeTransform2   = cube2.GetComponent<TransformComponent>();
@@ -77,7 +69,7 @@ public:
         auto& cubeMeshFilter2         = cube2.AddComponent<MeshFilterComponent>();
         cubeMeshFilter2.PrimitiveType = MeshPrimitiveType::Cube;
         auto& cubeMeshRenderer2       = cube2.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer2.BaseColor   = {0, 1, 0, 1};
+        cubeMeshRenderer2.Material = DzMaterial::LoadFromPath("Assets/Materials/Green.dzmaterial");
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
@@ -87,7 +79,7 @@ public:
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.BaseColor   = {1, 1, 1, 1}; // Pure White
+        floorMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
     }
 
 private:

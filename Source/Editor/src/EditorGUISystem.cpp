@@ -5,6 +5,7 @@
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 
 #include <GLFW/glfw3.h>
+#include <IconsMaterialDesignIcons.h>
 #include <ImGuizmo.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -42,7 +43,16 @@ namespace SnowLeopardEngine::Editor
             style.PopupRounding = style.TabRounding = 6.0f;
         }
 
-        // TODO: TTF Fonts & Icon Fonts
+        // Add TTF Fonts & Icon Fonts
+        ImFontConfig defaultConfig = {};
+        io.Fonts->AddFontDefault(&defaultConfig);
+
+        // https://github.com/ocornut/imgui/issues/3247
+        static const ImWchar iconsRanges[] = {ICON_MIN_MDI, ICON_MAX_MDI, 0};
+        ImFontConfig         iconsConfig   = defaultConfig;
+        iconsConfig.MergeMode              = true;
+        iconsConfig.PixelSnapH             = true;
+        io.Fonts->AddFontFromFileTTF("Assets/Fonts/" FONT_ICON_FILE_NAME_MDI, 13, &iconsConfig, iconsRanges);
 
         SetupUIStyle();
 

@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
@@ -52,16 +53,7 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        // clang-format off
-        cameraComponent.CubemapFilePaths = {
-            "Assets/Textures/Skybox001/right.jpg",
-            "Assets/Textures/Skybox001/left.jpg",
-            "Assets/Textures/Skybox001/top.jpg",
-            "Assets/Textures/Skybox001/bottom.jpg",
-            "Assets/Textures/Skybox001/front.jpg",
-            "Assets/Textures/Skybox001/back.jpg"
-        };
-        // clang-format on
+        cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
 
@@ -80,12 +72,10 @@ public:
         // sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
         // sphere.AddComponent<SphereColliderComponent>(normalMaterial);
         sphere.AddComponent<CharacterControllerComponent>();
-        auto& sphereMeshFilter                    = sphere.AddComponent<MeshFilterComponent>();
-        sphereMeshFilter.PrimitiveType            = MeshPrimitiveType::Sphere;
-        auto& sphereMeshRenderer                  = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.BaseColor              = {0.4, 0.45, 0.5, 1}; // Metal
-        sphereMeshRenderer.UseDiffuse             = true;
-        sphereMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/awesomeface.png";
+        auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
+        sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
+        auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
+        sphereMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Blue.dzmaterial");
 
         auto scriptInstance = CreateRef<SphereScript>();
         sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
@@ -103,9 +93,6 @@ public:
         // auto& floorMeshFilter                    = floor.AddComponent<MeshFilterComponent>();
         // floorMeshFilter.PrimitiveType            = MeshPrimitiveType::Cube;
         // auto& floorMeshRenderer                  = floor.AddComponent<MeshRendererComponent>();
-        // floorMeshRenderer.BaseColor              = {1, 1, 1, 1}; // Pure White
-        // floorMeshRenderer.UseDiffuse             = true;
-        // floorMeshRenderer.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
 
         // Create a terrain
         int    heightMapWidth                               = 100;
@@ -124,9 +111,7 @@ public:
         terrainComponent.ZScale = zScale;
         terrain.AddComponent<TerrainColliderComponent>(normalMaterial);
         auto& terrainRenderer = terrain.AddComponent<TerrainRendererComponent>();
-        // terrainRenderer.BaseColor = {0.6, 1, 0.6, 1}; // Light Green
-        terrainRenderer.UseDiffuse             = true;
-        terrainRenderer.DiffuseTextureFilePath = "Assets/Textures/CoolGay.png";
+        terrainRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/CoolGay.dzmaterial");
     }
 
 private:

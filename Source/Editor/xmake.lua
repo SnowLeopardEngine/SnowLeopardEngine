@@ -1,5 +1,5 @@
 -- add requirements
-add_requires("imgui v1.90-docking", {configs = {glfw = true, opengl3 = true}})
+add_requires("imgui v1.90.1-docking", {configs = {glfw = true, opengl3 = true, wchar32 = true}})
 
 -- target defination, name: SnowLeopardEditor
 target("SnowLeopardEditor")
@@ -18,16 +18,24 @@ target("SnowLeopardEditor")
     -- add source files
     add_files("src/**.cpp")
 
+    -- defines
+    add_defines("PX_PHYSX_STATIC_LIB") -- force static lib https://github.com/NVIDIAGameWorks/PhysX/issues/260
+    if is_mode("debug") then
+        add_defines("_DEBUG")
+    else
+        add_defines("NDEBUG")
+    end
+
     -- add packages
     add_packages("imgui", { public = true })
 
     -- add dependencies
-    add_deps("SnowLeopardEngine", "ImGuizmo")
+    add_deps("SnowLeopardEngine", "ImGuizmo", "IconFontCppHeaders")
 
     -- set target directory
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/SnowLeopardEditor")
 
     -- copy config
-    after_build(function(target)
+    on_config(function(target)
         os.cp("$(scriptdir)/config/*", target:targetdir())
     end)

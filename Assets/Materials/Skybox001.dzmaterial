@@ -1,0 +1,15 @@
+{
+    "DzMaterial": {
+        "m_ShaderName": "Legacy/Skybox",
+        "m_PropertyBlock": {
+            "ShaderProperties": [
+                {
+                    "Name": "cubeMap",
+                    "Type": "Cubemap",
+                    "Value": "Assets/Textures/Skybox001;right,left,top,bottom,front,back;.jpg"
+                }
+            ],
+            "ReadOnly": true
+        }
+    }
+}

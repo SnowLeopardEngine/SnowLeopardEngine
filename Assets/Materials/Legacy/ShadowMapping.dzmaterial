@@ -1,0 +1,9 @@
+{
+    "DzMaterial": {
+        "m_ShaderName": "Legacy/ShadowMapping",
+        "m_PropertyBlock": {
+            "ShaderProperties": [],
+            "ReadOnly": true
+        }
+    }
+}

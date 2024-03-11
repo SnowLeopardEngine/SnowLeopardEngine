@@ -9,11 +9,10 @@ namespace SnowLeopardEngine
         std::string Title  = "SnowLeopardEngine";
         uint32_t    Width  = 1024;
         uint32_t    Height = 768;
-        bool        VSync  = false;
 
         WindowInitInfo() = default;
-        WindowInitInfo(const std::string& title, uint32_t width, uint32_t height, bool vsync) :
-            Title(title), Width(width), Height(height), VSync(vsync)
+        WindowInitInfo(const std::string& title, uint32_t width, uint32_t height) :
+            Title(title), Width(width), Height(height)
         {}
     };
 

@@ -1,6 +1,8 @@
 #include "SnowLeopardEngine/Function/Scene/SceneManager.h"
+#include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
 namespace SnowLeopardEngine
@@ -24,8 +26,10 @@ namespace SnowLeopardEngine
         // Add default entities
 
         // Default directional light
-        Entity directionalLight = scene->CreateEntity("Directional Light");
-        directionalLight.AddComponent<DirectionalLightComponent>();
+        Entity directionalLight          = scene->CreateEntity("Directional Light");
+        auto&  directionalLightComponent = directionalLight.AddComponent<DirectionalLightComponent>();
+        directionalLightComponent.ShadowMaterial =
+            DzMaterial::LoadFromPath("Assets/Materials/Legacy/ShadowMapping.dzmaterial");
 
         if (active)
         {
@@ -34,16 +38,30 @@ namespace SnowLeopardEngine
         return scene;
     }
 
-    void SceneManager::SetActiveScene(const Ref<LogicScene>& activeScene) { m_ActiveScene = activeScene; }
+    void SceneManager::SetActiveScene(const Ref<LogicScene>& activeScene)
+    {
+        if (m_ActiveScene == activeScene)
+        {
+            return;
+        }
+
+        if (m_ActiveScene != nullptr)
+        {
+            m_ActiveScene->OnUnload();
+        }
+
+        if (activeScene != nullptr)
+        {
+            activeScene->OnLoad();
+            m_ActiveScene = activeScene;
+        }
+    }
 
     void SceneManager::OnLoad()
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
         if (m_ActiveScene)
         {
-            // Cook PhysicsScene!
-            g_EngineContext->PhysicsSys->CookPhysicsScene(m_ActiveScene);
-
             m_ActiveScene->OnLoad();
         }
     }

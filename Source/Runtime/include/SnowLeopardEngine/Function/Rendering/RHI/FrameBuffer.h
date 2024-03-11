@@ -2,6 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
 namespace SnowLeopardEngine
 {
@@ -48,7 +49,7 @@ namespace SnowLeopardEngine
         bool SwapChainTarget = false;
     };
 
-    class FrameBuffer
+    class FrameBuffer : public RenderResource
     {
     public:
         virtual ~FrameBuffer() = default;

@@ -18,11 +18,10 @@ namespace SnowLeopardEngine
         m_Data.Height    = initInfo.Height;
         m_Data.WindowSys = this;
 
-        SNOW_LEOPARD_CORE_INFO("[GLFWWindow] Creating window, name: {0}, resolution: {1} x {2}, vsync = {3}",
+        SNOW_LEOPARD_CORE_INFO("[GLFWWindow] Creating window, name: {0}, resolution: {1} x {2}",
                                initInfo.Title,
                                initInfo.Width,
-                               initInfo.Height,
-                               initInfo.VSync);
+                               initInfo.Height);
 
         if (s_glfwWindowCount == 0)
         {
@@ -45,9 +44,6 @@ namespace SnowLeopardEngine
 
         // MSAA
         glfwWindowHint(GLFW_SAMPLES, 4);
-
-        // VSync
-        glfwSwapInterval(initInfo.VSync);
 
 #if SNOW_LEOPARD_PLATFORM_DARWIN
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
@@ -93,6 +89,10 @@ namespace SnowLeopardEngine
                 WindowMinimizeEvent minimizeEvent;
                 TriggerEvent(minimizeEvent);
                 return;
+            }
+            else
+            {
+                data.IsMinimized = false;
             }
 
             // Trigger event

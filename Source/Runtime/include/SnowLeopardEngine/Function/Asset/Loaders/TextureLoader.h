@@ -20,11 +20,15 @@ namespace SnowLeopardEngine
     {
     public:
         static bool LoadTexture2D(const std::filesystem::path& path, bool flip, TextureLoadingOutput& output);
-        static bool LoadTexture3D(std::vector<std::filesystem::path> facePaths,
-                                  bool                               flip,
-                                  std::vector<TextureLoadingOutput>& outputs);
+        static bool LoadCubemap(std::vector<std::filesystem::path> facePaths,
+                                bool                               flip,
+                                std::vector<TextureLoadingOutput>& outputs);
 
         static Ref<Texture2D> LoadTexture2D(const std::filesystem::path& path, bool flip);
-        static Ref<Texture3D> LoadTexture3D(std::vector<std::filesystem::path> facePaths, bool flip);
+        static Ref<Cubemap>   LoadCubemap(std::vector<std::filesystem::path> facePaths, bool flip);
+
+    private:
+        static std::unordered_map<std::string, Ref<Texture2D>> s_Texture2DCache;
+        static std::unordered_map<size_t, Ref<Cubemap>>        s_CubemapCache;
     };
 } // namespace SnowLeopardEngine

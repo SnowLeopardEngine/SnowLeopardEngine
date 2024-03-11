@@ -17,7 +17,7 @@ namespace SnowLeopardEngine
 
         LogRegion   GetRegion() const { return m_Region; }
         LogLevel    GetLevel() const { return m_Level; }
-        const char* GetMessage() const { return m_Message; }
+        const char* GetMsg() const { return m_Message; }
 
         virtual const std::string ToString() const override
         {
