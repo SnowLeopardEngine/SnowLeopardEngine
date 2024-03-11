@@ -6,7 +6,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-#if SNOW_LEOPARD_PLATFORM_DARWIN
+#if SNOW_LEOPARD_PLATFORM_DARWIN || _MSC_VER < 1930
 namespace std
 {
     template<>
