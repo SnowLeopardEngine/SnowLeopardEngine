@@ -11,8 +11,6 @@ using namespace SnowLeopardEngine;
 class SphereScript : public NativeScriptInstance
 {
 public:
-    virtual void OnLoad() override { m_Controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>(); }
-
     virtual void OnColliderEnter() override
     {
         SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter");
@@ -28,11 +26,10 @@ public:
             DesktopApp::GetInstance()->Quit();
         }
 
-        m_EngineContext->PhysicsSys->Move(m_Controller, glm::vec3(-0.05f, -0.05f, 0), deltaTime);
-    }
+        auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
 
-private:
-    CharacterControllerComponent m_Controller;
+        m_EngineContext->PhysicsSys->Move(controller, glm::vec3(-0.005f, -0.005f, 0), deltaTime);
+    }
 };
 
 class CustomLifeTime final : public LifeTimeComponent
@@ -63,22 +60,22 @@ public:
         auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
 
         // Create a sphere with RigidBodyComponent & SphereColliderComponent
-        // Entity sphere = scene->CreateEntity("Sphere");
+        Entity sphere = scene->CreateEntity("Sphere");
 
-        // auto& sphereTransform    = sphere.GetComponent<TransformComponent>();
-        // sphereTransform.Position = {5, 15, 0};
-        // sphereTransform.Scale *= 3;
+        auto& sphereTransform    = sphere.GetComponent<TransformComponent>();
+        sphereTransform.Position = {0, 15, 0};
+        sphereTransform.Scale *= 3;
 
-        // // sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
-        // // sphere.AddComponent<SphereColliderComponent>(normalMaterial);
-        // sphere.AddComponent<CharacterControllerComponent>();
-        // auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
-        // sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
-        // auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
-        // sphereMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/Blue.dzmaterial");
+        // sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
+        // sphere.AddComponent<SphereColliderComponent>(normalMaterial);
+        sphere.AddComponent<CharacterControllerComponent>();
+        auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
+        sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
+        auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
+        sphereMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/Blue.dzmaterial");
 
-        // auto scriptInstance = CreateRef<SphereScript>();
-        // sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
+        auto scriptInstance = CreateRef<SphereScript>();
+        sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
 
         // create a testSphere to test MeshColliderComponent
         Entity testSphere            = scene->CreateEntity("TestSphere");
@@ -90,7 +87,7 @@ public:
         testSphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
         auto& testSphereMeshCollider       = testSphere.AddComponent<MeshColliderComponent>();
         auto& testSphereMeshRenderer       = testSphere.AddComponent<MeshRendererComponent>();
-        testSphereMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/Blue.dzmaterial");
+        testSphereMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
 
         // // Create a floor with RigidBodyComponent & BoxColliderComponent
         // Entity floor = scene->CreateEntity("Floor");
