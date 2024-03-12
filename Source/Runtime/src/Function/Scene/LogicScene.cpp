@@ -96,6 +96,7 @@ namespace SnowLeopardEngine
         CoreUUID uuid = CoreUUIDHelper::CreateStandardUUID();
         Entity   entity(m_Registry.create(), this);
         entity.AddComponent<IDComponent>(uuid);
+        entity.AddComponent<TagComponent>();
         entity.AddComponent<TreeNodeComponent>();
         entity.AddComponent<TransformComponent>();
         entity.AddComponent<EntityStatusComponent>();
@@ -126,6 +127,7 @@ namespace SnowLeopardEngine
 
         entity.AddComponent<IDComponent>(uuid);
         entity.AddComponent<NameComponent>(name);
+        entity.AddComponent<TagComponent>();
         entity.AddComponent<TreeNodeComponent>();
         entity.AddComponent<TransformComponent>();
         entity.AddComponent<EntityStatusComponent>();
@@ -441,6 +443,7 @@ namespace SnowLeopardEngine
 
     ON_COMPONENT_ADDED(IDComponent) {}
     ON_COMPONENT_ADDED(NameComponent) {}
+    ON_COMPONENT_ADDED(TagComponent) {}
     ON_COMPONENT_ADDED(TreeNodeComponent) {}
     ON_COMPONENT_ADDED(TransformComponent) {}
     ON_COMPONENT_ADDED(EntityStatusComponent) {}

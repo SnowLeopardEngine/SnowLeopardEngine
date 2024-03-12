@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Tag/TagManager.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 #include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
@@ -55,6 +56,14 @@ namespace SnowLeopardEngine
         NameComponent()                     = default;
         NameComponent(const NameComponent&) = default;
         explicit NameComponent(const std::string& name) : Name(name) {}
+    };
+
+    struct __cppast(smeta_unit) TagComponent
+    {
+        TagValue Tag = static_cast<TagValue>(BuiltinTag::Untagged);
+
+        TagComponent()                    = default;
+        TagComponent(const TagComponent&) = default;
     };
 
     struct __cppast(smeta_unit) TreeNodeComponent
@@ -458,7 +467,8 @@ namespace SnowLeopardEngine
     struct ComponentGroup
     {};
 
-    using AllComponents = ComponentGroup<TreeNodeComponent,
+    using AllComponents = ComponentGroup<TagComponent,
+                                         TreeNodeComponent,
                                          TransformComponent,
                                          EntityStatusComponent,
                                          NativeScriptingComponent,
