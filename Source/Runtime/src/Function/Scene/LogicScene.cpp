@@ -184,9 +184,11 @@ namespace SnowLeopardEngine
                 {
                     auto& animatorComponent = m_Registry.get<AnimatorComponent>(entity);
 
-                    if (!model.Animations.empty())
+                    for (const auto& animation : model.Animations)
                     {
-                        animatorComponent.CurrentAnimator = CreateRef<Animator>(model.Animations[0]);
+                        auto animator = CreateRef<Animator>(animation);
+                        animatorComponent.Controller.RegisterAnimator(animator);
+                        animatorComponent.Controller.SetEntryAnimator(animator);
                     }
                 }
             }
@@ -232,12 +234,8 @@ namespace SnowLeopardEngine
         });
 
         // Init Animators
-        m_Registry.view<AnimatorComponent>().each([](entt::entity entity, AnimatorComponent& animator) {
-            if (animator.CurrentAnimator != nullptr)
-            {
-                animator.CurrentAnimator->UpdateAnimation(0);
-            }
-        });
+        m_Registry.view<AnimatorComponent>().each(
+            [](entt::entity entity, AnimatorComponent& animator) { animator.Controller.InitAnimators(); });
 
         // Scripting Callback
         m_Registry.view<NativeScriptingComponent>().each(
@@ -353,10 +351,7 @@ namespace SnowLeopardEngine
 
         // Animators
         m_Registry.view<AnimatorComponent>().each([deltaTime](entt::entity entity, AnimatorComponent& animator) {
-            if (animator.CurrentAnimator != nullptr)
-            {
-                animator.CurrentAnimator->UpdateAnimation(deltaTime);
-            }
+            animator.Controller.UpdateAnimators(deltaTime);
         });
     }
 
