@@ -11,7 +11,10 @@
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
+#include "glm/fwd.hpp"
 #include <PxPhysicsAPI.h>
+#include <cstddef>
+#include <vector>
 
 // CppAst.NET Macro
 #if !defined(__cppast)
@@ -305,6 +308,16 @@ namespace SnowLeopardEngine
         {}
     };
 
+    struct MeshColliderComponent
+    {
+        glm::vec3            Offset    = {0, 0, 0};
+        Ref<PhysicsMaterial> Material  = nullptr;
+        bool                 IsTrigger = false;
+
+        MeshColliderComponent()                             = default;
+        MeshColliderComponent(const MeshColliderComponent&) = default;       
+    }; 
+
     // -------- Physics Components DEFINITION END --------
 
     // -------- Rendering Components DEFINITION START --------
@@ -457,6 +470,7 @@ namespace SnowLeopardEngine
                                          CapsuleColliderComponent,
                                          TerrainColliderComponent,
                                          CharacterControllerComponent,
+                                         MeshColliderComponent,
                                          CameraComponent,
                                          FreeMoveCameraControllerComponent,
                                          DirectionalLightComponent,

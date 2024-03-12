@@ -1,10 +1,18 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
+#include "PxRigidBody.h"
+#include "PxRigidDynamic.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Util/Util.h"
+#include "cooking/PxCooking.h"
+#include "extensions/PxDefaultStreams.h"
 #include "foundation/Px.h"
+#include "foundation/PxSimpleTypes.h"
+#include "geometry/PxTriangleMesh.h"
+#include "geometry/PxTriangleMeshGeometry.h"
+#include <cstdint>
 
 using namespace physx;
 
@@ -50,7 +58,16 @@ namespace SnowLeopardEngine
             return;
         }
 
-        Subscribe(m_LogicScenePreloadHandler);
+        // Create cooking
+        m_Cooking = PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation, PxCookingParams(PxTolerancesScale()));
+        if (!m_Cooking)
+        {
+            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] PxCreateCooking failed!");
+            m_State = SystemState::Error;
+            return;
+        }
+
+        Subscribe(m_LogicSceneLoadedHandler);
 
         SNOW_LEOPARD_CORE_INFO("[PhysicsSystem] Initialized");
         m_State = SystemState::InitOk;
@@ -60,7 +77,7 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_CORE_INFO("[PhysicsSystem] Shutting Down...");
 
-        Unsubscribe(m_LogicScenePreloadHandler);
+        Unsubscribe(m_LogicSceneLoadedHandler);
 
         if (m_Scene != nullptr)
         {
@@ -406,6 +423,120 @@ namespace SnowLeopardEngine
 
                 characterController.InternalController = controller;
             });
+
+        // case6: MeshFilterComponent + MeshColliderComponent + RigidBodyComponent
+        registry
+            .view<TransformComponent,
+                  EntityStatusComponent,
+                  RigidBodyComponent,
+                  MeshFilterComponent,
+                  MeshColliderComponent>()
+            .each([this](entt::entity           entity,
+                         TransformComponent&    transform,
+                         EntityStatusComponent& entityStatus,
+                         RigidBodyComponent&    rigidBody,
+                         MeshFilterComponent&   meshFilter,
+                         MeshColliderComponent& meshCollider) {
+                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
+                pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(meshCollider.Offset);
+
+                PxRigidActor* body;
+                if (entityStatus.IsStatic)
+                {
+                    body = m_Physics->createRigidStatic(pxTransform);
+                }
+                else
+                {
+                    body = m_Physics->createRigidDynamic(pxTransform);
+                    // static_cast<PxRigidDynamic*>(body)->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+                    static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);                   // set Mass
+                    static_cast<PxRigidDynamic*>(body)->setLinearDamping(rigidBody.LinearDamping); // set Linear Damping
+                    static_cast<PxRigidDynamic*>(body)->setAngularDamping(
+                        rigidBody.AngularDamping); // set Angular Damping
+
+                    PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
+                    if (rigidBody.EnableCCD) // Continuous Collision Detection
+                    {
+                        currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
+                    }
+                    else
+                    {
+                        currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
+                    }
+                    static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
+                }
+                // create a mesh collider shape
+                PxMaterial* material;
+                if (meshCollider.Material == nullptr)
+                {
+                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
+                }
+                else
+                {
+                    material = m_Physics->createMaterial(meshCollider.Material->DynamicFriction,
+                                                         meshCollider.Material->StaticFriction,
+                                                         meshCollider.Material->Bounciness);
+                }
+
+                PxShapeFlags shapeFlags;
+                if (meshCollider.IsTrigger)
+                {
+                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
+                }
+                else
+                {
+                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
+                }
+
+                size_t totalVertexCount = 0;
+                for (const auto& meshItem : meshFilter.Meshes.Items)
+                {
+                    if (meshItem.Data.HasAnimationInfo())
+                    {
+                        totalVertexCount += meshItem.Data.AnimatedVertices.size();
+                    }
+                    else
+                    {
+                        totalVertexCount += meshItem.Data.StaticVertices.size();
+                    }
+                }
+
+                PxVec3* vertices     = new PxVec3[totalVertexCount];
+                size_t  vertexOffset = 0;
+                for (const auto& meshItem : meshFilter.Meshes.Items)
+                {
+                    for (const auto& vertex : meshItem.Data.StaticVertices)
+                    {
+                        vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
+                    }
+                    for (const auto& vertex : meshItem.Data.AnimatedVertices)
+                    {
+                        vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
+                    }
+                }
+
+                // Switch to dynamic body by attach another convex mesh shape
+                PxConvexMeshDesc convexDesc;
+                convexDesc.points.count  = totalVertexCount;
+                convexDesc.points.stride = sizeof(PxVec3);
+                convexDesc.points.data   = vertices;
+                convexDesc.flags         = PxConvexFlag::eCOMPUTE_CONVEX;
+
+                PxDefaultMemoryOutputStream     writeBuffer;
+                PxConvexMeshCookingResult::Enum result;
+                m_Cooking->cookConvexMesh(convexDesc, writeBuffer, &result);
+
+                PxDefaultMemoryInputData input(writeBuffer.getData(), writeBuffer.getSize());
+                PxConvexMesh*            convexMesh = m_Physics->createConvexMesh(input);
+
+                PxRigidActorExt::createExclusiveShape(*body, PxConvexMeshGeometry(convexMesh), *material);
+                m_Scene->addActor(*body);
+
+                rigidBody.InternalBody = body;
+
+                delete[] vertices;
+            });
+
         // TODO: More cases
     }
 
@@ -509,5 +640,5 @@ namespace SnowLeopardEngine
         // TODO: Jubiao Lin
     }
 
-    void PhysicsSystem::OnLogicScenePreload(const LogicScenePreLoadEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
+    void PhysicsSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
 } // namespace SnowLeopardEngine

@@ -42,7 +42,7 @@ namespace SnowLeopardEngine
         void AddTorque(const RigidBodyComponent& component, const glm::vec3& torque) const;
 
     private:
-        void OnLogicScenePreload(const LogicScenePreLoadEvent& e);
+        void OnLogicSceneLoaded(const LogicSceneLoadedEvent& e);
 
     private:
         physx::PxDefaultAllocator   m_Allocator;
@@ -53,8 +53,9 @@ namespace SnowLeopardEngine
         LogicScene*                 m_LogicScene = nullptr;
         physx::PxControllerManager* m_Controller = nullptr;
 
-        EventHandler<LogicScenePreLoadEvent> m_LogicScenePreloadHandler = [this](const LogicScenePreLoadEvent& e) {
-            OnLogicScenePreload(e);
+        EventHandler<LogicSceneLoadedEvent> m_LogicSceneLoadedHandler = [this](const LogicSceneLoadedEvent& e) {
+            OnLogicSceneLoaded(e);
         };
+        physx::PxCooking*           m_Cooking    = nullptr;
     };
 } // namespace SnowLeopardEngine

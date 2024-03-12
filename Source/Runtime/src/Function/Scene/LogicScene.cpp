@@ -464,6 +464,7 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(CapsuleColliderComponent) {}
     ON_COMPONENT_ADDED(TerrainColliderComponent) {}
     ON_COMPONENT_ADDED(CharacterControllerComponent) {}
+    ON_COMPONENT_ADDED(MeshColliderComponent) {}
 
     ON_COMPONENT_ADDED(CameraComponent) {}
     ON_COMPONENT_ADDED(FreeMoveCameraControllerComponent) {}
