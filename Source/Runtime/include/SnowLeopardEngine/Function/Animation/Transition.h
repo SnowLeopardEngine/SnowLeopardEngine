@@ -1,26 +1,30 @@
 #pragma once
 
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
-#include <string>
 
 namespace SnowLeopardEngine
 {
     class Transition
     {
     public:
-        Transition(Animator* sourceAnimator, Animator* targetAnimator, int duration, std::string triggerName);
+        Transition(Ref<Animator>      sourceAnimator,
+                   Ref<Animator>      targetAnimator,
+                   int                duration,
+                   const std::string& triggerName) :
+            m_SourceAnimator(sourceAnimator),
+            m_TargetAnimator(targetAnimator), m_Duration(duration), m_TriggerName(triggerName)
+        {}
 
-        std::string GetTriggerName();
+        inline const std::string& GetTriggerName() const { return m_TriggerName; }
 
-        Animator* GetSourceAnimator();
+        inline Ref<Animator> GetSourceAnimator() const { return m_SourceAnimator; }
 
-        Animator* GetTargetAnimator();
+        inline Ref<Animator> GetTargetAnimator() const { return m_TargetAnimator; }
 
     private:
-        std::string m_TriggerName;
-        Animator* m_SourceAnimator;
-        Animator* m_TargetAnimator;
-        int m_Duration;
-
+        std::string   m_TriggerName;
+        Ref<Animator> m_SourceAnimator;
+        Ref<Animator> m_TargetAnimator;
+        int           m_Duration;
     };
 } // namespace SnowLeopardEngine

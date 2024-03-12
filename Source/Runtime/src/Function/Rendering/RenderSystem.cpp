@@ -217,7 +217,7 @@ namespace SnowLeopardEngine
                         if (hasAnimation)
                         {
                             auto& animator     = registry.get<AnimatorComponent>(geometry);
-                            auto  boneMatrices = animator.CurrentAnimator->GetFinalBoneMatrices();
+                            auto  boneMatrices = animator.Controller.GetCurrentAnimator()->GetFinalBoneMatrices();
                             for (uint32_t i = 0; i < boneMatrices.size(); ++i)
                             {
                                 shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
@@ -363,7 +363,7 @@ namespace SnowLeopardEngine
                     if (hasAnimation)
                     {
                         auto& animator     = registry.get<AnimatorComponent>(geometry);
-                        auto  boneMatrices = animator.CurrentAnimator->GetFinalBoneMatrices();
+                        auto  boneMatrices = animator.Controller.GetCurrentAnimator()->GetFinalBoneMatrices();
                         for (uint32_t i = 0; i < boneMatrices.size(); ++i)
                         {
                             shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);

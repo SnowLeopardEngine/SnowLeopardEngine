@@ -2,7 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
-#include "SnowLeopardEngine/Function/Animation/Animator.h"
+#include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
@@ -434,9 +434,7 @@ namespace SnowLeopardEngine
     // -------- Animation Components DEFINITION START --------
     struct AnimatorComponent
     {
-        // TODO: Animator Controller
-        // Now, we just load the first animation and create relevant animator, play on awake and loop forever.
-        Ref<Animator> CurrentAnimator;
+        AnimatorController Controller;
 
         AnimatorComponent()                         = default;
         AnimatorComponent(const AnimatorComponent&) = default;

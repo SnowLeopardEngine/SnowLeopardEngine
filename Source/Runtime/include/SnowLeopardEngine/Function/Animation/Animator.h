@@ -8,14 +8,14 @@ namespace SnowLeopardEngine
     {
     public:
         explicit Animator(Ref<Animation> animation);
+        std::vector<glm::mat4> GetFinalBoneMatrices() { return m_FinalBoneMatrices; }
 
+    private:
         void UpdateAnimation(float dt);
-
         void PlayAnimation(Ref<Animation> pAnimation);
-
         void CalculateBoneTransform(const AssimpNodeData* node, glm::mat4 parentTransform);
 
-        std::vector<glm::mat4> GetFinalBoneMatrices() { return m_FinalBoneMatrices; }
+        friend class AnimatorController;
 
     private:
         std::vector<glm::mat4> m_FinalBoneMatrices;

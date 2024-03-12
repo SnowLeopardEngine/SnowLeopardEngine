@@ -1,39 +1,37 @@
 #pragma once
 
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
-
 #include "SnowLeopardEngine/Function/Animation/Transition.h"
-#include <vector>
 
 namespace SnowLeopardEngine
 {
-    // class IAgent 
-    // {
-
-    // };
-
     class AnimatorController
     {
     public:
-        AnimatorController();
+        void RegisterAnimator(const Ref<Animator>& animator);
+        void DeleteAnimator(const Ref<Animator>& animator);
 
-        void RegisterAnimator(Animator* animator);
+        void RegisterTransition(const Ref<Animator>& sourceAnimator,
+                                const Ref<Animator>& targetAnimator,
+                                int                  duration,
+                                std::string          triggerName);
 
-        void DeleteAnimator(Animator* animator);
+        void DeleteTransition(const Ref<Animator>& sourceAnimator, std::string triggerName);
 
-        void RegisterTransition(Animator* sourceAnimator, Animator* targetAnimator, int duration, std::string triggerName);
+        void Blending(const Ref<Animator>& sourceAnimator, const Ref<Animator>& targetAnimator);
 
-        void DeleteTransition(Animator* sourceAnimator, std::string triggerName);
-
-        void Blending(Animator* sourceAnimator, Animator* targetAnimator);
-
-        void SetEntryAnimator(Animator* animator);
+        void SetEntryAnimator(const Ref<Animator>& animator);
 
         void SetTrigger(std::string triggerName);
 
+        void InitAnimators();
+        void UpdateAnimators(float deltaTime);
+
+        inline Ref<Animator> GetCurrentAnimator() const { return m_CurrentAnimator; }
+
     private:
-        Animator* m_CurrentAnimator;
-        std::vector<Animator*> m_Animators;
-        std::map<Animator*, std::vector<Transition*>> m_TransitionsInfoMap;
+        Ref<Animator>                                         m_CurrentAnimator;
+        std::vector<Ref<Animator>>                            m_Animators;
+        std::map<Ref<Animator>, std::vector<Ref<Transition>>> m_TransitionsInfoMap;
     };
 } // namespace SnowLeopardEngine
