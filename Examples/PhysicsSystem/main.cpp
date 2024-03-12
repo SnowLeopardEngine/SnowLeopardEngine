@@ -3,6 +3,7 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include <SnowLeopardEngine/Core/Time/Time.h>
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
@@ -17,7 +18,7 @@ public:
         m_EngineContext->AudioSys->Play("sounds/jump.mp3");
     }
 
-    virtual void OnTick(float deltaTime) override
+    virtual void OnFixedTick() override
     {
         auto& inputSystem = m_EngineContext->InputSys;
 
@@ -28,7 +29,7 @@ public:
 
         auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
 
-        m_EngineContext->PhysicsSys->Move(controller, glm::vec3(-0.005f, -0.005f, 0), deltaTime);
+        m_EngineContext->PhysicsSys->Move(controller, glm::vec3(-0.1f, -0.1f, 0), Time::FixedDeltaTime);
     }
 };
 
