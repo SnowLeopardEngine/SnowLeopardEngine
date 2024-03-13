@@ -188,6 +188,8 @@ namespace SnowLeopardEngine
         options.version = 450;
 #elif SNOW_LEOPARD_PLATFORM_DARWIN
         options.version = 410;
+        // https://github.com/KhronosGroup/SPIRV-Cross/issues/1981
+        options.enable_420pack_extension = false;
 #else
         options.version = 330; // fall back
 #endif

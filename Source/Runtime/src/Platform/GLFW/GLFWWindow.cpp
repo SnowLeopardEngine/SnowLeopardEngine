@@ -34,9 +34,6 @@ namespace SnowLeopardEngine
 #ifndef NDEBUG
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 #endif
-        // High DPI
-        glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
-
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MAJOR);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MINOR);
@@ -46,7 +43,11 @@ namespace SnowLeopardEngine
         glfwWindowHint(GLFW_SAMPLES, 4);
 
 #if SNOW_LEOPARD_PLATFORM_DARWIN
+        glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+#else
+        // High DPI
+        glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 #endif
         m_Window = glfwCreateWindow(static_cast<int>(initInfo.Width),
                                     static_cast<int>(initInfo.Height),
@@ -55,13 +56,13 @@ namespace SnowLeopardEngine
                                     nullptr);
         ++s_glfwWindowCount;
 
+#if !SNOW_LEOPARD_PLATFORM_DARWIN
         // Update width and height when High DPI is enabled.
         int frameBufferWidth, frameBufferHeight;
         glfwGetFramebufferSize(m_Window, &frameBufferWidth, &frameBufferHeight);
         m_Data.Width  = frameBufferWidth;
         m_Data.Height = frameBufferHeight;
-
-#if !SNOW_LEOPARD_PLATFORM_DARWIN
+        
         // Get vid mode
         const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
