@@ -7,7 +7,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, sampler2D shadowMap) {
 
     float lightSize = 0.05; 
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0); 
-    float searchRadius = 0.004; 
+    float searchRadius = 0.005; 
     float shadow = 0.0; 
 
     
