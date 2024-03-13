@@ -12,6 +12,7 @@ namespace SnowLeopardEngine
         virtual ~GLTexture2D();
 
         virtual void Bind(uint32_t slot) const override;
+        virtual void Unbind() const override;
 
         virtual const TextureDesc& GetDesc() const override { return m_Desc; }
 
@@ -36,6 +37,7 @@ namespace SnowLeopardEngine
         virtual ~GLCubemap();
 
         virtual void Bind(uint32_t slot) const override;
+        virtual void Unbind() const override;
 
         virtual const TextureDesc& GetDesc() const override { return m_Desc; }
 
