@@ -2,6 +2,7 @@
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
+#include "SnowLeopardEngine/Platform/OpenGL/GLAPI.h"
 #include <glad/glad.h>
 
 namespace SnowLeopardEngine
@@ -17,8 +18,18 @@ namespace SnowLeopardEngine
 
         static void CreateTextures(bool multisampled, uint32_t* outID, uint32_t count)
         {
-            glCreateTextures(TextureTarget(multisampled), count, outID);
+            if (OpenGLAPI::IsDSASupported())
+            {
+                glCreateTextures(TextureTarget(multisampled), count, outID);
+            }
+            else
+            {
+                glGenTextures(count, outID);
+                glBindTexture(TextureTarget(multisampled), *outID);
+            }
         }
+
+        static void BindTexture(bool multisampled, uint32_t id) { glBindTexture(TextureTarget(multisampled), id); }
 
         static void AttachColorTexture(uint32_t id,
                                        int      samples,
@@ -30,23 +41,49 @@ namespace SnowLeopardEngine
                                        uint32_t fboName)
         {
             SNOW_LEOPARD_PROFILE_FUNCTION
-            bool multisampled = samples > 1;
-            if (multisampled)
+
+            if (OpenGLAPI::IsDSASupported())
             {
-                glTextureStorage2DMultisample(id, samples, internalFormat, width, height, GL_FALSE);
+                bool multisampled = samples > 1;
+                if (multisampled)
+                {
+                    glTextureStorage2DMultisample(id, samples, internalFormat, width, height, GL_FALSE);
+                }
+                else
+                {
+                    glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    glTextureParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                    glTextureParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                    glTextureParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+                    glTextureStorage2D(id, 1, internalFormat, width, height);
+                }
+
+                glNamedFramebufferTexture(fboName, GL_COLOR_ATTACHMENT0 + index, id, 0);
             }
             else
             {
-                glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTextureParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                glTextureParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTextureParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                bool multisampled = samples > 1;
+                if (multisampled)
+                {
+                    glTexImage2DMultisample(
+                        GL_TEXTURE_2D_MULTISAMPLE, samples, internalFormat, width, height, GL_FALSE);
+                }
+                else
+                {
+                    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, nullptr);
 
-                glTextureStorage2D(id, 1, internalFormat, width, height);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                }
+
+                glFramebufferTexture2D(
+                    GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, TextureTarget(multisampled), id, 0);
             }
-
-            glNamedFramebufferTexture(fboName, GL_COLOR_ATTACHMENT0 + index, id, 0);
         }
 
         static void AttachDepthTexture(uint32_t id,
@@ -58,25 +95,59 @@ namespace SnowLeopardEngine
                                        uint32_t fboName)
         {
             SNOW_LEOPARD_PROFILE_FUNCTION
-            bool multisampled = samples > 1;
-            if (multisampled)
+
+            if (OpenGLAPI::IsDSASupported())
             {
-                glTextureStorage2DMultisample(id, samples, format, width, height, GL_FALSE);
+                bool multisampled = samples > 1;
+                if (multisampled)
+                {
+                    glTextureStorage2DMultisample(id, samples, format, width, height, GL_FALSE);
+                }
+                else
+                {
+                    glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    glTextureParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+                    glTextureParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+                    glTextureParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+                    GLfloat borderColor[] = {1.0, 1.0, 1.0, 1.0};
+                    glTextureParameterfv(id, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+                    glTextureStorage2D(id, 1, format, width, height);
+                }
+                glNamedFramebufferTexture(fboName, attachmentType, id, 0);
             }
             else
             {
-                glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTextureParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
-                glTextureParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-                glTextureParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+                bool multisampled = samples > 1;
+                if (multisampled)
+                {
+                    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, format, width, height, GL_FALSE);
+                }
+                else
+                {
+                    uint32_t glDataType = GL_UNSIGNED_BYTE;
+                    uint32_t glFormat   = GL_DEPTH_COMPONENT;
+                    if (format == GL_DEPTH24_STENCIL8)
+                    {
+                        glDataType = GL_UNSIGNED_INT_24_8;
+                        glFormat   = GL_DEPTH_STENCIL;
+                    }
+                    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, glFormat, glDataType, nullptr);
 
-                GLfloat borderColor[] = {1.0, 1.0, 1.0, 1.0};
-                glTextureParameterfv(id, GL_TEXTURE_BORDER_COLOR, borderColor);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-                glTextureStorage2D(id, 1, format, width, height);
+                    GLfloat borderColor[] = {1.0, 1.0, 1.0, 1.0};
+                    glTexParameterfv(id, GL_TEXTURE_BORDER_COLOR, borderColor);
+                }
+
+                glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, TextureTarget(multisampled), id, 0);
             }
-            glNamedFramebufferTexture(fboName, attachmentType, id, 0);
         }
 
         static bool IsDepthFormat(FrameBufferTextureFormat format)
@@ -151,7 +222,16 @@ namespace SnowLeopardEngine
             m_DepthAttachment = 0;
         }
 
-        glCreateFramebuffers(1, &m_Name);
+        if (OpenGLAPI::IsDSASupported())
+        {
+            glCreateFramebuffers(1, &m_Name);
+        }
+        else
+        {
+            glGenFramebuffers(1, &m_Name);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, m_Name);
 
         bool multisample = m_Desc.Samples > 1;
 
@@ -163,6 +243,7 @@ namespace SnowLeopardEngine
 
             for (size_t i = 0; i < m_ColorAttachments.size(); ++i)
             {
+                Utils::BindTexture(multisample, m_ColorAttachments[i]);
                 switch (m_ColorAttachmentDescs[i].TextureFormat)
                 {
                     case FrameBufferTextureFormat::RGBA8:
@@ -210,7 +291,7 @@ namespace SnowLeopardEngine
                 case FrameBufferTextureFormat::DEPTH24:
                     Utils::AttachDepthTexture(m_DepthAttachment,
                                               m_Desc.Samples,
-                                              GL_DEPTH_COMPONENT24,
+                                              OpenGLAPI::IsDSASupported() ? GL_DEPTH_COMPONENT24 : GL_DEPTH_COMPONENT,
                                               GL_DEPTH_ATTACHMENT,
                                               m_Desc.Width,
                                               m_Desc.Height,
@@ -222,8 +303,6 @@ namespace SnowLeopardEngine
                     break;
             }
         }
-
-        glBindFramebuffer(GL_FRAMEBUFFER, m_Name);
 
         if (m_ColorAttachments.size() > 1)
         {
@@ -242,8 +321,16 @@ namespace SnowLeopardEngine
             glReadBuffer(GL_NONE);
         }
 
-        SNOW_LEOPARD_CORE_ASSERT(glCheckNamedFramebufferStatus(m_Name, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
-                                 "[GLFrameBuffer] FrameBuffer is incomplete!");
+        if (OpenGLAPI::IsDSASupported())
+        {
+            SNOW_LEOPARD_CORE_ASSERT(glCheckNamedFramebufferStatus(m_Name, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
+                                     "[GLFrameBuffer] FrameBuffer is incomplete!");
+        }
+        else
+        {
+            SNOW_LEOPARD_CORE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
+                                     "[GLFrameBuffer] FrameBuffer is incomplete!");
+        }
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
@@ -313,8 +400,22 @@ namespace SnowLeopardEngine
         SNOW_LEOPARD_PROFILE_FUNCTION
         SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
 
-        float newColor[4] = {color.r, color.g, color.b, color.a};
-        glClearNamedFramebufferfv(m_Name, GL_COLOR, attachmentIndex, newColor);
+        if (OpenGLAPI::IsDSASupported())
+        {
+            float newColor[4] = {color.r, color.g, color.b, color.a};
+            glClearNamedFramebufferfv(m_Name, GL_COLOR, attachmentIndex, newColor);
+        }
+        else
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, m_Name);
+            GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0 + attachmentIndex};
+            glDrawBuffers(1, drawBuffers);
+            glClearColor(color.r, color.g, color.b, color.a);
+            glClear(GL_COLOR_BUFFER_BIT);
+            GLenum defaultDrawBuffer = GL_BACK;
+            glDrawBuffers(1, &defaultDrawBuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
     }
 
     void GLFrameBuffer::ClearColorAttachment(uint32_t attachmentIndex, int value)
@@ -323,20 +424,48 @@ namespace SnowLeopardEngine
         SNOW_LEOPARD_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
 
         auto& spec = m_ColorAttachmentDescs[attachmentIndex];
-        glClearTexImage(
-            m_ColorAttachments[attachmentIndex], 0, Utils::FBTextureFormatToGL(spec.TextureFormat), GL_INT, &value);
+
+        if (OpenGLAPI::IsDSASupported())
+        {
+            glClearTexImage(
+                m_ColorAttachments[attachmentIndex], 0, Utils::FBTextureFormatToGL(spec.TextureFormat), GL_INT, &value);
+        }
+        else
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, m_Name);
+            glClearBufferiv(GL_COLOR, attachmentIndex, &value);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
     }
 
     void GLFrameBuffer::BindColorAttachmentTexture(uint32_t index, uint32_t slot) const
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
         SNOW_LEOPARD_CORE_ASSERT(index < m_ColorAttachments.size(), "[GLFrameBuffer] Index out of range!");
-        glBindTextureUnit(slot, m_ColorAttachments[index]);
+
+        if (OpenGLAPI::IsDSASupported())
+        {
+            glBindTextureUnit(slot, m_ColorAttachments[index]);
+        }
+        else
+        {
+            glActiveTexture(GL_TEXTURE0 + slot);
+            glBindTexture(GL_TEXTURE_2D, m_ColorAttachments[index]);
+        }
     }
 
     void GLFrameBuffer::BindDepthAttachmentTexture(uint32_t slot) const
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
-        glBindTextureUnit(slot, m_DepthAttachment);
+
+        if (OpenGLAPI::IsDSASupported())
+        {
+            glBindTextureUnit(slot, m_DepthAttachment);
+        }
+        else
+        {
+            glActiveTexture(GL_TEXTURE0 + slot);
+            glBindTexture(GL_TEXTURE_2D, m_DepthAttachment);
+        }
     }
 } // namespace SnowLeopardEngine

@@ -258,4 +258,6 @@ namespace SnowLeopardEngine
         SNOW_LEOPARD_PROFILE_FUNCTION
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
     }
+
+    bool OpenGLAPI::IsDSASupported() { return GLAD_GL_VERSION_4_5 || GLAD_GL_VERSION_4_6; }
 } // namespace SnowLeopardEngine
