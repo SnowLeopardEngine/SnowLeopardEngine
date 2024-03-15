@@ -1,6 +1,5 @@
 #include "SnowLeopardEngine/Engine/Engine.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
-#include "SnowLeopardEngine/Core/Tag/TagManager.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
@@ -38,10 +37,6 @@ namespace SnowLeopardEngine
 
         // Init camera system
         g_EngineContext->CameraSys.Init();
-
-        // TODO: engine subsystem
-        // Init tag manager
-        TagManager::Init();
 
         SNOW_LEOPARD_CORE_INFO("[Engine] Initialized");
 

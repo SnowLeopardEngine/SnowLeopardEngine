@@ -1,6 +1,6 @@
 #include "SnowLeopardEngine/Function/Scene/SceneManager.h"
-#include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
+#include "SnowLeopardEngine/Core/Tag/TagManager.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
@@ -9,6 +9,9 @@ namespace SnowLeopardEngine
 {
     SceneManager::SceneManager()
     {
+        // Init tag manager
+        TagManager::Init();
+
         SNOW_LEOPARD_CORE_INFO("[SceneManager] Initialized");
         m_State = SystemState::InitOk;
     }

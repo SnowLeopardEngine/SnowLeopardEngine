@@ -4,7 +4,7 @@
 namespace SnowLeopardEngine
 {
     std::unordered_map<std::string, TagValue> TagManager::s_TagMap;
-    TagValue                                  TagManager::s_TagValueSeed = BuiltinTagLastValue;
+    TagValue                                  TagManager::s_TagValueSeed = BuiltinTagNextValue;
 
     void TagManager::Init()
     {
@@ -27,14 +27,15 @@ namespace SnowLeopardEngine
         return true;
     }
 
-    bool TagManager::TryAppendNewTag(const std::string& name)
+    bool TagManager::TryAppendNewTag(const std::string& name, TagValue& tagValue)
     {
         if (s_TagMap.count(name) > 0)
         {
             return false;
         }
 
-        s_TagMap[name] = s_TagValueSeed++;
+        tagValue       = s_TagValueSeed++;
+        s_TagMap[name] = tagValue;
         return true;
     }
 } // namespace SnowLeopardEngine

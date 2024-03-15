@@ -99,6 +99,9 @@ namespace SnowLeopardEngine::Editor
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
         floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
+
+        // Treat the floor as terrain for NavMesh baking test
+        floor.GetComponent<TagComponent>().Tag = static_cast<TagValue>(BuiltinTag::Terrain);
     }
 
     void ViewportPanel::OnFixedTick()
