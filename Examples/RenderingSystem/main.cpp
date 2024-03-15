@@ -3,6 +3,7 @@
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
@@ -28,6 +29,20 @@ public:
     }
 };
 
+static Entity CreateSphere(const Ref<DzMaterial> material, const glm::vec3& position, const Ref<LogicScene>& scene)
+{
+    Entity sphere                  = scene->CreateEntity("Sphere1");
+    auto&  sphereTransform         = sphere.GetComponent<TransformComponent>();
+    sphereTransform.Position       = position;
+    sphereTransform.Scale          = {2, 2, 2};
+    auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
+    sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
+    auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
+    sphereMeshRenderer.Material    = material;
+
+    return sphere;
+}
+
 class CustomLifeTime final : public LifeTimeComponent
 {
 public:
@@ -51,35 +66,29 @@ public:
         camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
 
-        // Create cubes to test shadow
-        Entity cube1            = scene->CreateEntity("Cube1");
-        auto&  cubeTransform1   = cube1.GetComponent<TransformComponent>();
-        cubeTransform1.Position = {0, 10, 0};
-        cubeTransform1.SetRotationEuler(glm::vec3(45, 45, 45));
-        auto& cubeMeshFilter1         = cube1.AddComponent<MeshFilterComponent>();
-        cubeMeshFilter1.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& cubeMeshRenderer1       = cube1.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer1.Material = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
+        // Load materials
+        auto redMaterial = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
 
-        Entity cube2            = scene->CreateEntity("Cube2");
-        auto&  cubeTransform2   = cube2.GetComponent<TransformComponent>();
-        cubeTransform2.Position = {-3, 5, -5};
-        cubeTransform2.SetRotationEuler(glm::vec3(135, 135, 135));
-        cubeTransform2.Scale          = {2, 2, 2};
-        auto& cubeMeshFilter2         = cube2.AddComponent<MeshFilterComponent>();
-        cubeMeshFilter2.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& cubeMeshRenderer2       = cube2.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer2.Material = DzMaterial::LoadFromPath("Assets/Materials/Green.dzmaterial");
+        // Create spheres to test materials
+        // Sphere 1
+        Entity sphere1 = CreateSphere(redMaterial, {-21, 10, 0}, scene);
+        Entity sphere2 = CreateSphere(redMaterial, {-15, 10, 0}, scene);
+        Entity sphere3 = CreateSphere(redMaterial, {-9, 10, 0}, scene);
+        Entity sphere4 = CreateSphere(redMaterial, {-3, 10, 0}, scene);
+        Entity sphere5 = CreateSphere(redMaterial, {3, 10, 0}, scene);
+        Entity sphere6 = CreateSphere(redMaterial, {9, 10, 0}, scene);
+        Entity sphere7 = CreateSphere(redMaterial, {15, 10, 0}, scene);
+        Entity sphere8 = CreateSphere(redMaterial, {21, 10, 0}, scene);
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
 
         auto& floorTransform          = floor.GetComponent<TransformComponent>();
-        floorTransform.Scale          = {50, 1, 50};
+        floorTransform.Scale          = {100, 1, 100};
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
+        floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
     }
 
 private:
