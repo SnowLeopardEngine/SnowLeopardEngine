@@ -1,6 +1,6 @@
 #include "SnowLeopardEngine/Engine/Engine.h"
-#include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
 {
