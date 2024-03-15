@@ -1,18 +1,9 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
-#include "PxRigidBody.h"
-#include "PxRigidDynamic.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Util/Util.h"
-#include "cooking/PxCooking.h"
-#include "extensions/PxDefaultStreams.h"
-#include "foundation/Px.h"
-#include "foundation/PxSimpleTypes.h"
-#include "geometry/PxTriangleMesh.h"
-#include "geometry/PxTriangleMeshGeometry.h"
-#include <cstdint>
 
 using namespace physx;
 
@@ -79,10 +70,20 @@ namespace SnowLeopardEngine
 
         Unsubscribe(m_LogicSceneLoadedHandler);
 
+        // TODO: When scene unloading
+        ReleaseInternalResources();
+
+        if (m_ControllerManager != nullptr)
+        {
+            m_ControllerManager->release();
+        }
+
         if (m_Scene != nullptr)
         {
             m_Scene->release();
         }
+
+        m_Cooking->release();
         m_Physics->release();
         m_Foundation->release();
 
@@ -93,6 +94,12 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
         m_LogicScene = logicScene;
+
+        if (m_ControllerManager)
+        {
+            m_ControllerManager->release();
+            m_ControllerManager = nullptr;
+        }
 
         if (m_Scene)
         {
@@ -115,6 +122,15 @@ namespace SnowLeopardEngine
             pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
             pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
             pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
+        }
+
+        // Create Controller Manager
+        m_ControllerManager = PxCreateControllerManager(*m_Scene);
+        if (!m_ControllerManager)
+        {
+            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] PxCreateControllerManager failed!");
+            m_State = SystemState::Error;
+            return;
         }
 
         // Cook the scene from logic
@@ -187,7 +203,11 @@ namespace SnowLeopardEngine
                 auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
 
                 // attach the shape to the rigidBody
-                body->attachShape(*sphereShape);
+                if (body->attachShape(*sphereShape))
+                {
+                    sphereShape->release();
+                    sphereShape = nullptr;
+                }
 
                 // add the rigidBody to the scene
                 m_Scene->addActor(*body);
@@ -266,7 +286,11 @@ namespace SnowLeopardEngine
                 auto*         boxShape = m_Physics->createShape(boxGeometry, *material);
 
                 // attach the shape to the rigidBody
-                body->attachShape(*boxShape);
+                if (body->attachShape(*boxShape))
+                {
+                    boxShape->release();
+                    boxShape = nullptr;
+                }
 
                 // add the rigidBody to the scene
                 m_Scene->addActor(*body);
@@ -324,7 +348,12 @@ namespace SnowLeopardEngine
 
                 PxCapsuleGeometry capsuleGeometry(capsuleCollider.Radius, capsuleCollider.Height);
                 auto*             capsuleShape = m_Physics->createShape(capsuleGeometry, *material);
-                body->attachShape(*capsuleShape);
+                if (body->attachShape(*capsuleShape))
+                {
+                    capsuleShape->release();
+                    capsuleShape = nullptr;
+                }
+
                 m_Scene->addActor(*body);
 
                 rigidBody.InternalBody = body;
@@ -381,7 +410,12 @@ namespace SnowLeopardEngine
                     m_Physics->createRigidStatic(PxTransform(PhysXGLMHelpers::GetPhysXVec3(transform.Position)));
 
                 PxShape* shape = m_Physics->createShape(hfGeometry, *material);
-                body->attachShape(*shape);
+                if (body->attachShape(*shape))
+                {
+                    shape->release();
+                    shape = nullptr;
+                }
+
                 m_Scene->addActor(*body);
 
                 terrainCollider.InternalBody = body;
@@ -391,9 +425,6 @@ namespace SnowLeopardEngine
         registry.view<TransformComponent, CharacterControllerComponent>().each(
             [this](
                 entt::entity entity, TransformComponent& transform, CharacterControllerComponent& characterController) {
-                // Create Controller Manager
-                PxControllerManager* controllerManager = PxCreateControllerManager(*m_Scene);
-
                 PxMaterial* material;
                 if (characterController.Material == nullptr)
                 {
@@ -419,7 +450,7 @@ namespace SnowLeopardEngine
                 desc.stepOffset  = characterController.StepOffset;
                 desc.material    = material;
 
-                PxController* controller = controllerManager->createController(desc);
+                PxController* controller = m_ControllerManager->createController(desc);
 
                 characterController.InternalController = controller;
             });
@@ -571,8 +602,11 @@ namespace SnowLeopardEngine
             // Fetch character controllers
             registry.view<TransformComponent, CharacterControllerComponent>().each(
                 [](entt::entity entity, TransformComponent& transform, CharacterControllerComponent& controller) {
-                    auto position      = controller.InternalController->getPosition();
-                    transform.Position = {position.x, position.y, position.z};
+                    if (controller.InternalController != nullptr)
+                    {
+                        auto position      = controller.InternalController->getPosition();
+                        transform.Position = {position.x, position.y, position.z};
+                    }
                 });
         }
     }
@@ -625,8 +659,11 @@ namespace SnowLeopardEngine
     void
     PhysicsSystem::Move(const CharacterControllerComponent& component, const glm::vec3& movement, float deltaTime) const
     {
-        component.InternalController->move(
-            PhysXGLMHelpers::GetPhysXVec3(movement), component.MinMoveDisp, deltaTime, component.Filters);
+        if (component.InternalController != nullptr)
+        {
+            component.InternalController->move(
+                PhysXGLMHelpers::GetPhysXVec3(movement), component.MinMoveDisp, deltaTime, component.Filters);
+        }
     }
 
     /** RigidBody **/
@@ -641,4 +678,38 @@ namespace SnowLeopardEngine
     }
 
     void PhysicsSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
+
+    void PhysicsSystem::ReleaseInternalResources()
+    {
+        if (m_LogicScene != nullptr)
+        {
+            auto& registry = m_LogicScene->GetRegistry();
+
+            registry.view<RigidBodyComponent>().each([](entt::entity entity, RigidBodyComponent& rigidBody) {
+                if (rigidBody.InternalBody != nullptr)
+                {
+                    rigidBody.InternalBody->release();
+                    rigidBody.InternalBody = nullptr;
+                }
+            });
+
+            registry.view<TerrainColliderComponent>().each(
+                [](entt::entity entity, TerrainColliderComponent& terrainCollider) {
+                    if (terrainCollider.InternalBody != nullptr)
+                    {
+                        terrainCollider.InternalBody->release();
+                        terrainCollider.InternalBody = nullptr;
+                    }
+                });
+
+            registry.view<CharacterControllerComponent>().each(
+                [](entt::entity entity, CharacterControllerComponent& controller) {
+                    if (controller.InternalController != nullptr)
+                    {
+                        controller.InternalController->release();
+                        controller.InternalController = nullptr;
+                    }
+                });
+        }
+    }
 } // namespace SnowLeopardEngine

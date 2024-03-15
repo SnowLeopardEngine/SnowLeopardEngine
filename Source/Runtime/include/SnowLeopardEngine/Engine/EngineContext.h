@@ -18,10 +18,10 @@ namespace SnowLeopardEngine
         SingletonWrapper<LogSystem>     LogSys;
         SingletonWrapper<EventSystem>   EventSys;
         SingletonWrapper<AudioSystem>   AudioSys;
-        SingletonWrapper<PhysicsSystem> PhysicsSys;
         SingletonWrapper<WindowSystem>  WindowSys;
         SingletonWrapper<InputSystem>   InputSys;
         SingletonWrapper<SceneManager>  SceneMngr;
+        SingletonWrapper<PhysicsSystem> PhysicsSys;
         SingletonWrapper<RenderSystem>  RenderSys;
         SingletonWrapper<CameraSystem>  CameraSys;
     };
