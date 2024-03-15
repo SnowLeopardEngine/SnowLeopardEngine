@@ -1,7 +1,6 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
-#include "SnowLeopardEngine/Core/Tag/TagManager.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 #include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
@@ -11,11 +10,10 @@
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
+#include "SnowLeopardEngine/Function/Scene/LayerManager.h"
+#include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
-#include "glm/fwd.hpp"
 #include <PxPhysicsAPI.h>
-#include <cstddef>
-#include <vector>
 
 // CppAst.NET Macro
 #if !defined(__cppast)
@@ -60,10 +58,18 @@ namespace SnowLeopardEngine
 
     struct __cppast(smeta_unit) TagComponent
     {
-        TagValue Tag = static_cast<TagValue>(BuiltinTag::Untagged);
+        __cppast(tooltip = "Tag of an entity") std::string TagValue = Tag::Untagged;
 
         TagComponent()                    = default;
         TagComponent(const TagComponent&) = default;
+    };
+
+    struct __cppast(smeta_unit) LayerComponent
+    {
+        __cppast(tooltip = "Layer of an entity") Layer LayerValue = static_cast<Layer>(LayerMask::Default);
+
+        LayerComponent()                      = default;
+        LayerComponent(const LayerComponent&) = default;
     };
 
     struct __cppast(smeta_unit) TreeNodeComponent
@@ -324,8 +330,8 @@ namespace SnowLeopardEngine
         bool                 IsTrigger = false;
 
         MeshColliderComponent()                             = default;
-        MeshColliderComponent(const MeshColliderComponent&) = default;       
-    }; 
+        MeshColliderComponent(const MeshColliderComponent&) = default;
+    };
 
     // -------- Physics Components DEFINITION END --------
 
@@ -468,6 +474,7 @@ namespace SnowLeopardEngine
     {};
 
     using AllComponents = ComponentGroup<TagComponent,
+                                         LayerComponent,
                                          TreeNodeComponent,
                                          TransformComponent,
                                          EntityStatusComponent,

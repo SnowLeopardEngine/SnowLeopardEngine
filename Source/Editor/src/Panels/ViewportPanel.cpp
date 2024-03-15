@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Function/Input/Input.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "IconsMaterialDesignIcons.h"
 #include "entt/entt.hpp"
@@ -101,7 +102,7 @@ namespace SnowLeopardEngine::Editor
         floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
 
         // Treat the floor as terrain for NavMesh baking test
-        floor.GetComponent<TagComponent>().Tag = static_cast<TagValue>(BuiltinTag::Terrain);
+        floor.GetComponent<TagComponent>().TagValue = Tag::Terrain;
     }
 
     void ViewportPanel::OnFixedTick()
