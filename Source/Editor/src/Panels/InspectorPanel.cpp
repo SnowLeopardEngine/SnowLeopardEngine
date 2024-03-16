@@ -1,11 +1,13 @@
 #include "SnowLeopardEditor/Panels/InspectorPanel.h"
 #include "SnowLeopardEditor/Selector.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
 #include "glm/gtc/type_ptr.hpp"
 #include "imgui.h"
+#include "magic_enum.hpp"
 
 namespace SnowLeopardEngine::Editor
 {
@@ -63,6 +65,64 @@ namespace SnowLeopardEngine::Editor
                     ImGui::NextColumn();
                     ImGui::DragFloat3("##Scale", glm::value_ptr(transformComponent.Scale), 1.0f, 0.0f, 0.0f, "%.6f");
                     ImGui::Columns(1);
+                }
+
+                // Draw meshFilter
+                if (entity.HasComponent<MeshFilterComponent>())
+                {
+                    auto& meshFilterComponent = entity.GetComponent<MeshFilterComponent>();
+                    if (ImGui::CollapsingHeader("MeshFilter", ImGuiTreeNodeFlags_DefaultOpen))
+                    {
+                        ImGui::Columns(2);
+                        ImGui::SetColumnWidth(0, LabelWidth);
+
+                        ImGui::Text("Use Primitive");
+                        ImGui::NextColumn();
+                        ImGui::Checkbox("##UsePrimitive", &meshFilterComponent.UsePrimitive);
+
+                        if (meshFilterComponent.UsePrimitive)
+                        {
+                            ImGui::NextColumn();
+                            ImGui::Text("Primitive Type");
+                            ImGui::NextColumn();
+
+                            // Get all values of the enum
+                            auto values = magic_enum::enum_values<MeshPrimitiveType>();
+
+                            // Create a combo box for enum selection
+                            MeshPrimitiveType selectedEnumValue = meshFilterComponent.PrimitiveType;
+                            if (ImGui::BeginCombo("##MeshPrimitiveType",
+                                                  magic_enum::enum_name(selectedEnumValue).data()))
+                            {
+                                for (const auto& value : values)
+                                {
+                                    bool isSelected = selectedEnumValue == value;
+                                    if (ImGui::Selectable(magic_enum::enum_name(value).data(), isSelected))
+                                        selectedEnumValue = value;
+                                    if (isSelected)
+                                        ImGui::SetItemDefaultFocus();
+                                }
+                                ImGui::EndCombo();
+                            }
+                            if (meshFilterComponent.PrimitiveType != selectedEnumValue)
+                            {
+                                meshFilterComponent.Meshes.Items.clear();
+                                // TODO: Load meshes
+                                meshFilterComponent.PrimitiveType = selectedEnumValue;
+                            }
+                        }
+                        else
+                        {
+                            // TODO: Switch to AssetManager: AssetHandle (UUID) with filter (*.obj, *.fbx, *.gltf, ...)
+                            // Read only for now
+                            ImGui::NextColumn();
+                            ImGui::Text("Mesh File Path");
+                            ImGui::NextColumn();
+                            ImGui::Text("%s", meshFilterComponent.FilePath.generic_string().c_str());
+                        }
+
+                        ImGui::Columns(1);
+                    }
                 }
 
                 // Draw rigidBody

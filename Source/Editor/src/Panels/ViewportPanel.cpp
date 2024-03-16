@@ -83,6 +83,7 @@ namespace SnowLeopardEngine::Editor
         sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
         sphere.AddComponent<SphereColliderComponent>(normalMaterial);
         auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
+        sphereMeshFilter.UsePrimitive  = true;
         sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
         auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
         sphereMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/Blue.dzmaterial");
@@ -97,6 +98,7 @@ namespace SnowLeopardEngine::Editor
         floor.AddComponent<RigidBodyComponent>();
         floor.AddComponent<BoxColliderComponent>(normalMaterial);
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
+        floorMeshFilter.UsePrimitive  = true;
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
         floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
