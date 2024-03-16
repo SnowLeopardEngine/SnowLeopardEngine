@@ -148,7 +148,10 @@ namespace SnowLeopardEngine
                    RigidBodyComponent&      rigidBody,
                    SphereColliderComponent& sphereCollider) {
                 // create a rigidBody
-                PxTransform   pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
+                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
+
+                rigidBody.IsStatic = entityStatus.IsStatic;
+
                 PxRigidActor* body;
                 if (entityStatus.IsStatic)
                 {
@@ -229,6 +232,8 @@ namespace SnowLeopardEngine
                 // create a rigidBody
                 PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
                 pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(boxCollider.Offset);
+
+                rigidBody.IsStatic = entityStatus.IsStatic;
 
                 PxRigidActor* body;
                 if (entityStatus.IsStatic)
@@ -312,6 +317,8 @@ namespace SnowLeopardEngine
                 // create a rigidBody
                 PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
                 pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(capsuleCollider.Offset);
+
+                rigidBody.IsStatic = entityStatus.IsStatic;
 
                 PxRigidActor* body;
                 if (entityStatus.IsStatic)
@@ -475,6 +482,8 @@ namespace SnowLeopardEngine
                 PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
                 pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(meshCollider.Offset);
 
+                rigidBody.IsStatic = entityStatus.IsStatic;
+
                 PxRigidActor* body;
                 if (entityStatus.IsStatic)
                 {
@@ -588,6 +597,7 @@ namespace SnowLeopardEngine
                             TransformComponent&    transform,
                             EntityStatusComponent& entityStatus,
                             RigidBodyComponent&    rigidBody) {
+                    rigidBody.IsStatic = entityStatus.IsStatic;
                     if (rigidBody.InternalBody == nullptr)
                     {
                         auto name = registry.get<NameComponent>(entity).Name;
@@ -595,7 +605,7 @@ namespace SnowLeopardEngine
                         return;
                     }
 
-                    if (!entityStatus.IsStatic)
+                    if (!rigidBody.IsStatic)
                     {
                         // TODO: wrap as a function
                         static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->setMass(rigidBody.Mass);
@@ -698,18 +708,18 @@ namespace SnowLeopardEngine
     void
     PhysicsSystem::Move(const CharacterControllerComponent& component, const glm::vec3& movement, float deltaTime) const
     {
-        if (component.InternalController != nullptr) {
+        if (component.InternalController != nullptr)
+        {
             component.InternalController->move(
                 PhysXGLMHelpers::GetPhysXVec3(movement), component.MinMoveDisp, deltaTime, component.Filters);
         }
-        
     }
 
     /** RigidBody **/
     void PhysicsSystem::AddForce(const RigidBodyComponent& component, const glm::vec3& force) const
     {
-      
-        if (component.InternalBody != nullptr) {
+        if (component.InternalBody != nullptr && !component.IsStatic)
+        {
             PxRigidBody* body = static_cast<PxRigidBody*>(component.InternalBody);
             body->addForce(PhysXGLMHelpers::GetPhysXVec3(force), PxForceMode::eFORCE, true);
         }
@@ -717,8 +727,8 @@ namespace SnowLeopardEngine
 
     void PhysicsSystem::AddTorque(const RigidBodyComponent& component, const glm::vec3& torque) const
     {
-       
-        if (component.InternalBody != nullptr) {
+        if (component.InternalBody != nullptr && !component.IsStatic)
+        {
             PxRigidBody* body = static_cast<PxRigidBody*>(component.InternalBody);
             body->addTorque(PhysXGLMHelpers::GetPhysXVec3(torque), PxForceMode::eFORCE, true);
         }
