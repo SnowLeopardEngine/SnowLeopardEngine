@@ -213,7 +213,9 @@ namespace SnowLeopardEngine
 
         __cppast(tooltip = "The angular damping of the rigidBody") float AngularDamping = 0.05f;
 
-        physx::PxRigidActor* InternalBody = nullptr;
+        __cppast(ignore) physx::PxRigidActor* InternalBody = nullptr;
+
+        __cppast(ignore) bool IsStatic = false;
 
         RigidBodyComponent()                          = default;
         RigidBodyComponent(const RigidBodyComponent&) = default;
