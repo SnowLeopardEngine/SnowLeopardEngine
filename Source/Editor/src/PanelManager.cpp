@@ -1,6 +1,8 @@
 #include "SnowLeopardEditor/PanelManager.h"
 #include "SnowLeopardEditor/Panels/ConsolePanel.h"
+#include "SnowLeopardEditor/Panels/InspectorPanel.h"
 #include "SnowLeopardEditor/Panels/ViewportPanel.h"
+#include "SnowLeopardEngine/Core/Base/Base.h"
 
 namespace SnowLeopardEngine::Editor
 {
@@ -13,6 +15,9 @@ namespace SnowLeopardEngine::Editor
 
         auto consolePanel = CreateRef<ConsolePanel>();
         s_Panels.emplace_back(consolePanel);
+
+        auto inspectorPanel = CreateRef<InspectorPanel>();
+        s_Panels.emplace_back(inspectorPanel);
 
         // TODO: add more panels
 
