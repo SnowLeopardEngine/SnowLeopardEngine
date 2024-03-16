@@ -26,8 +26,8 @@ namespace SnowLeopardEngine::Editor
         uint16_t                 m_LogMessagesEnd;
         uint32_t                 m_LogMessagesFilter;
         ImGuiTextFilter          m_Filter;
-        bool m_AllowToBottom;
-        bool m_RequestToBottom;
+        bool                     m_AllowToBottom;
+        bool                     m_RequestToBottom;
 
         enum MyItemColumnID
         {

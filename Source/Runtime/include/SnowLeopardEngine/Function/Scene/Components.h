@@ -174,7 +174,8 @@ namespace SnowLeopardEngine
 
     struct __cppast(smeta_unit) EntityStatusComponent
     {
-        __cppast(tooltip = "Is the entity static") bool IsStatic = false;
+        __cppast(tooltip = "Is the entity enabled") bool IsEnabled = true;
+        __cppast(tooltip = "Is the entity static") bool  IsStatic  = false;
 
         EntityStatusComponent()                             = default;
         EntityStatusComponent(const EntityStatusComponent&) = default;

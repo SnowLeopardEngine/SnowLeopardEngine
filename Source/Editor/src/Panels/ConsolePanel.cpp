@@ -1,6 +1,7 @@
 #include "SnowLeopardEditor/Panels/ConsolePanel.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
+#include "imgui.h"
 #include <fmt/format.h>
 
 namespace SnowLeopardEngine::Editor
@@ -12,7 +13,7 @@ namespace SnowLeopardEngine::Editor
         m_LogMessagesFilter = static_cast<uint32_t>(LogLevel::Trace) | static_cast<uint32_t>(LogLevel::Info) |
                               static_cast<uint32_t>(LogLevel::Warn) | static_cast<uint32_t>(LogLevel::Error) |
                               static_cast<uint32_t>(LogLevel::Critical);
-        m_AllowToBottom = true;
+        m_AllowToBottom   = true;
         m_RequestToBottom = false;
         // Register log event
         Subscribe(m_LogEventHandler);
@@ -26,15 +27,19 @@ namespace SnowLeopardEngine::Editor
         ImGui::Begin("Console");
 
         ImGuiStyle& style = ImGui::GetStyle();
+
         ImGui::AlignTextToFramePadding();
         ImGui::SameLine();
         ImGui::TextUnformatted(ICON_MDI_MAGNIFY);
         ImGui::SameLine();
+
         float spacing                   = ImGui::GetStyle().ItemSpacing.x;
         ImGui::GetStyle().ItemSpacing.x = 2;
+
         float levelButtonWidth =
             ImGui::CalcTextSize(GetLevelIcon(static_cast<LogLevel>(1))).x + ImGui::GetStyle().FramePadding.x * 2.0f;
         float levelButtonWidths = (levelButtonWidth + ImGui::GetStyle().ItemSpacing.x) * 5;
+
         {
             ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
@@ -55,6 +60,9 @@ namespace SnowLeopardEngine::Editor
             {
                 drawList->AddRect(min, max, ImColor(80, 80, 80), 2.0f, 0, 1.0f);
             }
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar();
+            ImGui::PopFont();
         }
 
         ImGui::SameLine();
@@ -85,9 +93,12 @@ namespace SnowLeopardEngine::Editor
             {
                 ImGui::SetTooltip("%s", GetLevelIcon(level));
             }
-            ImGui::PopStyleColor();
+
+            ImGui::PopStyleColor(2);
         }
+
         ImGui::GetStyle().ItemSpacing.x = spacing;
+
         if (!m_Filter.IsActive())
         {
             ImGui::SameLine();
@@ -95,6 +106,8 @@ namespace SnowLeopardEngine::Editor
             ImGui::SetCursorPosX(ImGui::GetFontSize() * 4.0f);
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, ImGui::GetStyle().FramePadding.y));
             ImGui::TextUnformatted("Search...");
+            ImGui::PopStyleVar();
+            ImGui::PopFont();
         }
 
         ImGui::Separator();
@@ -119,22 +132,22 @@ namespace SnowLeopardEngine::Editor
 
             for (uint16_t i = 0; i < m_LogMessagesEnd; i += 3)
             {
-                if(m_Filter.IsActive())
+                if (m_Filter.IsActive())
                 {
-                    if (m_Filter.PassFilter(m_LogMessagesBox[i + 2].c_str())) 
+                    if (m_Filter.PassFilter(m_LogMessagesBox[i + 2].c_str()))
                     {
                         if (m_LogMessagesFilter & static_cast<uint32_t>(stringToLogLevel(m_LogMessagesBox[i + 1])))
                         {
                             ImGui::TableNextColumn();
                             ImU32 iColor = ImColor(GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).r,
-                                                GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).g,
-                                                GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).b,
-                                                GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).a);
+                                                   GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).g,
+                                                   GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).b,
+                                                   GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).a);
                             ImGui::PushStyleColor(ImGuiCol_Text, iColor);
                             const auto* levelIcon = GetLevelIcon(stringToLogLevel(m_LogMessagesBox[i + 1]));
                             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() -
-                                                ImGui::CalcTextSize(levelIcon).x - ImGui::GetScrollX() -
-                                                2 * ImGui::GetStyle().ItemSpacing.x);
+                                                 ImGui::CalcTextSize(levelIcon).x - ImGui::GetScrollX() -
+                                                 2 * ImGui::GetStyle().ItemSpacing.x);
                             ImGui::TextUnformatted(levelIcon);
 
                             ImGui::PopStyleColor();
@@ -147,19 +160,21 @@ namespace SnowLeopardEngine::Editor
                             ImGui::TableNextRow();
                         }
                     }
-                }else{
+                }
+                else
+                {
                     if (m_LogMessagesFilter & static_cast<uint32_t>(stringToLogLevel(m_LogMessagesBox[i + 1])))
                     {
                         ImGui::TableNextColumn();
                         ImU32 iColor = ImColor(GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).r,
-                                            GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).g,
-                                            GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).b,
-                                            GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).a);
+                                               GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).g,
+                                               GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).b,
+                                               GetRenderColour(stringToLogLevel(m_LogMessagesBox[i + 1])).a);
                         ImGui::PushStyleColor(ImGuiCol_Text, iColor);
                         const auto* levelIcon = GetLevelIcon(stringToLogLevel(m_LogMessagesBox[i + 1]));
                         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() -
-                                            ImGui::CalcTextSize(levelIcon).x - ImGui::GetScrollX() -
-                                            2 * ImGui::GetStyle().ItemSpacing.x);
+                                             ImGui::CalcTextSize(levelIcon).x - ImGui::GetScrollX() -
+                                             2 * ImGui::GetStyle().ItemSpacing.x);
                         ImGui::TextUnformatted(levelIcon);
 
                         ImGui::PopStyleColor();
@@ -173,7 +188,7 @@ namespace SnowLeopardEngine::Editor
                     }
                 }
             }
-            if(m_RequestToBottom && ImGui::GetScrollMaxY() > 0)
+            if (m_RequestToBottom && ImGui::GetScrollMaxY() > 0)
             {
                 ImGui::SetScrollHereY(1.0f);
                 m_RequestToBottom = false;
@@ -199,7 +214,7 @@ namespace SnowLeopardEngine::Editor
         m_LogMessagesBox[m_LogMessagesEnd++] = magic_enum::enum_name(e.GetRegion());
         m_LogMessagesBox[m_LogMessagesEnd++] = magic_enum::enum_name(e.GetLevel());
         m_LogMessagesBox[m_LogMessagesEnd++] = e.GetMsg();
-        if(m_AllowToBottom)
+        if (m_AllowToBottom)
             m_RequestToBottom = true;
     }
 } // namespace SnowLeopardEngine::Editor

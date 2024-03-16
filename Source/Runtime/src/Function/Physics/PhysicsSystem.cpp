@@ -580,10 +580,45 @@ namespace SnowLeopardEngine
         SNOW_LEOPARD_PROFILE_FUNCTION
         if (m_Scene != nullptr)
         {
+            auto& registry = m_LogicScene->GetRegistry();
+
+            // Tick rigid bodies
+            registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent>().each(
+                [&registry](entt::entity           entity,
+                            TransformComponent&    transform,
+                            EntityStatusComponent& entityStatus,
+                            RigidBodyComponent&    rigidBody) {
+                    if (rigidBody.InternalBody == nullptr)
+                    {
+                        auto name = registry.get<NameComponent>(entity).Name;
+                        SNOW_LEOPARD_CORE_WARN("[PhysicsSystem] A rigidBody without shape! Entity name: {0}", name);
+                        return;
+                    }
+
+                    if (!entityStatus.IsStatic)
+                    {
+                        // TODO: wrap as a function
+                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->setMass(rigidBody.Mass);
+                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->setLinearDamping(rigidBody.LinearDamping);
+                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)
+                            ->setAngularDamping(rigidBody.AngularDamping);
+
+                        PxRigidBodyFlags currentFlags =
+                            static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->getRigidBodyFlags();
+                        if (rigidBody.EnableCCD)
+                        {
+                            currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
+                        }
+                        else
+                        {
+                            currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
+                        }
+                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->setRigidBodyFlags(currentFlags);
+                    }
+                });
+
             m_Scene->simulate(Time::FixedDeltaTime);
             m_Scene->fetchResults(true);
-
-            auto& registry = m_LogicScene->GetRegistry();
 
             // Fetch rigid bodies
             registry.view<TransformComponent, RigidBodyComponent>().each(
