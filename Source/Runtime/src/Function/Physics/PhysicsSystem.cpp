@@ -1,4 +1,8 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
+#include "PxActorData.h"
+#include "PxForceMode.h"
+#include "PxRigidBody.h"
+#include "PxRigidDynamic.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
@@ -659,22 +663,30 @@ namespace SnowLeopardEngine
     void
     PhysicsSystem::Move(const CharacterControllerComponent& component, const glm::vec3& movement, float deltaTime) const
     {
-        if (component.InternalController != nullptr)
-        {
+        if (component.InternalController != nullptr) {
             component.InternalController->move(
                 PhysXGLMHelpers::GetPhysXVec3(movement), component.MinMoveDisp, deltaTime, component.Filters);
         }
+        
     }
 
     /** RigidBody **/
     void PhysicsSystem::AddForce(const RigidBodyComponent& component, const glm::vec3& force) const
     {
-        // TODO: Jubiao Lin
+      
+        if (component.InternalBody != nullptr) {
+            PxRigidBody* body = static_cast<PxRigidBody*>(component.InternalBody);
+            body->addForce(PhysXGLMHelpers::GetPhysXVec3(force), PxForceMode::eFORCE, true);
+        }
     }
 
     void PhysicsSystem::AddTorque(const RigidBodyComponent& component, const glm::vec3& torque) const
     {
-        // TODO: Jubiao Lin
+       
+        if (component.InternalBody != nullptr) {
+            PxRigidBody* body = static_cast<PxRigidBody*>(component.InternalBody);
+            body->addTorque(PhysXGLMHelpers::GetPhysXVec3(torque), PxForceMode::eFORCE, true);
+        }
     }
 
     void PhysicsSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
