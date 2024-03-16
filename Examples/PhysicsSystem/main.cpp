@@ -3,6 +3,7 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "glm/fwd.hpp"
 #include <SnowLeopardEngine/Core/Time/Time.h>
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
@@ -28,8 +29,9 @@ public:
         }
 
         auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
-
+        auto& rigider = m_OwnerEntity->GetComponent<RigidBodyComponent>();
         m_EngineContext->PhysicsSys->Move(controller, glm::vec3(-0.1f, -0.1f, 0), Time::FixedDeltaTime);
+        m_EngineContext->PhysicsSys->AddForce(rigider, glm::vec3(-5.f, -5.f,0));
     }
 };
 
@@ -67,9 +69,10 @@ public:
         sphereTransform.Position = {0, 15, 0};
         sphereTransform.Scale *= 3;
 
-        // sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
-        // sphere.AddComponent<SphereColliderComponent>(normalMaterial);
+        sphere.AddComponent<RigidBodyComponent>();
+        sphere.AddComponent<SphereColliderComponent>(normalMaterial);
         sphere.AddComponent<CharacterControllerComponent>();
+        
         auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
         sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
         auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
@@ -77,7 +80,7 @@ public:
 
         auto scriptInstance = CreateRef<SphereScript>();
         sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
-
+        
         // create a testSphere to test MeshColliderComponent
         Entity testSphere            = scene->CreateEntity("TestSphere");
         auto&  testSphereTransform   = testSphere.GetComponent<TransformComponent>();
@@ -89,6 +92,7 @@ public:
         auto& testSphereMeshCollider       = testSphere.AddComponent<MeshColliderComponent>();
         auto& testSphereMeshRenderer       = testSphere.AddComponent<MeshRendererComponent>();
         testSphereMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
+
 
         // // Create a floor with RigidBodyComponent & BoxColliderComponent
         // Entity floor = scene->CreateEntity("Floor");
