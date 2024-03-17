@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Function/Input/Input.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "IconsMaterialDesignIcons.h"
 #include "entt/entt.hpp"
@@ -53,21 +54,21 @@ namespace SnowLeopardEngine::Editor
         m_EditorCamera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                                      = m_EditorCamera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                                 = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
+        cameraComponent.SkyboxMaterialFilePath                     = "Assets/Materials/Skybox001.dzmaterial";
 
         // Attach a editor camera script
         m_EditorCameraScript = CreateRef<EditorCameraScript>();
         m_EditorCamera.AddComponent<NativeScriptingComponent>(m_EditorCameraScript);
 
         // Create a character
-        Entity character               = scene->CreateEntity("Character");
-        auto&  characterTransform      = character.GetComponent<TransformComponent>();
-        characterTransform.Position.y  = 0.6;
-        characterTransform.Scale       = {10, 10, 10};
-        auto& characterMeshFilter      = character.AddComponent<MeshFilterComponent>();
-        characterMeshFilter.FilePath   = "Assets/Models/Vampire/Vampire_Dancing.fbx";
-        auto& characterMeshRenderer    = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Vampire.dzmaterial");
+        Entity character                       = scene->CreateEntity("Character");
+        auto&  characterTransform              = character.GetComponent<TransformComponent>();
+        characterTransform.Position.y          = 0.6;
+        characterTransform.Scale               = {10, 10, 10};
+        auto& characterMeshFilter              = character.AddComponent<MeshFilterComponent>();
+        characterMeshFilter.FilePath           = "Assets/Models/Vampire/Vampire_Dancing.fbx";
+        auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
+        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
         character.AddComponent<AnimatorComponent>();
 
         auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
@@ -81,10 +82,11 @@ namespace SnowLeopardEngine::Editor
 
         sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
         sphere.AddComponent<SphereColliderComponent>(normalMaterial);
-        auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
-        sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
-        auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/Blue.dzmaterial");
+        auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
+        sphereMeshFilter.UsePrimitive       = true;
+        sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
+        auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
+        sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
@@ -95,10 +97,14 @@ namespace SnowLeopardEngine::Editor
         floor.GetComponent<EntityStatusComponent>().IsStatic = true;
         floor.AddComponent<RigidBodyComponent>();
         floor.AddComponent<BoxColliderComponent>(normalMaterial);
-        auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
-        floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
+        auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
+        floorMeshFilter.UsePrimitive       = true;
+        floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
+        auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
+        floorMeshRenderer.MaterialFilePath = "Assets/Materials/White.dzmaterial";
+
+        // Treat the floor as terrain for NavMesh baking test
+        floor.GetComponent<TagComponent>().TagValue = Tag::Terrain;
     }
 
     void ViewportPanel::OnFixedTick()

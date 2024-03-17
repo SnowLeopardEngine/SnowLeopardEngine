@@ -181,6 +181,24 @@ namespace SnowLeopardEngine
                 {
                     auto& transform = registry.get<TransformComponent>(geometry);
 
+                    // If it doesn't cast shadow, continue
+                    if (registry.any_of<MeshRendererComponent>(geometry))
+                    {
+                        auto& meshRenderer = registry.get<MeshRendererComponent>(geometry);
+                        if (!meshRenderer.CastShadow)
+                        {
+                            continue;
+                        }
+                    }
+                    if (registry.any_of<TerrainRendererComponent>(geometry))
+                    {
+                        auto& terrainRenderer = registry.get<TerrainRendererComponent>(geometry);
+                        if (!terrainRenderer.CastShadow)
+                        {
+                            continue;
+                        }
+                    }
+
                     std::vector<MeshItem*> meshItemPtrs;
 
                     if (registry.any_of<MeshFilterComponent>(geometry))
@@ -217,7 +235,7 @@ namespace SnowLeopardEngine
                         if (hasAnimation)
                         {
                             auto& animator     = registry.get<AnimatorComponent>(geometry);
-                            auto  boneMatrices = animator.CurrentAnimator->GetFinalBoneMatrices();
+                            auto  boneMatrices = animator.Controller.GetCurrentAnimator()->GetFinalBoneMatrices();
                             for (uint32_t i = 0; i < boneMatrices.size(); ++i)
                             {
                                 shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
@@ -363,7 +381,7 @@ namespace SnowLeopardEngine
                     if (hasAnimation)
                     {
                         auto& animator     = registry.get<AnimatorComponent>(geometry);
-                        auto  boneMatrices = animator.CurrentAnimator->GetFinalBoneMatrices();
+                        auto  boneMatrices = animator.Controller.GetCurrentAnimator()->GetFinalBoneMatrices();
                         for (uint32_t i = 0; i < boneMatrices.size(); ++i)
                         {
                             shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);

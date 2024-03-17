@@ -6,6 +6,7 @@
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
@@ -96,6 +97,8 @@ namespace SnowLeopardEngine
         CoreUUID uuid = CoreUUIDHelper::CreateStandardUUID();
         Entity   entity(m_Registry.create(), this);
         entity.AddComponent<IDComponent>(uuid);
+        entity.AddComponent<TagComponent>();
+        entity.AddComponent<LayerComponent>();
         entity.AddComponent<TreeNodeComponent>();
         entity.AddComponent<TransformComponent>();
         entity.AddComponent<EntityStatusComponent>();
@@ -126,6 +129,8 @@ namespace SnowLeopardEngine
 
         entity.AddComponent<IDComponent>(uuid);
         entity.AddComponent<NameComponent>(name);
+        entity.AddComponent<TagComponent>();
+        entity.AddComponent<LayerComponent>();
         entity.AddComponent<TreeNodeComponent>();
         entity.AddComponent<TransformComponent>();
         entity.AddComponent<EntityStatusComponent>();
@@ -184,9 +189,11 @@ namespace SnowLeopardEngine
                 {
                     auto& animatorComponent = m_Registry.get<AnimatorComponent>(entity);
 
-                    if (!model.Animations.empty())
+                    for (const auto& animation : model.Animations)
                     {
-                        animatorComponent.CurrentAnimator = CreateRef<Animator>(model.Animations[0]);
+                        auto animator = CreateRef<Animator>(animation);
+                        animatorComponent.Controller.RegisterAnimator(animator);
+                        animatorComponent.Controller.SetEntryAnimator(animator);
                     }
                 }
             }
@@ -231,13 +238,32 @@ namespace SnowLeopardEngine
                 terrain.TerrainHeightMap, terrain.XScale, terrain.YScale, terrain.ZScale);
         });
 
-        // Init Animators
-        m_Registry.view<AnimatorComponent>().each([](entt::entity entity, AnimatorComponent& animator) {
-            if (animator.CurrentAnimator != nullptr)
+        // Material Loading
+        m_Registry.view<MeshRendererComponent>().each([](entt::entity entity, MeshRendererComponent& renderer) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(renderer.MaterialFilePath))
             {
-                animator.CurrentAnimator->UpdateAnimation(0);
+                renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
             }
         });
+        m_Registry.view<TerrainRendererComponent>().each([](entt::entity entity, TerrainRendererComponent& renderer) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(renderer.MaterialFilePath))
+            {
+                renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
+            }
+        });
+        m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(camera.SkyboxMaterialFilePath))
+            {
+                camera.SkyboxMaterial = DzMaterial::LoadFromPath(camera.SkyboxMaterialFilePath);
+            }
+        });
+
+        // Init Animators
+        m_Registry.view<AnimatorComponent>().each(
+            [](entt::entity entity, AnimatorComponent& animator) { animator.Controller.InitAnimators(); });
 
         // Scripting Callback
         m_Registry.view<NativeScriptingComponent>().each(
@@ -353,10 +379,7 @@ namespace SnowLeopardEngine
 
         // Animators
         m_Registry.view<AnimatorComponent>().each([deltaTime](entt::entity entity, AnimatorComponent& animator) {
-            if (animator.CurrentAnimator != nullptr)
-            {
-                animator.CurrentAnimator->UpdateAnimation(deltaTime);
-            }
+            animator.Controller.UpdateAnimators(deltaTime);
         });
     }
 
@@ -446,6 +469,8 @@ namespace SnowLeopardEngine
 
     ON_COMPONENT_ADDED(IDComponent) {}
     ON_COMPONENT_ADDED(NameComponent) {}
+    ON_COMPONENT_ADDED(TagComponent) {}
+    ON_COMPONENT_ADDED(LayerComponent) {}
     ON_COMPONENT_ADDED(TreeNodeComponent) {}
     ON_COMPONENT_ADDED(TransformComponent) {}
     ON_COMPONENT_ADDED(EntityStatusComponent) {}

@@ -29,16 +29,16 @@ public:
     }
 };
 
-static Entity CreateSphere(const Ref<DzMaterial> material, const glm::vec3& position, const Ref<LogicScene>& scene)
+static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3& position, const Ref<LogicScene>& scene)
 {
-    Entity sphere                  = scene->CreateEntity("Sphere1");
-    auto&  sphereTransform         = sphere.GetComponent<TransformComponent>();
-    sphereTransform.Position       = position;
-    sphereTransform.Scale          = {2, 2, 2};
-    auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
-    sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
-    auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
-    sphereMeshRenderer.Material    = material;
+    Entity sphere                       = scene->CreateEntity("Sphere1");
+    auto&  sphereTransform              = sphere.GetComponent<TransformComponent>();
+    sphereTransform.Position            = position;
+    sphereTransform.Scale               = {2, 2, 2};
+    auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
+    sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
+    auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
+    sphereMeshRenderer.MaterialFilePath = materialFilePath;
 
     return sphere;
 }
@@ -67,18 +67,18 @@ public:
         camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
 
         // Load materials
-        auto redMaterial = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
+        const std::string redMaterialFilePath = "Assets/Materials/Red.dzmaterial";
 
         // Create spheres to test materials
         // Sphere 1
-        Entity sphere1 = CreateSphere(redMaterial, {-21, 10, 0}, scene);
-        Entity sphere2 = CreateSphere(redMaterial, {-15, 10, 0}, scene);
-        Entity sphere3 = CreateSphere(redMaterial, {-9, 10, 0}, scene);
-        Entity sphere4 = CreateSphere(redMaterial, {-3, 10, 0}, scene);
-        Entity sphere5 = CreateSphere(redMaterial, {3, 10, 0}, scene);
-        Entity sphere6 = CreateSphere(redMaterial, {9, 10, 0}, scene);
-        Entity sphere7 = CreateSphere(redMaterial, {15, 10, 0}, scene);
-        Entity sphere8 = CreateSphere(redMaterial, {21, 10, 0}, scene);
+        Entity sphere1 = CreateSphere(redMaterialFilePath, {-21, 10, 0}, scene);
+        Entity sphere2 = CreateSphere(redMaterialFilePath, {-15, 10, 0}, scene);
+        Entity sphere3 = CreateSphere(redMaterialFilePath, {-9, 10, 0}, scene);
+        Entity sphere4 = CreateSphere(redMaterialFilePath, {-3, 10, 0}, scene);
+        Entity sphere5 = CreateSphere(redMaterialFilePath, {3, 10, 0}, scene);
+        Entity sphere6 = CreateSphere(redMaterialFilePath, {9, 10, 0}, scene);
+        Entity sphere7 = CreateSphere(redMaterialFilePath, {15, 10, 0}, scene);
+        Entity sphere8 = CreateSphere(redMaterialFilePath, {21, 10, 0}, scene);
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");

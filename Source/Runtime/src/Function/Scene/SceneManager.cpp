@@ -1,14 +1,16 @@
 #include "SnowLeopardEngine/Function/Scene/SceneManager.h"
-#include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
+#include "SnowLeopardEngine/Function/Scene/LayerManager.h"
 
 namespace SnowLeopardEngine
 {
     SceneManager::SceneManager()
     {
+        // TODO: When project loading & saving, load the project specific layers & tags.
+        LayerMaskManager::Init();
+
         SNOW_LEOPARD_CORE_INFO("[SceneManager] Initialized");
         m_State = SystemState::InitOk;
     }

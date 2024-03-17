@@ -1,6 +1,6 @@
 #include "SnowLeopardEngine/Engine/Engine.h"
-#include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
 {
@@ -18,9 +18,6 @@ namespace SnowLeopardEngine
         // Init audio system
         g_EngineContext->AudioSys.Init();
 
-        // Init physics system
-        g_EngineContext->PhysicsSys.Init();
-
         // Init window system
         WindowSystemInitInfo windowSysInitInfo {};
         windowSysInitInfo.Window = initInfo.Window;
@@ -31,6 +28,9 @@ namespace SnowLeopardEngine
 
         // Init scene manager
         g_EngineContext->SceneMngr.Init();
+
+        // Init physics system
+        g_EngineContext->PhysicsSys.Init();
 
         // Init render system
         g_EngineContext->RenderSys.Init();
@@ -117,11 +117,11 @@ namespace SnowLeopardEngine
 
         g_EngineContext->CameraSys.Shutdown();
         g_EngineContext->RenderSys.Shutdown();
+        g_EngineContext->PhysicsSys.Shutdown();
         g_EngineContext->SceneMngr->OnUnload();
         g_EngineContext->SceneMngr.Shutdown();
         g_EngineContext->InputSys.Shutdown();
         g_EngineContext->WindowSys.Shutdown();
-        g_EngineContext->PhysicsSys.Shutdown();
         g_EngineContext->AudioSys.Shutdown();
         g_EngineContext->EventSys.Shutdown();
         g_EngineContext->LogSys.Shutdown();
