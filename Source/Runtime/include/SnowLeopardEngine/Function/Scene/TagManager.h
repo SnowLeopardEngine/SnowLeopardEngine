@@ -20,7 +20,7 @@ namespace SnowLeopardEngine
     {
     public:
         // TODO: Serialization & Deserialization when project loading and saving
-        static std::set<std::string> s_TagSet;
-        static uint32_t              s_TagIndexSeed;
+        static std::vector<std::string> s_Tags;
+        static uint32_t                 s_TagIndexSeed;
     };
 } // namespace SnowLeopardEngine

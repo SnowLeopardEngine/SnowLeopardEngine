@@ -59,7 +59,7 @@ public:
         auto& cubeMeshFilter1         = cube1.AddComponent<MeshFilterComponent>();
         cubeMeshFilter1.PrimitiveType = MeshPrimitiveType::Cube;
         auto& cubeMeshRenderer1       = cube1.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer1.Material = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
+        cubeMeshRenderer1.Material    = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
 
         Entity cube2            = scene->CreateEntity("Cube2");
         auto&  cubeTransform2   = cube2.GetComponent<TransformComponent>();
@@ -69,7 +69,7 @@ public:
         auto& cubeMeshFilter2         = cube2.AddComponent<MeshFilterComponent>();
         cubeMeshFilter2.PrimitiveType = MeshPrimitiveType::Cube;
         auto& cubeMeshRenderer2       = cube2.AddComponent<MeshRendererComponent>();
-        cubeMeshRenderer2.Material = DzMaterial::LoadFromPath("Assets/Materials/Green.dzmaterial");
+        cubeMeshRenderer2.Material    = DzMaterial::LoadFromPath("Assets/Materials/Green.dzmaterial");
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
@@ -79,7 +79,7 @@ public:
         auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
+        floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
     }
 
 private:

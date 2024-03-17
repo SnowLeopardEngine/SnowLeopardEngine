@@ -201,12 +201,11 @@ namespace SnowLeopardEngine
                     shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
                 }
 
-                float radius = 0.5f;
                 if (sphereCollider.Radius == 0)
                 {
-                    radius = radius * transform.Scale.x;
+                    sphereCollider.Radius = 0.5f * transform.Scale.x;
                 }
-                PxSphereGeometry sphereGeometry(radius);
+                PxSphereGeometry sphereGeometry(sphereCollider.Radius);
                 auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
 
                 // attach the shape to the rigidBody
@@ -284,15 +283,13 @@ namespace SnowLeopardEngine
                     shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
                 }
 
-                glm::vec3 size = {1, 1, 1};
                 if (boxCollider.Size == glm::vec3(0, 0, 0))
                 {
-                    size.x *= transform.Scale.x;
-                    size.y *= transform.Scale.y;
-                    size.z *= transform.Scale.z;
+                    boxCollider.Size = transform.Scale;
                 }
-                PxBoxGeometry boxGeometry(size.x / 2.0f, size.y / 2.0f, size.z / 2.0f);
-                auto*         boxShape = m_Physics->createShape(boxGeometry, *material);
+                PxBoxGeometry boxGeometry(
+                    boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
+                auto* boxShape = m_Physics->createShape(boxGeometry, *material);
 
                 // attach the shape to the rigidBody
                 if (body->attachShape(*boxShape))

@@ -228,9 +228,9 @@ namespace SnowLeopardEngine
     {
         __cppast(tooltip = "The radius of the SphereCollider") float Radius = 0.0f;
 
-        __cppast(ignore) Ref<PhysicsMaterial> Material = nullptr;
-
         __cppast(tooltip = "Is trigger") bool IsTrigger = false;
+
+        __cppast(ignore) Ref<PhysicsMaterial> Material = nullptr;
 
         SphereColliderComponent()                               = default;
         SphereColliderComponent(const SphereColliderComponent&) = default;
@@ -244,14 +244,15 @@ namespace SnowLeopardEngine
         {}
     };
 
-    // TODO: register all components for SMeta
-
-    struct BoxColliderComponent
+    struct __cppast(smeta_unit) BoxColliderComponent
     {
-        glm::vec3            Offset    = {0, 0, 0};
-        glm::vec3            Size      = {0, 0, 0};
-        Ref<PhysicsMaterial> Material  = nullptr;
-        bool                 IsTrigger = false;
+        __cppast(tooltip = "The offset of the BoxCollider") glm::vec3 Offset = {0, 0, 0};
+
+        __cppast(tooltip = "The size of the BoxCollider") glm::vec3 Size = {0, 0, 0};
+
+        __cppast(tooltip = "Is the BoxCollider a trigger") bool IsTrigger = false;
+
+        __cppast(ignore) Ref<PhysicsMaterial> Material = nullptr;
 
         BoxColliderComponent()                            = default;
         BoxColliderComponent(const BoxColliderComponent&) = default;
@@ -267,13 +268,17 @@ namespace SnowLeopardEngine
         {}
     };
 
-    struct CapsuleColliderComponent
+    struct __cppast(smeta_unit) CapsuleColliderComponent
     {
-        float                Radius    = 0.5f;
-        float                Height    = 1.0f;
-        glm::vec3            Offset    = {0, 0, 0};
-        Ref<PhysicsMaterial> Material  = nullptr;
-        bool                 IsTrigger = false;
+        __cppast(tooltip = "The radius of the CapsuleCollider's hemisphere") float Radius = 0.5f;
+
+        __cppast(tooltip = "The height of the CapsuleCollider") float Height = 1.0f;
+
+        __cppast(tooltip = "The offset of the CapsuleCollider") glm::vec3 Offset = {0, 0, 0};
+
+        __cppast(tooltip = "Is the CapsuleCollider a trigger") bool IsTrigger = false;
+
+        __cppast(ignore) Ref<PhysicsMaterial> Material = nullptr;
 
         CapsuleColliderComponent()                                = default;
         CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
@@ -287,12 +292,13 @@ namespace SnowLeopardEngine
         {}
     };
 
-    struct TerrainColliderComponent
+    struct __cppast(smeta_unit) TerrainColliderComponent
     {
-        Ref<PhysicsMaterial> Material  = nullptr;
-        bool                 IsTrigger = false;
+        __cppast(tooltip = "Is the TerrainCollider a trigger") bool IsTrigger = false;
 
-        physx::PxRigidStatic* InternalBody = nullptr;
+        __cppast(ignore) Ref<PhysicsMaterial> Material = nullptr;
+
+        __cppast(ignore) physx::PxRigidStatic* InternalBody = nullptr;
 
         TerrainColliderComponent()                                = default;
         TerrainColliderComponent(const TerrainColliderComponent&) = default;
@@ -301,7 +307,9 @@ namespace SnowLeopardEngine
         {}
     };
 
-    struct CharacterControllerComponent
+    // TODO: Register more smeta units
+
+    struct __cppast(smeta_unit) CharacterControllerComponent
     {
         float     SlopeLimit  = 45.0f;
         float     StepOffset  = 0.3;
@@ -316,11 +324,8 @@ namespace SnowLeopardEngine
 
         CharacterControllerComponent()                                    = default;
         CharacterControllerComponent(const CharacterControllerComponent&) = default;
-        explicit CharacterControllerComponent(float                       height,
-                                              float                       radius,
-                                              glm::vec3                   offset,
-                                              float                       slopeLimit,
-                                              const Ref<PhysicsMaterial>& material) :
+        explicit CharacterControllerComponent(
+            float height, float radius, glm::vec3 offset, float slopeLimit, const Ref<PhysicsMaterial>& material) :
             Height(height),
             Radius(radius), Offset(offset), SlopeLimit(slopeLimit), Material(material)
         {}
@@ -363,9 +368,10 @@ namespace SnowLeopardEngine
         float            AspectRatio = 16.0f / 9.0f;
         bool             IsPrimary   = true;
 
-        Ref<Cubemap>    Cubemap        = nullptr;
-        Ref<DzMaterial> SkyboxMaterial = nullptr;
-        MeshItem        SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
+        Ref<Cubemap>          Cubemap = nullptr;
+        std::filesystem::path SkyboxMaterialFilePath;
+        Ref<DzMaterial>       SkyboxMaterial = nullptr;
+        MeshItem              SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
 
         CameraComponent()                       = default;
         CameraComponent(const CameraComponent&) = default;
@@ -397,9 +403,10 @@ namespace SnowLeopardEngine
 
     struct MeshFilterComponent
     {
-        // TODO: Remove, add AssetManager
         std::filesystem::path FilePath;
-        MeshPrimitiveType     PrimitiveType;
+
+        bool              UsePrimitive  = false;
+        MeshPrimitiveType PrimitiveType = MeshPrimitiveType::Invalid;
 
         MeshGroup Meshes;
 

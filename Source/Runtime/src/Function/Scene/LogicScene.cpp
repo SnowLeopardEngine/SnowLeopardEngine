@@ -6,6 +6,7 @@
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
@@ -235,6 +236,29 @@ namespace SnowLeopardEngine
             // TODO: Move to AssetManager
             terrain.Mesh = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
                 terrain.TerrainHeightMap, terrain.XScale, terrain.YScale, terrain.ZScale);
+        });
+
+        // Material Loading
+        m_Registry.view<MeshRendererComponent>().each([](entt::entity entity, MeshRendererComponent& renderer) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(renderer.MaterialFilePath))
+            {
+                renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
+            }
+        });
+        m_Registry.view<TerrainRendererComponent>().each([](entt::entity entity, TerrainRendererComponent& renderer) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(renderer.MaterialFilePath))
+            {
+                renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
+            }
+        });
+        m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(camera.SkyboxMaterialFilePath))
+            {
+                camera.SkyboxMaterial = DzMaterial::LoadFromPath(camera.SkyboxMaterialFilePath);
+            }
         });
 
         // Init Animators

@@ -50,9 +50,13 @@ namespace SnowLeopardEngine
         static void Init();
 
         static bool TryGetLayerByName(const std::string& name, Layer& layer);
+        static bool TryGetLayerNameByLayer(const Layer& layer, std::string& name);
         static bool TryAppendNewLayer(const std::string& name, Layer& layer);
 
-        static std::unordered_map<std::string, Layer> s_LayerMap;
+        static std::vector<std::string> GetNamedLayerNames();
+
+        static std::unordered_map<std::string, Layer> s_Name2LayerMap;
+        static std::unordered_map<Layer, std::string> s_Layer2NameMap;
         static Layer                                  s_LayerSeed;
     };
 } // namespace SnowLeopardEngine
