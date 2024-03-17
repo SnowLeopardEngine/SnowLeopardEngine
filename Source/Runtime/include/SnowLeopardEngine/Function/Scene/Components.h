@@ -368,9 +368,10 @@ namespace SnowLeopardEngine
         float            AspectRatio = 16.0f / 9.0f;
         bool             IsPrimary   = true;
 
-        Ref<Cubemap>    Cubemap        = nullptr;
-        Ref<DzMaterial> SkyboxMaterial = nullptr;
-        MeshItem        SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
+        Ref<Cubemap>          Cubemap = nullptr;
+        std::filesystem::path SkyboxMaterialFilePath;
+        Ref<DzMaterial>       SkyboxMaterial = nullptr;
+        MeshItem              SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
 
         CameraComponent()                       = default;
         CameraComponent(const CameraComponent&) = default;

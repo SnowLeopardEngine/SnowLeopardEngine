@@ -181,6 +181,24 @@ namespace SnowLeopardEngine
                 {
                     auto& transform = registry.get<TransformComponent>(geometry);
 
+                    // If it doesn't cast shadow, continue
+                    if (registry.any_of<MeshRendererComponent>(geometry))
+                    {
+                        auto& meshRenderer = registry.get<MeshRendererComponent>(geometry);
+                        if (!meshRenderer.CastShadow)
+                        {
+                            continue;
+                        }
+                    }
+                    if (registry.any_of<TerrainRendererComponent>(geometry))
+                    {
+                        auto& terrainRenderer = registry.get<TerrainRendererComponent>(geometry);
+                        if (!terrainRenderer.CastShadow)
+                        {
+                            continue;
+                        }
+                    }
+
                     std::vector<MeshItem*> meshItemPtrs;
 
                     if (registry.any_of<MeshFilterComponent>(geometry))

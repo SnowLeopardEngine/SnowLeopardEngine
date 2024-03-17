@@ -125,6 +125,30 @@ namespace SnowLeopardEngine::Editor
                     }
                 }
 
+                // Draw meshRenderer
+                if (entity.HasComponent<MeshRendererComponent>())
+                {
+                    auto& meshRendererComponent = entity.GetComponent<MeshRendererComponent>();
+
+                    if (ImGui::CollapsingHeader("MeshRenderer", ImGuiTreeNodeFlags_DefaultOpen))
+                    {
+                        ImGui::Columns(2);
+                        ImGui::SetColumnWidth(0, LabelWidth);
+
+                        // TODO: Switch to AssetManager: AssetHandle (UUID) with filter (*.dzmaterial)
+                        ImGui::Text("Material File Path");
+                        ImGui::NextColumn();
+                        ImGui::Text("%s", meshRendererComponent.MaterialFilePath.generic_string().c_str());
+
+                        ImGui::NextColumn();
+                        ImGui::Text("Cast Shadow");
+                        ImGui::NextColumn();
+                        ImGui::Checkbox("##CastShadow", &meshRendererComponent.CastShadow);
+
+                        ImGui::Columns(1);
+                    }
+                }
+
                 // Draw rigidBody
                 if (entity.HasComponent<RigidBodyComponent>())
                 {

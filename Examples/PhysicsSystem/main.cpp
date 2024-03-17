@@ -29,9 +29,9 @@ public:
         }
 
         auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
-        auto& rigider = m_OwnerEntity->GetComponent<RigidBodyComponent>();
+        auto& rigider    = m_OwnerEntity->GetComponent<RigidBodyComponent>();
         m_EngineContext->PhysicsSys->Move(controller, glm::vec3(-0.1f, -0.1f, 0), Time::FixedDeltaTime);
-        m_EngineContext->PhysicsSys->AddForce(rigider, glm::vec3(-5.f, -5.f,0));
+        m_EngineContext->PhysicsSys->AddForce(rigider, glm::vec3(-5.f, -5.f, 0));
     }
 };
 
@@ -53,7 +53,7 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
+        cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
 
@@ -72,27 +72,26 @@ public:
         sphere.AddComponent<RigidBodyComponent>();
         sphere.AddComponent<SphereColliderComponent>(normalMaterial);
         sphere.AddComponent<CharacterControllerComponent>();
-        
-        auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
-        sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
-        auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/Blue.dzmaterial");
+
+        auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
+        sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
+        auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
+        sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
 
         auto scriptInstance = CreateRef<SphereScript>();
         sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
-        
+
         // create a testSphere to test MeshColliderComponent
         Entity testSphere            = scene->CreateEntity("TestSphere");
         auto&  testSphereTransform   = testSphere.GetComponent<TransformComponent>();
         testSphereTransform.Position = {5, 15, 0};
         testSphereTransform.Scale *= 3;
         testSphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
-        auto& testSphereMeshFilter         = testSphere.AddComponent<MeshFilterComponent>();
-        testSphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
-        auto& testSphereMeshCollider       = testSphere.AddComponent<MeshColliderComponent>();
-        auto& testSphereMeshRenderer       = testSphere.AddComponent<MeshRendererComponent>();
-        testSphereMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
-
+        auto& testSphereMeshFilter              = testSphere.AddComponent<MeshFilterComponent>();
+        testSphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
+        auto& testSphereMeshCollider            = testSphere.AddComponent<MeshColliderComponent>();
+        auto& testSphereMeshRenderer            = testSphere.AddComponent<MeshRendererComponent>();
+        testSphereMeshRenderer.MaterialFilePath = "Assets/Materials/Red.dzmaterial";
 
         // // Create a floor with RigidBodyComponent & BoxColliderComponent
         // Entity floor = scene->CreateEntity("Floor");
