@@ -4,6 +4,8 @@
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
+#include "SnowLeopardEngine/Function/Scene/LayerManager.h"
+#include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "glm/gtc/type_ptr.hpp"
 #include "imgui.h"
@@ -41,6 +43,57 @@ namespace SnowLeopardEngine::Editor
                 ImGui::Checkbox("Static", &isEntityStatic);
                 entity.SetIsStatic(isEntityStatic);
 
+                // Draw tag
+                const auto& tag        = entity.GetTag();
+                std::string seletedTag = tag;
+
+                ImGui::Text("Tag");
+                ImGui::SameLine();
+                if (ImGui::BeginCombo("##Tag", seletedTag.c_str()))
+                {
+                    for (const auto& tagName : TagManager::s_Tags)
+                    {
+                        bool isSelected = seletedTag == tagName;
+                        if (ImGui::Selectable(tagName.c_str(), isSelected))
+                            seletedTag = tagName;
+                        if (isSelected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+                entity.SetTag(seletedTag);
+
+                // Draw layer
+                const auto& layer         = entity.GetLayer();
+                Layer       selectedLayer = layer;
+                std::string selectedLayerName;
+                if (!LayerMaskManager::TryGetLayerNameByLayer(selectedLayer, selectedLayerName))
+                {
+                    // ERROR
+                }
+
+                ImGui::Text("Layer");
+                ImGui::SameLine();
+                if (ImGui::BeginCombo("##Layer", selectedLayerName.c_str()))
+                {
+                    for (const auto& layerName : LayerMaskManager::GetNamedLayerNames())
+                    {
+                        Layer namedLayer;
+                        if (!LayerMaskManager::TryGetLayerByName(layerName, namedLayer))
+                        {
+                            // ERROR
+                            continue;
+                        }
+                        bool isSelected = selectedLayer == namedLayer;
+                        if (ImGui::Selectable(layerName.c_str(), isSelected))
+                            selectedLayer = namedLayer;
+                        if (isSelected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+                entity.SetLayer(selectedLayer);
+
                 // Draw transform
                 auto& transformComponent = entity.GetComponent<TransformComponent>();
                 if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
@@ -71,7 +124,7 @@ namespace SnowLeopardEngine::Editor
                 if (entity.HasComponent<MeshFilterComponent>())
                 {
                     auto& meshFilterComponent = entity.GetComponent<MeshFilterComponent>();
-                    if (ImGui::CollapsingHeader("MeshFilter", ImGuiTreeNodeFlags_DefaultOpen))
+                    if (ImGui::CollapsingHeader("Mesh Filter", ImGuiTreeNodeFlags_DefaultOpen))
                     {
                         ImGui::Columns(2);
                         ImGui::SetColumnWidth(0, LabelWidth);
@@ -130,7 +183,7 @@ namespace SnowLeopardEngine::Editor
                 {
                     auto& meshRendererComponent = entity.GetComponent<MeshRendererComponent>();
 
-                    if (ImGui::CollapsingHeader("MeshRenderer", ImGuiTreeNodeFlags_DefaultOpen))
+                    if (ImGui::CollapsingHeader("Mesh Renderer", ImGuiTreeNodeFlags_DefaultOpen))
                     {
                         ImGui::Columns(2);
                         ImGui::SetColumnWidth(0, LabelWidth);
@@ -200,6 +253,61 @@ namespace SnowLeopardEngine::Editor
                         {
                             ImGui::Text("Static RigidBody: No properties");
                         }
+                    }
+                }
+
+                // Draw SphereCollider
+                if (entity.HasComponent<SphereColliderComponent>())
+                {
+                    auto& sphereColliderComponent = entity.GetComponent<SphereColliderComponent>();
+                    if (ImGui::CollapsingHeader("Sphere Collider", ImGuiTreeNodeFlags_DefaultOpen))
+                    {
+                        ImGui::Columns(2);
+                        ImGui::SetColumnWidth(0, LabelWidth);
+
+                        ImGui::Text("Radius");
+                        ImGui::NextColumn();
+                        ImGui::DragFloat("##Radius", &sphereColliderComponent.Radius, 0.1f, 0.0f, 0.0f, "%.6f");
+
+                        ImGui::NextColumn();
+                        ImGui::Text("Is Trigger");
+                        ImGui::NextColumn();
+                        ImGui::Checkbox("##IsTrigger", &sphereColliderComponent.IsTrigger);
+
+                        ImGui::Columns(1);
+                    }
+                }
+
+                // Draw BoxCollider
+                if (entity.HasComponent<BoxColliderComponent>())
+                {
+                    auto& boxColliderComponent = entity.GetComponent<BoxColliderComponent>();
+                    if (ImGui::CollapsingHeader("Box Collider", ImGuiTreeNodeFlags_DefaultOpen))
+                    {
+                        ImGui::Columns(2);
+                        ImGui::SetColumnWidth(0, LabelWidth);
+
+                        ImGui::Text("Offset");
+                        ImGui::NextColumn();
+                        ImGui::DragFloat3(
+                            "##Offset", glm::value_ptr(boxColliderComponent.Offset), 0.1f, 0.0f, 0.0f, "%.6f");
+
+                        ImGui::NextColumn();
+                        ImGui::Text("Size");
+                        ImGui::NextColumn();
+                        ImGui::DragFloat3("##Size",
+                                          glm::value_ptr(boxColliderComponent.Size),
+                                          0.1f,
+                                          0.0f,
+                                          std::numeric_limits<float>::max(),
+                                          "%.6f");
+
+                        ImGui::NextColumn();
+                        ImGui::Text("Is Trigger");
+                        ImGui::NextColumn();
+                        ImGui::Checkbox("##IsTrigger", &boxColliderComponent.IsTrigger);
+
+                        ImGui::Columns(1);
                     }
                 }
 
