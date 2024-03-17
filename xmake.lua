@@ -32,6 +32,7 @@ end
 rule("copy_assets")
     on_load(function(target)
         os.cp("$(projectdir)/Assets", target:targetdir())
+        os.cp("$(projectdir)/Tools/$(plat)/$(arch)/Coral/Coral**", target:targetdir())
     end)
 rule_end()
 
