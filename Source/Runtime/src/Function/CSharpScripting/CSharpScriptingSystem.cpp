@@ -21,7 +21,6 @@ namespace SnowLeopardEngine
                 return LogLevel::Error;
             case Coral::MessageLevel::All:
                 return LogLevel::Trace;
-                break;
         }
     }
 
@@ -53,7 +52,7 @@ namespace SnowLeopardEngine
             return;
         }
 
-        auto loadContext = hostInstance.CreateAssemblyLoadContext("ExampleContext");
+        auto loadContext = hostInstance.CreateAssemblyLoadContext("SnowLeopardEngineContext");
 
         auto  assemblyPath = exeDir / "SnowLeopardEngine.dll";
         auto& assembly     = loadContext.LoadAssembly(assemblyPath.string());
