@@ -12,11 +12,11 @@
 
 // Custom Assert function
 template<typename... Args>
-void CustomAssert(bool condition, const std::string& message, Args... args)
+void CustomAssert(bool condition, std::string_view message, Args... args)
 {
     if (!condition)
     {
-        std::cerr << "Assertion failed: " << std::format(message, args...) << std::endl;
+        std::cerr << "Assertion failed: " << std::vformat(message, std::make_format_args(args...)) << std::endl;
         exit(1);
     }
 }

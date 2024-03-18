@@ -5,6 +5,7 @@
 
 #include <Coral/HostInstance.hpp>
 #include <Coral/MessageLevel.hpp>
+#include <Coral/String.hpp>
 
 namespace SnowLeopardEngine
 {
@@ -51,6 +52,19 @@ namespace SnowLeopardEngine
             SNOW_LEOPARD_CORE_ERROR("[CSharpScriptingSystem] Failed to initialize Coral assembly!");
             return;
         }
+
+        auto loadContext = hostInstance.CreateAssemblyLoadContext("ExampleContext");
+
+        auto  assemblyPath = exeDir / "SnowLeopardEngine.dll";
+        auto& assembly     = loadContext.LoadAssembly(assemblyPath.string());
+
+        // Echo test
+        auto& testsType = assembly.GetType("SnowLeopardEngine.Tests");
+
+        // Call the static method "Echo" with value "Hello, C# .NET 8.0 Scripting!"
+        auto echoMsg = Coral::String::New("Hello, C# .NET 8.0 Scripting!");
+        testsType.InvokeStaticMethod("Echo", echoMsg);
+        Coral::String::Free(echoMsg);
 
         SNOW_LEOPARD_CORE_INFO("[CSharpScriptingSystem] Initialized");
         m_State = SystemState::InitOk;

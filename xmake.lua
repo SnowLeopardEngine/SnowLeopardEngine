@@ -13,7 +13,7 @@ option("examples") -- build examples?
 option_end()
 
 -- if build on windows
-if is_host("windows") then
+if is_plat("windows") then
     add_cxxflags("/Zc:__cplusplus", {tools = {"msvc", "cl"}}) -- fix __cplusplus == 199711L error
     add_cxxflags("/bigobj") -- avoid big obj
     add_cxxflags("-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING")
@@ -30,6 +30,13 @@ end
 
 -- global rules
 rule("copy_assets")
+    after_build(function(target)
+        if is_host("windows") then
+            print("Build & install C# bindings for target: " .. target:name())
+            os.run("powershell.exe Source/CSharpBindings/build.ps1")
+            os.cp("$(buildir)/assembly/SnowLeopardEngine/*", target:targetdir())
+        end
+    end)
     on_load(function(target)
         os.cp("$(projectdir)/Assets", target:targetdir())
         os.cp("$(projectdir)/Tools/$(plat)/$(arch)/Coral/Coral**", target:targetdir())
