@@ -113,23 +113,32 @@ TODO
 
 ### Build Instructions
 
-Clone Repo:
+#### Clone Repo
 
 ```powershell
 git clone git@github.com:SnowLeopardEngine/SnowLeopardEngine.git --recursive
 ```
 
-Build with XMake:
+#### Build with XMake
+
+**Windows**
 
 ```powershell
 cd SnowLeopardEngine
-xmake -v -y
+./build.bat
 ```
 
-Run Examples, for example, `Application`:
+**macOS / Linux**
+
+```bash
+cd SnowLeopardEngine
+./build.sh
+```
+
+#### Run Examples, for example, `SnowLeopardEditor`
 
 ```powershell
-xmake run Application
+xmake run SnowLeopardEditor
 ```
 
 ## 3rd Party libraries

@@ -31,11 +31,8 @@ end
 -- global rules
 rule("copy_assets")
     after_build(function(target)
-        if is_host("windows") then
-            print("Build & install C# bindings for target: " .. target:name())
-            os.vrun("powershell.exe Source/CSharpBindings/build.ps1")
-            os.cp("$(buildir)/assembly/SnowLeopardEngine/*", target:targetdir())
-        end
+        print("Install C# bindings for target: " .. target:name())
+        os.cp("$(buildir)/assembly/SnowLeopardEngine/*", target:targetdir())
     end)
     on_load(function(target)
         os.cp("$(projectdir)/Assets", target:targetdir())
