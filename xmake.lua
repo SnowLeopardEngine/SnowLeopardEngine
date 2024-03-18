@@ -25,7 +25,7 @@ if is_plat("windows") then
         set_runtimes("MD")
     end
 else
-    add_cxxflags("fexceptions")
+    add_cxxflags("-fexceptions")
 end
 
 -- global rules

@@ -21,7 +21,7 @@ namespace SnowLeopardEngine
 
         virtual const std::string ToString() const override
         {
-            return std::format("LogEvent, Region = {0}, Level = {1}, Message = {2}",
+            return fmt::format("LogEvent, Region = {0}, Level = {1}, Message = {2}",
                                magic_enum::enum_name(m_Region),
                                magic_enum::enum_name(m_Level),
                                m_Message);

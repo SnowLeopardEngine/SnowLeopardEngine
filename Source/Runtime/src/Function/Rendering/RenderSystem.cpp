@@ -238,7 +238,7 @@ namespace SnowLeopardEngine
                             auto  boneMatrices = animator.Controller.GetCurrentAnimator()->GetFinalBoneMatrices();
                             for (uint32_t i = 0; i < boneMatrices.size(); ++i)
                             {
-                                shader->SetMat4(std::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
+                                shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
                             }
                         }
 
@@ -384,7 +384,7 @@ namespace SnowLeopardEngine
                         auto  boneMatrices = animator.Controller.GetCurrentAnimator()->GetFinalBoneMatrices();
                         for (uint32_t i = 0; i < boneMatrices.size(); ++i)
                         {
-                            shader->SetMat4(std::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
+                            shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
                         }
                     }
 

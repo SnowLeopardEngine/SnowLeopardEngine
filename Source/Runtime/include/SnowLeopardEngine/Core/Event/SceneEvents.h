@@ -16,7 +16,7 @@ namespace SnowLeopardEngine
 
         virtual const std::string ToString() const override
         {
-            return std::format("LogicScenePreLoadEvent: Preload Scene = {0}", m_LogicScene->GetName());
+            return fmt::format("LogicScenePreLoadEvent: Preload Scene = {0}", m_LogicScene->GetName());
         }
 
     private:
@@ -34,7 +34,7 @@ namespace SnowLeopardEngine
 
         virtual const std::string ToString() const override
         {
-            return std::format("LogicSceneLoadingEvent: Loaded Scene = {0}", m_LogicScene->GetName());
+            return fmt::format("LogicSceneLoadingEvent: Loaded Scene = {0}", m_LogicScene->GetName());
         }
 
     private:
@@ -52,7 +52,7 @@ namespace SnowLeopardEngine
 
         virtual const std::string ToString() const override
         {
-            return std::format("LogicSceneUnloadingEvent: Unloaded Scene = {0}", m_LogicScene->GetName());
+            return fmt::format("LogicSceneUnloadingEvent: Unloaded Scene = {0}", m_LogicScene->GetName());
         }
 
     private:

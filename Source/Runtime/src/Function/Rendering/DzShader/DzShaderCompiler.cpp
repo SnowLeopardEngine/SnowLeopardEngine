@@ -111,7 +111,7 @@ namespace SnowLeopardEngine
                 {
                     result.Success = false;
                     result.Message =
-                        std::format("[DzShaderCompiler] Shaderc Error. Failed to compile {0} stage in pass({1}), "
+                        fmt::format("[DzShaderCompiler] Shaderc Error. Failed to compile {0} stage in pass({1}), "
                                     "message from shaderc: {2}",
                                     stage.Name,
                                     pass.Name,

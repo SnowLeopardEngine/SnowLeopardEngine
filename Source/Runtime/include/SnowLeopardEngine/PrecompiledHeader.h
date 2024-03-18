@@ -4,7 +4,6 @@
 #include <chrono>
 #include <cmath>
 #include <filesystem>
-#include <format>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -19,5 +18,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <fmt/core.h>
 
 // Add more headers if necessary.

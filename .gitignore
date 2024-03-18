@@ -20,3 +20,6 @@ CMakeLists.txt
 
 # Useless Deps
 Deps/SPhysX-Cross/
+
+# Solutions
+*.sln

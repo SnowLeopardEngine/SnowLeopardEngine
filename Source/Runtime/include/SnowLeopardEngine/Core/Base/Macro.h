@@ -16,7 +16,7 @@ void CustomAssert(bool condition, std::string_view message, Args... args)
 {
     if (!condition)
     {
-        std::cerr << "Assertion failed: " << std::vformat(message, std::make_format_args(args...)) << std::endl;
+        std::cerr << "Assertion failed: " << fmt::vformat(message, fmt::make_format_args(args...)) << std::endl;
         exit(1);
     }
 }

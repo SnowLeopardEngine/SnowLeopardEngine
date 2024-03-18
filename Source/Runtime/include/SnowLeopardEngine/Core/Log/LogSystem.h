@@ -4,7 +4,6 @@
 #include "SnowLeopardEngine/Core/Log/LogTypeDef.h"
 
 // clang-format off
-#include <format>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 // clang-format on
@@ -87,7 +86,7 @@ namespace SnowLeopardEngine
         template<typename... Args>
         std::string GetFormatString(std::string_view fmt, Args&&... args)
         {
-            return std::vformat(fmt, std::make_format_args(args...));
+            return fmt::vformat(fmt, fmt::make_format_args(args...));
         }
 
         Ref<spdlog::logger> GetLogger(bool isCore) { return isCore ? m_CoreLogger : m_ClientLogger; }
