@@ -26,7 +26,7 @@ namespace SnowLeopardEngine
 
         virtual const std::string ToString() const override
         {
-            return fmt::format("WindowResizeEvent: Width = {0}, Height = {1}", m_Width, m_Height);
+            return std::format("WindowResizeEvent: Width = {0}, Height = {1}", m_Width, m_Height);
         }
 
     private:

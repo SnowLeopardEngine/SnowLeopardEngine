@@ -33,7 +33,8 @@ namespace SnowLeopardEngine
         CoreUUID Id;
         // clang-format on
 
-        IDComponent()                   = default;
+        IDComponent() = default;
+        explicit IDComponent(CoreUUID id) : Id(id) {}
         IDComponent(const IDComponent&) = default;
 
         std::string GetIdString() const { return to_string(Id); }

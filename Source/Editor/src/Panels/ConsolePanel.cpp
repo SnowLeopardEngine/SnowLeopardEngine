@@ -2,7 +2,6 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 #include "imgui.h"
-#include <fmt/format.h>
 
 namespace SnowLeopardEngine::Editor
 {

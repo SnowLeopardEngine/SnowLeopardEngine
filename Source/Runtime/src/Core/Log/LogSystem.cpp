@@ -40,9 +40,9 @@ namespace SnowLeopardEngine
         m_State = SystemState::ShutdownOk;
     }
 
-    void LogSystem::TriggerLogEvent(LogRegion region, LogLevel level, const std::string& msg)
+    void LogSystem::TriggerLogEvent(LogRegion region, LogLevel level, std::string_view msg)
     {
-        LogEvent event(region, level, msg.c_str());
+        LogEvent event(region, level, msg.data());
         if (g_EngineContext->EventSys.GetInstance() != nullptr &&
             g_EngineContext->EventSys->GetState() == SystemState::InitOk)
         {

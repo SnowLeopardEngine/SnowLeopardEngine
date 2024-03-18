@@ -2,8 +2,6 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 
-#include <fmt/format.h>
-
 namespace SnowLeopardEngine
 {
     class Event
@@ -20,12 +18,6 @@ namespace SnowLeopardEngine
     };
 
 #define DECLARE_EVENT_TYPE(eventType) \
-    static const std::string GetStaticType() \
-    { \
-        return #eventType; \
-    } \
-    const std::string GetType() const override \
-    { \
-        return GetStaticType(); \
-    }
+    static const std::string GetStaticType() { return #eventType; } \
+    const std::string        GetType() const override { return GetStaticType(); }
 } // namespace SnowLeopardEngine
