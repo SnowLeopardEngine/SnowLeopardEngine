@@ -33,7 +33,7 @@ rule("copy_assets")
     after_build(function(target)
         if is_host("windows") then
             print("Build & install C# bindings for target: " .. target:name())
-            os.run("powershell.exe Source/CSharpBindings/build.ps1")
+            os.vrun("powershell.exe Source/CSharpBindings/build.ps1")
             os.cp("$(buildir)/assembly/SnowLeopardEngine/*", target:targetdir())
         end
     end)

@@ -85,7 +85,7 @@ namespace SnowLeopardEngine
 
     private:
         template<typename... Args>
-        std::string_view GetFormatString(std::string_view fmt, Args&&... args)
+        std::string GetFormatString(std::string_view fmt, Args&&... args)
         {
             return std::vformat(fmt, std::make_format_args(args...));
         }

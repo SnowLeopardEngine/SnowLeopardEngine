@@ -21,7 +21,11 @@ namespace SnowLeopardEngine
                 return LogLevel::Error;
             case Coral::MessageLevel::All:
                 return LogLevel::Trace;
+            default:
+                return LogLevel::Info;
         }
+
+        return LogLevel::Info;
     }
 
     static void MessageCallback(std::string_view message, Coral::MessageLevel level)
