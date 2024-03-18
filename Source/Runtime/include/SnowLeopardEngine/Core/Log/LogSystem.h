@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Core/Log/LogTypeDef.h"
 
 // clang-format off
+#include <format>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 // clang-format on
@@ -16,44 +17,82 @@ namespace SnowLeopardEngine
         DECLARE_SUBSYSTEM(LogSystem)
 
         template<typename... Args>
-        void Trace(bool isCore, Args&&... args)
+        void Message(bool isCore, LogLevel level, std::string_view fmt, Args&&... args)
         {
-            GetLogger(isCore)->trace(args...);
-            TriggerLogEvent(GetRegion(isCore), LogLevel::Trace, fmt::format(args...));
+            switch (level)
+            {
+                case LogLevel::Trace:
+                    Trace(isCore, fmt, args...);
+                    break;
+
+                case LogLevel::Info:
+                    Info(isCore, fmt, args...);
+                    break;
+
+                case LogLevel::Warn:
+                    Warn(isCore, fmt, args...);
+                    break;
+
+                case LogLevel::Error:
+                    Error(isCore, fmt, args...);
+                    break;
+
+                case LogLevel::Critical:
+                    Critical(isCore, fmt, args...);
+                    break;
+            }
         }
 
         template<typename... Args>
-        void Info(bool isCore, Args&&... args)
+        void Trace(bool isCore, std::string_view fmt, Args&&... args)
         {
-            GetLogger(isCore)->info(args...);
-            TriggerLogEvent(GetRegion(isCore), LogLevel::Info, fmt::format(args...));
+            auto formatMsg = GetFormatString(fmt, args...);
+            GetLogger(isCore)->trace(formatMsg);
+            TriggerLogEvent(GetRegion(isCore), LogLevel::Trace, formatMsg);
         }
 
         template<typename... Args>
-        void Warn(bool isCore, Args&&... args)
+        void Info(bool isCore, std::string_view fmt, Args&&... args)
         {
-            GetLogger(isCore)->warn(args...);
-            TriggerLogEvent(GetRegion(isCore), LogLevel::Warn, fmt::format(args...));
+            auto formatMsg = GetFormatString(fmt, args...);
+            GetLogger(isCore)->info(formatMsg);
+            TriggerLogEvent(GetRegion(isCore), LogLevel::Info, formatMsg);
         }
 
         template<typename... Args>
-        void Error(bool isCore, Args&&... args)
+        void Warn(bool isCore, std::string_view fmt, Args&&... args)
         {
-            GetLogger(isCore)->error(args...);
-            TriggerLogEvent(GetRegion(isCore), LogLevel::Error, fmt::format(args...));
+            auto formatMsg = GetFormatString(fmt, args...);
+            GetLogger(isCore)->warn(formatMsg);
+            TriggerLogEvent(GetRegion(isCore), LogLevel::Warn, formatMsg);
         }
 
         template<typename... Args>
-        void Critical(bool isCore, Args&&... args)
+        void Error(bool isCore, std::string_view fmt, Args&&... args)
         {
-            GetLogger(isCore)->critical(args...);
-            TriggerLogEvent(GetRegion(isCore), LogLevel::Critical, fmt::format(args...));
+            auto formatMsg = GetFormatString(fmt, args...);
+            GetLogger(isCore)->error(formatMsg);
+            TriggerLogEvent(GetRegion(isCore), LogLevel::Error, formatMsg);
+        }
+
+        template<typename... Args>
+        void Critical(bool isCore, std::string_view fmt, Args&&... args)
+        {
+            auto formatMsg = GetFormatString(fmt, args...);
+            GetLogger(isCore)->critical(formatMsg);
+            TriggerLogEvent(GetRegion(isCore), LogLevel::Critical, formatMsg);
         }
 
     private:
+        template<typename... Args>
+        std::string_view GetFormatString(std::string_view fmt, Args&&... args)
+        {
+            return std::vformat(fmt, std::make_format_args(args...));
+        }
+
         Ref<spdlog::logger> GetLogger(bool isCore) { return isCore ? m_CoreLogger : m_ClientLogger; }
         LogRegion           GetRegion(bool isCore) { return isCore ? LogRegion::Core : LogRegion::Client; }
-        void                TriggerLogEvent(LogRegion region, LogLevel level, const std::string& msg);
+        void                TriggerLogEvent(LogRegion region, LogLevel level, std::string_view msg);
 
     private:
         Ref<spdlog::logger> m_CoreLogger;

@@ -110,7 +110,7 @@ namespace SnowLeopardEngine
         {
             // assign a new name, avoid same name
             m_Name2CountMap[createName]++;
-            createName = fmt::format("{0} ({1})", createName, duplicateCount);
+            createName = std::format("{0} ({1})", createName, duplicateCount);
         }
         else
         {

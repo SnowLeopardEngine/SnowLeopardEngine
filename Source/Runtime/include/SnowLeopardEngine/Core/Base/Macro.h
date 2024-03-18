@@ -2,8 +2,6 @@
 
 #include "SnowLeopardEngine/PrecompiledHeader.h"
 
-#include <fmt/core.h>
-
 #define SNOW_LEOPARD_NO_COPY_CONSTRUCTOR(className) className(const className&) = delete;
 #define SNOW_LEOPARD_NO_MOVE_CONSTRUCTOR(className) className(className&&) = delete;
 #define SNOW_LEOPARD_DEFAULT_CONSTRUCTOR(className) className() = default;
@@ -18,7 +16,7 @@ void CustomAssert(bool condition, const std::string& message, Args... args)
 {
     if (!condition)
     {
-        std::cerr << "Assertion failed: " << fmt::format(message, args...) << std::endl;
+        std::cerr << "Assertion failed: " << std::format(message, args...) << std::endl;
         exit(1);
     }
 }

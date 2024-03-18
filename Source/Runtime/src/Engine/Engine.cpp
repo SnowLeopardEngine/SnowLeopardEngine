@@ -38,6 +38,9 @@ namespace SnowLeopardEngine
         // Init camera system
         g_EngineContext->CameraSys.Init();
 
+        // Init c# scripting system
+        g_EngineContext->CSharpScriptingSys.Init();
+
         SNOW_LEOPARD_CORE_INFO("[Engine] Initialized");
 
         return true;
@@ -115,6 +118,7 @@ namespace SnowLeopardEngine
             lifeTime->OnUnload();
         }
 
+        g_EngineContext->CSharpScriptingSys.Shutdown();
         g_EngineContext->CameraSys.Shutdown();
         g_EngineContext->RenderSys.Shutdown();
         g_EngineContext->PhysicsSys.Shutdown();

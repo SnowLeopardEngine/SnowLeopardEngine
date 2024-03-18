@@ -4,8 +4,8 @@ set_project("SnowLeopardEngine")
 -- set project version
 set_version("0.1.0")
 
--- set language version: C++ 17
-set_languages("cxx17")
+-- set language version: C++ 20
+set_languages("cxx20")
 
 -- global options
 option("examples") -- build examples?

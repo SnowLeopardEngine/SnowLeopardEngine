@@ -107,7 +107,7 @@ namespace SnowLeopardEngine
 
         // Vertex stage
         const char* vShaderCode = shaderStageSources.at("vertex").c_str();
-        SNOW_LEOPARD_CORE_INFO("[GLShader] Compiling vertex shader :\n {0}", vShaderCode);
+        // SNOW_LEOPARD_CORE_INFO("[GLShader] Compiling vertex shader :\n {0}", vShaderCode);
 
         vertexShader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertexShader, 1, &vShaderCode, nullptr);
@@ -132,7 +132,7 @@ namespace SnowLeopardEngine
 
         // Fragment stage
         const char* fShaderCode = shaderStageSources.at("fragment").c_str();
-        SNOW_LEOPARD_CORE_INFO("[GLShader] Compiling fragment shader :\n {0}", fShaderCode);
+        // SNOW_LEOPARD_CORE_INFO("[GLShader] Compiling fragment shader :\n {0}", fShaderCode);
 
         fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fragmentShader, 1, &fShaderCode, nullptr);
@@ -160,7 +160,7 @@ namespace SnowLeopardEngine
         {
             // Geometry stage
             const char* gShaderCode = shaderStageSources.at("geometry").c_str();
-            SNOW_LEOPARD_CORE_INFO("[GLShader] Compiling geometry shader :\n{0}", gShaderCode);
+            // SNOW_LEOPARD_CORE_INFO("[GLShader] Compiling geometry shader :\n{0}", gShaderCode);
 
             geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
             glShaderSource(geometryShader, 1, &gShaderCode, nullptr);

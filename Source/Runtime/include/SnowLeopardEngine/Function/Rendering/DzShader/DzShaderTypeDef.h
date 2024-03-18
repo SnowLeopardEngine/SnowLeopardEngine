@@ -5,8 +5,6 @@
 
 #include <cereal/archives/json.hpp>
 #include <cereal/types/vector.hpp>
-
-#include <fmt/core.h>
 #include <magic_enum.hpp>
 
 namespace SnowLeopardEngine

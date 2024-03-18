@@ -87,7 +87,7 @@ namespace SnowLeopardEngine
             return;
         }
 
-        findProperty->Value = fmt::format("({0}, {1}, {2}, {3})", value.r, value.g, value.b, value.a);
+        findProperty->Value = std::format("({0}, {1}, {2}, {3})", value.r, value.g, value.b, value.a);
     }
 
     void DzMaterial::SetTexture2D(const std::string& propertyName, const std::string& texturePath)
@@ -156,7 +156,7 @@ namespace SnowLeopardEngine
             return;
         }
 
-        findProperty->Value = fmt::format("({0}, {1}, {2}, {3})", value.x, value.y, value.z, value.w);
+        findProperty->Value = std::format("({0}, {1}, {2}, {3})", value.x, value.y, value.z, value.w);
     }
 
     int DzMaterial::GetInt(const std::string& propertyName)
