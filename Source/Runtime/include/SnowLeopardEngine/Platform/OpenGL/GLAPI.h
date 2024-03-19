@@ -25,6 +25,7 @@ namespace SnowLeopardEngine
                                                    const BufferLayout& inputLayout) override final;
 
         virtual void DrawIndexed(uint32_t indexCount) override final;
+        virtual void DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount) override final;
 
         static bool IsDSASupported();
     };

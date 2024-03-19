@@ -24,17 +24,17 @@ namespace SnowLeopardEngine
     void DzMaterial::SetInt(const std::string& propertyName, int value)
     {
         // Update property block
-        std::optional<DzShaderProperty> findProperty;
+        DzShaderProperty* findProperty = nullptr;
         for (auto& property : m_PropertyBlock.ShaderProperties)
         {
             if (property.Name == propertyName && property.Type == "Int")
             {
-                findProperty = property;
+                findProperty = &property;
                 break;
             }
         }
 
-        if (!findProperty.has_value())
+        if (findProperty == nullptr)
         {
             SNOW_LEOPARD_CORE_ERROR("[DzMaterialPropertyBlock] Failed to set int value, property ({0}) not found!",
                                     propertyName);
@@ -47,17 +47,17 @@ namespace SnowLeopardEngine
     void DzMaterial::SetFloat(const std::string& propertyName, float value)
     {
         // Update property block
-        std::optional<DzShaderProperty> findProperty;
+        DzShaderProperty* findProperty = nullptr;
         for (auto& property : m_PropertyBlock.ShaderProperties)
         {
             if (property.Name == propertyName && property.Type == "Float")
             {
-                findProperty = property;
+                findProperty = &property;
                 break;
             }
         }
 
-        if (!findProperty.has_value())
+        if (findProperty == nullptr)
         {
             SNOW_LEOPARD_CORE_ERROR("[DzMaterialPropertyBlock] Failed to set float value, property ({0}) not found!",
                                     propertyName);
@@ -70,17 +70,17 @@ namespace SnowLeopardEngine
     void DzMaterial::SetColor(const std::string& propertyName, const glm::vec4& value)
     {
         // Update property block
-        std::optional<DzShaderProperty> findProperty;
+        DzShaderProperty* findProperty = nullptr;
         for (auto& property : m_PropertyBlock.ShaderProperties)
         {
             if (property.Name == propertyName && property.Type == "Color")
             {
-                findProperty = property;
+                findProperty = &property;
                 break;
             }
         }
 
-        if (!findProperty.has_value())
+        if (findProperty == nullptr)
         {
             SNOW_LEOPARD_CORE_ERROR("[DzMaterialPropertyBlock] Failed to set color value, property ({0}) not found!",
                                     propertyName);
@@ -93,17 +93,17 @@ namespace SnowLeopardEngine
     void DzMaterial::SetTexture2D(const std::string& propertyName, const std::string& texturePath)
     {
         // Update property block
-        std::optional<DzShaderProperty> findProperty;
+        DzShaderProperty* findProperty = nullptr;
         for (auto& property : m_PropertyBlock.ShaderProperties)
         {
             if (property.Name == propertyName && property.Type == "Texture2D")
             {
-                findProperty = property;
+                findProperty = &property;
                 break;
             }
         }
 
-        if (!findProperty.has_value())
+        if (findProperty == nullptr)
         {
             SNOW_LEOPARD_CORE_ERROR(
                 "[DzMaterialPropertyBlock] Failed to set texture2d value, property ({0}) not found!", propertyName);
@@ -116,17 +116,17 @@ namespace SnowLeopardEngine
     void DzMaterial::SetCubemap(const std::string& propertyName, const std::string& cubemapInfo)
     {
         // Update property block
-        std::optional<DzShaderProperty> findProperty;
+        DzShaderProperty* findProperty = nullptr;
         for (auto& property : m_PropertyBlock.ShaderProperties)
         {
             if (property.Name == propertyName && property.Type == "Cubemap")
             {
-                findProperty = property;
+                findProperty = &property;
                 break;
             }
         }
 
-        if (!findProperty.has_value())
+        if (findProperty == nullptr)
         {
             SNOW_LEOPARD_CORE_ERROR("[DzMaterialPropertyBlock] Failed to set cubemap value, property ({0}) not found!",
                                     propertyName);
@@ -139,17 +139,17 @@ namespace SnowLeopardEngine
     void DzMaterial::SetVector(const std::string& propertyName, const glm::vec4& value)
     {
         // Update property block
-        std::optional<DzShaderProperty> findProperty;
+        DzShaderProperty* findProperty = nullptr;
         for (auto& property : m_PropertyBlock.ShaderProperties)
         {
             if (property.Name == propertyName && property.Type == "Vector")
             {
-                findProperty = property;
+                findProperty = &property;
                 break;
             }
         }
 
-        if (!findProperty.has_value())
+        if (findProperty == nullptr)
         {
             SNOW_LEOPARD_CORE_ERROR("[DzMaterialPropertyBlock] Failed to set vector value, property ({0}) not found!",
                                     propertyName);

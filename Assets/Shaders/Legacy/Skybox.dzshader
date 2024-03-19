@@ -8,6 +8,7 @@
                 "Value": ""
             }
         ],
+        "InstancedPropertyNames": [],
         "Resources": [],
         "PipelineStates": {
             "DepthTestMode": "LessEqual",

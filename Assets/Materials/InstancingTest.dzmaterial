@@ -1,0 +1,25 @@
+{
+    "DzMaterial": {
+        "m_ShaderName": "Test/Instancing",
+        "m_PropertyBlock": {
+            "ShaderProperties": [
+                {
+                    "Name": "instanceColor",
+                    "Type": "Color",
+                    "Value": "(1, 1, 1, 1)"
+                },
+                {
+                    "Name": "instancePosition",
+                    "Type": "Vector",
+                    "Value": "(0, 0, 0, 1)"
+                },
+                {
+                    "Name": "instanceScale",
+                    "Type": "Vector",
+                    "Value": "(1, 1, 1, 1)"
+                }
+            ],
+            "ReadOnly": true
+        }
+    }
+}
