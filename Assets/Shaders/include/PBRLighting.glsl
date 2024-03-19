@@ -64,6 +64,7 @@ float GeometrySchlickGGX(float NdotV, float roughness) {
 
     return num / denom;
 }
+
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
     float NdotV = max(dot(N, V), 0.0);
     float NdotL = max(dot(N, L), 0.0);
@@ -92,7 +93,7 @@ vec3 CalPBRLighting(DirectionalLight directionalLight, vec3 normal, vec3 viewDir
     vec3 radiance = directionalLight.color * directionalLight.intensity;
 
     // cook-torrance brdf
-    float gamma = 2.0f;
+    float gamma = 4.0f; //控制高光大小
     float NDF = DistributionGTR(N, H, material.roughness, gamma);
     float G = GeometrySmith(N, V, L, material.roughness);
     vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);

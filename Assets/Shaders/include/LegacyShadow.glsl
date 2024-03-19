@@ -5,7 +5,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, sampler2D shadowMap) {
     
     if(projCoords.z > 1.0) return 1.0;
 
-    float lightSize = 0.05; 
+    float lightSize = 0.1; 
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0); 
     float searchRadius = 0.005; 
     float shadow = 0.0; 
@@ -31,7 +31,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, sampler2D shadowMap) {
     blockerDepth /= float(countBlockers);
 
     float shadowRadius = lightSize / (projCoords.z - blockerDepth);
-    shadowRadius = clamp(shadowRadius, 0.0, 20.0 * texelSize.x); 
+    shadowRadius = clamp(shadowRadius, 0.0, 5 * texelSize.x); 
 
     for(float x = -shadowRadius; x <= shadowRadius; x += texelSize.x) 
     {
@@ -42,7 +42,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, sampler2D shadowMap) {
         }
     }
 
-    shadow /= (2.0 * shadowRadius / texelSize.x) * (2.0 * shadowRadius / texelSize.y); // 调整阴影强度
+    shadow /= (2.0 * shadowRadius / texelSize.x) * (2.0 * shadowRadius / texelSize.y); 
 
     return shadow;
 }
