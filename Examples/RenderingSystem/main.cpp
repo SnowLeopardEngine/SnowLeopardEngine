@@ -31,7 +31,7 @@ public:
 
 static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3& position, const Ref<LogicScene>& scene)
 {
-    Entity sphere                       = scene->CreateEntity("Sphere1");
+    Entity sphere                       = scene->CreateEntity("Sphere");
     auto&  sphereTransform              = sphere.GetComponent<TransformComponent>();
     sphereTransform.Position            = position;
     sphereTransform.Scale               = {2, 2, 2};
@@ -68,10 +68,11 @@ public:
 
         // Load materials
         const std::string redMaterialFilePath = "Assets/Materials/Red.dzmaterial";
+        const std::string pbrMaterialFilePath = "Assets/Materials/RustedIronPBR.dzmaterial";
 
         // Create spheres to test materials
         // Sphere 1
-        Entity sphere1 = CreateSphere(redMaterialFilePath, {-21, 10, 0}, scene);
+        Entity sphere1 = CreateSphere(pbrMaterialFilePath, {-21, 10, 0}, scene);
         Entity sphere2 = CreateSphere(redMaterialFilePath, {-15, 10, 0}, scene);
         Entity sphere3 = CreateSphere(redMaterialFilePath, {-9, 10, 0}, scene);
         Entity sphere4 = CreateSphere(redMaterialFilePath, {-3, 10, 0}, scene);
