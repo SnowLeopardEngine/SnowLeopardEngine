@@ -35,6 +35,11 @@ namespace SnowLeopardEngine
         std::vector<entt::entity> m_GeometryGroup;
         std::vector<entt::entity> m_SkyGroup;
 
+        // TODO: Batch info
+        std::vector<std::vector<entt::entity>>  m_InstancingBatchGroups;
+        std::vector<std::string>                m_InstancingBatchShaderNames;
+        std::vector<std::optional<std::string>> m_InstancingBatchMeshItemNames;
+
         Ref<FrameBuffer> m_RenderTarget;
 
         EventHandler<LogicSceneLoadedEvent> m_LogicSceneLoadedHandler = [this](const LogicSceneLoadedEvent& e) {

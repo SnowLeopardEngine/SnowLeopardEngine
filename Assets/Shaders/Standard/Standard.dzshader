@@ -63,6 +63,7 @@
                 "Value": "0"
             }
         ],
+        "InstancedPropertyNames": [],
         "Resources": [],
         "PipelineStates": {},
         "Tags": {

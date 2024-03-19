@@ -121,6 +121,7 @@ namespace SnowLeopardEngine
         std::string Name;
 
         std::vector<DzShaderProperty> Properties;
+        std::vector<std::string>      InstancedPropertyNames;
         std::vector<DzResource>       Resources;
 
         std::map<std::string, std::string> PipelineStates;
@@ -139,6 +140,7 @@ namespace SnowLeopardEngine
         {
             archive(CEREAL_NVP(Name),
                     CEREAL_NVP(Properties),
+                    CEREAL_NVP(InstancedPropertyNames),
                     CEREAL_NVP(Resources),
                     CEREAL_NVP(PipelineStates),
                     CEREAL_NVP(Tags),

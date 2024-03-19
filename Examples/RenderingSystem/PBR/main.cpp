@@ -54,7 +54,7 @@ public:
         m_EngineContext->WindowSys->SetHideCursor(true);
 
         // Create a scene and set active
-        auto scene = m_EngineContext->SceneMngr->CreateScene("RenderingSystem", true);
+        auto scene = m_EngineContext->SceneMngr->CreateScene("RenderingSystem-PBR", true);
 
         // Create a camera
         Entity camera                                      = scene->CreateEntity("MainCamera");
@@ -99,7 +99,7 @@ private:
 int main(int argc, char** argv)
 {
     DesktopAppInitInfo initInfo {};
-    initInfo.Engine.Window.Title = "Example - RenderingSystem";
+    initInfo.Engine.Window.Title = "Example - RenderingSystem-PBR";
     DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))

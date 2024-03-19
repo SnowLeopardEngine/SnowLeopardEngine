@@ -443,6 +443,8 @@ namespace SnowLeopardEngine
 
     struct MeshRendererComponent : public BaseRendererComponent
     {
+        bool EnableInstancing = false;
+
         MeshRendererComponent()                             = default;
         MeshRendererComponent(const MeshRendererComponent&) = default;
     };
