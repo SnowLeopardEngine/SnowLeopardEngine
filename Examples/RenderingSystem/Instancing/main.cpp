@@ -92,7 +92,7 @@ public:
         const std::string instancingMaterialPath = "Assets/Materials/InstancingTest.dzmaterial";
 
         // Create spheres to test materials
-        for (size_t i = 0; i < 100; ++i)
+        for (size_t i = 0; i < 335; ++i)
         {
             glm::vec4 randomPosition(Random::GetRandomFloatRanged(-50, 50),
                                      Random::GetRandomFloatRanged(-50, 50),
