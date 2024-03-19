@@ -92,24 +92,14 @@ public:
         const std::string instancingMaterialPath = "Assets/Materials/InstancingTest.dzmaterial";
 
         // Create spheres to test materials
-        Entity sphere1 = CreateSphere(instancingMaterialPath, {-21, 10, 0}, scene);
-        Entity sphere2 = CreateSphere(instancingMaterialPath, {-15, 10, 0}, scene);
-        Entity sphere3 = CreateSphere(instancingMaterialPath, {-9, 10, 0}, scene);
-        Entity sphere4 = CreateSphere(instancingMaterialPath, {-3, 10, 0}, scene);
-        Entity sphere5 = CreateSphere(instancingMaterialPath, {3, 10, 0}, scene);
-        Entity sphere6 = CreateSphere(instancingMaterialPath, {9, 10, 0}, scene);
-        Entity sphere7 = CreateSphere(instancingMaterialPath, {15, 10, 0}, scene);
-        Entity sphere8 = CreateSphere(instancingMaterialPath, {21, 10, 0}, scene);
-
-        // Create a floor
-        Entity floor = scene->CreateEntity("Floor");
-
-        auto& floorTransform          = floor.GetComponent<TransformComponent>();
-        floorTransform.Scale          = {100, 1, 100};
-        auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
-        floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
+        for (size_t i = 0; i < 100; ++i)
+        {
+            glm::vec4 randomPosition(Random::GetRandomFloatRanged(-50, 50),
+                                     Random::GetRandomFloatRanged(-50, 50),
+                                     Random::GetRandomFloatRanged(-150, -50),
+                                     1);
+            CreateSphere(instancingMaterialPath, randomPosition, scene);
+        }
     }
 
 private:
