@@ -40,6 +40,21 @@ float DistributionGGX(vec3 N, vec3 H, float roughness) {
     return num / denom;
 }
 
+float DistributionGTR(vec3 N, vec3 H, float roughness, float gamma) {
+    float alpha = roughness * roughness;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+    float alpha2 = alpha * alpha;
+    
+    float denom = (NdotH2 * (alpha2 - 1.0) + 1.0);
+    denom = PI * pow(denom, gamma);
+
+    float c = alpha2;
+    float D = c / denom;
+
+    return D;
+}
+
 float GeometrySchlickGGX(float NdotV, float roughness) {
     float r = (roughness + 1.0);
     float k = (r * r) / 8.0;
@@ -77,7 +92,8 @@ vec3 CalPBRLighting(DirectionalLight directionalLight, vec3 normal, vec3 viewDir
     vec3 radiance = directionalLight.color * directionalLight.intensity;
 
     // cook-torrance brdf
-    float NDF = DistributionGGX(N, H, material.roughness);
+    float gamma = 2.0f;
+    float NDF = DistributionGTR(N, H, material.roughness, gamma);
     float G = GeometrySmith(N, V, L, material.roughness);
     vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
 
