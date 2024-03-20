@@ -13,6 +13,11 @@
                 "Value": "(0, 0, 0, 1)"
             },
             {
+                "Name": "instanceQuaternion",
+                "Type": "Vector",
+                "Value": "(1, 0, 0, 0)"
+            },
+            {
                 "Name": "instanceScale",
                 "Type": "Vector",
                 "Value": "(1, 1, 1, 1)"
@@ -21,6 +26,7 @@
         "InstancedPropertyNames": [
             "instanceColor",
             "instancePosition",
+            "instanceQuaternion",
             "instanceScale"
         ],
         "Resources": [],
@@ -43,7 +49,7 @@
                         "Name": "vertex",
                         "LanguageType": "GLSL",
                         "EntryPoint": "main",
-                        "ShaderSource": "#version 450\n\n#include \"LegacySceneUniform.glsl\"\n#include \"Instancing.glsl\"\n\nlayout(location = 0) in vec3 aPos;\nlayout(location = 0) out vec4 v2fColor;\n\nINSTANCED_PROPERTY(0, vec4, instanceColor);\nINSTANCED_PROPERTY(1, vec4, instancePosition);\nINSTANCED_PROPERTY(2, vec4, instanceScale);\n\nvoid main() {\n    v2fColor = ACCESS_INSTANCED_PROPERTY(instanceColor);\n    vec4 scale = ACCESS_INSTANCED_PROPERTY(instanceScale);\n    mat4 translationMatrix = mat4(1.0);\n    translationMatrix[3] = ACCESS_INSTANCED_PROPERTY(instancePosition);\n    mat4 scaleMatrix = mat4(scale.x, 0.0, 0.0, 0.0, 0.0, scale.y, 0.0, 0.0, 0.0, 0.0, scale.z, 0.0, 0.0, 0.0, 0.0, 1.0);\n    mat4 instanceModel = translationMatrix * scaleMatrix;\n    gl_Position = projection * view * instanceModel * vec4(aPos, 1.0);\n}"
+                        "ShaderSource": "#version 450\n\n#include \"Instancing.glsl\"\n#include \"Math.glsl\"\n\nlayout(location = 0) in vec3 aPos;\nlayout(location = 0) out vec4 v2fColor;\n\nlayout(location = 0) uniform mat4 view;\nlayout(location = 1) uniform mat4 projection;\n\nINSTANCED_PROPERTY(0, vec4, instanceColor);\nINSTANCED_PROPERTY(1, vec4, instancePosition);\nINSTANCED_PROPERTY(2, vec4, instanceQuaternion);\nINSTANCED_PROPERTY(3, vec4, instanceScale);\n\nvoid main() {\n    v2fColor = ACCESS_INSTANCED_PROPERTY(instanceColor);\n    vec4 scale = ACCESS_INSTANCED_PROPERTY(instanceScale);\n    mat4 translationMatrix = mat4(1.0);\n    translationMatrix[3] = ACCESS_INSTANCED_PROPERTY(instancePosition);\n    mat4 rotationMatrix = QuaternionToMat4(ACCESS_INSTANCED_PROPERTY(instanceQuaternion));\n    mat4 scaleMatrix = mat4(scale.x, 0.0, 0.0, 0.0, 0.0, scale.y, 0.0, 0.0, 0.0, 0.0, scale.z, 0.0, 0.0, 0.0, 0.0, 1.0);\n    mat4 instanceModel = translationMatrix * rotationMatrix * scaleMatrix;\n    gl_Position = projection * view * instanceModel * vec4(aPos, 1.0);\n}"
                     },
                     {
                         "Name": "fragment",

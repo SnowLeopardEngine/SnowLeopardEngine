@@ -21,6 +21,9 @@ public:
             "instanceColor",
             glm::vec4(Random::GetRandomFloat(), Random::GetRandomFloat(), Random::GetRandomFloat(), 1));
         meshRenderer.Material->SetVector("instancePosition", glm::vec4(transform.Position, 1));
+        auto      quaternion = transform.GetRotation();
+        glm::vec4 vec4Representation(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+        meshRenderer.Material->SetVector("instanceQuaternion", vec4Representation);
         meshRenderer.Material->SetVector("instanceScale", glm::vec4(transform.Scale, 1));
     }
 };
@@ -50,9 +53,10 @@ static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3&
     Entity sphere                       = scene->CreateEntity("Sphere");
     auto&  sphereTransform              = sphere.GetComponent<TransformComponent>();
     sphereTransform.Position            = position;
+    sphereTransform.SetRotationEuler(glm::vec3(-90, 0, 0));
     sphereTransform.Scale               = {2, 2, 2};
     auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
-    sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
+    sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Quad;
     auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
     sphereMeshRenderer.MaterialFilePath = materialFilePath;
 
@@ -92,7 +96,7 @@ public:
         const std::string instancingMaterialPath = "Assets/Materials/InstancingTest.dzmaterial";
 
         // Create spheres to test materials
-        for (size_t i = 0; i < 335; ++i)
+        for (size_t i = 0; i < 250; ++i)
         {
             glm::vec4 randomPosition(Random::GetRandomFloatRanged(-50, 50),
                                      Random::GetRandomFloatRanged(-50, 50),
