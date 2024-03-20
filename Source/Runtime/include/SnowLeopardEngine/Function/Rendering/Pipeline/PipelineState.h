@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include <cstdint>
 
 namespace SnowLeopardEngine
 {
@@ -28,7 +29,34 @@ namespace SnowLeopardEngine
         Invalid = 0,
         NoCull,
         Front,
-        Back
+        Back,
+        Both
+    };
+
+    enum class BlendMode : uint8_t
+    {
+        Invalid = 0,
+        Disable,
+        Enable
+    };
+
+    enum class BlendFunc : uint16_t
+    {
+        Invalid = 0,
+        Zero,
+        One,
+        SrcColor,
+        OneMinusSrcColor,
+        DstColor,
+        OneMinusDstColor,
+        SrcAlpha,
+        OneMinusSrcAlpha,
+        DstAlpha,
+        OneMinusDstAlpha,
+        ConstantColor,
+        OneMinusConstantColor,
+        ConstantAlpha,
+        OneMinusConstantAlpha,
     };
 
     enum class PipelineType : uint8_t
@@ -62,6 +90,10 @@ namespace SnowLeopardEngine
         StencilTestMode StencilTest = StencilTestMode::Invalid;
 
         CullFaceMode CullFace = CullFaceMode::Back;
+
+        BlendMode Blend      = BlendMode::Enable;
+        BlendFunc BlendFunc1 = BlendFunc::SrcAlpha;
+        BlendFunc BlendFunc2 = BlendFunc::OneMinusSrcAlpha;
 
         PipelineFlag Flag = PipelineFlag::Invalid;
     };

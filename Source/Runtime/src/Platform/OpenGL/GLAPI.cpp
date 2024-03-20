@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Platform/OpenGL/GLAPI.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 
+#include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
 #include <glad/glad.h>
 
 namespace SnowLeopardEngine
@@ -71,8 +72,129 @@ namespace SnowLeopardEngine
                 glEnable(GL_CULL_FACE);
                 glCullFace(GL_BACK);
                 break;
+            case CullFaceMode::Both:
+                glEnable(GL_CULL_FACE);
+                glCullFace(GL_FRONT_AND_BACK);
+                break;
             default:
                 assert(0);
+        }
+
+        switch (pipelineState.Blend)
+        {
+            case BlendMode::Disable:
+                glDisable(GL_BLEND);
+                break;
+
+            case BlendMode::Enable:
+                glEnable(GL_BLEND);
+                break;
+
+            default:
+                assert(0);
+        }
+
+        if (pipelineState.Blend == BlendMode::Enable)
+        {
+            GLenum srcFactor, dstFactor;
+
+            switch (pipelineState.BlendFunc1)
+            {
+                case BlendFunc::Zero:
+                    srcFactor = GL_ZERO;
+                    break;
+                case BlendFunc::One:
+                    srcFactor = GL_ONE;
+                    break;
+                case BlendFunc::SrcColor:
+                    srcFactor = GL_SRC_COLOR;
+                    break;
+                case BlendFunc::OneMinusSrcColor:
+                    srcFactor = GL_ONE_MINUS_SRC_COLOR;
+                    break;
+                case BlendFunc::DstColor:
+                    srcFactor = GL_DST_COLOR;
+                    break;
+                case BlendFunc::OneMinusDstColor:
+                    srcFactor = GL_ONE_MINUS_DST_COLOR;
+                    break;
+                case BlendFunc::SrcAlpha:
+                    srcFactor = GL_SRC_ALPHA;
+                    break;
+                case BlendFunc::OneMinusSrcAlpha:
+                    srcFactor = GL_ONE_MINUS_SRC_ALPHA;
+                    break;
+                case BlendFunc::DstAlpha:
+                    srcFactor = GL_DST_ALPHA;
+                    break;
+                case BlendFunc::OneMinusDstAlpha:
+                    srcFactor = GL_ONE_MINUS_DST_ALPHA;
+                    break;
+                case BlendFunc::ConstantColor:
+                    srcFactor = GL_CONSTANT_COLOR;
+                    break;
+                case BlendFunc::OneMinusConstantColor:
+                    srcFactor = GL_ONE_MINUS_CONSTANT_COLOR;
+                    break;
+                case BlendFunc::ConstantAlpha:
+                    srcFactor = GL_CONSTANT_ALPHA;
+                    break;
+                case BlendFunc::OneMinusConstantAlpha:
+                    srcFactor = GL_ONE_MINUS_CONSTANT_ALPHA;
+                    break;
+                default:
+                    assert(0);
+            }
+
+            switch (pipelineState.BlendFunc2)
+            {
+                case BlendFunc::Zero:
+                    dstFactor = GL_ZERO;
+                    break;
+                case BlendFunc::One:
+                    dstFactor = GL_ONE;
+                    break;
+                case BlendFunc::SrcColor:
+                    dstFactor = GL_SRC_COLOR;
+                    break;
+                case BlendFunc::OneMinusSrcColor:
+                    dstFactor = GL_ONE_MINUS_SRC_COLOR;
+                    break;
+                case BlendFunc::DstColor:
+                    dstFactor = GL_DST_COLOR;
+                    break;
+                case BlendFunc::OneMinusDstColor:
+                    dstFactor = GL_ONE_MINUS_DST_COLOR;
+                    break;
+                case BlendFunc::SrcAlpha:
+                    dstFactor = GL_SRC_ALPHA;
+                    break;
+                case BlendFunc::OneMinusSrcAlpha:
+                    dstFactor = GL_ONE_MINUS_SRC_ALPHA;
+                    break;
+                case BlendFunc::DstAlpha:
+                    dstFactor = GL_DST_ALPHA;
+                    break;
+                case BlendFunc::OneMinusDstAlpha:
+                    dstFactor = GL_ONE_MINUS_DST_ALPHA;
+                    break;
+                case BlendFunc::ConstantColor:
+                    dstFactor = GL_CONSTANT_COLOR;
+                    break;
+                case BlendFunc::OneMinusConstantColor:
+                    dstFactor = GL_ONE_MINUS_CONSTANT_COLOR;
+                    break;
+                case BlendFunc::ConstantAlpha:
+                    dstFactor = GL_CONSTANT_ALPHA;
+                    break;
+                case BlendFunc::OneMinusConstantAlpha:
+                    dstFactor = GL_ONE_MINUS_CONSTANT_ALPHA;
+                    break;
+                default:
+                    assert(0);
+            }
+
+            glBlendFunc(srcFactor, dstFactor);
         }
     }
 

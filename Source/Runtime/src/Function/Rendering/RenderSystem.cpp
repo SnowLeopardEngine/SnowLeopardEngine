@@ -73,7 +73,14 @@ namespace SnowLeopardEngine
         if (firstCam != entt::null)
         {
             auto [transform, camera] = registry.view<TransformComponent, CameraComponent>().get(firstCam);
-            m_API->ClearColor(camera.ClearColor, ClearBit::Default);
+            if (camera.ClearFlags == CameraClearFlags::Color)
+            {
+                m_API->ClearColor(camera.ClearColor, ClearBit::Default);
+            }
+            else
+            {
+                m_API->ClearColor(glm::vec4(0, 0, 0, 0), ClearBit::Default);
+            }
             mainCameraTransform = transform;
             mainCamera          = camera;
         }
@@ -142,6 +149,24 @@ namespace SnowLeopardEngine
                     pipelineState.DepthWrite = pipelineStateValue == "On";
                 }
 
+                if (pipelineStateName == "BlendMode")
+                {
+                    auto optional       = magic_enum::enum_cast<BlendMode>(pipelineStateValue);
+                    pipelineState.Blend = optional.has_value() ? optional.value() : BlendMode::Enable;
+                }
+
+                if (pipelineStateName == "BlendFunc1")
+                {
+                    auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                    pipelineState.BlendFunc1 = optional.has_value() ? optional.value() : BlendFunc::SrcAlpha;
+                }
+
+                if (pipelineStateName == "BlendFunc2")
+                {
+                    auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                    pipelineState.BlendFunc2 = optional.has_value() ? optional.value() : BlendFunc::OneMinusSrcAlpha;
+                }
+
                 // TODO: Handle more pipeline states
             }
 
@@ -164,6 +189,25 @@ namespace SnowLeopardEngine
                     if (pipelineStateName == "DepthWrite")
                     {
                         pipelineState.DepthWrite = pipelineStateValue == "On";
+                    }
+
+                    if (pipelineStateName == "BlendMode")
+                    {
+                        auto optional       = magic_enum::enum_cast<BlendMode>(pipelineStateValue);
+                        pipelineState.Blend = optional.has_value() ? optional.value() : BlendMode::Enable;
+                    }
+
+                    if (pipelineStateName == "BlendFunc1")
+                    {
+                        auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                        pipelineState.BlendFunc1 = optional.has_value() ? optional.value() : BlendFunc::SrcAlpha;
+                    }
+
+                    if (pipelineStateName == "BlendFunc2")
+                    {
+                        auto optional = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                        pipelineState.BlendFunc2 =
+                            optional.has_value() ? optional.value() : BlendFunc::OneMinusSrcAlpha;
                     }
 
                     // TODO: Handle more pipeline states
@@ -277,7 +321,14 @@ namespace SnowLeopardEngine
             mainCamera.AspectRatio = width * 1.0f / height;
         }
 
-        m_API->ClearColor(mainCamera.ClearColor, ClearBit::Default);
+        if (mainCamera.ClearFlags == CameraClearFlags::Color)
+        {
+            m_API->ClearColor(mainCamera.ClearColor, ClearBit::Default);
+        }
+        else
+        {
+            m_API->ClearColor(glm::vec4(0, 0, 0, 0), ClearBit::Default);
+        }
 
         // Draw instancing groups
         for (size_t groupID = 0; groupID < m_InstancingBatchGroups.size(); ++groupID)
@@ -331,6 +382,24 @@ namespace SnowLeopardEngine
                     pipelineState.DepthWrite = pipelineStateValue == "On";
                 }
 
+                if (pipelineStateName == "BlendMode")
+                {
+                    auto optional       = magic_enum::enum_cast<BlendMode>(pipelineStateValue);
+                    pipelineState.Blend = optional.has_value() ? optional.value() : BlendMode::Enable;
+                }
+
+                if (pipelineStateName == "BlendFunc1")
+                {
+                    auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                    pipelineState.BlendFunc1 = optional.has_value() ? optional.value() : BlendFunc::SrcAlpha;
+                }
+
+                if (pipelineStateName == "BlendFunc2")
+                {
+                    auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                    pipelineState.BlendFunc2 = optional.has_value() ? optional.value() : BlendFunc::OneMinusSrcAlpha;
+                }
+
                 // TODO: Handle more pipeline states
             }
 
@@ -355,6 +424,25 @@ namespace SnowLeopardEngine
                         pipelineState.DepthWrite = pipelineStateValue == "On";
                     }
 
+                    if (pipelineStateName == "BlendMode")
+                    {
+                        auto optional       = magic_enum::enum_cast<BlendMode>(pipelineStateValue);
+                        pipelineState.Blend = optional.has_value() ? optional.value() : BlendMode::Enable;
+                    }
+
+                    if (pipelineStateName == "BlendFunc1")
+                    {
+                        auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                        pipelineState.BlendFunc1 = optional.has_value() ? optional.value() : BlendFunc::SrcAlpha;
+                    }
+
+                    if (pipelineStateName == "BlendFunc2")
+                    {
+                        auto optional = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                        pipelineState.BlendFunc2 =
+                            optional.has_value() ? optional.value() : BlendFunc::OneMinusSrcAlpha;
+                    }
+
                     // TODO: Handle more pipeline states
                 }
 
@@ -376,10 +464,60 @@ namespace SnowLeopardEngine
                 shader->SetFloat3("directionalLight.color", directionalLight.Color);
                 shader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);
 
+                // set non-instanced material properties
+                int resourceBinding = 0;
+                for (const auto& property : renderer.Material->GetPropertyBlock().ShaderProperties)
+                {
+                    // Jump instanced properties
+                    auto it = std::find(
+                        dzShader.InstancedPropertyNames.begin(), dzShader.InstancedPropertyNames.end(), property.Name);
+
+                    // Now, only care about instanced material properties
+                    if (it != dzShader.InstancedPropertyNames.end())
+                    {
+                        continue;
+                    }
+
+                    if (property.Type == "Int")
+                    {
+                        auto value = renderer.Material->GetInt(property.Name);
+                        shader->SetInt(property.Name, value);
+                    }
+                    else if (property.Type == "Float")
+                    {
+                        auto value = renderer.Material->GetFloat(property.Name);
+                        shader->SetFloat(property.Name, value);
+                    }
+                    else if (property.Type == "Color")
+                    {
+                        auto value = renderer.Material->GetColor(property.Name);
+                        shader->SetFloat4(property.Name, value);
+                    }
+                    else if (property.Type == "Vector")
+                    {
+                        auto value = renderer.Material->GetVector(property.Name);
+                        shader->SetFloat4(property.Name, value);
+                    }
+                    else if (property.Type == "Texture2D")
+                    {
+                        auto texture = renderer.Material->GetTexture2D(property.Name);
+                        shader->SetInt(property.Name, resourceBinding);
+                        texture->Bind(resourceBinding);
+                        resourceBinding++;
+                    }
+                    else if (property.Type == "Cubemap")
+                    {
+                        auto cubemap = renderer.Material->GetCubemap(property.Name);
+                        shader->SetInt(property.Name, resourceBinding);
+                        cubemap->Bind(resourceBinding);
+                        resourceBinding++;
+                    }
+
+                    DzShaderManager::UsePassResources(dzPass, shader, resourceBinding);
+                }
+
                 for (size_t instanceID = 0; instanceID < instanceBatchGroup.size(); ++instanceID)
                 {
-                    int resourceBinding = 0;
-
                     auto& instanceRenderer = registry.get<MeshRendererComponent>(instanceBatchGroup[instanceID]);
 
                     // Auto set material properties
@@ -510,6 +648,24 @@ namespace SnowLeopardEngine
                     pipelineState.DepthWrite = pipelineStateValue == "On";
                 }
 
+                if (pipelineStateName == "BlendMode")
+                {
+                    auto optional       = magic_enum::enum_cast<BlendMode>(pipelineStateValue);
+                    pipelineState.Blend = optional.has_value() ? optional.value() : BlendMode::Enable;
+                }
+
+                if (pipelineStateName == "BlendFunc1")
+                {
+                    auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                    pipelineState.BlendFunc1 = optional.has_value() ? optional.value() : BlendFunc::SrcAlpha;
+                }
+
+                if (pipelineStateName == "BlendFunc2")
+                {
+                    auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                    pipelineState.BlendFunc2 = optional.has_value() ? optional.value() : BlendFunc::OneMinusSrcAlpha;
+                }
+
                 // TODO: Handle more pipeline states
             }
 
@@ -532,6 +688,25 @@ namespace SnowLeopardEngine
                     if (pipelineStateName == "DepthWrite")
                     {
                         pipelineState.DepthWrite = pipelineStateValue == "On";
+                    }
+
+                    if (pipelineStateName == "BlendMode")
+                    {
+                        auto optional       = magic_enum::enum_cast<BlendMode>(pipelineStateValue);
+                        pipelineState.Blend = optional.has_value() ? optional.value() : BlendMode::Enable;
+                    }
+
+                    if (pipelineStateName == "BlendFunc1")
+                    {
+                        auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                        pipelineState.BlendFunc1 = optional.has_value() ? optional.value() : BlendFunc::SrcAlpha;
+                    }
+
+                    if (pipelineStateName == "BlendFunc2")
+                    {
+                        auto optional = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                        pipelineState.BlendFunc2 =
+                            optional.has_value() ? optional.value() : BlendFunc::OneMinusSrcAlpha;
                     }
 
                     // TODO: Handle more pipeline states
@@ -663,6 +838,24 @@ namespace SnowLeopardEngine
                     pipelineState.DepthWrite = pipelineStateValue == "On";
                 }
 
+                if (pipelineStateName == "BlendMode")
+                {
+                    auto optional       = magic_enum::enum_cast<BlendMode>(pipelineStateValue);
+                    pipelineState.Blend = optional.has_value() ? optional.value() : BlendMode::Enable;
+                }
+
+                if (pipelineStateName == "BlendFunc1")
+                {
+                    auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                    pipelineState.BlendFunc1 = optional.has_value() ? optional.value() : BlendFunc::SrcAlpha;
+                }
+
+                if (pipelineStateName == "BlendFunc2")
+                {
+                    auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                    pipelineState.BlendFunc2 = optional.has_value() ? optional.value() : BlendFunc::OneMinusSrcAlpha;
+                }
+
                 // TODO: Handle more pipeline states
             }
 
@@ -685,6 +878,25 @@ namespace SnowLeopardEngine
                     if (pipelineStateName == "DepthWrite")
                     {
                         pipelineState.DepthWrite = pipelineStateValue == "On";
+                    }
+
+                    if (pipelineStateName == "BlendMode")
+                    {
+                        auto optional       = magic_enum::enum_cast<BlendMode>(pipelineStateValue);
+                        pipelineState.Blend = optional.has_value() ? optional.value() : BlendMode::Enable;
+                    }
+
+                    if (pipelineStateName == "BlendFunc1")
+                    {
+                        auto optional            = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                        pipelineState.BlendFunc1 = optional.has_value() ? optional.value() : BlendFunc::SrcAlpha;
+                    }
+
+                    if (pipelineStateName == "BlendFunc2")
+                    {
+                        auto optional = magic_enum::enum_cast<BlendFunc>(pipelineStateValue);
+                        pipelineState.BlendFunc2 =
+                            optional.has_value() ? optional.value() : BlendFunc::OneMinusSrcAlpha;
                     }
 
                     // TODO: Handle more pipeline states

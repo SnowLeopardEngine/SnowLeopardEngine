@@ -22,6 +22,21 @@
                     "Name": "instanceScale",
                     "Type": "Vector",
                     "Value": "(1, 1, 1, 1)"
+                },
+                {
+                    "Name": "grassMap",
+                    "Type": "Texture2D",
+                    "Value": "Assets/Textures/Grass.png"
+                },
+                {
+                    "Name": "noiseMap",
+                    "Type": "Texture2D",
+                    "Value": "Assets/Textures/Perlin.png"
+                },
+                {
+                    "Name": "time",
+                    "Type": "Float",
+                    "Value": "0"
                 }
             ],
             "ReadOnly": true

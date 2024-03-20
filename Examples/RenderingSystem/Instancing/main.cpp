@@ -50,9 +50,9 @@ public:
 
 static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3& position, const Ref<LogicScene>& scene)
 {
-    Entity sphere                       = scene->CreateEntity("Sphere");
-    auto&  sphereTransform              = sphere.GetComponent<TransformComponent>();
-    sphereTransform.Position            = position;
+    Entity sphere            = scene->CreateEntity("Sphere");
+    auto&  sphereTransform   = sphere.GetComponent<TransformComponent>();
+    sphereTransform.Position = position;
     sphereTransform.SetRotationEuler(glm::vec3(-90, 0, 0));
     sphereTransform.Scale               = {4, 8, 4};
     auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
@@ -98,10 +98,8 @@ public:
         // Create spheres to test materials
         for (size_t i = 0; i < 250; ++i)
         {
-            glm::vec4 randomPosition(Random::GetRandomFloatRanged(-25, 25),
-                                     Random::GetRandomFloatRanged(0, 0),
-                                     Random::GetRandomFloatRanged(-100, -50),
-                                     1);
+            glm::vec4 randomPosition(
+                Random::GetRandomFloatRanged(-25, 25), 0, Random::GetRandomFloatRanged(-60, -10), 1);
             CreateSphere(instancingMaterialPath, randomPosition, scene);
         }
     }
