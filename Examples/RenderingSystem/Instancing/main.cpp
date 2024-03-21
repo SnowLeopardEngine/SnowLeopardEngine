@@ -48,25 +48,25 @@ public:
     }
 };
 
-static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3& position, const Ref<LogicScene>& scene)
+static Entity CreateQuad(const std::string& materialFilePath, const glm::vec3& position, const Ref<LogicScene>& scene)
 {
-    Entity sphere            = scene->CreateEntity("Sphere");
-    auto&  sphereTransform   = sphere.GetComponent<TransformComponent>();
-    sphereTransform.Position = position;
-    sphereTransform.SetRotationEuler(glm::vec3(-90, 0, 0));
-    sphereTransform.Scale               = {4, 8, 4};
-    auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
-    sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Quad;
-    auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
-    sphereMeshRenderer.MaterialFilePath = materialFilePath;
+    Entity quad            = scene->CreateEntity("GrassQuad");
+    auto&  quadTransform   = quad.GetComponent<TransformComponent>();
+    quadTransform.Position = position;
+    quadTransform.SetRotationEuler(glm::vec3(-90, 0, 0));
+    quadTransform.Scale               = {4, 8, 4};
+    auto& quadMeshFilter              = quad.AddComponent<MeshFilterComponent>();
+    quadMeshFilter.PrimitiveType      = MeshPrimitiveType::Quad;
+    auto& quadMeshRenderer            = quad.AddComponent<MeshRendererComponent>();
+    quadMeshRenderer.MaterialFilePath = materialFilePath;
 
     // Enable GPU Instancing
-    sphereMeshRenderer.EnableInstancing = true;
+    quadMeshRenderer.EnableInstancing = true;
 
     // Attach a script for changing instance color
-    sphere.AddComponent<NativeScriptingComponent>(CreateRef<SphereScript>());
+    quad.AddComponent<NativeScriptingComponent>(CreateRef<SphereScript>());
 
-    return sphere;
+    return quad;
 }
 
 class CustomLifeTime final : public LifeTimeComponent
@@ -93,14 +93,14 @@ public:
         camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
 
         // Load materials
-        const std::string instancingMaterialPath = "Assets/Materials/InstancingTest.dzmaterial";
+        const std::string instancingMaterialPath = "Assets/Materials/Foliage/Grass.dzmaterial";
 
-        // Create spheres to test materials
+        // Create grass quad instances
         for (size_t i = 0; i < 250; ++i)
         {
             glm::vec4 randomPosition(
                 Random::GetRandomFloatRanged(-25, 25), 0, Random::GetRandomFloatRanged(-60, -10), 1);
-            CreateSphere(instancingMaterialPath, randomPosition, scene);
+            CreateQuad(instancingMaterialPath, randomPosition, scene);
         }
     }
 

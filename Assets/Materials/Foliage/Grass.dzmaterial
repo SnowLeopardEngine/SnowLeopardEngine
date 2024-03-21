@@ -1,6 +1,6 @@
 {
     "DzMaterial": {
-        "m_ShaderName": "Test/Instancing",
+        "m_ShaderName": "Foliage/Grass",
         "m_PropertyBlock": {
             "ShaderProperties": [
                 {

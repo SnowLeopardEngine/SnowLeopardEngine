@@ -1,6 +1,6 @@
 {
     "DzShader": {
-        "Name": "Test/Instancing",
+        "Name": "Foliage/Grass",
         "Properties": [
             {
                 "Name": "instanceColor",
@@ -59,7 +59,7 @@
         ],
         "Passes": [
             {
-                "Name": "Instancing_GeometryPass",
+                "Name": "Grass_GeometryPass",
                 "PipelineStates": {},
                 "Tags": {},
                 "ResourcesToBind": [],
