@@ -99,7 +99,7 @@ public:
         for (size_t i = 0; i < 250; ++i)
         {
             glm::vec4 randomPosition(
-                Random::GetRandomFloatRanged(-25, 25), 0, Random::GetRandomFloatRanged(-60, -10), 1);
+                Random::GetRandomFloatRanged(15, 25), 0, Random::GetRandomFloatRanged(-20, -10), 1);
             CreateQuad(instancingMaterialPath, randomPosition, scene);
         }
     }
