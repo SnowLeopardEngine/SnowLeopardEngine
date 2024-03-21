@@ -1,3 +1,4 @@
+#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
@@ -54,9 +55,8 @@ public:
         auto scene = m_EngineContext->SceneMngr->CreateScene("InputSystem", true);
 
         // Create an entity with NativeScriptingComponent
-        Entity entity         = scene->CreateEntity("Entity1");
-        auto   scriptInstance = CreateRef<MyScriptInstance>();
-        entity.AddComponent<NativeScriptingComponent>(scriptInstance);
+        Entity entity = scene->CreateEntity("Entity1");
+        entity.AddComponent<NativeScriptingComponent>("MyScriptInstance");
     }
 
 private:
@@ -65,6 +65,8 @@ private:
 
 int main(int argc, char** argv)
 {
+    REGISTER_TYPE(MyScriptInstance);
+
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - InputSystem";
     DesktopApp app(argc, argv);

@@ -2,10 +2,13 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
+#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/IO/Serialization.h"
+#include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
@@ -82,7 +85,7 @@ namespace SnowLeopardEngine
         }
 
         // Copy components (except IDComponent and NameComponent)
-        CopyComponent(AllComponents {}, dstSceneRegistry, srcSceneRegistry, newScene->m_EntityMap);
+        CopyComponent(AllCopyableComponents {}, dstSceneRegistry, srcSceneRegistry, newScene->m_EntityMap);
 
         return newScene;
     }
@@ -90,6 +93,8 @@ namespace SnowLeopardEngine
     LogicScene::LogicScene(const std::string& name) : m_Name(name)
     {
         m_EntityMap = CreateRef<std::map<CoreUUID, Entity>>();
+
+        CreateDefaultEntities();
     }
 
     Entity LogicScene::CreateEntity(const std::string& name)
@@ -266,8 +271,15 @@ namespace SnowLeopardEngine
             [](entt::entity entity, AnimatorComponent& animator) { animator.Controller.InitAnimators(); });
 
         // Scripting Callback
-        m_Registry.view<NativeScriptingComponent>().each(
-            [](entt::entity entity, NativeScriptingComponent& nativeScript) { nativeScript.ScriptInstance->OnLoad(); });
+        m_Registry.view<NativeScriptingComponent>().each([this](entt::entity              entity,
+                                                                NativeScriptingComponent& nativeScript) {
+            if (nativeScript.ScriptInstance == nullptr)
+            {
+                nativeScript.ScriptInstance = TypeFactory::CreateObject<NativeScriptInstance>(nativeScript.ScriptName);
+                nativeScript.ScriptInstance->m_OwnerEntity = CreateRef<Entity>(entity, this);
+            }
+            nativeScript.ScriptInstance->OnLoad();
+        });
 
         LogicSceneLoadedEvent loadedEvent(this);
         TriggerEvent(loadedEvent);
@@ -415,6 +427,33 @@ namespace SnowLeopardEngine
         TriggerEvent(unloadedEvent);
     }
 
+    void LogicScene::SaveTo(const std::filesystem::path& dstPath)
+    {
+        m_Path = dstPath;
+        IO::Serialize(this, dstPath);
+    }
+
+    void LogicScene::LoadFrom()
+    {
+        if (std::filesystem::exists(m_Path))
+        {
+            m_Registry.clear();
+            IO::Deserialize(this, m_Path);
+            InitAfterDeserializing();
+        }
+    }
+
+    void LogicScene::LoadFrom(const std::filesystem::path& srcPath)
+    {
+        if (std::filesystem::exists(srcPath))
+        {
+            m_Registry.clear();
+            m_Path = srcPath;
+            IO::Deserialize(this, srcPath);
+            InitAfterDeserializing();
+        }
+    }
+
     std::vector<Entity> LogicScene::GetEntitiesSortedByName()
     {
         std::vector<Entity> entityVector;
@@ -441,6 +480,14 @@ namespace SnowLeopardEngine
         return entityVector;
     }
 
+    void LogicScene::CreateDefaultEntities()
+    {
+        Entity directionalLight          = CreateEntity("Directional Light");
+        auto&  directionalLightComponent = directionalLight.AddComponent<DirectionalLightComponent>();
+        directionalLightComponent.ShadowMaterial =
+            DzMaterial::LoadFromPath("Assets/Materials/Legacy/ShadowMapping.dzmaterial");
+    }
+
     std::string LogicScene::GetNameFromEntity(Entity entity) const
     {
         if (const auto* nameComponent = m_Registry.try_get<NameComponent>(entity))
@@ -463,6 +510,33 @@ namespace SnowLeopardEngine
         return 0;
     }
 
+    std::string LogicScene::ExtractEntityName(const std::string& name)
+    {
+        std::smatch match;
+
+        if (std::regex_search(name, match, std::regex {R"((.*?)\s*\((\d+)\))"}))
+        {
+            return match[1].str();
+        }
+
+        return "";
+    }
+
+    void LogicScene::InitAfterDeserializing()
+    {
+        m_EntityMap->clear();
+        m_Name2CountMap.clear();
+
+        m_Registry.view<IDComponent, NameComponent>().each(
+            [this](entt::entity entity, IDComponent& id, NameComponent& name) {
+                (*m_EntityMap)[id.Id] = {entity, this};
+                auto entityName       = ExtractEntityName(name.Name);
+                if (m_Name2CountMap.count(entityName) == 0)
+                    m_Name2CountMap[entityName] = 0;
+                m_Name2CountMap[entityName]++;
+            });
+    }
+
     template<typename T>
     void LogicScene::OnComponentAdded(Entity entity, T& component)
     {}
@@ -478,9 +552,12 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(NativeScriptingComponent)
     {
         // Bind entity
-        Ref<Entity> entityCopy                    = CreateRef<Entity>(entity);
-        component.ScriptInstance->m_OwnerEntity   = entityCopy;
-        component.ScriptInstance->m_EngineContext = g_EngineContext;
+        Ref<Entity> entityCopy = CreateRef<Entity>(entity);
+        if (component.ScriptInstance == nullptr)
+        {
+            component.ScriptInstance = TypeFactory::CreateObject<NativeScriptInstance>(component.ScriptName);
+        }
+        component.ScriptInstance->m_OwnerEntity = entityCopy;
     }
 
     ON_COMPONENT_ADDED(RigidBodyComponent) {}

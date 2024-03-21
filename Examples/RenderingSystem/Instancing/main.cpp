@@ -1,5 +1,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Base/Random.h"
+#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
@@ -52,6 +54,7 @@ static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3&
     sphereTransform.Position            = position;
     sphereTransform.Scale               = {2, 2, 2};
     auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
+    sphereMeshFilter.UsePrimitive       = true;
     sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
     auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
     sphereMeshRenderer.MaterialFilePath = materialFilePath;
@@ -60,7 +63,7 @@ static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3&
     sphereMeshRenderer.EnableInstancing = true;
 
     // Attach a script for changing instance color
-    sphere.AddComponent<NativeScriptingComponent>(CreateRef<SphereScript>());
+    sphere.AddComponent<NativeScriptingComponent>("SphereScript");
 
     return sphere;
 }
@@ -83,10 +86,10 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
+        cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
-        camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
+        camera.AddComponent<NativeScriptingComponent>("EscScript");
 
         // Load materials
         const std::string instancingMaterialPath = "Assets/Materials/InstancingTest.dzmaterial";
@@ -100,6 +103,9 @@ public:
                                      1);
             CreateSphere(instancingMaterialPath, randomPosition, scene);
         }
+
+        scene->SaveTo("Test.dzscene");
+        scene->LoadFrom("Test.dzscene");
     }
 
 private:
@@ -108,6 +114,9 @@ private:
 
 int main(int argc, char** argv)
 {
+    REGISTER_TYPE(SphereScript);
+    REGISTER_TYPE(EscScript);
+
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - RenderingSystem-Instancing";
     DesktopApp app(argc, argv);

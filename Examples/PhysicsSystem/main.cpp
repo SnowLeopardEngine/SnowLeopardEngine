@@ -1,3 +1,4 @@
+#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
@@ -16,12 +17,12 @@ public:
     virtual void OnColliderEnter() override
     {
         SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter");
-        m_EngineContext->AudioSys->Play("sounds/jump.mp3");
+        g_EngineContext->AudioSys->Play("sounds/jump.mp3");
     }
 
     virtual void OnFixedTick() override
     {
-        auto& inputSystem = m_EngineContext->InputSys;
+        auto& inputSystem = g_EngineContext->InputSys;
 
         if (inputSystem->GetKey(KeyCode::Escape))
         {
@@ -30,8 +31,8 @@ public:
 
         auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
         auto& rigider    = m_OwnerEntity->GetComponent<RigidBodyComponent>();
-        m_EngineContext->PhysicsSys->Move(controller, glm::vec3(-0.1f, -0.1f, 0), Time::FixedDeltaTime);
-        m_EngineContext->PhysicsSys->AddForce(rigider, glm::vec3(-5.f, -5.f, 0));
+        g_EngineContext->PhysicsSys->Move(controller, glm::vec3(-0.1f, -0.1f, 0), Time::FixedDeltaTime);
+        g_EngineContext->PhysicsSys->AddForce(rigider, glm::vec3(-5.f, -5.f, 0));
     }
 };
 
@@ -78,8 +79,7 @@ public:
         auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
         sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
 
-        auto scriptInstance = CreateRef<SphereScript>();
-        sphere.AddComponent<NativeScriptingComponent>(scriptInstance);
+        sphere.AddComponent<NativeScriptingComponent>("SphereScript");
 
         // create a testSphere to test MeshColliderComponent
         Entity testSphere            = scene->CreateEntity("TestSphere");
@@ -133,6 +133,8 @@ private:
 
 int main(int argc, char** argv)
 {
+    REGISTER_TYPE(SphereScript);
+
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - PhysicsSystem";
     DesktopApp app(argc, argv);

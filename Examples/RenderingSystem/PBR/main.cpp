@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
@@ -64,7 +65,7 @@ public:
         cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
-        camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
+        camera.AddComponent<NativeScriptingComponent>("EscScript");
 
         // Load materials
         const std::string redMaterialFilePath = "Assets/Materials/Red.dzmaterial";
@@ -98,6 +99,8 @@ private:
 
 int main(int argc, char** argv)
 {
+    REGISTER_TYPE(EscScript);
+
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - RenderingSystem-PBR";
     DesktopApp app(argc, argv);

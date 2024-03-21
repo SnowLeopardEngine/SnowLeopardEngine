@@ -1,5 +1,7 @@
 #include "SnowLeopardEditor/Panels/ViewportPanel.h"
+#include "SnowLeopardEditor/EditorCamera/EditorCameraScript.h"
 #include "SnowLeopardEditor/Selector.h"
+#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
@@ -14,6 +16,8 @@ namespace SnowLeopardEngine::Editor
 {
     void ViewportPanel::Init()
     {
+        REGISTER_TYPE(EditorCameraScript);
+
         // Create RT
 
         // Color Attachment 0 - main target color
@@ -57,8 +61,7 @@ namespace SnowLeopardEngine::Editor
         cameraComponent.SkyboxMaterialFilePath                     = "Assets/Materials/Skybox001.dzmaterial";
 
         // Attach a editor camera script
-        m_EditorCameraScript = CreateRef<EditorCameraScript>();
-        m_EditorCamera.AddComponent<NativeScriptingComponent>(m_EditorCameraScript);
+        m_EditorCamera.AddComponent<NativeScriptingComponent>("EditorCameraScript");
 
         // Create a character
         Entity character                       = scene->CreateEntity("Character");
