@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderSystem.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
+#include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderManager.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
@@ -267,6 +268,7 @@ namespace SnowLeopardEngine
                         shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
                         shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
                         shader->SetFloat3("viewPos", mainCameraTransform.Position);
+                        shader->SetFloat("time", Time::ElapsedTime);
                         shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
                         shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
                         shader->SetFloat3("directionalLight.color", directionalLight.Color);
@@ -459,6 +461,7 @@ namespace SnowLeopardEngine
                 shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
                 shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
                 shader->SetFloat3("viewPos", mainCameraTransform.Position);
+                shader->SetFloat("time", Time::ElapsedTime);
                 shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
                 shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
                 shader->SetFloat3("directionalLight.color", directionalLight.Color);
@@ -727,6 +730,7 @@ namespace SnowLeopardEngine
                     shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
                     shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
                     shader->SetFloat3("viewPos", mainCameraTransform.Position);
+                    shader->SetFloat("time", Time::ElapsedTime);
                     shader->SetFloat3("directionalLight.direction", directionalLight.Direction);
                     shader->SetFloat("directionalLight.intensity", directionalLight.Intensity);
                     shader->SetFloat3("directionalLight.color", directionalLight.Color);
@@ -913,6 +917,7 @@ namespace SnowLeopardEngine
                 shader->SetMat4("model", transform.GetTransform());
                 shader->SetMat4("view", g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransform));
                 shader->SetMat4("projection", g_EngineContext->CameraSys->GetProjectionMatrix(mainCamera));
+                shader->SetFloat("time", Time::ElapsedTime);
 
                 // Auto set material properties
                 for (const auto& property : camera.SkyboxMaterial->GetPropertyBlock().ShaderProperties)
