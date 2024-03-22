@@ -79,7 +79,7 @@ public:
         auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
         sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
 
-        sphere.AddComponent<NativeScriptingComponent>("SphereScript");
+        sphere.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(SphereScript));
 
         // create a testSphere to test MeshColliderComponent
         Entity testSphere            = scene->CreateEntity("TestSphere");

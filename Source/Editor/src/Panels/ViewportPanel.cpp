@@ -4,13 +4,13 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "IconsMaterialDesignIcons.h"
 #include "entt/entt.hpp"
 #include <imgui.h>
+#include <memory>
 
 namespace SnowLeopardEngine::Editor
 {
@@ -61,7 +61,7 @@ namespace SnowLeopardEngine::Editor
         cameraComponent.SkyboxMaterialFilePath                     = "Assets/Materials/Skybox001.dzmaterial";
 
         // Attach a editor camera script
-        m_EditorCamera.AddComponent<NativeScriptingComponent>("EditorCameraScript");
+        m_EditorCamera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EditorCameraScript));
 
         // Create a character
         Entity character                       = scene->CreateEntity("Character");
@@ -195,6 +195,11 @@ namespace SnowLeopardEngine::Editor
             m_IsWindowHovered = ImGui::IsWindowHovered();
 
             // Set EditorCamera states
+            if (m_EditorCameraScript == nullptr)
+            {
+                m_EditorCameraScript = std::dynamic_pointer_cast<EditorCameraScript>(
+                    m_EditorCamera.GetComponent<NativeScriptingComponent>().ScriptInstance);
+            }
             m_EditorCameraScript->SetWindowHovered(m_IsWindowHovered);
             m_EditorCameraScript->SetGrabMoveEnabled(m_GuizmoOperation == -1);
 

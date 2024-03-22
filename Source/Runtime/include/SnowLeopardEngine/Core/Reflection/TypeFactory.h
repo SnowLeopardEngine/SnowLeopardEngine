@@ -6,7 +6,10 @@
 
 namespace SnowLeopardEngine
 {
-#define REGISTER_TYPE(name) TypeFactory::RegisterType<name>(#name);
+
+#define NAME_OF_TYPE(type) #type
+#define REGISTER_TYPE_BY_NAME(name) TypeFactory::RegisterType<name>(#name);
+#define REGISTER_TYPE(type) TypeFactory::RegisterType<type>(NAME_OF_TYPE(type));
 
     namespace TypeFactory
     {

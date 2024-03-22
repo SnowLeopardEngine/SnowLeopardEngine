@@ -65,8 +65,7 @@ namespace SnowLeopardEngine
 
     Ref<LogicScene> LogicScene::Copy(const Ref<LogicScene>& other)
     {
-        Ref<LogicScene> newScene     = CreateRef<LogicScene>();
-        newScene->m_Name             = other->m_Name + " (Copy)";
+        Ref<LogicScene> newScene     = CreateRef<LogicScene>(other->GetName() + " (Copy)", true);
         newScene->m_SimulationMode   = other->m_SimulationMode;
         newScene->m_SimulationStatus = other->m_SimulationStatus;
         newScene->m_Name2CountMap    = other->m_Name2CountMap;
@@ -90,11 +89,14 @@ namespace SnowLeopardEngine
         return newScene;
     }
 
-    LogicScene::LogicScene(const std::string& name) : m_Name(name)
+    LogicScene::LogicScene(const std::string& name, bool copy) : m_Name(name)
     {
         m_EntityMap = CreateRef<std::map<CoreUUID, Entity>>();
 
-        CreateDefaultEntities();
+        if (!copy)
+        {
+            CreateDefaultEntities();
+        }
     }
 
     Entity LogicScene::CreateEntity(const std::string& name)

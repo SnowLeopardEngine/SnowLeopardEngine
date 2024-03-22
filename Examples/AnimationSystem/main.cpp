@@ -43,7 +43,7 @@ public:
         cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
-        camera.AddComponent<NativeScriptingComponent>("EscScript");
+        camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");

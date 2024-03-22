@@ -27,7 +27,7 @@ namespace SnowLeopardEngine
     class LogicScene
     {
     public:
-        explicit LogicScene(const std::string& name = "Untitled Scene");
+        explicit LogicScene(const std::string& name = "Untitled Scene", bool copy = false);
         ~LogicScene() = default;
 
         static Ref<LogicScene> Copy(const Ref<LogicScene>& other);

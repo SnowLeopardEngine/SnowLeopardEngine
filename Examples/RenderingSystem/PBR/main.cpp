@@ -65,7 +65,7 @@ public:
         cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
-        camera.AddComponent<NativeScriptingComponent>("EscScript");
+        camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Load materials
         const std::string redMaterialFilePath = "Assets/Materials/Red.dzmaterial";

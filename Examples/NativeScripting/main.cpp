@@ -41,7 +41,7 @@ public:
 
         // Create an entity with NativeScriptingComponent
         Entity entity = scene->CreateEntity("Entity1");
-        entity.AddComponent<NativeScriptingComponent>("MyScriptInstance");
+        entity.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(MyScriptInstance));
     }
 
 private:

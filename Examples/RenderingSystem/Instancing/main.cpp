@@ -63,7 +63,7 @@ static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3&
     sphereMeshRenderer.EnableInstancing = true;
 
     // Attach a script for changing instance color
-    sphere.AddComponent<NativeScriptingComponent>("SphereScript");
+    sphere.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(SphereScript));
 
     return sphere;
 }
@@ -89,7 +89,7 @@ public:
         cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
-        camera.AddComponent<NativeScriptingComponent>("EscScript");
+        camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Load materials
         const std::string instancingMaterialPath = "Assets/Materials/InstancingTest.dzmaterial";
