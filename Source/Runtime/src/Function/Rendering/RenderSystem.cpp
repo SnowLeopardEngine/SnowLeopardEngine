@@ -82,6 +82,9 @@ namespace SnowLeopardEngine
             {
                 m_API->ClearColor(glm::vec4(0, 0, 0, 0), ClearBit::Default);
             }
+            camera.ViewportWidth  = g_EngineContext->WindowSys->GetWidth();
+            camera.ViewportHeight = g_EngineContext->WindowSys->GetHeight();
+
             mainCameraTransform = transform;
             mainCamera          = camera;
         }
@@ -307,8 +310,8 @@ namespace SnowLeopardEngine
             // After shadow mapping, restore view port size
             m_API->UpdateViewport(
                 0, 0, g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight());
-            mainCamera.AspectRatio =
-                g_EngineContext->WindowSys->GetWidth() * 1.0f / g_EngineContext->WindowSys->GetHeight();
+            mainCamera.ViewportWidth  = g_EngineContext->WindowSys->GetWidth();
+            mainCamera.ViewportHeight = g_EngineContext->WindowSys->GetHeight();
         }
 
         if (m_RenderTarget != nullptr)
@@ -320,7 +323,8 @@ namespace SnowLeopardEngine
             uint32_t height = desc.Height;
 
             m_API->UpdateViewport(0, 0, width, height);
-            mainCamera.AspectRatio = width * 1.0f / height;
+            mainCamera.ViewportWidth  = g_EngineContext->WindowSys->GetWidth();
+            mainCamera.ViewportHeight = g_EngineContext->WindowSys->GetHeight();
         }
 
         if (mainCamera.ClearFlags == CameraClearFlags::Color)

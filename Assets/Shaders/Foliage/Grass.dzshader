@@ -31,11 +31,6 @@
                 "Name": "noiseMap",
                 "Type": "Texture2D",
                 "Value": ""
-            },
-            {
-                "Name": "time",
-                "Type": "Float",
-                "Value": "0"
             }
         ],
         "InstancedPropertyNames": [
