@@ -25,14 +25,6 @@ namespace SnowLeopardEngine
     {
         auto scene = CreateRef<LogicScene>(name);
 
-        // Add default entities
-
-        // Default directional light
-        Entity directionalLight          = scene->CreateEntity("Directional Light");
-        auto&  directionalLightComponent = directionalLight.AddComponent<DirectionalLightComponent>();
-        directionalLightComponent.ShadowMaterial =
-            DzMaterial::LoadFromPath("Assets/Materials/Legacy/ShadowMapping.dzmaterial");
-
         if (active)
         {
             m_ActiveScene = scene;

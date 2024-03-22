@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
@@ -42,7 +43,7 @@ public:
         cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
-        camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
+        camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
@@ -72,6 +73,8 @@ private:
 
 int main(int argc, char** argv)
 {
+    REGISTER_TYPE(EscScript);
+
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - AnimationSystem";
     DesktopApp app(argc, argv);
