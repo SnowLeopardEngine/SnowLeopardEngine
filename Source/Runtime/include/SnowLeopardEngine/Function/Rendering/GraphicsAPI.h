@@ -40,7 +40,8 @@ namespace SnowLeopardEngine
         virtual Ref<VertexArray> CreateAnimatedMeshVertexArray(const MeshItem& meshItem)                      = 0;
         virtual Ref<VertexArray> CreateVertexArray(const MeshItem& meshItem, const BufferLayout& inputLayout) = 0;
 
-        virtual void DrawIndexed(uint32_t indexCount) = 0;
+        virtual void DrawIndexed(uint32_t indexCount)                                  = 0;
+        virtual void DrawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount) = 0;
 
         static Ref<GraphicsAPI> Create(GraphicsBackend backend);
     };

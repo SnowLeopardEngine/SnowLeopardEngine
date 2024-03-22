@@ -2,6 +2,7 @@
     "DzShader": {
         "Name": "Legacy/ShadowMapping",
         "Properties": [],
+        "InstancedPropertyNames": [],
         "Resources": [
             {
                 "Name": "shadowMap",

@@ -11,7 +11,10 @@ namespace SnowLeopardEngine
         explicit GLIndexBuffer(std::vector<uint32_t> indices);
         virtual ~GLIndexBuffer();
 
-        virtual uint32_t GetCount() const { return m_Count; }
+        virtual void Bind() const override;
+        virtual void Unbind() const override;
+
+        virtual uint32_t GetCount() const override { return m_Count; }
 
         uint32_t GetName() const { return m_BufferName; }
 

@@ -1,14 +1,14 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Base/Object.h"
 #include "SnowLeopardEngine/Engine/LifeTimeComponent.h"
 
 namespace SnowLeopardEngine
 {
     class Entity;
-    class EngineContext;
 
-    class NativeScriptInstance : public LifeTimeComponent
+    class NativeScriptInstance : public LifeTimeComponent, public Object
     {
     public:
         NativeScriptInstance() = default;
@@ -31,10 +31,9 @@ namespace SnowLeopardEngine
         bool GetEnabled() const { return m_Enabled; }
 
     protected:
-        EngineContext* m_EngineContext  = nullptr;
-        Ref<Entity>    m_OwnerEntity    = nullptr;
-        bool           m_Enabled        = true;
-        bool           m_IsEditorScript = false;
+        Ref<Entity> m_OwnerEntity    = nullptr;
+        bool        m_Enabled        = true;
+        bool        m_IsEditorScript = false;
 
         friend class LogicScene;
     };

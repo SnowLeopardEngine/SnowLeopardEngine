@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
@@ -39,30 +40,30 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
+        cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
-        camera.AddComponent<NativeScriptingComponent>(CreateRef<EscScript>());
+        camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
 
-        auto& floorTransform          = floor.GetComponent<TransformComponent>();
-        floorTransform.Scale          = {50, 1, 50};
-        auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
-        floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Red.dzmaterial");
+        auto& floorTransform               = floor.GetComponent<TransformComponent>();
+        floorTransform.Scale               = {50, 1, 50};
+        auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
+        floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
+        auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
+        floorMeshRenderer.MaterialFilePath = "Assets/Materials/Red.dzmaterial";
 
         // Create a character
-        Entity character                = scene->CreateEntity("Character");
-        auto&  characterTransform       = character.GetComponent<TransformComponent>();
-        characterTransform.Position.y   = 0.6;
-        characterTransform.Scale        = {10, 10, 10};
-        auto& characterMeshFilter       = character.AddComponent<MeshFilterComponent>();
-        characterMeshFilter.FilePath    = "Assets/Models/Vampire/Vampire_Idle.dae";
-        auto& characterMeshRenderer     = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Vampire.dzmaterial");
+        Entity character                       = scene->CreateEntity("Character");
+        auto&  characterTransform              = character.GetComponent<TransformComponent>();
+        characterTransform.Position.y          = 0.6;
+        characterTransform.Scale               = {10, 10, 10};
+        auto& characterMeshFilter              = character.AddComponent<MeshFilterComponent>();
+        characterMeshFilter.FilePath           = "Assets/Models/Walking.fbx";
+        auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
+        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
         character.AddComponent<AnimatorComponent>();
     }
 
@@ -72,6 +73,8 @@ private:
 
 int main(int argc, char** argv)
 {
+    REGISTER_TYPE(EscScript);
+
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - AnimationSystem";
     DesktopApp app(argc, argv);

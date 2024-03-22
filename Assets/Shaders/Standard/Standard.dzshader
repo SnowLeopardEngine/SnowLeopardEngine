@@ -1,0 +1,101 @@
+{
+    "DzShader": {
+        "Name": "Standard/Standard",
+        "Properties": [
+            {
+                "Name": "albedo",
+                "Type": "Color",
+                "Value": "(1, 1, 1, 1)"
+            },
+            {
+                "Name": "albedoMap",
+                "Type": "Texture2D",
+                "Value": ""
+            },
+            {
+                "Name": "useAlbedoMap",
+                "Type": "Int",
+                "Value": "0"
+            },
+            {
+                "Name": "metallic",
+                "Type": "Float",
+                "Value": "0.0"
+            },
+            {
+                "Name": "metallicMap",
+                "Type": "Texture2D",
+                "Value": ""
+            },
+            {
+                "Name": "useMetallicMap",
+                "Type": "Int",
+                "Value": "0"
+            },
+            {
+                "Name": "roughness",
+                "Type": "Float",
+                "Value": "1.0"
+            },
+            {
+                "Name": "roughnessMap",
+                "Type": "Texture2D",
+                "Value": ""
+            },
+            {
+                "Name": "useRoughnessMap",
+                "Type": "Int",
+                "Value": "0"
+            },
+            {
+                "Name": "ao",
+                "Type": "Float",
+                "Value": "0"
+            },
+            {
+                "Name": "aoMap",
+                "Type": "Texture2D",
+                "Value": ""
+            },
+            {
+                "Name": "useAoMap",
+                "Type": "Int",
+                "Value": "0"
+            }
+        ],
+        "InstancedPropertyNames": [],
+        "Resources": [],
+        "PipelineStates": {},
+        "Tags": {
+            "RenderQueue": "Geometry"
+        },
+        "Keywords": [
+            "FORWARD_LIGHTING"
+        ],
+        "Passes": [
+            {
+                "Name": "PBR_GeometryPass",
+                "PipelineStates": {},
+                "Tags": {},
+                "ResourcesToBind": [],
+                "ResourcesToUse": [
+                    "shadowMap"
+                ],
+                "Stages": [
+                    {
+                        "Name": "vertex",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "#version 450\n\n#include \"LegacySceneUniform.glsl\"\n#include \"LegacyShadow.glsl\"\n\nlayout(location = 0) in vec3 aPos;\nlayout(location = 1) in vec3 aNormal;\nlayout(location = 2) in vec2 aTexCoords;\nlayout(location = 3) in int aEntityID;\nlayout(location = 4) in ivec4 aBoneIDs;\nlayout(location = 5) in vec4 aWeights;\n\nlayout(location = 0) out vec2 varingTexCoords;\nlayout(location = 1) flat out int varingEntityID;\nlayout(location = 2) out vec3 worldNormal;\nlayout(location = 3) out vec3 fragPos;\nlayout(location = 4) out vec4 fragPosLightSpace;\n\nlayout(location = 0) uniform mat4 lightSpaceMatrix;\n\nvoid main() {\n    varingTexCoords = aTexCoords;\n    varingEntityID = aEntityID;\n    worldNormal = mat3(transpose(inverse(model))) * aNormal;\n    fragPos = vec3(model * vec4(aPos, 1.0));\n    fragPosLightSpace = lightSpaceMatrix * vec4(fragPos, 1.0);\n    \n    // animation part\n    vec4 totalPosition = vec4(0.0);\n    for(int i = 0; i < MAX_BONE_INFLUENCE; i++) {\n        if(aBoneIDs[i] == -1)\n            continue;\n        if(aBoneIDs[i] >= MAX_BONES) {\n            totalPosition = vec4(aPos, 1.0);\n            break;\n        }\n        vec4 localPosition = finalBonesMatrices[aBoneIDs[i]] * vec4(aPos, 1.0);\n        totalPosition += localPosition * aWeights[i];\n    }\n\n    vec4 pos = hasAnimation * totalPosition + (1 - hasAnimation) * vec4(aPos, 1.0);\n    gl_Position = projection * view * model * pos;\n}"
+                    },
+                    {
+                        "Name": "fragment",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "#version 450\n\n#include \"PBRLighting.glsl\"\n\nlayout(location = 0) in vec2 varingTexCoords;\nlayout(location = 1) flat in int varingEntityID;\nlayout(location = 2) in vec3 worldNormal;\nlayout(location = 3) in vec3 fragPos;\nlayout(location = 4) in vec4 fragPosLightSpace;\n\nlayout(location = 0) out vec4 color0;\nlayout(location = 1) out int color1;\n\nlayout(location = 1) uniform vec4 albedo;\nlayout(location = 2) uniform sampler2D albedoMap;\nlayout(location = 3) uniform int useAlbedoMap;\nlayout(location = 4) uniform float metallic;\nlayout(location = 5) uniform sampler2D metallicMap;\nlayout(location = 6) uniform int useMetallicMap;\nlayout(location = 7) uniform float roughness;\nlayout(location = 8) uniform sampler2D roughnessMap;\nlayout(location = 9) uniform int useRoughnessMap;\nlayout(location = 10) uniform float ao;\nlayout(location = 11) uniform sampler2D aoMap;\nlayout(location = 12) uniform int useAoMap;\nlayout(location = 13) uniform sampler2D shadowMap;\nlayout(location = 14) uniform DirectionalLight directionalLight;\n\nvoid main() {\n    vec3 viewDir = normalize(viewPos - fragPos);\n\n    PBRMaterial material;\n    material.albedo = (1 - useAlbedoMap) * albedo.rgb + useAlbedoMap * texture(albedoMap, varingTexCoords).rgb;\n    material.metallic = (1 - useMetallicMap) * metallic + useMetallicMap * texture(metallicMap, varingTexCoords).r;\n    material.roughness = (1 - useRoughnessMap) * roughness + useRoughnessMap * texture(roughnessMap, varingTexCoords).r;\n    material.ao = (1 - useAoMap) * ao + useAoMap * texture(aoMap, varingTexCoords).r;\n\n    color0 = vec4(CalPBRLighting(directionalLight, worldNormal, viewDir, material, fragPosLightSpace, shadowMap), 1);\n    color1 = varingEntityID;\n}"
+                    }
+                ]
+            }
+        ]
+    }
+}

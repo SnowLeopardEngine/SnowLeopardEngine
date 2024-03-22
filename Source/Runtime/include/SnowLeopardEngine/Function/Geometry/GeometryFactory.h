@@ -9,10 +9,38 @@ namespace SnowLeopardEngine
     enum class MeshPrimitiveType : uint8_t
     {
         Invalid = 0,
+        Quad,
         Cube,
         Sphere,
         Capsule,
         Heightfield
+    };
+
+    struct QuadMesh
+    {
+        static const MeshPrimitiveType Type = MeshPrimitiveType::Quad;
+
+        static MeshItem Create(float w = 1.0f)
+        {
+            MeshItem quadMesh;
+            quadMesh.Name = "Quad";
+
+            MeshData quadData;
+
+            const float side = w / 2.0f;
+
+            quadData.StaticVertices = {
+                {{-side, 0, -side}, {0, 1, 0}, {0, 0}},
+                {{-side, 0, side}, {0, 1, 0}, {0, 1}},
+                {{side, 0, side}, {0, 1, 0}, {1, 1}},
+                {{side, 0, -side}, {0, 1, 0}, {1, 0}},
+            };
+
+            quadData.Indices = {0, 1, 2, 0, 2, 3};
+
+            quadMesh.Data = quadData;
+            return quadMesh;
+        };
     };
 
     struct CubeMesh
@@ -129,9 +157,9 @@ namespace SnowLeopardEngine
             MeshItem capsuleMesh;
             capsuleMesh.Name = "Capsule";
 
-            MeshData                 capsuleData;
+            MeshData                           capsuleData;
             std::vector<StaticMeshVertexData>& vertices = capsuleData.StaticVertices;
-            std::vector<uint32_t>&   indices  = capsuleData.Indices;
+            std::vector<uint32_t>&             indices  = capsuleData.Indices;
 
             // Calculate the actual height excluding the caps
             float cylinderHeight = height - 2 * radius;

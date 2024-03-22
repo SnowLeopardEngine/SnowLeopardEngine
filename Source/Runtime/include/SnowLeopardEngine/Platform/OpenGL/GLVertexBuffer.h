@@ -14,6 +14,9 @@ namespace SnowLeopardEngine
 
         virtual ~GLVertexBuffer();
 
+        virtual void Bind() const override;
+        virtual void Unbind() const override;
+
         uint32_t GetName() const { return m_BufferName; }
 
         virtual void SetBufferData(const void* data, uint32_t size) override;

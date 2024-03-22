@@ -1,4 +1,8 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
+#include "PxActorData.h"
+#include "PxForceMode.h"
+#include "PxRigidBody.h"
+#include "PxRigidDynamic.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
@@ -49,7 +53,16 @@ namespace SnowLeopardEngine
             return;
         }
 
-        Subscribe(m_LogicScenePreloadHandler);
+        // Create cooking
+        m_Cooking = PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation, PxCookingParams(PxTolerancesScale()));
+        if (!m_Cooking)
+        {
+            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] PxCreateCooking failed!");
+            m_State = SystemState::Error;
+            return;
+        }
+
+        Subscribe(m_LogicSceneLoadedHandler);
 
         SNOW_LEOPARD_CORE_INFO("[PhysicsSystem] Initialized");
         m_State = SystemState::InitOk;
@@ -59,12 +72,22 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_CORE_INFO("[PhysicsSystem] Shutting Down...");
 
-        Unsubscribe(m_LogicScenePreloadHandler);
+        Unsubscribe(m_LogicSceneLoadedHandler);
+
+        // TODO: When scene unloading
+        ReleaseInternalResources();
+
+        if (m_ControllerManager != nullptr)
+        {
+            m_ControllerManager->release();
+        }
 
         if (m_Scene != nullptr)
         {
             m_Scene->release();
         }
+
+        m_Cooking->release();
         m_Physics->release();
         m_Foundation->release();
 
@@ -75,6 +98,12 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
         m_LogicScene = logicScene;
+
+        if (m_ControllerManager)
+        {
+            m_ControllerManager->release();
+            m_ControllerManager = nullptr;
+        }
 
         if (m_Scene)
         {
@@ -99,6 +128,15 @@ namespace SnowLeopardEngine
             pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
         }
 
+        // Create Controller Manager
+        m_ControllerManager = PxCreateControllerManager(*m_Scene);
+        if (!m_ControllerManager)
+        {
+            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] PxCreateControllerManager failed!");
+            m_State = SystemState::Error;
+            return;
+        }
+
         // Cook the scene from logic
         auto& registry = logicScene->GetRegistry();
 
@@ -110,7 +148,10 @@ namespace SnowLeopardEngine
                    RigidBodyComponent&      rigidBody,
                    SphereColliderComponent& sphereCollider) {
                 // create a rigidBody
-                PxTransform   pxTransform(transform.Position.x, transform.Position.y, transform.Position.z);
+                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
+
+                rigidBody.IsStatic = entityStatus.IsStatic;
+
                 PxRigidActor* body;
                 if (entityStatus.IsStatic)
                 {
@@ -160,16 +201,19 @@ namespace SnowLeopardEngine
                     shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
                 }
 
-                float radius = 0.5f;
                 if (sphereCollider.Radius == 0)
                 {
-                    radius = radius * transform.Scale.x;
+                    sphereCollider.Radius = 0.5f * transform.Scale.x;
                 }
-                PxSphereGeometry sphereGeometry(radius);
+                PxSphereGeometry sphereGeometry(sphereCollider.Radius);
                 auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
 
                 // attach the shape to the rigidBody
-                body->attachShape(*sphereShape);
+                if (body->attachShape(*sphereShape))
+                {
+                    sphereShape->release();
+                    sphereShape = nullptr;
+                }
 
                 // add the rigidBody to the scene
                 m_Scene->addActor(*body);
@@ -185,9 +229,11 @@ namespace SnowLeopardEngine
                    RigidBodyComponent&    rigidBody,
                    BoxColliderComponent&  boxCollider) {
                 // create a rigidBody
-                PxTransform   pxTransform(transform.Position.x + boxCollider.Offset.x,
-                                        transform.Position.y + boxCollider.Offset.y,
-                                        transform.Position.z + boxCollider.Offset.z);
+                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
+                pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(boxCollider.Offset);
+
+                rigidBody.IsStatic = entityStatus.IsStatic;
+
                 PxRigidActor* body;
                 if (entityStatus.IsStatic)
                 {
@@ -237,18 +283,20 @@ namespace SnowLeopardEngine
                     shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
                 }
 
-                glm::vec3 size = {1, 1, 1};
                 if (boxCollider.Size == glm::vec3(0, 0, 0))
                 {
-                    size.x *= transform.Scale.x;
-                    size.y *= transform.Scale.y;
-                    size.z *= transform.Scale.z;
+                    boxCollider.Size = transform.Scale;
                 }
-                PxBoxGeometry boxGeometry(size.x / 2.0f, size.y / 2.0f, size.z / 2.0f);
-                auto*         boxShape = m_Physics->createShape(boxGeometry, *material);
+                PxBoxGeometry boxGeometry(
+                    boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
+                auto* boxShape = m_Physics->createShape(boxGeometry, *material);
 
                 // attach the shape to the rigidBody
-                body->attachShape(*boxShape);
+                if (body->attachShape(*boxShape))
+                {
+                    boxShape->release();
+                    boxShape = nullptr;
+                }
 
                 // add the rigidBody to the scene
                 m_Scene->addActor(*body);
@@ -264,9 +312,11 @@ namespace SnowLeopardEngine
                    RigidBodyComponent&       rigidBody,
                    CapsuleColliderComponent& capsuleCollider) {
                 // create a rigidBody
-                PxTransform   pxTransform(transform.Position.x + capsuleCollider.Offset.x,
-                                        transform.Position.y + capsuleCollider.Offset.y,
-                                        transform.Position.z + capsuleCollider.Offset.z);
+                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
+                pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(capsuleCollider.Offset);
+
+                rigidBody.IsStatic = entityStatus.IsStatic;
+
                 PxRigidActor* body;
                 if (entityStatus.IsStatic)
                 {
@@ -306,7 +356,12 @@ namespace SnowLeopardEngine
 
                 PxCapsuleGeometry capsuleGeometry(capsuleCollider.Radius, capsuleCollider.Height);
                 auto*             capsuleShape = m_Physics->createShape(capsuleGeometry, *material);
-                body->attachShape(*capsuleShape);
+                if (body->attachShape(*capsuleShape))
+                {
+                    capsuleShape->release();
+                    capsuleShape = nullptr;
+                }
+
                 m_Scene->addActor(*body);
 
                 rigidBody.InternalBody = body;
@@ -363,7 +418,12 @@ namespace SnowLeopardEngine
                     m_Physics->createRigidStatic(PxTransform(PhysXGLMHelpers::GetPhysXVec3(transform.Position)));
 
                 PxShape* shape = m_Physics->createShape(hfGeometry, *material);
-                body->attachShape(*shape);
+                if (body->attachShape(*shape))
+                {
+                    shape->release();
+                    shape = nullptr;
+                }
+
                 m_Scene->addActor(*body);
 
                 terrainCollider.InternalBody = body;
@@ -373,9 +433,6 @@ namespace SnowLeopardEngine
         registry.view<TransformComponent, CharacterControllerComponent>().each(
             [this](
                 entt::entity entity, TransformComponent& transform, CharacterControllerComponent& characterController) {
-                // Create Controller Manager
-                PxControllerManager* controllerManager = PxCreateControllerManager(*m_Scene);
-
                 PxMaterial* material;
                 if (characterController.Material == nullptr)
                 {
@@ -401,10 +458,126 @@ namespace SnowLeopardEngine
                 desc.stepOffset  = characterController.StepOffset;
                 desc.material    = material;
 
-                PxController* controller = controllerManager->createController(desc);
+                PxController* controller = m_ControllerManager->createController(desc);
 
                 characterController.InternalController = controller;
             });
+
+        // case6: MeshFilterComponent + MeshColliderComponent + RigidBodyComponent
+        registry
+            .view<TransformComponent,
+                  EntityStatusComponent,
+                  RigidBodyComponent,
+                  MeshFilterComponent,
+                  MeshColliderComponent>()
+            .each([this](entt::entity           entity,
+                         TransformComponent&    transform,
+                         EntityStatusComponent& entityStatus,
+                         RigidBodyComponent&    rigidBody,
+                         MeshFilterComponent&   meshFilter,
+                         MeshColliderComponent& meshCollider) {
+                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
+                pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(meshCollider.Offset);
+
+                rigidBody.IsStatic = entityStatus.IsStatic;
+
+                PxRigidActor* body;
+                if (entityStatus.IsStatic)
+                {
+                    body = m_Physics->createRigidStatic(pxTransform);
+                }
+                else
+                {
+                    body = m_Physics->createRigidDynamic(pxTransform);
+                    // static_cast<PxRigidDynamic*>(body)->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+                    static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);                   // set Mass
+                    static_cast<PxRigidDynamic*>(body)->setLinearDamping(rigidBody.LinearDamping); // set Linear Damping
+                    static_cast<PxRigidDynamic*>(body)->setAngularDamping(
+                        rigidBody.AngularDamping); // set Angular Damping
+
+                    PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
+                    if (rigidBody.EnableCCD) // Continuous Collision Detection
+                    {
+                        currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
+                    }
+                    else
+                    {
+                        currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
+                    }
+                    static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
+                }
+                // create a mesh collider shape
+                PxMaterial* material;
+                if (meshCollider.Material == nullptr)
+                {
+                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
+                }
+                else
+                {
+                    material = m_Physics->createMaterial(meshCollider.Material->DynamicFriction,
+                                                         meshCollider.Material->StaticFriction,
+                                                         meshCollider.Material->Bounciness);
+                }
+
+                PxShapeFlags shapeFlags;
+                if (meshCollider.IsTrigger)
+                {
+                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
+                }
+                else
+                {
+                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
+                }
+
+                size_t totalVertexCount = 0;
+                for (const auto& meshItem : meshFilter.Meshes.Items)
+                {
+                    if (meshItem.Data.HasAnimationInfo())
+                    {
+                        totalVertexCount += meshItem.Data.AnimatedVertices.size();
+                    }
+                    else
+                    {
+                        totalVertexCount += meshItem.Data.StaticVertices.size();
+                    }
+                }
+
+                PxVec3* vertices     = new PxVec3[totalVertexCount];
+                size_t  vertexOffset = 0;
+                for (const auto& meshItem : meshFilter.Meshes.Items)
+                {
+                    for (const auto& vertex : meshItem.Data.StaticVertices)
+                    {
+                        vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
+                    }
+                    for (const auto& vertex : meshItem.Data.AnimatedVertices)
+                    {
+                        vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
+                    }
+                }
+
+                // Switch to dynamic body by attach another convex mesh shape
+                PxConvexMeshDesc convexDesc;
+                convexDesc.points.count  = totalVertexCount;
+                convexDesc.points.stride = sizeof(PxVec3);
+                convexDesc.points.data   = vertices;
+                convexDesc.flags         = PxConvexFlag::eCOMPUTE_CONVEX;
+
+                PxDefaultMemoryOutputStream     writeBuffer;
+                PxConvexMeshCookingResult::Enum result;
+                m_Cooking->cookConvexMesh(convexDesc, writeBuffer, &result);
+
+                PxDefaultMemoryInputData input(writeBuffer.getData(), writeBuffer.getSize());
+                PxConvexMesh*            convexMesh = m_Physics->createConvexMesh(input);
+
+                PxRigidActorExt::createExclusiveShape(*body, PxConvexMeshGeometry(convexMesh), *material);
+                m_Scene->addActor(*body);
+
+                rigidBody.InternalBody = body;
+
+                delete[] vertices;
+            });
+
         // TODO: More cases
     }
 
@@ -413,10 +586,46 @@ namespace SnowLeopardEngine
         SNOW_LEOPARD_PROFILE_FUNCTION
         if (m_Scene != nullptr)
         {
+            auto& registry = m_LogicScene->GetRegistry();
+
+            // Tick rigid bodies
+            registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent>().each(
+                [&registry](entt::entity           entity,
+                            TransformComponent&    transform,
+                            EntityStatusComponent& entityStatus,
+                            RigidBodyComponent&    rigidBody) {
+                    rigidBody.IsStatic = entityStatus.IsStatic;
+                    if (rigidBody.InternalBody == nullptr)
+                    {
+                        auto name = registry.get<NameComponent>(entity).Name;
+                        SNOW_LEOPARD_CORE_WARN("[PhysicsSystem] A rigidBody without shape! Entity name: {0}", name);
+                        return;
+                    }
+
+                    if (!rigidBody.IsStatic)
+                    {
+                        // TODO: wrap as a function
+                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->setMass(rigidBody.Mass);
+                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->setLinearDamping(rigidBody.LinearDamping);
+                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)
+                            ->setAngularDamping(rigidBody.AngularDamping);
+
+                        PxRigidBodyFlags currentFlags =
+                            static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->getRigidBodyFlags();
+                        if (rigidBody.EnableCCD)
+                        {
+                            currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
+                        }
+                        else
+                        {
+                            currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
+                        }
+                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->setRigidBodyFlags(currentFlags);
+                    }
+                });
+
             m_Scene->simulate(Time::FixedDeltaTime);
             m_Scene->fetchResults(true);
-
-            auto& registry = m_LogicScene->GetRegistry();
 
             // Fetch rigid bodies
             registry.view<TransformComponent, RigidBodyComponent>().each(
@@ -439,8 +648,11 @@ namespace SnowLeopardEngine
             // Fetch character controllers
             registry.view<TransformComponent, CharacterControllerComponent>().each(
                 [](entt::entity entity, TransformComponent& transform, CharacterControllerComponent& controller) {
-                    auto position      = controller.InternalController->getPosition();
-                    transform.Position = {position.x, position.y, position.z};
+                    if (controller.InternalController != nullptr)
+                    {
+                        auto position      = controller.InternalController->getPosition();
+                        transform.Position = {position.x, position.y, position.z};
+                    }
                 });
         }
     }
@@ -493,20 +705,65 @@ namespace SnowLeopardEngine
     void
     PhysicsSystem::Move(const CharacterControllerComponent& component, const glm::vec3& movement, float deltaTime) const
     {
-        component.InternalController->move(
-            PhysXGLMHelpers::GetPhysXVec3(movement), component.MinMoveDisp, deltaTime, component.Filters);
+        if (component.InternalController != nullptr)
+        {
+            component.InternalController->move(
+                PhysXGLMHelpers::GetPhysXVec3(movement), component.MinMoveDisp, deltaTime, component.Filters);
+        }
     }
 
     /** RigidBody **/
     void PhysicsSystem::AddForce(const RigidBodyComponent& component, const glm::vec3& force) const
     {
-        // TODO: Jubiao Lin
+        if (component.InternalBody != nullptr && !component.IsStatic)
+        {
+            PxRigidBody* body = static_cast<PxRigidBody*>(component.InternalBody);
+            body->addForce(PhysXGLMHelpers::GetPhysXVec3(force), PxForceMode::eFORCE, true);
+        }
     }
 
     void PhysicsSystem::AddTorque(const RigidBodyComponent& component, const glm::vec3& torque) const
     {
-        // TODO: Jubiao Lin
+        if (component.InternalBody != nullptr && !component.IsStatic)
+        {
+            PxRigidBody* body = static_cast<PxRigidBody*>(component.InternalBody);
+            body->addTorque(PhysXGLMHelpers::GetPhysXVec3(torque), PxForceMode::eFORCE, true);
+        }
     }
 
-    void PhysicsSystem::OnLogicScenePreload(const LogicScenePreLoadEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
+    void PhysicsSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
+
+    void PhysicsSystem::ReleaseInternalResources()
+    {
+        if (m_LogicScene != nullptr)
+        {
+            auto& registry = m_LogicScene->GetRegistry();
+
+            registry.view<RigidBodyComponent>().each([](entt::entity entity, RigidBodyComponent& rigidBody) {
+                if (rigidBody.InternalBody != nullptr)
+                {
+                    rigidBody.InternalBody->release();
+                    rigidBody.InternalBody = nullptr;
+                }
+            });
+
+            registry.view<TerrainColliderComponent>().each(
+                [](entt::entity entity, TerrainColliderComponent& terrainCollider) {
+                    if (terrainCollider.InternalBody != nullptr)
+                    {
+                        terrainCollider.InternalBody->release();
+                        terrainCollider.InternalBody = nullptr;
+                    }
+                });
+
+            registry.view<CharacterControllerComponent>().each(
+                [](entt::entity entity, CharacterControllerComponent& controller) {
+                    if (controller.InternalController != nullptr)
+                    {
+                        controller.InternalController->release();
+                        controller.InternalController = nullptr;
+                    }
+                });
+        }
+    }
 } // namespace SnowLeopardEngine

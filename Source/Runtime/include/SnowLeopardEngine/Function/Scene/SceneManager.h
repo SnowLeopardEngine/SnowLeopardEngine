@@ -21,6 +21,6 @@ namespace SnowLeopardEngine
         void OnUnload();
 
     private:
-        Ref<LogicScene> m_ActiveScene = nullptr;
+        Ref<LogicScene>      m_ActiveScene = nullptr;
     };
 } // namespace SnowLeopardEngine

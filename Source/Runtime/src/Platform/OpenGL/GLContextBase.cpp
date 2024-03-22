@@ -1,6 +1,10 @@
 #include "SnowLeopardEngine/Platform/OpenGL/GLContextBase.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
+#ifndef NDEBUG
+#include "SnowLeopardEngine/Platform/OpenGL/GLAPI.h"
+#endif
+
 // clang-format off
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -130,13 +134,16 @@ namespace SnowLeopardEngine
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifndef NDEBUG
-#if SNOW_LEOPARD_PLATFORM_WINDOWS || SNOW_LEOPARD_PLATFORM_LINUX
-        glEnable(GL_DEBUG_OUTPUT);
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(GLMessageCallback, nullptr);
-#elif SNOW_LEOPARD_PLATFORM_DARWIN
-        // TODO: Old API of GL DebugMessages
-#endif
+        if (OpenGLAPI::IsDSASupported())
+        {
+            glEnable(GL_DEBUG_OUTPUT);
+            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+            glDebugMessageCallback(GLMessageCallback, nullptr);
+        }
+        else
+        {
+            // TODO: Old API of GL DebugMessages
+        }
 #endif
     }
 

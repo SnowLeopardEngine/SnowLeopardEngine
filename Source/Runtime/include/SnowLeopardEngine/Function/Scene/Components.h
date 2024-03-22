@@ -2,7 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
-#include "SnowLeopardEngine/Function/Animation/Animator.h"
+#include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
@@ -10,7 +10,10 @@
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
+#include "SnowLeopardEngine/Function/Scene/LayerManager.h"
+#include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
+#include "cereal/cereal.hpp"
 #include <PxPhysicsAPI.h>
 
 // CppAst.NET Macro
@@ -18,12 +21,16 @@
 #define __cppast(...)
 #endif
 
+#define COMPONENT_NAME(comp) \
+    static std::string GetName() { return #comp; }
+
 namespace SnowLeopardEngine
 {
     // -------- Entity Built-in Components DEFINITION START --------
-
     struct __cppast(smeta_unit) IDComponent
     {
+        COMPONENT_NAME(ID)
+
         // clang-format off
         __cppast(getter = GetIdString)
         __cppast(setter = SetIdByString)
@@ -31,7 +38,16 @@ namespace SnowLeopardEngine
         CoreUUID Id;
         // clang-format on
 
-        IDComponent()                   = default;
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(Id));
+        }
+        // NOLINTEND
+
+        IDComponent() = default;
+        explicit IDComponent(CoreUUID id) : Id(id) {}
         IDComponent(const IDComponent&) = default;
 
         std::string GetIdString() const { return to_string(Id); }
@@ -47,15 +63,63 @@ namespace SnowLeopardEngine
 
     struct __cppast(smeta_unit) NameComponent
     {
+        COMPONENT_NAME(Name)
+
         __cppast(tooltip = "Name of an entity") std::string Name;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(Name));
+        }
+        // NOLINTEND
 
         NameComponent()                     = default;
         NameComponent(const NameComponent&) = default;
         explicit NameComponent(const std::string& name) : Name(name) {}
     };
 
+    struct __cppast(smeta_unit) TagComponent
+    {
+        COMPONENT_NAME(Tag)
+
+        __cppast(tooltip = "Tag of an entity") std::string TagValue = Tag::Untagged;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(TagValue));
+        }
+        // NOLINTEND
+
+        TagComponent()                    = default;
+        TagComponent(const TagComponent&) = default;
+    };
+
+    struct __cppast(smeta_unit) LayerComponent
+    {
+        COMPONENT_NAME(Layer)
+
+        __cppast(tooltip = "Layer of an entity") Layer LayerValue = static_cast<Layer>(LayerMask::Default);
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(LayerValue));
+        }
+        // NOLINTEND
+
+        LayerComponent()                      = default;
+        LayerComponent(const LayerComponent&) = default;
+    };
+
     struct __cppast(smeta_unit) TreeNodeComponent
     {
+        COMPONENT_NAME(TreeNode)
+
         // clang-format off
         __cppast(getter = GetParentIdString)
         __cppast(setter = SetParentIdByString)
@@ -69,6 +133,14 @@ namespace SnowLeopardEngine
         __cppast(tooltip = "UUIDs of children")
         std::vector<CoreUUID> ChildrenIds;
         // clang-format on
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(ParentId), CEREAL_NVP(ChildrenIds));
+        }
+        // NOLINTEND
 
         TreeNodeComponent()                         = default;
         TreeNodeComponent(const TreeNodeComponent&) = default;
@@ -109,9 +181,19 @@ namespace SnowLeopardEngine
 
     struct __cppast(smeta_unit) TransformComponent
     {
+        COMPONENT_NAME(Transform)
+
         __cppast(tooltip = "Position of an entity") glm::vec3 Position = glm::vec3(0, 0, 0);
 
         __cppast(tooltip = "Scale of an entity") glm::vec3 Scale = glm::vec3(1, 1, 1);
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(Position), cereal::make_nvp("Rotation", m_Rotation), CEREAL_NVP(Scale));
+        }
+        // NOLINTEND
 
         TransformComponent()                          = default;
         TransformComponent(const TransformComponent&) = default;
@@ -156,7 +238,18 @@ namespace SnowLeopardEngine
 
     struct __cppast(smeta_unit) EntityStatusComponent
     {
-        __cppast(tooltip = "Is the entity static") bool IsStatic = false;
+        COMPONENT_NAME(EntityStatus)
+
+        __cppast(tooltip = "Is the entity enabled") bool IsEnabled = true;
+        __cppast(tooltip = "Is the entity static") bool  IsStatic  = false;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(IsEnabled), CEREAL_NVP(IsStatic));
+        }
+        // NOLINTEND
 
         EntityStatusComponent()                             = default;
         EntityStatusComponent(const EntityStatusComponent&) = default;
@@ -169,13 +262,22 @@ namespace SnowLeopardEngine
 
     struct __cppast(smeta_unit) NativeScriptingComponent
     {
-        __cppast(ignore) Ref<NativeScriptInstance> ScriptInstance;
+        COMPONENT_NAME(NativeScripting)
+
+        std::string               ScriptName;
+        Ref<NativeScriptInstance> ScriptInstance;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(ScriptName));
+        }
+        // NOLINTEND
 
         NativeScriptingComponent()                                = default;
         NativeScriptingComponent(const NativeScriptingComponent&) = default;
-        explicit NativeScriptingComponent(const Ref<NativeScriptInstance>& scriptInstance) :
-            ScriptInstance(scriptInstance)
-        {}
+        explicit NativeScriptingComponent(std::string scriptName) : ScriptName(scriptName) {}
     };
 
     // -------- Scripting Components DEFINITION END --------
@@ -186,6 +288,8 @@ namespace SnowLeopardEngine
     // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
     struct __cppast(smeta_unit) RigidBodyComponent
     {
+        COMPONENT_NAME(RigidBody)
+
         __cppast(tooltip = "The mass of the rigidBody") float Mass = 1.0f;
 
         __cppast(tooltip = "Enable Continuous Collision Detection") bool EnableCCD = false;
@@ -194,7 +298,17 @@ namespace SnowLeopardEngine
 
         __cppast(tooltip = "The angular damping of the rigidBody") float AngularDamping = 0.05f;
 
-        physx::PxRigidActor* InternalBody = nullptr;
+        __cppast(ignore) physx::PxRigidActor* InternalBody = nullptr;
+
+        __cppast(ignore) bool IsStatic = false;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(Mass), CEREAL_NVP(EnableCCD), CEREAL_NVP(LinearDamping), CEREAL_NVP(AngularDamping));
+        }
+        // NOLINTEND
 
         RigidBodyComponent()                          = default;
         RigidBodyComponent(const RigidBodyComponent&) = default;
@@ -205,11 +319,21 @@ namespace SnowLeopardEngine
 
     struct __cppast(smeta_unit) SphereColliderComponent
     {
+        COMPONENT_NAME(SphereCollider)
+
         __cppast(tooltip = "The radius of the SphereCollider") float Radius = 0.0f;
+
+        __cppast(tooltip = "Is trigger") bool IsTrigger = false;
 
         __cppast(ignore) Ref<PhysicsMaterial> Material = nullptr;
 
-        __cppast(tooltip = "Is trigger") bool IsTrigger = false;
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(Radius), CEREAL_NVP(IsTrigger));
+        }
+        // NOLINTEND
 
         SphereColliderComponent()                               = default;
         SphereColliderComponent(const SphereColliderComponent&) = default;
@@ -223,14 +347,25 @@ namespace SnowLeopardEngine
         {}
     };
 
-    // TODO: register all components for SMeta
-
-    struct BoxColliderComponent
+    struct __cppast(smeta_unit) BoxColliderComponent
     {
-        glm::vec3            Offset    = {0, 0, 0};
-        glm::vec3            Size      = {0, 0, 0};
-        Ref<PhysicsMaterial> Material  = nullptr;
-        bool                 IsTrigger = false;
+        COMPONENT_NAME(BoxCollider)
+
+        __cppast(tooltip = "The offset of the BoxCollider") glm::vec3 Offset = {0, 0, 0};
+
+        __cppast(tooltip = "The size of the BoxCollider") glm::vec3 Size = {0, 0, 0};
+
+        __cppast(tooltip = "Is the BoxCollider a trigger") bool IsTrigger = false;
+
+        __cppast(ignore) Ref<PhysicsMaterial> Material = nullptr;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(Offset), CEREAL_NVP(Size), CEREAL_NVP(IsTrigger));
+        }
+        // NOLINTEND
 
         BoxColliderComponent()                            = default;
         BoxColliderComponent(const BoxColliderComponent&) = default;
@@ -246,13 +381,27 @@ namespace SnowLeopardEngine
         {}
     };
 
-    struct CapsuleColliderComponent
+    struct __cppast(smeta_unit) CapsuleColliderComponent
     {
-        float                Radius    = 0.5f;
-        float                Height    = 1.0f;
-        glm::vec3            Offset    = {0, 0, 0};
-        Ref<PhysicsMaterial> Material  = nullptr;
-        bool                 IsTrigger = false;
+        COMPONENT_NAME(CapsuleCollider)
+
+        __cppast(tooltip = "The radius of the CapsuleCollider's hemisphere") float Radius = 0.5f;
+
+        __cppast(tooltip = "The height of the CapsuleCollider") float Height = 1.0f;
+
+        __cppast(tooltip = "The offset of the CapsuleCollider") glm::vec3 Offset = {0, 0, 0};
+
+        __cppast(tooltip = "Is the CapsuleCollider a trigger") bool IsTrigger = false;
+
+        __cppast(ignore) Ref<PhysicsMaterial> Material = nullptr;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(Radius), CEREAL_NVP(Height), CEREAL_NVP(Offset), CEREAL_NVP(IsTrigger));
+        }
+        // NOLINTEND
 
         CapsuleColliderComponent()                                = default;
         CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
@@ -266,12 +415,23 @@ namespace SnowLeopardEngine
         {}
     };
 
-    struct TerrainColliderComponent
+    struct __cppast(smeta_unit) TerrainColliderComponent
     {
-        Ref<PhysicsMaterial> Material  = nullptr;
-        bool                 IsTrigger = false;
+        COMPONENT_NAME(TerrainCollider)
 
-        physx::PxRigidStatic* InternalBody = nullptr;
+        __cppast(tooltip = "Is the TerrainCollider a trigger") bool IsTrigger = false;
+
+        __cppast(ignore) Ref<PhysicsMaterial> Material = nullptr;
+
+        __cppast(ignore) physx::PxRigidStatic* InternalBody = nullptr;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(IsTrigger));
+        }
+        // NOLINTEND
 
         TerrainColliderComponent()                                = default;
         TerrainColliderComponent(const TerrainColliderComponent&) = default;
@@ -280,8 +440,12 @@ namespace SnowLeopardEngine
         {}
     };
 
-    struct CharacterControllerComponent
+    // TODO: Register more smeta units
+
+    struct __cppast(smeta_unit) CharacterControllerComponent
     {
+        COMPONENT_NAME(CharacterController)
+
         float     SlopeLimit  = 45.0f;
         float     StepOffset  = 0.3;
         float     Height      = 1.0f;
@@ -293,16 +457,46 @@ namespace SnowLeopardEngine
         physx::PxController*       InternalController = nullptr;
         physx::PxControllerFilters Filters;
 
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(CEREAL_NVP(SlopeLimit),
+                    CEREAL_NVP(StepOffset),
+                    CEREAL_NVP(Height),
+                    CEREAL_NVP(Radius),
+                    CEREAL_NVP(MinMoveDisp),
+                    CEREAL_NVP(Offset));
+        }
+        // NOLINTEND
+
         CharacterControllerComponent()                                    = default;
         CharacterControllerComponent(const CharacterControllerComponent&) = default;
-        explicit CharacterControllerComponent(float                       height,
-                                              float                       radius,
-                                              glm::vec3                   offset,
-                                              float                       slopeLimit,
-                                              const Ref<PhysicsMaterial>& material) :
+        explicit CharacterControllerComponent(
+            float height, float radius, glm::vec3 offset, float slopeLimit, const Ref<PhysicsMaterial>& material) :
             Height(height),
             Radius(radius), Offset(offset), SlopeLimit(slopeLimit), Material(material)
         {}
+    };
+
+    struct MeshColliderComponent
+    {
+        COMPONENT_NAME(MeshCollider)
+
+        glm::vec3            Offset    = {0, 0, 0};
+        Ref<PhysicsMaterial> Material  = nullptr;
+        bool                 IsTrigger = false;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(Offset), CEREAL_NVP(IsTrigger));
+        }
+        // NOLINTEND
+
+        MeshColliderComponent()                             = default;
+        MeshColliderComponent(const MeshColliderComponent&) = default;
     };
 
     // -------- Physics Components DEFINITION END --------
@@ -323,6 +517,8 @@ namespace SnowLeopardEngine
 
     struct CameraComponent
     {
+        COMPONENT_NAME(Camera)
+
         CameraClearFlags ClearFlags  = CameraClearFlags::Color;
         glm::vec4        ClearColor  = glm::vec4(0.192157f, 0.301961f, 0.47451f, 1.0f);
         CameraProjection Projection  = CameraProjection::Perspective;
@@ -332,9 +528,26 @@ namespace SnowLeopardEngine
         float            AspectRatio = 16.0f / 9.0f;
         bool             IsPrimary   = true;
 
-        Ref<Cubemap>    Cubemap        = nullptr;
-        Ref<DzMaterial> SkyboxMaterial = nullptr;
-        MeshItem        SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
+        Ref<Cubemap>          Cubemap = nullptr;
+        std::filesystem::path SkyboxMaterialFilePath;
+        Ref<DzMaterial>       SkyboxMaterial = nullptr;
+        MeshItem              SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(ClearFlags),
+                    CEREAL_NVP(ClearColor),
+                    CEREAL_NVP(Projection),
+                    CEREAL_NVP(FOV),
+                    CEREAL_NVP(Near),
+                    CEREAL_NVP(Far),
+                    CEREAL_NVP(AspectRatio),
+                    CEREAL_NVP(IsPrimary),
+                    CEREAL_NVP(SkyboxMaterialFilePath));
+        }
+        // NOLINTEND
 
         CameraComponent()                       = default;
         CameraComponent(const CameraComponent&) = default;
@@ -342,11 +555,24 @@ namespace SnowLeopardEngine
 
     struct FreeMoveCameraControllerComponent
     {
+        COMPONENT_NAME(FreeMoveCameraController)
+
         float Sensitivity = 0.05f;
         float Speed       = 0.1f;
 
         bool      IsFirstTime = true;
         glm::vec2 LastFrameMousePosition;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(Sensitivity),
+                    CEREAL_NVP(Speed),
+                    CEREAL_NVP(IsFirstTime),
+                    CEREAL_NVP(LastFrameMousePosition));
+        }
+        // NOLINTEND
 
         FreeMoveCameraControllerComponent()                                         = default;
         FreeMoveCameraControllerComponent(const FreeMoveCameraControllerComponent&) = default;
@@ -354,11 +580,21 @@ namespace SnowLeopardEngine
 
     struct DirectionalLightComponent
     {
+        COMPONENT_NAME(DirectionalLight)
+
         glm::vec3 Direction = glm::normalize(glm::vec3(-0.6, -1, -1.2));
         float     Intensity = 0.8;
         glm::vec3 Color     = {1, 0.996, 0.885};
 
         Ref<DzMaterial> ShadowMaterial = nullptr;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(Direction), CEREAL_NVP(Intensity), CEREAL_NVP(Color));
+        }
+        // NOLINTEND
 
         DirectionalLightComponent()                                 = default;
         DirectionalLightComponent(const DirectionalLightComponent&) = default;
@@ -366,11 +602,22 @@ namespace SnowLeopardEngine
 
     struct MeshFilterComponent
     {
-        // TODO: Remove, add AssetManager
+        COMPONENT_NAME(MeshFilter)
+
         std::filesystem::path FilePath;
-        MeshPrimitiveType     PrimitiveType;
+
+        bool              UsePrimitive  = false;
+        MeshPrimitiveType PrimitiveType = MeshPrimitiveType::Invalid;
 
         MeshGroup Meshes;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(FilePath), CEREAL_NVP(UsePrimitive), CEREAL_NVP(PrimitiveType));
+        }
+        // NOLINTEND
 
         MeshFilterComponent()                           = default;
         MeshFilterComponent(const MeshFilterComponent&) = default;
@@ -394,10 +641,20 @@ namespace SnowLeopardEngine
 
     struct BaseRendererComponent
     {
+        COMPONENT_NAME(BaseRenderer)
+
         bool CastShadow = true;
 
         std::filesystem::path MaterialFilePath;
         Ref<DzMaterial>       Material;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(CastShadow), CEREAL_NVP(MaterialFilePath));
+        }
+        // NOLINTEND
 
         BaseRendererComponent()                             = default;
         BaseRendererComponent(const BaseRendererComponent&) = default;
@@ -405,12 +662,27 @@ namespace SnowLeopardEngine
 
     struct MeshRendererComponent : public BaseRendererComponent
     {
+        COMPONENT_NAME(MeshRenderer)
+
+        bool EnableInstancing = false;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            BaseRendererComponent::serialize(archive);
+            archive(CEREAL_NVP(EnableInstancing));
+        }
+        // NOLINTEND
+
         MeshRendererComponent()                             = default;
         MeshRendererComponent(const MeshRendererComponent&) = default;
     };
 
     struct TerrainComponent
     {
+        COMPONENT_NAME(Terrain)
+
         HeightMap TerrainHeightMap;
 
         float XScale = 1;
@@ -419,6 +691,14 @@ namespace SnowLeopardEngine
 
         MeshItem Mesh;
 
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(XScale), CEREAL_NVP(YScale), CEREAL_NVP(ZScale));
+        }
+        // NOLINTEND
+
         TerrainComponent() = default;
         explicit TerrainComponent(const HeightMap& heightMap) : TerrainHeightMap(heightMap) {}
         TerrainComponent(const TerrainComponent&) = default;
@@ -426,6 +706,16 @@ namespace SnowLeopardEngine
 
     struct TerrainRendererComponent : public BaseRendererComponent
     {
+        COMPONENT_NAME(TerrainRenderer)
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            BaseRendererComponent::serialize(archive);
+        }
+        // NOLINTEND
+
         TerrainRendererComponent()                                = default;
         TerrainRendererComponent(const TerrainRendererComponent&) = default;
     };
@@ -434,9 +724,9 @@ namespace SnowLeopardEngine
     // -------- Animation Components DEFINITION START --------
     struct AnimatorComponent
     {
-        // TODO: Animator Controller
-        // Now, we just load the first animation and create relevant animator, play on awake and loop forever.
-        Ref<Animator> CurrentAnimator;
+        COMPONENT_NAME(Animator)
+
+        AnimatorController Controller;
 
         AnimatorComponent()                         = default;
         AnimatorComponent(const AnimatorComponent&) = default;
@@ -447,24 +737,17 @@ namespace SnowLeopardEngine
     struct ComponentGroup
     {};
 
-    using AllComponents = ComponentGroup<TreeNodeComponent,
-                                         TransformComponent,
-                                         EntityStatusComponent,
-                                         NativeScriptingComponent,
-                                         RigidBodyComponent,
-                                         SphereColliderComponent,
-                                         BoxColliderComponent,
-                                         CapsuleColliderComponent,
-                                         TerrainColliderComponent,
-                                         CharacterControllerComponent,
-                                         CameraComponent,
-                                         FreeMoveCameraControllerComponent,
-                                         DirectionalLightComponent,
-                                         BaseRendererComponent,
-                                         MeshFilterComponent,
-                                         MeshRendererComponent,
-                                         TerrainComponent,
-                                         TerrainRendererComponent,
-                                         AnimatorComponent>;
+#define COMMON_COMPONENT_TYPES \
+    TagComponent, LayerComponent, TreeNodeComponent, TransformComponent, EntityStatusComponent, \
+        NativeScriptingComponent, RigidBodyComponent, SphereColliderComponent, BoxColliderComponent, \
+        CapsuleColliderComponent, TerrainColliderComponent, CharacterControllerComponent, MeshColliderComponent, \
+        CameraComponent, FreeMoveCameraControllerComponent, DirectionalLightComponent, BaseRendererComponent, \
+        MeshFilterComponent, MeshRendererComponent, TerrainComponent, TerrainRendererComponent
+
+#define ALL_SERIALIZABLE_COMPONENT_TYPES COMMON_COMPONENT_TYPES, IDComponent, NameComponent
+
+#define ALL_COPYABLE_COMPONENT_TYPES COMMON_COMPONENT_TYPES, AnimatorComponent
+
+    using AllCopyableComponents = ComponentGroup<ALL_COPYABLE_COMPONENT_TYPES>;
 
 } // namespace SnowLeopardEngine

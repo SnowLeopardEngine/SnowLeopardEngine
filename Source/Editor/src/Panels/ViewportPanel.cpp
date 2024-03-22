@@ -1,18 +1,23 @@
 #include "SnowLeopardEditor/Panels/ViewportPanel.h"
+#include "SnowLeopardEditor/EditorCamera/EditorCameraScript.h"
 #include "SnowLeopardEditor/Selector.h"
+#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "IconsMaterialDesignIcons.h"
 #include "entt/entt.hpp"
 #include <imgui.h>
+#include <memory>
 
 namespace SnowLeopardEngine::Editor
 {
     void ViewportPanel::Init()
     {
+        REGISTER_TYPE(EditorCameraScript);
+
         // Create RT
 
         // Color Attachment 0 - main target color
@@ -53,21 +58,20 @@ namespace SnowLeopardEngine::Editor
         m_EditorCamera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                                      = m_EditorCamera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                                 = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
+        cameraComponent.SkyboxMaterialFilePath                     = "Assets/Materials/Skybox001.dzmaterial";
 
         // Attach a editor camera script
-        m_EditorCameraScript = CreateRef<EditorCameraScript>();
-        m_EditorCamera.AddComponent<NativeScriptingComponent>(m_EditorCameraScript);
+        m_EditorCamera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EditorCameraScript));
 
         // Create a character
-        Entity character               = scene->CreateEntity("Character");
-        auto&  characterTransform      = character.GetComponent<TransformComponent>();
-        characterTransform.Position.y  = 0.6;
-        characterTransform.Scale       = {10, 10, 10};
-        auto& characterMeshFilter      = character.AddComponent<MeshFilterComponent>();
-        characterMeshFilter.FilePath   = "Assets/Models/Vampire/Vampire_Idle.dae";
-        auto& characterMeshRenderer    = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/Vampire.dzmaterial");
+        Entity character                       = scene->CreateEntity("Character");
+        auto&  characterTransform              = character.GetComponent<TransformComponent>();
+        characterTransform.Position.y          = 0.6;
+        characterTransform.Scale               = {10, 10, 10};
+        auto& characterMeshFilter              = character.AddComponent<MeshFilterComponent>();
+        characterMeshFilter.FilePath           = "Assets/Models/Vampire/Vampire_Dancing.fbx";
+        auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
+        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
         character.AddComponent<AnimatorComponent>();
 
         auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
@@ -81,10 +85,11 @@ namespace SnowLeopardEngine::Editor
 
         sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
         sphere.AddComponent<SphereColliderComponent>(normalMaterial);
-        auto& sphereMeshFilter         = sphere.AddComponent<MeshFilterComponent>();
-        sphereMeshFilter.PrimitiveType = MeshPrimitiveType::Sphere;
-        auto& sphereMeshRenderer       = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/Blue.dzmaterial");
+        auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
+        sphereMeshFilter.UsePrimitive       = true;
+        sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
+        auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
+        sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
@@ -95,10 +100,14 @@ namespace SnowLeopardEngine::Editor
         floor.GetComponent<EntityStatusComponent>().IsStatic = true;
         floor.AddComponent<RigidBodyComponent>();
         floor.AddComponent<BoxColliderComponent>(normalMaterial);
-        auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
-        floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
+        auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
+        floorMeshFilter.UsePrimitive       = true;
+        floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
+        auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
+        floorMeshRenderer.MaterialFilePath = "Assets/Materials/White.dzmaterial";
+
+        // Treat the floor as terrain for NavMesh baking test
+        floor.GetComponent<TagComponent>().TagValue = Tag::Terrain;
     }
 
     void ViewportPanel::OnFixedTick()
@@ -186,6 +195,11 @@ namespace SnowLeopardEngine::Editor
             m_IsWindowHovered = ImGui::IsWindowHovered();
 
             // Set EditorCamera states
+            if (m_EditorCameraScript == nullptr)
+            {
+                m_EditorCameraScript = std::dynamic_pointer_cast<EditorCameraScript>(
+                    m_EditorCamera.GetComponent<NativeScriptingComponent>().ScriptInstance);
+            }
             m_EditorCameraScript->SetWindowHovered(m_IsWindowHovered);
             m_EditorCameraScript->SetGrabMoveEnabled(m_GuizmoOperation == -1);
 
@@ -258,9 +272,19 @@ namespace SnowLeopardEngine::Editor
         }
 
         // Select hovered entity
+
+        // Workaround for https://github.com/CedricGuillemet/ImGuizmo/issues/310
+#if NDEBUG
+        static bool isFirstTime = true;
+        if (g_EngineContext->InputSys->GetMouseButtonDown(MouseCode::ButtonLeft) && m_IsWindowHovered &&
+            (!ImGuizmo::IsOver() || isFirstTime))
+        {
+            isFirstTime = false;
+#else
         if (g_EngineContext->InputSys->GetMouseButtonDown(MouseCode::ButtonLeft) && m_IsWindowHovered &&
             !ImGuizmo::IsOver())
         {
+#endif
             if (m_HoveredEntity)
             {
                 SNOW_LEOPARD_INFO("[Editor][Viewport] Selected entity: Name = {0}",
@@ -414,59 +438,75 @@ namespace SnowLeopardEngine::Editor
         bool isSimulating = m_ViewportMode == ViewportMode::Simulating;
         bool isPaused     = m_ViewportMode == ViewportMode::SimulationPaused;
         {
-            if (!isSimulating && ImGui::Button(ICON_MDI_PLAY))
+            if (!isSimulating)
             {
-                m_ViewportMode = ViewportMode::Simulating;
+                bool playButtonDown = ImGui::Button(ICON_MDI_PLAY);
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("Simulate the scene.");
                 }
 
-                if (m_SimulatingScene != nullptr)
+                if (playButtonDown)
                 {
-                    m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Simulating);
-                }
-                else if (m_EditingScene != nullptr)
-                {
-                    // Copy scene and set simulating
-                    m_SimulatingScene = LogicScene::Copy(m_EditingScene);
-                    m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Simulating);
-                    g_EngineContext->SceneMngr->SetActiveScene(m_SimulatingScene);
+                    m_ViewportMode = ViewportMode::Simulating;
+
+                    if (m_SimulatingScene != nullptr)
+                    {
+                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Simulating);
+                    }
+                    else if (m_EditingScene != nullptr)
+                    {
+                        // Copy scene and set simulating
+                        m_SimulatingScene = LogicScene::Copy(m_EditingScene);
+                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Simulating);
+                        g_EngineContext->SceneMngr->SetActiveScene(m_SimulatingScene);
+                    }
                 }
             }
-            if (isSimulating && ImGui::Button(ICON_MDI_PAUSE))
+
+            if (isSimulating)
             {
-                m_ViewportMode = ViewportMode::SimulationPaused;
+                bool pauseButtonDown = ImGui::Button(ICON_MDI_PAUSE);
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("Pause simulating the scene.");
                 }
 
-                if (m_SimulatingScene != nullptr)
+                if (pauseButtonDown)
                 {
-                    m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Paused);
+                    m_ViewportMode = ViewportMode::SimulationPaused;
+
+                    if (m_SimulatingScene != nullptr)
+                    {
+                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Paused);
+                    }
                 }
             }
-
             ImGui::SameLine();
-            if ((isSimulating || isPaused) && ImGui::Button(ICON_MDI_STOP))
+
+            if (isSimulating || isPaused)
             {
-                m_ViewportMode = ViewportMode::Edit;
+                bool stopButtonDown = ImGui::Button(ICON_MDI_STOP);
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("Stop simulating the scene.");
                 }
 
-                if (m_SimulatingScene != nullptr)
+                if (stopButtonDown)
                 {
-                    m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Stopped);
-                    m_SimulatingScene.reset();
-                    m_SimulatingScene = nullptr;
-                }
+                    m_ViewportMode = ViewportMode::Edit;
 
-                if (m_EditingScene != nullptr)
-                {
-                    g_EngineContext->SceneMngr->SetActiveScene(m_EditingScene);
+                    if (m_SimulatingScene != nullptr)
+                    {
+                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Stopped);
+                        m_SimulatingScene.reset();
+                        m_SimulatingScene = nullptr;
+                    }
+
+                    if (m_EditingScene != nullptr)
+                    {
+                        g_EngineContext->SceneMngr->SetActiveScene(m_EditingScene);
+                    }
                 }
             }
         }

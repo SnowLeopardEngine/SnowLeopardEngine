@@ -48,6 +48,7 @@ TODO
 - [XMake](https://github.com/xmake-io/xmake)
 - Visual Studio 2019 (or above) with C++ Desktop Development Environment
 - Git 2.1 (or above)
+- .NET 8 SDK
 
 > Avoid long-path limit:
 > Execute with system manager permission (Powershell):
@@ -56,11 +57,18 @@ TODO
 > git config --system core.longpaths true
 > ```
 
+Install .NET 8 SDK through winget:
+
+```bat
+winget install Microsoft.DotNet.SDK.8
+```
+
 ### macOS
 
 - [XMake](https://github.com/xmake-io/xmake)
 - XCode 13 (or above)
 - Git 2.1 (or above)
+- .NET 8 SDK
 
 To install XMake on macOS, you can use HomeBrew:
 
@@ -74,7 +82,14 @@ If you don't have HomeBrew, you can also install it through bash command:
 bash <(curl -fsSL https://xmake.io/shget.text)
 ```
 
+To install .NET 8 SDK on macOS, please download the installer [here](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0).
+
 ### Linux
+
+- [XMake](https://github.com/xmake-io/xmake)
+- GCC / Clang
+- Git 2.1 (or above)
+- .NET 8 SDK
 
 #### Ubuntu / Raspberry Pi OS / Other Debian Systems
 
@@ -90,29 +105,40 @@ Install other packages:
 sudo apt-get install build-essential cmake git clang libx11-dev libxrandr-dev libxrender-dev libglvnd-dev libxinerama-dev libxcursor-dev libxi-dev
 ```
 
+To install .NET 8 SDK on Linux, please download the installer [here](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0), or you can install from package managers.
+
 #### Other Linux Systems
 
 TODO
 
 ### Build Instructions
 
-Clone Repo:
+#### Clone Repo
 
 ```powershell
 git clone git@github.com:SnowLeopardEngine/SnowLeopardEngine.git --recursive
 ```
 
-Build with XMake:
+#### Build with XMake
+
+**Windows**
 
 ```powershell
 cd SnowLeopardEngine
-xmake -v -y
+./build.bat
 ```
 
-Run Examples, for example, `Application`:
+**macOS / Linux**
+
+```bash
+cd SnowLeopardEngine
+./build.sh
+```
+
+#### Run Examples, for example, `SnowLeopardEditor`
 
 ```powershell
-xmake run Application
+xmake run SnowLeopardEditor
 ```
 
 ## 3rd Party libraries

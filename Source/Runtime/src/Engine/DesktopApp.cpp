@@ -53,6 +53,7 @@ namespace SnowLeopardEngine
             m_Timer.Start();
             float dt        = m_Timer.GetDeltaTime();
             Time::DeltaTime = dt;
+            Time::ElapsedTime += dt;
 
             // Fixed Tick
             fixedTimer += dt;

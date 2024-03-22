@@ -1,0 +1,84 @@
+{
+    "DzShader": {
+        "Name": "Foliage/Grass",
+        "Properties": [
+            {
+                "Name": "instanceColor",
+                "Type": "Color",
+                "Value": "(1, 1, 1, 1)"
+            },
+            {
+                "Name": "instancePosition",
+                "Type": "Vector",
+                "Value": "(0, 0, 0, 1)"
+            },
+            {
+                "Name": "instanceQuaternion",
+                "Type": "Vector",
+                "Value": "(1, 0, 0, 0)"
+            },
+            {
+                "Name": "instanceScale",
+                "Type": "Vector",
+                "Value": "(1, 1, 1, 1)"
+            },
+            {
+                "Name": "grassMap",
+                "Type": "Texture2D",
+                "Value": ""
+            },
+            {
+                "Name": "noiseMap",
+                "Type": "Texture2D",
+                "Value": ""
+            },
+            {
+                "Name": "time",
+                "Type": "Float",
+                "Value": "0"
+            }
+        ],
+        "InstancedPropertyNames": [
+            "instanceColor",
+            "instancePosition",
+            "instanceQuaternion",
+            "instanceScale"
+        ],
+        "Resources": [],
+        "PipelineStates": {
+            "CullFaceMode": "NoCull",
+            "BlendMode": "Enable",
+            "BlendFunc1": "One",
+            "BlendFunc2": "Zero"
+        },
+        "Tags": {
+            "RenderQueue": "Geometry"
+        },
+        "Keywords": [
+            "FORWARD_LIGHTING"
+        ],
+        "Passes": [
+            {
+                "Name": "Grass_GeometryPass",
+                "PipelineStates": {},
+                "Tags": {},
+                "ResourcesToBind": [],
+                "ResourcesToUse": [],
+                "Stages": [
+                    {
+                        "Name": "vertex",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "#version 450\n\n#include \"Instancing.glsl\"\n#include \"Math.glsl\"\n\nlayout(location = 0) in vec3 aPos;\nlayout(location = 2) in vec2 aTexCoords;\nlayout(location = 0) out vec4 v2fColor;\nlayout(location = 1) out vec2 varyingTexCoords;\n\nlayout(location = 0) uniform mat4 view;\nlayout(location = 1) uniform mat4 projection;\nlayout(location = 2) uniform float time;\nlayout(location = 3) uniform sampler2D noiseMap;\n\nINSTANCED_PROPERTY(0, vec4, instanceColor);\nINSTANCED_PROPERTY(1, vec4, instancePosition);\nINSTANCED_PROPERTY(2, vec4, instanceQuaternion);\nINSTANCED_PROPERTY(3, vec4, instanceScale);\n\nvec3 applyWind(vec3 positionWS, vec3 grassUpWS, vec3 windDir, float windStrength, float vertexLocalHeight) \n{\n    float rad = windStrength * 3.14159265 / 2.0;\n    windDir = windDir - dot(windDir, grassUpWS) * grassUpWS;\n    \n    float x, y;\n    x = cos(rad);\n    y = sin(rad);\n    \n    vec3 windedPos = x * normalize(windDir) + y * grassUpWS;\n    return positionWS + (windedPos - grassUpWS) * vertexLocalHeight;\n}\n\nmat4 translate(vec3 offset) \n{\n    return mat4(\n        1.0, 0.0, 0.0, 0.0,\n        0.0, 1.0, 0.0, 0.0,\n        0.0, 0.0, 1.0, 0.0,\n        offset.x, offset.y, offset.z, 1.0\n    );\n}\n\nmat4 scaleMatrix(vec3 s) \n{\n    return mat4(\n        s.x, 0.0, 0.0, 0.0,\n        0.0, s.y, 0.0, 0.0,\n        0.0, 0.0, s.z, 0.0,\n        0.0, 0.0, 0.0, 1.0\n    );\n}\n\nvoid main() \n{\n    varyingTexCoords = aTexCoords;\n    \n    vec3 instancePos = ACCESS_INSTANCED_PROPERTY(instancePosition).xyz;\n    vec4 instanceRot = ACCESS_INSTANCED_PROPERTY(instanceQuaternion);\n    vec3 instanceScl = ACCESS_INSTANCED_PROPERTY(instanceScale).xyz; \n\n    vec3 offsetToBottomCenter = vec3(-1.0, 0.0, -1.0);\n    mat4 moveToBottomCenter = translate(offsetToBottomCenter);\n\n    mat4 translationMatrix = translate(instancePos);\n    mat4 rotationMatrix = QuaternionToMat4(instanceRot);\n    mat4 scaleMatrix = scaleMatrix(instanceScl); \n    mat4 modelMatrix = translationMatrix * rotationMatrix * scaleMatrix * moveToBottomCenter;\n\n    vec4 worldPosition = modelMatrix * vec4(aPos, 1.0);\n\n    vec2 noiseUV = (worldPosition.xz - time) / 30.0;\n    float noiseValue = texture(noiseMap, noiseUV).r;\n    noiseValue = sin(noiseValue * 0.5);\n    float windStrength = 0.5 + noiseValue * 0.3;\n\n    float vertexLocalHeight = worldPosition.y; \n    vec3 modifiedPosition = applyWind(worldPosition.xyz, vec3(0.0, 1.0, 0.0), normalize(vec3(1.0, 1.0, 1.0)), windStrength, vertexLocalHeight);\n\n    worldPosition.xyz = modifiedPosition;\n\n    gl_Position = projection * view * worldPosition;\n\n    v2fColor = ACCESS_INSTANCED_PROPERTY(instanceColor);\n}"
+                    },
+                    {
+                        "Name": "fragment",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "#version 450\n\nlayout(location = 0) in vec4 v2fColor;\nlayout(location = 1) in vec2 varyingTexCoords;\n\nlayout(location = 0) out vec4 color0;\nlayout(location = 1) out int color1;\n\nlayout(location = 4) uniform sampler2D grassMap;\n\nvoid main() {\n    color0 = texture(grassMap, varyingTexCoords);\n    if (color0.a < 0.5)\n    {\n        discard;\n    }\n    color1 = -1;\n}"
+                    }
+                ]
+            }
+        ]
+    }
+}
