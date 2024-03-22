@@ -12,7 +12,7 @@
 
 using namespace SnowLeopardEngine;
 
-class SphereScript : public NativeScriptInstance
+class QuadScript : public NativeScriptInstance
 {
 public:
     virtual void OnLoad() override
@@ -23,6 +23,9 @@ public:
             "instanceColor",
             glm::vec4(Random::GetRandomFloat(), Random::GetRandomFloat(), Random::GetRandomFloat(), 1));
         meshRenderer.Material->SetVector("instancePosition", glm::vec4(transform.Position, 1));
+        auto      quaternion = transform.GetRotation();
+        glm::vec4 vec4Representation(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+        meshRenderer.Material->SetVector("instanceQuaternion", vec4Representation);
         meshRenderer.Material->SetVector("instanceScale", glm::vec4(transform.Scale, 1));
     }
 };
@@ -47,25 +50,25 @@ public:
     }
 };
 
-static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3& position, const Ref<LogicScene>& scene)
+static Entity CreateQuad(const std::string& materialFilePath, const glm::vec3& position, const Ref<LogicScene>& scene)
 {
-    Entity sphere                       = scene->CreateEntity("Sphere");
-    auto&  sphereTransform              = sphere.GetComponent<TransformComponent>();
-    sphereTransform.Position            = position;
-    sphereTransform.Scale               = {2, 2, 2};
-    auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
-    sphereMeshFilter.UsePrimitive       = true;
-    sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
-    auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
-    sphereMeshRenderer.MaterialFilePath = materialFilePath;
+    Entity quad            = scene->CreateEntity("GrassQuad");
+    auto&  quadTransform   = quad.GetComponent<TransformComponent>();
+    quadTransform.Position = position;
+    quadTransform.SetRotationEuler(glm::vec3(-90, 0, 0));
+    quadTransform.Scale               = {4, 8, 4};
+    auto& quadMeshFilter              = quad.AddComponent<MeshFilterComponent>();
+    quadMeshFilter.PrimitiveType      = MeshPrimitiveType::Quad;
+    auto& quadMeshRenderer            = quad.AddComponent<MeshRendererComponent>();
+    quadMeshRenderer.MaterialFilePath = materialFilePath;
 
     // Enable GPU Instancing
-    sphereMeshRenderer.EnableInstancing = true;
+    quadMeshRenderer.EnableInstancing = true;
 
     // Attach a script for changing instance color
-    sphere.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(SphereScript));
+    quad.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(QuadScript));
 
-    return sphere;
+    return quad;
 }
 
 class CustomLifeTime final : public LifeTimeComponent
@@ -92,16 +95,14 @@ public:
         camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Load materials
-        const std::string instancingMaterialPath = "Assets/Materials/InstancingTest.dzmaterial";
+        const std::string instancingMaterialPath = "Assets/Materials/Foliage/Grass.dzmaterial";
 
-        // Create spheres to test materials
-        for (size_t i = 0; i < 100; ++i)
+        // Create grass quad instances
+        for (size_t i = 0; i < 250; ++i)
         {
-            glm::vec4 randomPosition(Random::GetRandomFloatRanged(-50, 50),
-                                     Random::GetRandomFloatRanged(-50, 50),
-                                     Random::GetRandomFloatRanged(-150, -50),
-                                     1);
-            CreateSphere(instancingMaterialPath, randomPosition, scene);
+            glm::vec4 randomPosition(
+                Random::GetRandomFloatRanged(15, 25), 0, Random::GetRandomFloatRanged(-20, -10), 1);
+            CreateQuad(instancingMaterialPath, randomPosition, scene);
         }
 
         scene->SaveTo("Test.dzscene");
@@ -114,7 +115,7 @@ private:
 
 int main(int argc, char** argv)
 {
-    REGISTER_TYPE(SphereScript);
+    REGISTER_TYPE(QuadScript);
     REGISTER_TYPE(EscScript);
 
     DesktopAppInitInfo initInfo {};

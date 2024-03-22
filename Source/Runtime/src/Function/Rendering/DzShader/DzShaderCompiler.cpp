@@ -167,12 +167,17 @@ namespace SnowLeopardEngine
 
         std::string prePassesString(preResult.begin());
 
+#ifndef NDEBUG
+        SNOW_LEOPARD_CORE_INFO("[DzShaderCompiler] Preprocessed source:\n{0}", prePassesString);
+#endif
+
         // Compile
         auto compileResult = compiler.CompileGlslToSpv(
             prePassesString, ShaderStageToShaderCKind(stageName), shaderName.c_str(), stageEntryPoint.c_str(), options);
         if (compileResult.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            message = compileResult.GetErrorMessage();
+            auto innerErrorMsg = compileResult.GetErrorMessage();
+            message = fmt::format("Inner Message: {0}, Preprocessed source: {1}", innerErrorMsg, prePassesString);
             return false;
         }
 
@@ -198,5 +203,9 @@ namespace SnowLeopardEngine
         glslCompiler.set_common_options(options);
 
         glslSource = glslCompiler.compile();
+
+#ifndef NDEBUG
+        SNOW_LEOPARD_CORE_INFO("[DzShaderCompiler] Compiled source from SPV:\n{0}", glslSource);
+#endif
     }
 } // namespace SnowLeopardEngine

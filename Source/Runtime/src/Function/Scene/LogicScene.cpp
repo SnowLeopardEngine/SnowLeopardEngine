@@ -209,6 +209,12 @@ namespace SnowLeopardEngine
             {
                 switch (meshFilter.PrimitiveType)
                 {
+                    case MeshPrimitiveType::Quad: {
+                        auto meshItem = GeometryFactory::CreateMeshPrimitive<QuadMesh>();
+                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        break;
+                    }
+
                     case MeshPrimitiveType::Cube: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
                         meshFilter.Meshes.Items.emplace_back(meshItem);

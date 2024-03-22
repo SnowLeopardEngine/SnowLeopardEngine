@@ -6,5 +6,6 @@ namespace SnowLeopardEngine
     {
         static float DeltaTime;
         static float FixedDeltaTime;
+        static float ElapsedTime;
     };
 } // namespace SnowLeopardEngine
