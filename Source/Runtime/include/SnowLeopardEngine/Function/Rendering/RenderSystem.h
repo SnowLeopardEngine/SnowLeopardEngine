@@ -5,7 +5,7 @@
 #include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
-#include "entt/entity/fwd.hpp"
+#include "SnowLeopardEngine/Function/Rendering/Pipeline/DataDrivenPipeline.h"
 
 namespace SnowLeopardEngine
 {
@@ -19,7 +19,7 @@ namespace SnowLeopardEngine
         void OnTick(float deltaTime);
         void Present();
 
-        void SetRenderTarget(const Ref<FrameBuffer>& renderTarget) { m_RenderTarget = renderTarget; }
+        void SetRenderTarget(const Ref<FrameBuffer>& renderTarget) { m_Pipeline.SetRenderTarget(renderTarget); }
 
         const Ref<GraphicsAPI>& GetAPI() const { return m_API; }
 
@@ -29,18 +29,7 @@ namespace SnowLeopardEngine
     protected:
         Ref<GraphicsContext> m_Context;
         Ref<GraphicsAPI>     m_API;
-
-        // TODO: Clean code
-        std::vector<entt::entity> m_ShadowGroup;
-        std::vector<entt::entity> m_GeometryGroup;
-        std::vector<entt::entity> m_SkyGroup;
-
-        // TODO: Batch info
-        std::vector<std::vector<entt::entity>>  m_InstancingBatchGroups;
-        std::vector<std::string>                m_InstancingBatchShaderNames;
-        std::vector<std::optional<std::string>> m_InstancingBatchMeshItemNames;
-
-        Ref<FrameBuffer> m_RenderTarget;
+        DataDrivenPipeline   m_Pipeline;
 
         EventHandler<LogicSceneLoadedEvent> m_LogicSceneLoadedHandler = [this](const LogicSceneLoadedEvent& e) {
             OnLogicSceneLoaded(e);
