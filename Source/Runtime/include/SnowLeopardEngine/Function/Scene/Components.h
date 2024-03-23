@@ -519,14 +519,15 @@ namespace SnowLeopardEngine
     {
         COMPONENT_NAME(Camera)
 
-        CameraClearFlags ClearFlags  = CameraClearFlags::Color;
-        glm::vec4        ClearColor  = glm::vec4(0.192157f, 0.301961f, 0.47451f, 1.0f);
-        CameraProjection Projection  = CameraProjection::Perspective;
-        float            FOV         = 60.0f;
-        float            Near        = 0.1f;
-        float            Far         = 1000.0f;
-        float            AspectRatio = 16.0f / 9.0f;
-        bool             IsPrimary   = true;
+        CameraClearFlags ClearFlags     = CameraClearFlags::Color;
+        glm::vec4        ClearColor     = glm::vec4(0.192157f, 0.301961f, 0.47451f, 1.0f);
+        CameraProjection Projection     = CameraProjection::Perspective;
+        float            FOV            = 60.0f;
+        float            Near           = 0.1f;
+        float            Far            = 1000.0f;
+        float            ViewportWidth  = 0;
+        float            ViewportHeight = 0;
+        bool             IsPrimary      = true;
 
         Ref<Cubemap>          Cubemap = nullptr;
         std::filesystem::path SkyboxMaterialFilePath;
@@ -543,7 +544,6 @@ namespace SnowLeopardEngine
                     CEREAL_NVP(FOV),
                     CEREAL_NVP(Near),
                     CEREAL_NVP(Far),
-                    CEREAL_NVP(AspectRatio),
                     CEREAL_NVP(IsPrimary),
                     CEREAL_NVP(SkyboxMaterialFilePath));
         }

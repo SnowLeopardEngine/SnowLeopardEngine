@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderManager.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderCompiler.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderTypeDef.h"
@@ -43,6 +44,8 @@ namespace SnowLeopardEngine
 
     bool DzShaderManager::Compile()
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+
         bool hasError = false;
 
         for (auto& [dzShaderName, dzShader] : s_DzShaders)
@@ -97,6 +100,8 @@ namespace SnowLeopardEngine
 
     void DzShaderManager::BindPassResources(const DzPass& dzPass)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+
         // Bind resources if there are some resources
         for (const auto& resourceName : dzPass.ResourcesToBind)
         {
@@ -120,6 +125,8 @@ namespace SnowLeopardEngine
 
     void DzShaderManager::UnbindPassResources(const DzPass& dzPass)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+
         // Unbind resources if there are some resources
         for (const auto& resourceName : dzPass.ResourcesToBind)
         {
@@ -141,6 +148,8 @@ namespace SnowLeopardEngine
 
     void DzShaderManager::UsePassResources(const DzPass& dzPass, const Ref<Shader>& shader, int& resourceBinding)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+
         // Use resources if there are some resources
         for (const auto& resourceName : dzPass.ResourcesToUse)
         {
@@ -164,6 +173,8 @@ namespace SnowLeopardEngine
 
     Ref<Shader> DzShaderManager::GetCompiledPassShader(const std::string& dzPassName)
     {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+
         if (s_CompiledShaders.count(dzPassName) == 0)
         {
             SNOW_LEOPARD_CORE_ERROR("[DzShaderManager] DzPass {0} not found or not compiled!", dzPassName);
@@ -171,14 +182,5 @@ namespace SnowLeopardEngine
         }
 
         return s_CompiledShaders[dzPassName];
-    }
-
-    void DzShaderManager::SetInt(const std::string& dzShaderName, const std::string& propertyName, int value)
-    {
-        for (const auto& pass : s_DzShaders[dzShaderName].Passes)
-        {
-            auto& compiledShader = s_CompiledShaders[pass.Name];
-            compiledShader->SetInt(propertyName, value);
-        }
     }
 } // namespace SnowLeopardEngine
