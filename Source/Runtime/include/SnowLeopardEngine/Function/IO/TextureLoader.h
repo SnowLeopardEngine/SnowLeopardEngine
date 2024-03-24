@@ -13,7 +13,7 @@ namespace SnowLeopardEngine
         uint32_t         OutWidth;
         uint32_t         OutHeight;
 
-        TextureDesc GetDesc() { return {OutWidth, OutHeight, OutFormat}; }
+        TextureDesc GetDesc() const { return {OutWidth, OutHeight, OutFormat}; }
     };
 
     class TextureLoader

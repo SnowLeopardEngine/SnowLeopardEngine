@@ -2,12 +2,14 @@
 #include "SnowLeopardEngine/Core/Base/Random.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
+#include <SnowLeopardEngine/Function/IO/Resources.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
 using namespace SnowLeopardEngine;
@@ -107,6 +109,13 @@ public:
 
         scene->SaveTo("Test.dzscene");
         scene->LoadFrom("Test.dzscene");
+
+        Ref<Texture2DAsset> assetA, assetB, assetC;
+        Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", assetA, true);
+        Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", assetB, true);
+        Resources::Load<Texture2DAsset>("Assets/Textures/Grass.png", assetC, true);
+        assert(assetA->GetUUID() == assetB->GetUUID());
+        assert(assetA->GetUUID() != assetC->GetUUID());
     }
 
 private:

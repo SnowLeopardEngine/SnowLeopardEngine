@@ -1,5 +1,8 @@
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 
+#include <cryptopp/hex.h>
+#include <cryptopp/md5.h>
+
 namespace SnowLeopardEngine
 {
     std::filesystem::path FileSystem::s_ExeDirectory;
@@ -53,5 +56,34 @@ namespace SnowLeopardEngine
         ss << in.rdbuf();
 
         return static_cast<std::string>(ss.str());
+    }
+
+    std::string FileSystem::GetMD5(const std::filesystem::path& path)
+    {
+        CryptoPP::Weak1::MD5 md5;
+        CryptoPP::byte       digest[CryptoPP::Weak1::MD5::DIGESTSIZE];
+
+        std::ifstream file(path.generic_string(), std::ios::binary);
+        if (!file.is_open())
+        {
+            return std::string();
+        }
+
+        while (file)
+        {
+            char buffer[1024];
+            file.read(buffer, sizeof(buffer));
+            md5.Update(reinterpret_cast<const CryptoPP::byte*>(buffer), file.gcount());
+        }
+
+        md5.Final(digest);
+
+        CryptoPP::HexEncoder encoder;
+        std::string          result;
+        encoder.Attach(new CryptoPP::StringSink(result));
+        encoder.Put(digest, sizeof(digest));
+        encoder.MessageEnd();
+
+        return result;
     }
 } // namespace SnowLeopardEngine

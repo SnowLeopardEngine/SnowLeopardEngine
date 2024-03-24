@@ -1,7 +1,7 @@
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "SnowLeopardEngine/Function/Asset/Loaders/TextureLoader.h"
+#include "SnowLeopardEngine/Function/IO/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderManager.h"
 
 namespace SnowLeopardEngine

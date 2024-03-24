@@ -15,6 +15,7 @@ namespace SnowLeopardEngine
         static std::string                  GetFileName(const std::string& filePath);
         static bool                         WriteAllText(const std::string& path, const std::string& content);
         static std::string                  ReadAllText(const std::string& path);
+        static std::string                  GetMD5(const std::filesystem::path& path);
 
     private:
         static std::filesystem::path s_ExeDirectory;

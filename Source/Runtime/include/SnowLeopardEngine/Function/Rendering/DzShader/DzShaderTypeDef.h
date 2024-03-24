@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SnowLeopardEngine/Core/Serialization/CerealMap.h"
+#include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
 #include <cereal/archives/json.hpp>
