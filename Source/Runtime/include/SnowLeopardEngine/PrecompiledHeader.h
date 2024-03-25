@@ -18,7 +18,9 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <variant>
 #include <vector>
+
 #include <fmt/core.h>
 
 // Add more headers if necessary.

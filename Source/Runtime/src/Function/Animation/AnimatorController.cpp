@@ -3,6 +3,17 @@
 
 namespace SnowLeopardEngine
 {
+    void AnimatorController::Init()
+    {
+        InitAnimators();
+    }
+
+    void AnimatorController::Update(float deltaTime)
+    {
+        CheckParameters();
+        UpdateAnimators(deltaTime);
+    }
+
     void AnimatorController::RegisterAnimator(const Ref<Animator>& animator) { m_Animators.push_back(animator); }
 
     void AnimatorController::DeleteAnimator(const Ref<Animator>& animator)
