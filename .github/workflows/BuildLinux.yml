@@ -14,6 +14,10 @@ jobs:
         with:
           submodules: 'true'
 
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.0'
+
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
@@ -22,4 +26,4 @@ jobs:
         run: sudo apt-get update && sudo apt-get install build-essential cmake git clang libx11-dev libxrandr-dev libxrender-dev libglvnd-dev libxinerama-dev libxcursor-dev libxi-dev
 
       - name: Build
-        run: xmake -v -y
+        run: chmod +x build.sh && ./build.sh

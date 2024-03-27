@@ -14,9 +14,13 @@ jobs:
         with:
           submodules: 'true'
 
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.0'
+
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
 
       - name: Build
-        run: xmake -v -y
+        run: chmod +x build.sh && ./build.sh
