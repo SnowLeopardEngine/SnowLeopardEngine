@@ -66,7 +66,7 @@ namespace SnowLeopardEngine
     {
         for (const auto& animator : m_Animators)
         {
-            animator->UpdateAnimation(0);
+            animator->Update(0);
         }
     }
 
@@ -74,7 +74,7 @@ namespace SnowLeopardEngine
     {
         for (const auto& animator : m_Animators)
         {
-            animator->UpdateAnimation(deltaTime);
+            animator->Update(deltaTime);
         }
     }
 } // namespace SnowLeopardEngine

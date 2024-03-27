@@ -2,11 +2,10 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
+#include "SnowLeopardEngine/Function/Asset/OzzMesh.h"
 
 namespace SnowLeopardEngine
 {
-    const uint32_t MaxBoneInfluence = 4;
-
     // forward
     class VertexArray;
 
@@ -67,7 +66,7 @@ namespace SnowLeopardEngine
         TextureConfig Config;
     };
 
-    struct StaticMeshVertexData
+    struct MeshVertexData
     {
         glm::vec3 Position;
         glm::vec3 Normal;
@@ -75,45 +74,24 @@ namespace SnowLeopardEngine
 
         // for picking object using back buffer hack
         int EntityID = -1;
-    };
-
-    struct PerVertexAnimationAttributes
-    {
-        // bone indexes which will influence this vertex
-        int BoneIDs[MaxBoneInfluence];
-
-        // weights from each bone
-        float Weights[MaxBoneInfluence];
-    };
-
-    struct AnimatedMeshVertexData
-    {
-        glm::vec3 Position;
-        glm::vec3 Normal;
-        glm::vec2 TexCoord;
-
-        // for picking object using back buffer hack
-        int EntityID = -1;
-
-        // attributes for animation
-        PerVertexAnimationAttributes AnimationAttributes;
     };
 
     struct MeshData
     {
-        std::vector<StaticMeshVertexData>   StaticVertices;
-        std::vector<AnimatedMeshVertexData> AnimatedVertices;
-        std::vector<uint32_t>               Indices;
+        std::vector<MeshVertexData> Vertices;
+        std::vector<uint32_t>       Indices;
 
         Ref<VertexArray> VertexArray = nullptr;
-
-        bool HasAnimationInfo() const { return !AnimatedVertices.empty(); }
     };
 
     struct MeshItem
     {
         std::string Name;
         MeshData    Data;
+
+        ozz::sample::Mesh OzzMesh;
+
+        bool Skinned() const { return OzzMesh.skinned(); }
     };
 
     struct MeshGroup

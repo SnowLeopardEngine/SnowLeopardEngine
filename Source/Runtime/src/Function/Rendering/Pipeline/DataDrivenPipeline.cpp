@@ -238,7 +238,7 @@ namespace SnowLeopardEngine
             {
                 auto& meshFilter = registry.get<MeshFilterComponent>(geometry);
                 renderer         = registry.get<MeshRendererComponent>(geometry);
-                for (auto& meshItem : meshFilter.Meshes.Items)
+                for (auto& meshItem : meshFilter.Meshes->Items)
                 {
                     meshItemPtrs.emplace_back(&meshItem);
                 }
@@ -246,12 +246,6 @@ namespace SnowLeopardEngine
 
             // Empty mesh and Submeshes are invalid here.
             if (meshItemPtrs.size() > 1 || meshItemPtrs.empty())
-            {
-                continue;
-            }
-
-            // Animated skinned meshes are invalid here.
-            if (meshItemPtrs[0]->Data.HasAnimationInfo())
             {
                 continue;
             }
@@ -376,7 +370,7 @@ namespace SnowLeopardEngine
                 if (registry.any_of<MeshFilterComponent>(geometry))
                 {
                     auto& meshFilter = registry.get<MeshFilterComponent>(geometry);
-                    for (auto& meshItem : meshFilter.Meshes.Items)
+                    for (auto& meshItem : meshFilter.Meshes->Items)
                     {
                         meshItemPtrs.emplace_back(&meshItem);
                     }
@@ -431,7 +425,7 @@ namespace SnowLeopardEngine
         {
             auto& meshFilter = registry.get<MeshFilterComponent>(batchGeometry);
             renderer         = registry.get<MeshRendererComponent>(batchGeometry);
-            for (auto& meshItem : meshFilter.Meshes.Items)
+            for (auto& meshItem : meshFilter.Meshes->Items)
             {
                 meshItemPtrs.emplace_back(&meshItem);
             }
@@ -488,7 +482,7 @@ namespace SnowLeopardEngine
                 return;
             }
             renderer = meshRenderer;
-            for (auto& meshItem : meshFilter.Meshes.Items)
+            for (auto& meshItem : meshFilter.Meshes->Items)
             {
                 meshItemPtrs.emplace_back(&meshItem);
             }
@@ -597,19 +591,6 @@ namespace SnowLeopardEngine
         shader->SetFloat3("directionalLight.color", m_SceneUniform.DirectionalLightColor);
         shader->SetMat4("lightSpaceMatrix", m_SceneUniform.LightSpaceMatrix);
 
-        bool hasAnimation = meshItem.Data.HasAnimationInfo();
-        shader->SetInt("hasAnimation", hasAnimation);
-
-        if (hasAnimation)
-        {
-            auto& animator     = registry.get<AnimatorComponent>(geometry);
-            auto  boneMatrices = animator.Controller.GetCurrentAnimator()->GetFinalBoneMatrices();
-            for (uint32_t i = 0; i < boneMatrices.size(); ++i)
-            {
-                shader->SetMat4(fmt::format("finalBonesMatrices[{0}]", i), boneMatrices[i]);
-            }
-        }
-
         // Set material properties
         for (const auto& property : material.GetPropertyBlock().ShaderProperties)
         {
@@ -622,6 +603,10 @@ namespace SnowLeopardEngine
         if (meshItem.Data.VertexArray == nullptr)
         {
             meshItem.Data.VertexArray = g_EngineContext->RenderSys->GetAPI()->CreateVertexArray(meshItem);
+        }
+        if (meshItem.Skinned())
+        {
+            meshItem.Data.VertexArray->GetVertexBuffers()[0]->SetBufferData(meshItem.Data.Vertices);
         }
         meshItem.Data.VertexArray->Bind();
 
@@ -710,6 +695,10 @@ namespace SnowLeopardEngine
         if (meshItem.Data.VertexArray == nullptr)
         {
             meshItem.Data.VertexArray = g_EngineContext->RenderSys->GetAPI()->CreateVertexArray(meshItem);
+        }
+        if (meshItem.Skinned())
+        {
+            meshItem.Data.VertexArray->GetVertexBuffers()[0]->SetBufferData(meshItem.Data.Vertices);
         }
         meshItem.Data.VertexArray->Bind();
 

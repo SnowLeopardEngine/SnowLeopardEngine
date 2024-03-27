@@ -159,7 +159,7 @@ namespace SnowLeopardEngine::Editor
                             }
                             if (meshFilterComponent.PrimitiveType != selectedEnumValue)
                             {
-                                meshFilterComponent.Meshes.Items.clear();
+                                meshFilterComponent.Meshes->Items.clear();
                                 // TODO: Load meshes
                                 meshFilterComponent.PrimitiveType = selectedEnumValue;
                             }

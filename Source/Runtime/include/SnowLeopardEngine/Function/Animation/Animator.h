@@ -1,26 +1,24 @@
 #pragma once
 
-#include "SnowLeopardEngine/Function/Animation/Animation.h"
+#include "SnowLeopardEngine/Core/Math/Math.h"
+#include "SnowLeopardEngine/Function/Animation/AnimationClip.h"
 
 namespace SnowLeopardEngine
 {
     class Animator
     {
     public:
-        explicit Animator(Ref<Animation> animation);
-        std::vector<glm::mat4> GetFinalBoneMatrices() { return m_FinalBoneMatrices; }
+        explicit Animator(const Ref<AnimationClip>& clip);
 
     private:
-        void UpdateAnimation(float dt);
-        void PlayAnimation(Ref<Animation> pAnimation);
-        void CalculateBoneTransform(const AssimpNodeData* node, glm::mat4 parentTransform);
+        void Update(float dt);
+        void Play(const Ref<AnimationClip>& clip);
 
         friend class AnimatorController;
 
     private:
-        std::vector<glm::mat4> m_FinalBoneMatrices;
-        Ref<Animation>         m_CurrentAnimation;
-        float                  m_CurrentTime;
-        float                  m_DeltaTime;
+        Ref<AnimationClip> m_CurrentClip;
+        float              m_CurrentTime;
+        float              m_DeltaTime;
     };
 } // namespace SnowLeopardEngine

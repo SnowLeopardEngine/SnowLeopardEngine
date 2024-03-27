@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SnowLeopardEngine/Function/Animation/Animation.h"
+#include "SnowLeopardEngine/Function/Animation/AnimationClip.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
 namespace SnowLeopardEngine
@@ -11,8 +11,6 @@ namespace SnowLeopardEngine
 
         MeshGroup Meshes;
 
-        std::vector<Ref<Animation>>     Animations;
-        std::map<std::string, BoneInfo> BoneInfoMap;
-        int                             BoneCounter = 0;
+        std::vector<Ref<AnimationClip>> AnimationClips; // ozz
     };
 } // namespace SnowLeopardEngine
