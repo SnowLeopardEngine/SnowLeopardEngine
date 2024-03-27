@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Platform/OpenGL/GLVertexBuffer.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Platform/OpenGL/GLAPI.h"
 
 #include <glad/glad.h>
@@ -35,37 +36,19 @@ namespace SnowLeopardEngine
         }
     }
 
-    GLVertexBuffer::GLVertexBuffer(std::vector<StaticMeshVertexData> vertices)
+    GLVertexBuffer::GLVertexBuffer(const std::vector<MeshVertexData>& vertices)
     {
         if (OpenGLAPI::IsDSASupported())
         {
             glCreateBuffers(1, &m_BufferName);
             glNamedBufferStorage(
-                m_BufferName, vertices.size() * sizeof(StaticMeshVertexData), vertices.data(), GL_DYNAMIC_STORAGE_BIT);
+                m_BufferName, vertices.size() * sizeof(MeshVertexData), vertices.data(), GL_DYNAMIC_STORAGE_BIT);
         }
         else
         {
             glGenBuffers(1, &m_BufferName);
             glBindBuffer(GL_ARRAY_BUFFER, m_BufferName);
-            glBufferData(
-                GL_ARRAY_BUFFER, vertices.size() * sizeof(StaticMeshVertexData), vertices.data(), GL_STATIC_DRAW);
-        }
-    }
-
-    GLVertexBuffer::GLVertexBuffer(std::vector<AnimatedMeshVertexData> vertices)
-    {
-        if (OpenGLAPI::IsDSASupported())
-        {
-            glCreateBuffers(1, &m_BufferName);
-            glNamedBufferStorage(
-                m_BufferName, vertices.size() * sizeof(AnimatedMeshVertexData), &vertices[0], GL_DYNAMIC_STORAGE_BIT);
-        }
-        else
-        {
-            glGenBuffers(1, &m_BufferName);
-            glBindBuffer(GL_ARRAY_BUFFER, m_BufferName);
-            glBufferData(
-                GL_ARRAY_BUFFER, vertices.size() * sizeof(AnimatedMeshVertexData), vertices.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(MeshVertexData), vertices.data(), GL_STATIC_DRAW);
         }
     }
 
@@ -85,6 +68,19 @@ namespace SnowLeopardEngine
         {
             glBindBuffer(GL_ARRAY_BUFFER, m_BufferName);
             glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
+        }
+    }
+
+    void GLVertexBuffer::SetBufferData(const std::vector<MeshVertexData>& vertices)
+    {
+        if (OpenGLAPI::IsDSASupported())
+        {
+            glNamedBufferSubData(m_BufferName, 0, vertices.size() * sizeof(MeshVertexData), vertices.data());
+        }
+        else
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, m_BufferName);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(MeshVertexData), vertices.data());
         }
     }
 } // namespace SnowLeopardEngine

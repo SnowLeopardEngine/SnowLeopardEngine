@@ -3,6 +3,8 @@
 #include "SnowLeopardEditor/Selector.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/Model.h"
+#include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/TagManager.h"
@@ -12,11 +14,14 @@
 #include <imgui.h>
 #include <memory>
 
+SnowLeopardEngine::Model* g_Model;
+
 namespace SnowLeopardEngine::Editor
 {
     void ViewportPanel::Init()
     {
         REGISTER_TYPE(EditorCameraScript);
+        g_Model = new Model();
 
         // Create RT
 
@@ -63,16 +68,27 @@ namespace SnowLeopardEngine::Editor
         // Attach a editor camera script
         m_EditorCamera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EditorCameraScript));
 
+        OzzModelLoadConfig config = {};
+        config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
+        config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
+        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/animation_Dancing.ozz");
+        bool ok = OzzModelLoader::Load(config, g_Model);
+
         // Create a character
-        Entity character                       = scene->CreateEntity("Character");
-        auto&  characterTransform              = character.GetComponent<TransformComponent>();
-        characterTransform.Position.y          = 0.6;
-        characterTransform.Scale               = {10, 10, 10};
-        auto& characterMeshFilter              = character.AddComponent<MeshFilterComponent>();
-        characterMeshFilter.FilePath           = "Assets/Models/Vampire/Vampire_Dancing.fbx";
+        Entity character              = scene->CreateEntity("Character");
+        auto&  characterTransform     = character.GetComponent<TransformComponent>();
+        characterTransform.Position.y = 0.6;
+        characterTransform.Scale      = {10, 10, 10};
+        auto& characterMeshFilter     = character.AddComponent<MeshFilterComponent>();
+        // characterMeshFilter.FilePath           = "Assets/Models/Vampire/Vampire_Dancing.fbx";
+        characterMeshFilter.Meshes             = &g_Model->Meshes;
         auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
         characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
-        character.AddComponent<AnimatorComponent>();
+        auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
+
+        auto animator = CreateRef<Animator>(g_Model->AnimationClips[0]);
+        animatorComponent.Controller.RegisterAnimator(animator);
+        animatorComponent.Controller.SetEntryAnimator(animator);
 
         auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
 

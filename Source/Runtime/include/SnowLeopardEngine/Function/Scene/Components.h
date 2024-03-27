@@ -609,7 +609,7 @@ namespace SnowLeopardEngine
         bool              UsePrimitive  = false;
         MeshPrimitiveType PrimitiveType = MeshPrimitiveType::Invalid;
 
-        MeshGroup Meshes;
+        MeshGroup* Meshes;
 
         // NOLINTBEGIN
         template<class Archive>
@@ -622,16 +622,20 @@ namespace SnowLeopardEngine
         MeshFilterComponent()                           = default;
         MeshFilterComponent(const MeshFilterComponent&) = default;
 
-        void AssignEntityID(int entityID)
+        ~MeshFilterComponent()
         {
-            for (auto& meshItem : Meshes.Items)
+            if (UsePrimitive)
             {
-                for (auto& vertex : meshItem.Data.StaticVertices)
-                {
-                    vertex.EntityID = entityID;
-                }
+                delete Meshes;
+                Meshes = nullptr;
+            }
+        }
 
-                for (auto& vertex : meshItem.Data.AnimatedVertices)
+        void AssignEntityID(int entityID) const
+        {
+            for (auto& meshItem : Meshes->Items)
+            {
+                for (auto& vertex : meshItem.Data.Vertices)
                 {
                     vertex.EntityID = entityID;
                 }

@@ -5,7 +5,6 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
-#include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
@@ -182,60 +181,39 @@ namespace SnowLeopardEngine
         // Mesh Loading (dirty code for now)
         m_Registry.view<MeshFilterComponent>().each([this](entt::entity entity, MeshFilterComponent& meshFilter) {
             // TODO: Move to AssetManager
-            if (FileSystem::Exists(meshFilter.FilePath))
-            {
-                Model model;
-                if (!ModelLoader::LoadModel(meshFilter.FilePath, model))
-                {
-                    SNOW_LEOPARD_CORE_ERROR("Failed to load {0}!", meshFilter.FilePath.generic_string());
-                }
-                meshFilter.Meshes = model.Meshes;
-
-                // load animation if possible
-                if (m_Registry.any_of<AnimatorComponent>(entity))
-                {
-                    auto& animatorComponent = m_Registry.get<AnimatorComponent>(entity);
-
-                    for (const auto& animation : model.Animations)
-                    {
-                        auto animator = CreateRef<Animator>(animation);
-                        animatorComponent.Controller.RegisterAnimator(animator);
-                        animatorComponent.Controller.SetEntryAnimator(animator);
-                    }
-                }
-            }
-
             if (meshFilter.PrimitiveType != MeshPrimitiveType::Invalid)
             {
+                meshFilter.Meshes = new MeshGroup();
+
                 switch (meshFilter.PrimitiveType)
                 {
                     case MeshPrimitiveType::Quad: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<QuadMesh>();
-                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        meshFilter.Meshes->Items.emplace_back(meshItem);
                         break;
                     }
 
                     case MeshPrimitiveType::Cube: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
-                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        meshFilter.Meshes->Items.emplace_back(meshItem);
                         break;
                     }
 
                     case MeshPrimitiveType::Sphere: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<SphereMesh>();
-                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        meshFilter.Meshes->Items.emplace_back(meshItem);
                         break;
                     }
                     case MeshPrimitiveType::Capsule: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<CapsuleMesh>();
-                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        meshFilter.Meshes->Items.emplace_back(meshItem);
                         break;
                     }
                     break;
                     case MeshPrimitiveType::Heightfield: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
                             Utils::GenerateBlankHeightMap(50, 50));
-                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        meshFilter.Meshes->Items.emplace_back(meshItem);
                         break;
                     }
                     case MeshPrimitiveType::Invalid:

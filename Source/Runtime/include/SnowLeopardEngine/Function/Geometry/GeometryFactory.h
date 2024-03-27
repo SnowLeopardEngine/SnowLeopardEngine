@@ -29,7 +29,7 @@ namespace SnowLeopardEngine
 
             const float side = w / 2.0f;
 
-            quadData.StaticVertices = {
+            quadData.Vertices = {
                 {{-side, 0, -side}, {0, 1, 0}, {0, 0}},
                 {{-side, 0, side}, {0, 1, 0}, {0, 1}},
                 {{side, 0, side}, {0, 1, 0}, {1, 1}},
@@ -57,7 +57,7 @@ namespace SnowLeopardEngine
             // Define vertices for a unit cube
             const float side = l / 2.0f;
 
-            cubeData.StaticVertices = {
+            cubeData.Vertices = {
                 {{-side, -side, -side}, {0, 0, -1}, {0, 0}}, {{-side, side, -side}, {0, 0, -1}, {0, 1}},
                 {{side, side, -side}, {0, 0, -1}, {1, 1}},   {{side, -side, -side}, {0, 0, -1}, {1, 0}},
 
@@ -118,7 +118,7 @@ namespace SnowLeopardEngine
                     glm::vec3 normal = glm::normalize(position);
                     glm::vec2 texCoord(static_cast<float>(lon) / segments, static_cast<float>(lat) / segments);
 
-                    sphereData.StaticVertices.push_back({position, normal, texCoord});
+                    sphereData.Vertices.push_back({position, normal, texCoord});
                 }
             }
 
@@ -157,9 +157,9 @@ namespace SnowLeopardEngine
             MeshItem capsuleMesh;
             capsuleMesh.Name = "Capsule";
 
-            MeshData                           capsuleData;
-            std::vector<StaticMeshVertexData>& vertices = capsuleData.StaticVertices;
-            std::vector<uint32_t>&             indices  = capsuleData.Indices;
+            MeshData                     capsuleData;
+            std::vector<MeshVertexData>& vertices = capsuleData.Vertices;
+            std::vector<uint32_t>&       indices  = capsuleData.Indices;
 
             // Calculate the actual height excluding the caps
             float cylinderHeight = height - 2 * radius;
@@ -345,7 +345,7 @@ namespace SnowLeopardEngine
                     glm::vec2 texCoord(static_cast<float>(column) / heightMap.Width,
                                        static_cast<float>(row) / heightMap.Height);
 
-                    heightfieldData.StaticVertices.push_back({position, normal, texCoord});
+                    heightfieldData.Vertices.push_back({position, normal, texCoord});
                 }
             }
 

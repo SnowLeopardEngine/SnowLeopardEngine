@@ -530,27 +530,16 @@ namespace SnowLeopardEngine
                 }
 
                 size_t totalVertexCount = 0;
-                for (const auto& meshItem : meshFilter.Meshes.Items)
+                for (const auto& meshItem : meshFilter.Meshes->Items)
                 {
-                    if (meshItem.Data.HasAnimationInfo())
-                    {
-                        totalVertexCount += meshItem.Data.AnimatedVertices.size();
-                    }
-                    else
-                    {
-                        totalVertexCount += meshItem.Data.StaticVertices.size();
-                    }
+                    totalVertexCount += meshItem.Data.Vertices.size();
                 }
 
                 PxVec3* vertices     = new PxVec3[totalVertexCount];
                 size_t  vertexOffset = 0;
-                for (const auto& meshItem : meshFilter.Meshes.Items)
+                for (const auto& meshItem : meshFilter.Meshes->Items)
                 {
-                    for (const auto& vertex : meshItem.Data.StaticVertices)
-                    {
-                        vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
-                    }
-                    for (const auto& vertex : meshItem.Data.AnimatedVertices)
+                    for (const auto& vertex : meshItem.Data.Vertices)
                     {
                         vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
                     }

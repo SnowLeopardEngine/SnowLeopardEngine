@@ -313,36 +313,11 @@ namespace SnowLeopardEngine
 
     Ref<VertexArray> OpenGLAPI::CreateVertexArray(const MeshItem& meshItem)
     {
-        if (meshItem.Data.HasAnimationInfo())
-        {
-            return CreateAnimatedMeshVertexArray(meshItem);
-        }
-        else
-        {
-            return CreateStaticMeshVertexArray(meshItem);
-        }
-    }
-
-    Ref<VertexArray> OpenGLAPI::CreateStaticMeshVertexArray(const MeshItem& meshItem)
-    {
         // Create a default layout for static meshes and set it
         BufferLayout layout = {{ShaderDataType::Float3, "a_Position"},
                                {ShaderDataType::Float3, "a_Normal"},
                                {ShaderDataType::Float2, "a_TexCoords"},
                                {ShaderDataType::Int, "a_EntityID"}};
-
-        return CreateVertexArray(meshItem, layout);
-    }
-
-    Ref<VertexArray> OpenGLAPI::CreateAnimatedMeshVertexArray(const MeshItem& meshItem)
-    {
-        // Create a default layout for static meshes and set it
-        BufferLayout layout = {{ShaderDataType::Float3, "a_Position"},
-                               {ShaderDataType::Float3, "a_Normal"},
-                               {ShaderDataType::Float2, "a_TexCoords"},
-                               {ShaderDataType::Int, "a_EntityID"},
-                               {ShaderDataType::Int4, "a_BoneIDs"},
-                               {ShaderDataType::Float4, "a_Weights"}};
 
         return CreateVertexArray(meshItem, layout);
     }
@@ -354,15 +329,7 @@ namespace SnowLeopardEngine
         auto vertexArray = VertexArray::Create();
 
         // Create vertices and the vertex buffer
-        Ref<VertexBuffer> vertexBuffer;
-        if (meshItem.Data.HasAnimationInfo())
-        {
-            vertexBuffer = VertexBuffer::Create(meshItem.Data.AnimatedVertices);
-        }
-        else
-        {
-            vertexBuffer = VertexBuffer::Create(meshItem.Data.StaticVertices);
-        }
+        auto vertexBuffer = VertexBuffer::Create(meshItem.Data.Vertices);
 
         vertexBuffer->SetLayout(inputLayout);
 

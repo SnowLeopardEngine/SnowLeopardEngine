@@ -1,12 +1,16 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
 using namespace SnowLeopardEngine;
+
+Model* g_Model;
 
 class EscScript : public NativeScriptInstance
 {
@@ -55,16 +59,27 @@ public:
         auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
         floorMeshRenderer.MaterialFilePath = "Assets/Materials/Red.dzmaterial";
 
+        OzzModelLoadConfig config = {};
+        config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
+        config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
+        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/animation_Dancing.ozz");
+        bool ok = OzzModelLoader::Load(config, g_Model);
+
         // Create a character
-        Entity character                       = scene->CreateEntity("Character");
-        auto&  characterTransform              = character.GetComponent<TransformComponent>();
-        characterTransform.Position.y          = 0.6;
-        characterTransform.Scale               = {10, 10, 10};
-        auto& characterMeshFilter              = character.AddComponent<MeshFilterComponent>();
-        characterMeshFilter.FilePath           = "Assets/Models/Walking.fbx";
+        Entity character              = scene->CreateEntity("Character");
+        auto&  characterTransform     = character.GetComponent<TransformComponent>();
+        characterTransform.Position.y = 0.6;
+        characterTransform.Scale      = {10, 10, 10};
+        auto& characterMeshFilter     = character.AddComponent<MeshFilterComponent>();
+        // characterMeshFilter.FilePath           = "Assets/Models/Walking.fbx";
+        characterMeshFilter.Meshes             = &g_Model->Meshes;
         auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
-        character.AddComponent<AnimatorComponent>();
+        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
+        auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
+
+        auto animator = CreateRef<Animator>(g_Model->AnimationClips[0]);
+        animatorComponent.Controller.RegisterAnimator(animator);
+        animatorComponent.Controller.SetEntryAnimator(animator);
     }
 
 private:
@@ -74,6 +89,8 @@ private:
 int main(int argc, char** argv)
 {
     REGISTER_TYPE(EscScript);
+
+    g_Model = new Model();
 
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - AnimationSystem";
@@ -95,6 +112,8 @@ int main(int argc, char** argv)
     }
 
     app.Run();
+
+    delete g_Model;
 
     return 0;
 }
