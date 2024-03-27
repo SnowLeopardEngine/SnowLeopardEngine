@@ -66,6 +66,7 @@ namespace SnowLeopardEngine
     {
         for (const auto& animator : m_Animators)
         {
+            animator->Reset();
             animator->Update(0);
         }
     }

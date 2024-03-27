@@ -12,6 +12,7 @@ namespace SnowLeopardEngine
 
     private:
         void Update(float dt);
+        void Reset() { m_CurrentTime = 0; }
         void Play(const Ref<AnimationClip>& clip);
 
         friend class AnimatorController;

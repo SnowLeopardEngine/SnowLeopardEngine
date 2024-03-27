@@ -50,8 +50,7 @@ namespace SnowLeopardEngine
             }
 
             // CPU-Skinning by using ozz::geometry::SkinningJob
-            meshItem->Data.Vertices.clear();
-
+            uint32_t vertexIndex = 0;
             for (const auto& part : ozzMesh.parts)
             {
                 ozz::geometry::SkinningJob skinningJob;
@@ -106,7 +105,7 @@ namespace SnowLeopardEngine
 
                 for (uint32_t i = 0; i < part.vertex_count(); ++i)
                 {
-                    MeshVertexData vertex = {};
+                    auto& vertex = meshItem->Data.Vertices[vertexIndex + i];
 
                     auto px         = outPositions[i * part.kPositionsCpnts];
                     auto py         = outPositions[i * part.kPositionsCpnts + 1];
@@ -117,13 +116,9 @@ namespace SnowLeopardEngine
                     auto ny       = outNormals[i * part.kNormalsCpnts + 1];
                     auto nz       = outNormals[i * part.kNormalsCpnts + 2];
                     vertex.Normal = {nx, ny, nz};
-
-                    auto u          = part.uvs[i * part.kUVsCpnts];
-                    auto v          = part.uvs[i * part.kUVsCpnts + 1];
-                    vertex.TexCoord = {u, 1 - v};
-
-                    meshItem->Data.Vertices.emplace_back(vertex);
                 }
+
+                vertexIndex += part.vertex_count();
             }
         }
     }
