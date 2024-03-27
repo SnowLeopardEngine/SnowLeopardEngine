@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.0'
+          dotnet-version: '8.x'
 
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
