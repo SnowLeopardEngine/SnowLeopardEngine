@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderManager.h"
+#include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
@@ -88,8 +89,46 @@ namespace SnowLeopardEngine
 
                     s_RenderResources[resource.Name] = resource;
                 }
+                else if (resource.Type == "GBuffer_PBR")
+                {
+                    auto viewport = g_EngineContext->RenderSys->GetAPI()->GetViewport();
 
-                // TODO: Handler more types of resources
+                    // GBuffer (MR PBR)
+                    FrameBufferDesc frameBufferDesc = {};
+                    frameBufferDesc.Width           = viewport.Width;
+                    frameBufferDesc.Height          = viewport.Height;
+
+                    // Color attachment 0 : Position (RGB)
+                    FrameBufferTextureDesc c0 = {};
+                    c0.TextureFormat          = FrameBufferTextureFormat::RGBA32F;
+                    frameBufferDesc.AttachmentDesc.Attachments.emplace_back(c0);
+
+                    // Color attachment 1 : Normal (RGB)
+                    FrameBufferTextureDesc c1 = {};
+                    c1.TextureFormat          = FrameBufferTextureFormat::RGBA32F;
+                    frameBufferDesc.AttachmentDesc.Attachments.emplace_back(c1);
+
+                    // Color attachment 2 : Albedo (RGB) + Metallic (A)
+                    FrameBufferTextureDesc c2 = {};
+                    c2.TextureFormat          = FrameBufferTextureFormat::RGBA32F;
+                    frameBufferDesc.AttachmentDesc.Attachments.emplace_back(c2);
+
+                    // Color attachment 3 : Roughness (R) + AO (G) + EntityID(B)
+                    FrameBufferTextureDesc c3 = {};
+                    c3.TextureFormat          = FrameBufferTextureFormat::RGBA32F;
+                    frameBufferDesc.AttachmentDesc.Attachments.emplace_back(c3);
+
+                    // Depth Attachment
+                    FrameBufferTextureDesc depth;
+                    depth.TextureFormat = FrameBufferTextureFormat::DEPTH24_STENCIL8;
+                    frameBufferDesc.AttachmentDesc.Attachments.emplace_back(depth);
+
+                    resource.ResourceHandle = FrameBuffer::Create(frameBufferDesc);
+
+                    s_RenderResources[resource.Name] = resource;
+                }
+
+                // TODO: Handle more types of resources
             }
 
             dzShader.Compiled = true;
@@ -120,6 +159,14 @@ namespace SnowLeopardEngine
 
                 g_EngineContext->RenderSys->GetAPI()->ClearColor({0, 0, 0, 0}, ClearBit::Depth);
             }
+            // Handle GBuffer (MR PBR)
+            else if (resource.Type == "GBuffer_PBR")
+            {
+                auto gbuffer = std::dynamic_pointer_cast<FrameBuffer>(resource.ResourceHandle);
+                gbuffer->Bind();
+
+                g_EngineContext->RenderSys->GetAPI()->ClearColor({0, 0, 0, 0}, ClearBit::Default);
+            }
         }
     }
 
@@ -142,6 +189,24 @@ namespace SnowLeopardEngine
             {
                 auto depthBuffer = std::dynamic_pointer_cast<FrameBuffer>(resource.ResourceHandle);
                 depthBuffer->Unbind();
+            }
+            // Handle GBuffer (MR PBR)
+            else if (resource.Type == "GBuffer_PBR")
+            {
+                auto gbuffer = std::dynamic_pointer_cast<FrameBuffer>(resource.ResourceHandle);
+                gbuffer->Unbind();
+            }
+        }
+    }
+
+    void DzShaderManager::BlitResources()
+    {
+        for (const auto& [resourceName, resource] : s_RenderResources)
+        {
+            if (resource.Type == "GBuffer_PBR")
+            {
+                auto gbuffer = std::dynamic_pointer_cast<FrameBuffer>(resource.ResourceHandle);
+                gbuffer->Blit();
             }
         }
     }
@@ -167,6 +232,21 @@ namespace SnowLeopardEngine
                 shader->SetInt(resourceName, resourceBinding);
                 depthBuffer->BindDepthAttachmentTexture(resourceBinding);
                 resourceBinding++;
+            }
+            // Handle GBuffer (MR PBR)
+            else if (resource.Type == "GBuffer_PBR")
+            {
+                auto gbuffer = std::dynamic_pointer_cast<FrameBuffer>(resource.ResourceHandle);
+
+                auto resourceNames = split(resource.Data, ';');
+
+                uint32_t index = 0;
+                for (const auto& gBufferTextureName : resourceNames)
+                {
+                    shader->SetInt(gBufferTextureName, resourceBinding);
+                    gbuffer->BindColorAttachmentTexture(index++, resourceBinding);
+                    resourceBinding++;
+                }
             }
         }
     }

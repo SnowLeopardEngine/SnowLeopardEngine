@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Engine/Debug.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
@@ -48,7 +49,7 @@ private:
     EngineContext* m_EngineContext;
 };
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) TRY
 {
     REGISTER_TYPE(MyScriptInstance);
 
@@ -75,3 +76,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+CATCH

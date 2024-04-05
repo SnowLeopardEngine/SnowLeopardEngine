@@ -21,6 +21,8 @@ namespace SnowLeopardEngine
         static void BindPassResources(const DzPass& dzPass);
         static void UnbindPassResources(const DzPass& dzPass);
 
+        static void BlitResources();
+
         static void UsePassResources(const DzPass& dzPass, const Ref<Shader>& shader, int& resourceBinding);
 
         static Ref<Shader> GetCompiledPassShader(const std::string& dzPassName);

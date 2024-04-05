@@ -12,6 +12,7 @@ namespace SnowLeopardEngine
 
         // Color
         RGBA8,
+        RGBA32F,
         RED_INTEGER,
 
         // Depth/stencil
@@ -56,6 +57,7 @@ namespace SnowLeopardEngine
 
         virtual void Bind()   = 0;
         virtual void Unbind() = 0;
+        virtual void Blit()   = 0;
 
         virtual void       Resize(uint32_t width, uint32_t height)                  = 0;
         virtual glm::vec4  ReadPixel(uint32_t attachmentIndex, int x, int y)        = 0;

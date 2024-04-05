@@ -14,17 +14,38 @@
 #include "entt/entity/entity.hpp"
 #include <magic_enum.hpp>
 
-const uint32_t kMaxInstanceBatchGroup = 100;
+const uint32_t MaxInstanceBatchGroup    = 100;
+const uint32_t MaxNonInstanceBatchGroup = 100;
 
 namespace SnowLeopardEngine
 {
+    DataDrivenPipeline::DataDrivenPipeline()
+    {
+        m_DeferredQuadMesh.Name = "DeferredQuad";
+
+        MeshData quadData;
+
+        const float side = 1.0f;
+
+        quadData.Vertices = {
+            {{-side, -side, 0}, {0, 0, 1}, {0, 0}},
+            {{-side, side, 0}, {0, 0, 1}, {0, 1}},
+            {{side, side, 0}, {0, 0, 1}, {1, 1}},
+            {{side, -side, 0}, {0, 0, 1}, {1, 0}},
+        };
+
+        quadData.Indices = {0, 2, 1, 0, 3, 2};
+
+        m_DeferredQuadMesh.Data = quadData;
+    }
+
     void DataDrivenPipeline::SetupPipeline(LogicScene* scene)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
 
         m_Scene = scene;
         GroupAndCompileShaders();
-        HandleInstancingBatches();
+        HandleBatches();
     }
 
     void DataDrivenPipeline::RenderScene()
@@ -100,16 +121,18 @@ namespace SnowLeopardEngine
         {
             SNOW_LEOPARD_PROFILE_NAMED_SCOPE("Render Instanced Geometry")
 
-            RenderInstancedGeometry(group);
+            RenderInstancedGeometryGroup(group);
         }
 
-        // Render geometry
-        for (auto& geometry : m_GeometryGroup)
+        // Render non-instanced geometry
+        for (auto& group : m_NonInstancingBatchGroups)
         {
-            SNOW_LEOPARD_PROFILE_NAMED_SCOPE("Render Geometry")
+            SNOW_LEOPARD_PROFILE_NAMED_SCOPE("Render Non-Instanced Geometry")
 
-            RenderGeometry(geometry);
+            RenderNonInstancedGeometryGroup(group);
         }
+
+        DzShaderManager::BlitResources();
 
         // Render skyboxes
         for (auto& sky : m_SkyGroup)
@@ -216,7 +239,7 @@ namespace SnowLeopardEngine
         DzShaderManager::Compile();
     }
 
-    void DataDrivenPipeline::HandleInstancingBatches()
+    void DataDrivenPipeline::HandleBatches()
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
 
@@ -227,7 +250,12 @@ namespace SnowLeopardEngine
         // Arrange inner groups in geometry group (instancing + non-instancing)
         std::unordered_map<std::string, uint32_t> instancingShaderName2BatchIDMap;
         uint32_t                                  instancingBatchID = 0;
-        m_InstancingBatchGroups.resize(kMaxInstanceBatchGroup);
+        m_InstancingBatchGroups.resize(MaxInstanceBatchGroup);
+
+        std::unordered_map<std::string, uint32_t> nonInstancingShaderName2BatchIDMap;
+        uint32_t                                  nonInstancingBatchID = 0;
+        m_NonInstancingBatchGroups.resize(MaxNonInstanceBatchGroup);
+
         for (auto& geometry : m_GeometryGroup)
         {
             auto&                  transform = registry.get<TransformComponent>(geometry);
@@ -244,14 +272,21 @@ namespace SnowLeopardEngine
                 }
             }
 
-            // Empty mesh and Submeshes are invalid here.
-            if (meshItemPtrs.size() > 1 || meshItemPtrs.empty())
+            // Empty mesh is invalid here.
+            if (meshItemPtrs.empty())
             {
                 continue;
             }
 
+            // Instancing groups
             if (renderer.EnableInstancing)
             {
+                // Submeshes are invalid here
+                if (meshItemPtrs.size() > 1)
+                {
+                    continue;
+                }
+
                 auto dzShaderName = renderer.Material->GetShaderName();
                 if (instancingShaderName2BatchIDMap.count(dzShaderName) == 0)
                 {
@@ -270,6 +305,23 @@ namespace SnowLeopardEngine
                     {
                         m_InstancingBatchGroups[currentBatchID].Entities.emplace_back(geometry);
                     }
+                }
+            }
+            // Non-instancing groups
+            else
+            {
+                auto dzShaderName = renderer.Material->GetShaderName();
+                if (nonInstancingShaderName2BatchIDMap.count(dzShaderName) == 0)
+                {
+                    m_NonInstancingBatchGroups[nonInstancingBatchID].Entities.emplace_back(geometry);
+                    m_NonInstancingBatchGroups[nonInstancingBatchID].ShaderName = dzShaderName;
+                    nonInstancingShaderName2BatchIDMap[dzShaderName]            = nonInstancingBatchID;
+                    nonInstancingBatchID++;
+                }
+                else
+                {
+                    uint32_t currentBatchID = nonInstancingShaderName2BatchIDMap[dzShaderName];
+                    m_NonInstancingBatchGroups[currentBatchID].Entities.emplace_back(geometry);
                 }
             }
         }
@@ -400,7 +452,7 @@ namespace SnowLeopardEngine
         mainCamera.ViewportHeight = g_EngineContext->WindowSys->GetHeight();
     }
 
-    void DataDrivenPipeline::RenderInstancedGeometry(const InstancingBatchGroup& group)
+    void DataDrivenPipeline::RenderInstancedGeometryGroup(const InstancingBatchGroup& group)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
 
@@ -456,13 +508,14 @@ namespace SnowLeopardEngine
 
             auto& meshItemPtr     = meshItemPtrs[0];
             int   resourceBinding = 0;
-            RenderMeshItemInstanced(
+            RenderMeshGroupInstanced(
                 group.Entities, registry, *meshItemPtr, dzShader, dzPass, *renderer.Material, resourceBinding);
+
             DzShaderManager::UnbindPassResources(dzPass);
         }
     }
 
-    void DataDrivenPipeline::RenderGeometry(entt::entity geometry)
+    void DataDrivenPipeline::RenderNonInstancedGeometryGroup(const NonInstancingBatchGroup& group)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
 
@@ -470,32 +523,12 @@ namespace SnowLeopardEngine
 
         auto& registry = m_Scene->GetRegistry();
 
-        std::vector<MeshItem*> meshItemPtrs;
-        BaseRendererComponent  renderer;
-
-        if (registry.any_of<MeshFilterComponent, MeshRendererComponent>(geometry))
+        if (group.Entities.empty())
         {
-            auto& meshFilter   = registry.get<MeshFilterComponent>(geometry);
-            auto& meshRenderer = registry.get<MeshRendererComponent>(geometry);
-            if (meshRenderer.EnableInstancing)
-            {
-                return;
-            }
-            renderer = meshRenderer;
-            for (auto& meshItem : meshFilter.Meshes->Items)
-            {
-                meshItemPtrs.emplace_back(&meshItem);
-            }
+            return;
         }
 
-        if (registry.any_of<TerrainComponent, TerrainRendererComponent>(geometry))
-        {
-            auto& terrain = registry.get<TerrainComponent>(geometry);
-            renderer      = registry.get<TerrainRendererComponent>(geometry);
-            meshItemPtrs.emplace_back(&terrain.Mesh);
-        }
-
-        auto  dzShaderName = renderer.Material->GetShaderName();
+        auto  dzShaderName = group.ShaderName;
         auto& dzShader     = DzShaderManager::GetShader(dzShaderName);
 
         PipelineState pipelineState;
@@ -515,11 +548,7 @@ namespace SnowLeopardEngine
             g_EngineContext->RenderSys->GetAPI()->SetPipelineState(pipelineState);
             DzShaderManager::BindPassResources(dzPass);
 
-            for (auto& meshItemPtr : meshItemPtrs)
-            {
-                int resourceBinding = 0;
-                RenderMeshItem(geometry, registry, *meshItemPtr, dzPass, *renderer.Material, resourceBinding);
-            }
+            RenderMeshGroupNonInstanced(group.Entities, registry, dzPass);
 
             DzShaderManager::UnbindPassResources(dzPass);
         }
@@ -618,13 +647,13 @@ namespace SnowLeopardEngine
         shader->Unbind();
     }
 
-    void DataDrivenPipeline::RenderMeshItemInstanced(const std::vector<entt::entity>& groupEntities,
-                                                     entt::registry&                  registry,
-                                                     MeshItem&                        meshItem,
-                                                     const DzShader&                  dzShader,
-                                                     const DzPass&                    dzPass,
-                                                     DzMaterial&                      material,
-                                                     int&                             resourceBinding) const
+    void DataDrivenPipeline::RenderMeshGroupInstanced(const std::vector<entt::entity>& groupEntities,
+                                                      entt::registry&                  registry,
+                                                      MeshItem&                        meshItem,
+                                                      const DzShader&                  dzShader,
+                                                      const DzPass&                    dzPass,
+                                                      DzMaterial&                      material,
+                                                      int&                             resourceBinding) const
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
 
@@ -654,9 +683,9 @@ namespace SnowLeopardEngine
             }
 
             SetMaterialProperties(property.Name, property.Name, property.Type, material, shader, resourceBinding);
-
-            DzShaderManager::UsePassResources(dzPass, shader, resourceBinding);
         }
+
+        DzShaderManager::UsePassResources(dzPass, shader, resourceBinding);
 
         // Set instanced material properties
         for (size_t instanceID = 0; instanceID < groupEntities.size(); ++instanceID)
@@ -687,8 +716,9 @@ namespace SnowLeopardEngine
                                       *instanceRenderer.Material,
                                       shader,
                                       resourceBinding);
-                DzShaderManager::UsePassResources(dzPass, shader, resourceBinding);
             }
+
+            DzShaderManager::UsePassResources(dzPass, shader, resourceBinding);
         }
 
         // Bind vertex array
@@ -708,6 +738,53 @@ namespace SnowLeopardEngine
         // Unbind resources
         meshItem.Data.VertexArray->Unbind();
         shader->Unbind();
+    }
+
+    void DataDrivenPipeline::RenderMeshGroupNonInstanced(const std::vector<entt::entity>& groupEntities,
+                                                         entt::registry&                  registry,
+                                                         const DzPass&                    dzPass)
+    {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+
+        auto shader = DzShaderManager::GetCompiledPassShader(dzPass.Name);
+
+        for (const auto& geometry : groupEntities)
+        {
+            std::vector<MeshItem*> meshItemPtrs;
+            BaseRendererComponent  renderer;
+
+            if (registry.any_of<MeshFilterComponent, MeshRendererComponent>(geometry))
+            {
+                auto& meshFilter = registry.get<MeshFilterComponent>(geometry);
+                renderer         = registry.get<MeshRendererComponent>(geometry);
+                for (auto& meshItem : meshFilter.Meshes->Items)
+                {
+                    meshItemPtrs.emplace_back(&meshItem);
+                }
+            }
+
+            if (registry.any_of<TerrainComponent, TerrainRendererComponent>(geometry))
+            {
+                auto& terrain = registry.get<TerrainComponent>(geometry);
+                renderer      = registry.get<TerrainRendererComponent>(geometry);
+                meshItemPtrs.emplace_back(&terrain.Mesh);
+            }
+
+            int resourceBinding = 0;
+            if (dzPass.Name.find("Lighting") != dzPass.Name.npos)
+            {
+                RenderMeshItem(geometry, registry, m_DeferredQuadMesh, dzPass, *renderer.Material, resourceBinding);
+                break;
+            }
+            else
+            {
+                for (auto& meshItemPtr : meshItemPtrs)
+                {
+                    auto& meshItem = *meshItemPtr;
+                    RenderMeshItem(geometry, registry, meshItem, dzPass, *renderer.Material, resourceBinding);
+                }
+            }
+        }
     }
 
     void DataDrivenPipeline::ProcessPipelineState(const std::string& pipelineStateName,

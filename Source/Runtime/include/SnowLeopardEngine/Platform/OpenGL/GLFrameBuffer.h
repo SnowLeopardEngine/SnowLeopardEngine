@@ -13,6 +13,7 @@ namespace SnowLeopardEngine
 
         virtual void Bind() override;
         virtual void Unbind() override;
+        virtual void Blit() override;
 
         virtual void       Resize(uint32_t width, uint32_t height) override;
         virtual glm::vec4  ReadPixel(uint32_t attachmentIndex, int x, int y) override;

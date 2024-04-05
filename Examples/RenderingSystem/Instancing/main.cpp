@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Base/Random.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
@@ -35,12 +36,6 @@ public:
 class EscScript : public NativeScriptInstance
 {
 public:
-    virtual void OnColliderEnter() override
-    {
-        SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter");
-        DesktopApp::GetInstance()->GetEngine()->GetContext()->AudioSys->Play("sounds/jump.mp3");
-    }
-
     virtual void OnTick(float deltaTime) override
     {
         auto& inputSystem = DesktopApp::GetInstance()->GetEngine()->GetContext()->InputSys;
@@ -122,7 +117,7 @@ private:
     EngineContext* m_EngineContext;
 };
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) TRY
 {
     REGISTER_TYPE(QuadScript);
     REGISTER_TYPE(EscScript);
@@ -150,3 +145,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+CATCH

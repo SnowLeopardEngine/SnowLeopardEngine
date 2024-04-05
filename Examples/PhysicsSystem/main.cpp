@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
@@ -131,7 +132,7 @@ private:
     EngineContext* m_EngineContext;
 };
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) TRY
 {
     REGISTER_TYPE(SphereScript);
 
@@ -158,3 +159,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+CATCH

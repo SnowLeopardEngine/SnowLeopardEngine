@@ -1,8 +1,9 @@
+#include "SnowLeopardEngine/Engine/Debug.h"
 #include <SnowLeopardEngine/Engine/Engine.h>
 
 using namespace SnowLeopardEngine;
 
-int main()
+int main() TRY
 {
     EngineInitInfo initInfo {};
     initInfo.Window.Title = "Example - TickOneFrame";
@@ -19,3 +20,4 @@ int main()
 
     return 0;
 }
+CATCH

@@ -12,4 +12,10 @@ namespace SnowLeopardEngine
         std::string               ShaderName;
         std::string               MeshItemName;
     };
+
+    struct NonInstancingBatchGroup
+    {
+        std::vector<entt::entity> Entities;
+        std::string               ShaderName;
+    };
 } // namespace SnowLeopardEngine

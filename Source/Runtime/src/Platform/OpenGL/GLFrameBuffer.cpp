@@ -35,6 +35,7 @@ namespace SnowLeopardEngine
                                        int      samples,
                                        GLenum   internalFormat,
                                        GLenum   format,
+                                       GLenum   dataFormat,
                                        uint32_t width,
                                        uint32_t height,
                                        int      index,
@@ -72,7 +73,7 @@ namespace SnowLeopardEngine
                 }
                 else
                 {
-                    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, nullptr);
+                    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, dataFormat, nullptr);
 
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -251,6 +252,18 @@ namespace SnowLeopardEngine
                                                   m_Desc.Samples,
                                                   GL_RGBA8,
                                                   GL_RGBA,
+                                                  GL_UNSIGNED_BYTE,
+                                                  m_Desc.Width,
+                                                  m_Desc.Height,
+                                                  i,
+                                                  m_Name);
+                        break;
+                    case FrameBufferTextureFormat::RGBA32F:
+                        Utils::AttachColorTexture(m_ColorAttachments[i],
+                                                  m_Desc.Samples,
+                                                  GL_RGBA32F,
+                                                  GL_RGBA,
+                                                  GL_FLOAT,
                                                   m_Desc.Width,
                                                   m_Desc.Height,
                                                   i,
@@ -261,6 +274,7 @@ namespace SnowLeopardEngine
                                                   m_Desc.Samples,
                                                   GL_R32I,
                                                   GL_RED_INTEGER,
+                                                  GL_INT,
                                                   m_Desc.Width,
                                                   m_Desc.Height,
                                                   i,
@@ -299,6 +313,7 @@ namespace SnowLeopardEngine
                     break;
                 case FrameBufferTextureFormat::Invalid:
                 case FrameBufferTextureFormat::RGBA8:
+                case FrameBufferTextureFormat::RGBA32F:
                 case FrameBufferTextureFormat::RED_INTEGER:
                     break;
             }
@@ -345,6 +360,16 @@ namespace SnowLeopardEngine
     void GLFrameBuffer::Unbind()
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void GLFrameBuffer::Blit()
+    {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, m_Name);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(
+            0, 0, m_Desc.Width, m_Desc.Height, 0, 0, m_Desc.Width, m_Desc.Height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
