@@ -15,7 +15,10 @@
 #include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "cereal/cereal.hpp"
+#include "glm/fwd.hpp"
 #include <PxPhysicsAPI.h>
+#include <optional>
+#include <string>
 
 // CppAst.NET Macro
 #if !defined(__cppast)
@@ -800,13 +803,15 @@ namespace SnowLeopardEngine
 
         struct ImageComponent
         {
-            // TODO
-
+            
+            std::string ImagePath;
+            glm::vec4 Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+            std::optional<glm::vec2> ImageSize;
             // NOLINTBEGIN
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive();
+                archive(CEREAL_NVP(ImagePath), CEREAL_NVP(Color), CEREAL_NVP(ImageSize));
             }
             // NOLINTEND
 
@@ -816,13 +821,17 @@ namespace SnowLeopardEngine
 
         struct TextComponent
         {
-            // TODO
+            std::string TextContent;
+            std::string FontFilePath;
+            unsigned int FontSize = 24;
+            glm::vec4 Color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            enum Alignment {Left, Center, Right} TextAlignment = Center;
 
             // NOLINTBEGIN
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive();
+                archive(CEREAL_NVP(TextContent), CEREAL_NVP(FontFilePath), CEREAL_NVP(FontSize), CEREAL_NVP(Color), CEREAL_NVP(TextAlignment));
             }
             // NOLINTEND
 
