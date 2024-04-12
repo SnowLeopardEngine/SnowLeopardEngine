@@ -3,6 +3,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 #include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
+#include "SnowLeopardEngine/Function/GUI/GUITypeDef.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
@@ -737,6 +738,100 @@ namespace SnowLeopardEngine
     };
     // -------- Animation Components DEFINITION END --------
 
+    // -------- In-Game GUI Components DEFINITION START --------
+    namespace UI
+    {
+        struct CanvasComponent
+        {
+            COMPONENT_NAME(CanvasComponent)
+
+            CoreUUID CanvasCameraUUID;
+
+            // NOLINTBEGIN
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive(CEREAL_NVP(CanvasCameraUUID));
+            }
+            // NOLINTEND
+
+            CanvasComponent()                       = default;
+            CanvasComponent(const CanvasComponent&) = default;
+        };
+
+        struct RectTransformComponent
+        {
+            COMPONENT_NAME(RectTransformComponent)
+
+            glm::vec3 Pos;
+            glm::vec2 Size;
+            glm::vec2 Pivot = {0.5, 0.5};
+
+            // NOLINTBEGIN
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive(CEREAL_NVP(Pos), CEREAL_NVP(Size), CEREAL_NVP(Pivot));
+            }
+            // NOLINTEND
+
+            RectTransformComponent()                              = default;
+            RectTransformComponent(const RectTransformComponent&) = default;
+        };
+
+        struct ButtonComponent
+        {
+            UI::ButtonTintType TintType = UI::ButtonTintType::Color;
+
+            UI::ColorTint   TintColor;
+            UI::TextureTint TintTexture;
+
+            // NOLINTBEGIN
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive(CEREAL_NVP(TintType), CEREAL_NVP(TintColor));
+            }
+            // NOLINTEND
+
+            ButtonComponent()                       = default;
+            ButtonComponent(const ButtonComponent&) = default;
+        };
+
+        struct ImageComponent
+        {
+            // TODO
+
+            // NOLINTBEGIN
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive();
+            }
+            // NOLINTEND
+
+            ImageComponent()                      = default;
+            ImageComponent(const ImageComponent&) = default;
+        };
+
+        struct TextComponent
+        {
+            // TODO
+
+            // NOLINTBEGIN
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive();
+            }
+            // NOLINTEND
+
+            TextComponent()                     = default;
+            TextComponent(const TextComponent&) = default;
+        };
+    }; // namespace UI
+    // -------- In-Game GUI Components DEFINITION END --------
+
     template<typename... Component>
     struct ComponentGroup
     {};
@@ -746,7 +841,8 @@ namespace SnowLeopardEngine
         NativeScriptingComponent, RigidBodyComponent, SphereColliderComponent, BoxColliderComponent, \
         CapsuleColliderComponent, TerrainColliderComponent, CharacterControllerComponent, MeshColliderComponent, \
         CameraComponent, FreeMoveCameraControllerComponent, DirectionalLightComponent, BaseRendererComponent, \
-        MeshFilterComponent, MeshRendererComponent, TerrainComponent, TerrainRendererComponent
+        MeshFilterComponent, MeshRendererComponent, TerrainComponent, TerrainRendererComponent, UI::CanvasComponent, \
+        UI::RectTransformComponent, UI::ButtonComponent //, UI::ImageComponent, UI::TextComponent
 
 #define ALL_SERIALIZABLE_COMPONENT_TYPES COMMON_COMPONENT_TYPES, IDComponent, NameComponent
 
