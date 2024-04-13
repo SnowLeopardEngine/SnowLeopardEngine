@@ -2,6 +2,8 @@
 
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
+#include "cereal/cereal.hpp"
+#include <string>
 
 namespace SnowLeopardEngine::UI
 {
@@ -32,6 +34,19 @@ namespace SnowLeopardEngine::UI
 
     struct TextureTint
     {
-        // TODO
+        CoreUUID TargetGraphicUUID;
+
+        std::string NormalTexture;
+        std::string PressedTexture;
+        std::string Current ;
+
+        TextureTint() : Current(NormalTexture) {}
+        
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(NormalTexture), CEREAL_NVP(PressedTexture), CEREAL_NVP(Current));
+        }
+
     };
 } // namespace SnowLeopardEngine::UI

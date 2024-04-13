@@ -805,15 +805,20 @@ namespace SnowLeopardEngine
 
         struct ImageComponent
         {
-
-            std::string              ImagePath;
+            UI::ButtonTintType TintType = UI::ButtonTintType::Texture;
+            bool IsPress = true;
+            UI::ColorTint   TintColor;
+            UI::TextureTint TintTexture;
+            std::string Current;
             glm::vec4                Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             std::optional<glm::vec2> ImageSize;
+
+            MeshItem ImageMesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
             // NOLINTBEGIN
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive(CEREAL_NVP(ImagePath), CEREAL_NVP(Color), CEREAL_NVP(ImageSize));
+                archive( CEREAL_NVP(Current), CEREAL_NVP(Color), CEREAL_NVP(ImageSize));
             }
             // NOLINTEND
 
