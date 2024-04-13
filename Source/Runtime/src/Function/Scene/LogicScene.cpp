@@ -254,7 +254,7 @@ namespace SnowLeopardEngine
 
         // Init Animators
         m_Registry.view<AnimatorComponent>().each(
-            [](entt::entity entity, AnimatorComponent& animator) { animator.Controller.Init(); });
+            [](entt::entity entity, AnimatorComponent& animator) { animator.Animator->GetController()->Init(); });
 
         // Scripting Callback
         m_Registry.view<NativeScriptingComponent>().each([this](entt::entity              entity,
@@ -377,7 +377,7 @@ namespace SnowLeopardEngine
 
         // Animators
         m_Registry.view<AnimatorComponent>().each(
-            [deltaTime](entt::entity entity, AnimatorComponent& animator) { animator.Animator.Update(deltaTime); });
+            [deltaTime](entt::entity entity, AnimatorComponent& animator) { animator.Animator->Update(deltaTime); });
     }
 
     void LogicScene::OnFixedTick()

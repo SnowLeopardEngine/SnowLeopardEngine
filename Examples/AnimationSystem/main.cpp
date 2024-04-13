@@ -78,11 +78,12 @@ public:
         auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
         characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
-
-        auto animationClip = g_Model->AnimationClips[0];
-        animatorComponent.Animator.AddController(std::make_shared<AnimatorController>(animatorComponent.Controller));
-        animatorComponent.Controller.RegisterAnimationClip(animationClip);
-        animatorComponent.Controller.SetEntryAnimationClip(animationClip);
+        auto  animationClip                    = g_Model->AnimationClips[0];
+        animatorComponent.Animator             = CreateRef<Animator>();
+        auto controller                        = CreateRef<AnimatorController>();
+        controller->RegisterAnimationClip(animationClip);
+        controller->SetEntryAnimationClip(animationClip);
+        animatorComponent.Animator->SetController(controller);
     }
 
 private:

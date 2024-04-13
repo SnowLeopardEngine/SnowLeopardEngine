@@ -13,17 +13,21 @@ namespace SnowLeopardEngine
     public:
         explicit Animator(const Ref<AnimationClip>& clip);
         Animator();
-        void Update(float dt);
-        void SetTrigger(const std::string& triggerName);
-        void SetFloat(const std::string& floatName, float value);
-        void SetBoolean(const std::string& booleanName, bool value);
-        void AddController(const Ref<AnimatorController>& controller);
+        void                    Update(float dt);
+        void                    SetTrigger(const std::string& triggerName);
+        void                    SetFloat(const std::string& floatName, float value);
+        void                    SetBoolean(const std::string& booleanName, bool value);
+        void                    SetController(const Ref<AnimatorController>& controller);
+        Ref<AnimatorController> GetController() const { return m_Controller; }
 
     private:
         void Reset() { m_CurrentTime = 0; }
         void Play(const Ref<AnimationClip>& clip);
 
-        void Blending(const Ref<AnimationClip>& sourceAnimationClip, const Ref<AnimationClip>& targetAnimationClip, int duration, float dt);
+        void Blending(const Ref<AnimationClip>& sourceAnimationClip,
+                      const Ref<AnimationClip>& targetAnimationClip,
+                      int                       duration,
+                      float                     dt);
 
         friend class AnimatorController;
 
@@ -31,9 +35,9 @@ namespace SnowLeopardEngine
         void CheckParameters();
 
         Ref<AnimatorController> m_Controller;
-        Ref<AnimationClip> m_CurrentClip;
-        float              m_CurrentTime;
-        float              m_DeltaTime;
+        Ref<AnimationClip>      m_CurrentClip;
+        float                   m_CurrentTime;
+        float                   m_DeltaTime;
 
         bool               m_NeedBlending;
         Ref<AnimationClip> m_SourceAnimationClip;

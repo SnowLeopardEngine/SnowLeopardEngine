@@ -731,8 +731,7 @@ namespace SnowLeopardEngine
     {
         COMPONENT_NAME(Animator)
 
-        Animator Animator;
-        AnimatorController Controller;
+        Ref<Animator> Animator;
 
         AnimatorComponent()                         = default;
         AnimatorComponent(const AnimatorComponent&) = default;
