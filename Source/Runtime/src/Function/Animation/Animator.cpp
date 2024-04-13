@@ -142,6 +142,10 @@ namespace SnowLeopardEngine
                 vertexIndex += part.vertex_count();
             }
         }
+        else if(m_CurrentClip == nullptr)
+        {
+            m_CurrentClip = m_Controller->GetAnimationClip();
+        }
 
         if(m_CurrentTime == m_Duration)
         {
