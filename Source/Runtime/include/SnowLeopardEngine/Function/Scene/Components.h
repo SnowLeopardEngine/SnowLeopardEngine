@@ -789,6 +789,8 @@ namespace SnowLeopardEngine
             UI::ColorTint   TintColor;
             UI::TextureTint TintTexture;
 
+            MeshItem ImageMesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
+
             // NOLINTBEGIN
             template<class Archive>
             void serialize(Archive& archive)
@@ -803,9 +805,9 @@ namespace SnowLeopardEngine
 
         struct ImageComponent
         {
-            
-            std::string ImagePath;
-            glm::vec4 Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+            std::string              ImagePath;
+            glm::vec4                Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             std::optional<glm::vec2> ImageSize;
             // NOLINTBEGIN
             template<class Archive>
@@ -821,17 +823,26 @@ namespace SnowLeopardEngine
 
         struct TextComponent
         {
-            std::string TextContent;
-            std::string FontFilePath;
+            std::string  TextContent;
+            std::string  FontFilePath;
             unsigned int FontSize = 24;
-            glm::vec4 Color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-            enum Alignment {Left, Center, Right} TextAlignment = Center;
+            glm::vec4    Color    = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            enum Alignment
+            {
+                Left,
+                Center,
+                Right
+            } TextAlignment = Center;
 
             // NOLINTBEGIN
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive(CEREAL_NVP(TextContent), CEREAL_NVP(FontFilePath), CEREAL_NVP(FontSize), CEREAL_NVP(Color), CEREAL_NVP(TextAlignment));
+                archive(CEREAL_NVP(TextContent),
+                        CEREAL_NVP(FontFilePath),
+                        CEREAL_NVP(FontSize),
+                        CEREAL_NVP(Color),
+                        CEREAL_NVP(TextAlignment));
             }
             // NOLINTEND
 

@@ -47,17 +47,16 @@ namespace SnowLeopardEngine
         }
 
         registry.view<UI::RectTransformComponent, UI::ButtonComponent>().each(
-            [mousePos, leftMouseButtonDown](
+            [mousePos, leftMouseButtonDown, leftMouseButtonUp](
                 entt::entity entity, UI::RectTransformComponent& rect, UI::ButtonComponent& button) {
                 if (leftMouseButtonDown)
                 {
-                    glm::vec2 tl = rect.Pos - glm::dot(rect.Pivot, rect.Size);
+                    glm::vec2 tl =
+                        glm::vec2(rect.Pos) - glm::vec2(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y);
 
                     if (mousePos.x >= tl.x && mousePos.x < tl.x + rect.Size.x && mousePos.y >= tl.y &&
                         mousePos.y < tl.y + rect.Size.y)
                     {
-                        SNOW_LEOPARD_CORE_INFO("[GUISystem] Button down!");
-
                         if (button.TintType == UI::ButtonTintType::Color)
                         {
                             button.TintColor.Current = button.TintColor.Pressed;
@@ -65,9 +64,14 @@ namespace SnowLeopardEngine
                     }
                 }
 
-                // TODO: Render button
-
-                // TODO: Switch color to normal
+                if (leftMouseButtonUp)
+                {
+                    SNOW_LEOPARD_CORE_INFO("[GUISystem] Button clicked!");
+                    if (button.TintType == UI::ButtonTintType::Color)
+                    {
+                        button.TintColor.Current = button.TintColor.Normal;
+                    }
+                }
             });
     }
 } // namespace SnowLeopardEngine

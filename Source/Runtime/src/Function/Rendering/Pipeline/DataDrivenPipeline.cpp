@@ -3,11 +3,14 @@
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
+#include "SnowLeopardEngine/Function/IO/Resources.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderManager.h"
 #include "SnowLeopardEngine/Function/Rendering/DzShader/DzShaderTypeDef.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Shader.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 
@@ -119,6 +122,23 @@ namespace SnowLeopardEngine
             RenderSky(sky);
         }
 
+        // Switch to orthographic
+        auto tmp                        = mainCameraComponent;
+        mainCameraComponent.Projection  = CameraProjection::Orthographic;
+        m_SceneUniform.ProjectionMatrix = g_EngineContext->CameraSys->GetProjectionMatrix(mainCameraComponent);
+
+        // Render UI elements
+        for (auto& ui : m_UIGroup)
+        {
+            SNOW_LEOPARD_PROFILE_NAMED_SCOPE("Render UI")
+
+            RenderUI(ui);
+        }
+
+        // Switch back
+        mainCameraComponent             = tmp;
+        m_SceneUniform.ProjectionMatrix = g_EngineContext->CameraSys->GetProjectionMatrix(mainCameraComponent);
+
         // TODO: Render other elements
 
         if (m_RenderTarget != nullptr)
@@ -136,11 +156,19 @@ namespace SnowLeopardEngine
         m_ShadowGroup.clear();
         m_GeometryGroup.clear();
         m_SkyGroup.clear();
+        m_UIGroup.clear();
 
         auto& registry = m_Scene->GetRegistry();
 
+        DzShaderManager::AddShader("UI/Image", "Assets/Shaders/UI/Image.dzshader");
+
+        registry.view<UI::RectTransformComponent, UI::ButtonComponent>().each(
+            [this](entt::entity entity, UI::RectTransformComponent&, UI::ButtonComponent&) {
+                m_UIGroup.emplace_back(entity);
+            });
+
         registry.view<TransformComponent, CameraComponent>().each(
-            [this](entt::entity entity, TransformComponent& transform, CameraComponent& camera) {
+            [this](entt::entity entity, TransformComponent&, CameraComponent& camera) {
                 if (camera.ClearFlags != CameraClearFlags::Skybox || camera.SkyboxMaterial == nullptr)
                 {
                     return;
@@ -157,7 +185,7 @@ namespace SnowLeopardEngine
             });
 
         registry.view<TransformComponent, DirectionalLightComponent>().each(
-            [this](entt::entity entity, TransformComponent& transform, DirectionalLightComponent& directionalLight) {
+            [this](entt::entity entity, TransformComponent&, DirectionalLightComponent& directionalLight) {
                 if (directionalLight.ShadowMaterial == nullptr)
                 {
                     return;
@@ -174,9 +202,9 @@ namespace SnowLeopardEngine
             });
 
         registry.view<TransformComponent, TerrainComponent, TerrainRendererComponent>().each(
-            [this](entt::entity              entity,
-                   TransformComponent&       transform,
-                   TerrainComponent&         terrain,
+            [this](entt::entity entity,
+                   TransformComponent&,
+                   TerrainComponent&,
                    TerrainRendererComponent& terrainRenderer) {
                 if (terrainRenderer.Material == nullptr)
                 {
@@ -194,10 +222,8 @@ namespace SnowLeopardEngine
             });
 
         registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
-            [this](entt::entity           entity,
-                   TransformComponent&    transform,
-                   MeshFilterComponent&   meshFilter,
-                   MeshRendererComponent& meshRenderer) {
+            [this](
+                entt::entity entity, TransformComponent&, MeshFilterComponent&, MeshRendererComponent& meshRenderer) {
                 if (meshRenderer.Material == nullptr)
                 {
                     return;
@@ -565,6 +591,84 @@ namespace SnowLeopardEngine
             RenderMeshItem(sky, registry, camera.SkyboxCubeMesh, dzPass, *camera.SkyboxMaterial, resourceBinding);
             DzShaderManager::UnbindPassResources(dzPass);
         }
+    }
+
+    void DataDrivenPipeline::RenderUI(entt::entity ui)
+    {
+        SNOW_LEOPARD_PROFILE_FUNCTION
+
+        SNOW_LEOPARD_CORE_ASSERT(m_Scene != nullptr, "[DataDrivenPipeline] Assertion failed, m_Scene == nullptr");
+
+        auto& registry = m_Scene->GetRegistry();
+
+        // TODO: Find canvas & camera. Use main camera for now
+
+        auto shader = DzShaderManager::GetCompiledPassShader("UI_GeometryPass");
+
+        shader->Bind();
+        shader->SetMat4("projection", m_SceneUniform.ProjectionMatrix);
+
+        MeshItem* mesh = nullptr;
+
+        // Set uniforms for different type of elements
+        if (registry.any_of<UI::ButtonComponent>(ui))
+        {
+            mesh = &registry.get<UI::ButtonComponent>(ui).ImageMesh;
+
+            auto& rect   = registry.get<UI::RectTransformComponent>(ui);
+            auto& button = registry.get<UI::ButtonComponent>(ui);
+
+            // set model matrix
+            glm::mat4 model = glm::mat4(1.0f);
+            model           = glm::translate(model, rect.Pos);
+            model = glm::translate(model, glm::vec3(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y, 0.0f));
+            // model = glm::rotate(model, rotate, glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
+            model = glm::scale(model, glm::vec3(rect.Size, 1.0f));
+
+            shader->SetMat4("model", model);
+
+            if (button.TintType == UI::ButtonTintType::Color)
+            {
+                bool useImage = !button.TintColor.TargetGraphicUUID.is_nil();
+                if (useImage)
+                {
+                    auto imageTexture = Resources::GetAssetByUUID(button.TintColor.TargetGraphicUUID);
+                    if (imageTexture == nullptr)
+                    {
+                        useImage = false;
+                    }
+                    else
+                    {
+                        auto imageTextureHandle = std::dynamic_pointer_cast<Texture2DAsset>(imageTexture)->GetHandle();
+                        imageTextureHandle->Bind(0);
+                        shader->SetInt("image", 0);
+                    }
+                }
+                shader->SetInt("useImage", useImage);
+                shader->SetFloat4("imageColor", button.TintColor.Current);
+            }
+        }
+
+        auto& meshItem = *mesh;
+
+        // Bind vertex array
+        if (meshItem.Data.VertexArray == nullptr)
+        {
+            meshItem.Data.VertexArray = g_EngineContext->RenderSys->GetAPI()->CreateVertexArray(meshItem);
+        }
+        if (meshItem.Skinned())
+        {
+            meshItem.Data.VertexArray->GetVertexBuffers()[0]->SetBufferData(meshItem.Data.Vertices);
+        }
+        meshItem.Data.VertexArray->Bind();
+
+        // Draw
+        g_EngineContext->RenderSys->GetAPI()->DrawIndexed(meshItem.Data.Indices.size());
+
+        // Unbind resources
+        meshItem.Data.VertexArray->Unbind();
+        shader->Unbind();
     }
 
     void DataDrivenPipeline::RenderMeshItem(entt::entity    geometry,

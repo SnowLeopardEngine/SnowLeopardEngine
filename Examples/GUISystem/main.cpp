@@ -1,11 +1,13 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
+#include <SnowLeopardEngine/Function/IO/Resources.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
 using namespace SnowLeopardEngine;
@@ -34,7 +36,7 @@ public:
         m_EngineContext = DesktopApp::GetInstance()->GetEngine()->GetContext();
 
         // Hide mouse cursor
-        m_EngineContext->WindowSys->SetHideCursor(true);
+        // m_EngineContext->WindowSys->SetHideCursor(true);
 
         // Create a scene and set active
         auto scene = m_EngineContext->SceneMngr->CreateScene("GUISystem", true);
@@ -46,7 +48,7 @@ public:
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
         cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
-        camera.AddComponent<FreeMoveCameraControllerComponent>();
+        // camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Create a floor
@@ -81,12 +83,16 @@ public:
         animatorComponent.Controller.RegisterAnimator(animator);
         animatorComponent.Controller.SetEntryAnimator(animator);
 
-        // Create a gui button (full screen size)
-        Entity button     = scene->CreateEntity("Button");
-        auto&  buttonRect = button.AddComponent<UI::RectTransformComponent>();
-        buttonRect.Size   = {1024, 768};
-        buttonRect.Pivot  = {0, 0};
-        button.AddComponent<UI::ButtonComponent>();
+        // Create a gui button
+        Ref<Texture2DAsset> buttonTexture;
+        Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", buttonTexture, false);
+        Entity button                          = scene->CreateEntity("Button");
+        auto&  buttonRect                      = button.AddComponent<UI::RectTransformComponent>();
+        buttonRect.Size                        = {100, 60};
+        buttonRect.Pivot                       = {0, 0};
+        buttonRect.Pos                         = {10, 10, 0};
+        auto& buttonComp                       = button.AddComponent<UI::ButtonComponent>();
+        buttonComp.TintColor.TargetGraphicUUID = buttonTexture->GetUUID();
     }
 
 private:

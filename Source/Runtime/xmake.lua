@@ -2,7 +2,7 @@
 add_requires("spdlog", "fmt 9.1.0", "glfw", "glm", "stduuid", "entt v3.10.3")
 add_requires("miniaudio", "stb", "tracy", "magic_enum", "cereal", "shaderc", "spirv-cross", "scoral", "cryptopp")
 add_requires("sphysx-cross", { configs = { debug = is_mode("debug") }})
-add_requires("ozz-animation", { configs = { shared = true }})
+add_requires("ozz-animation 0.14.2", { configs = { debug = is_mode("debug") }})
 
 -- target defination, name: SnowLeopardEngine
 target("SnowLeopardEngine")
