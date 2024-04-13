@@ -18,8 +18,8 @@ namespace SnowLeopardEngine::UI
     {
         CoreUUID TargetGraphicUUID;
 
-        glm::vec4 Normal  = {0.7, 0.7, 0.7, 1};
-        glm::vec4 Pressed = {0.5, 0.5, 0.5, 1};
+        glm::vec4 Normal  = {0.9, 0.9, 0.9, 1};
+        glm::vec4 Pressed = {0.7, 0.7, 0.7, 1};
 
         glm::vec4 Current = Normal;
 

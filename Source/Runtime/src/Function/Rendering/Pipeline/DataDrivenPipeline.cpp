@@ -605,30 +605,31 @@ namespace SnowLeopardEngine
         SNOW_LEOPARD_CORE_ASSERT(m_Scene != nullptr, "[DataDrivenPipeline] Assertion failed, m_Scene == nullptr");
 
         auto& registry = m_Scene->GetRegistry();
-        auto shader = DzShaderManager::GetCompiledPassShader("UI_GeometryPass");
+        auto  shader   = DzShaderManager::GetCompiledPassShader("UI_GeometryPass");
 
         shader->Bind();
         shader->SetMat4("projection", m_SceneUniform.ProjectionMatrix);
-        
+
         // set RectTransformCompoent
-        auto& rect   = registry.get<UI::RectTransformComponent>(ui);
+        auto& rect = registry.get<UI::RectTransformComponent>(ui);
         // set model matrix
-        glm::mat4 model = glm::mat4(1.0f);
-        model           = glm::translate(model, rect.Pos);
-        model = glm::translate(model, glm::vec3(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y, 0.0f));
+        glm::mat4 model  = glm::mat4(1.0f);
+        model            = glm::translate(model, rect.Pos);
+        model = glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
         // model = glm::rotate(model, rotate, glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::translate(model, glm::vec3(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y, 0.0f));
         model = glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
         model = glm::scale(model, glm::vec3(rect.Size, 1.0f));
 
         shader->SetMat4("model", model);
-    
+
         MeshItem* mesh = nullptr;
 
         // Set uniforms for different type of elements
         if (registry.any_of<UI::ButtonComponent>(ui))
         {
             mesh = &registry.get<UI::ButtonComponent>(ui).ImageMesh;
-            
+
             auto& button = registry.get<UI::ButtonComponent>(ui);
             if (button.TintType == UI::ButtonTintType::Color)
             {
@@ -652,27 +653,28 @@ namespace SnowLeopardEngine
             }
         }
 
-        if(registry.any_of<UI::ImageComponent>(ui)){
+        if (registry.any_of<UI::ImageComponent>(ui))
+        {
             mesh = &registry.get<UI::ImageComponent>(ui).ImageMesh;
 
-            auto& button = registry.get<UI::ImageComponent>(ui);
-                bool useImage = !button.TintColor.TargetGraphicUUID.is_nil();
-                if (useImage)
+            auto& image    = registry.get<UI::ImageComponent>(ui);
+            bool  useImage = !image.TargetGraphicUUID.is_nil();
+            if (useImage)
+            {
+                auto imageTexture = Resources::GetAssetByUUID(image.TargetGraphicUUID);
+                if (imageTexture == nullptr)
                 {
-                    auto imageTexture = Resources::GetAssetByUUID(button.TintColor.TargetGraphicUUID);
-                    if (imageTexture == nullptr)
-                    {
-                        useImage = false;
-                    }
-                    else
-                    {
-                        auto imageTextureHandle = std::dynamic_pointer_cast<Texture2DAsset>(imageTexture)->GetHandle();
-                        imageTextureHandle->Bind(0);
-                        shader->SetInt("image", 0);
-                    }
+                    useImage = false;
                 }
-                shader->SetInt("useImage", useImage);
-                shader->SetFloat4("imageColor", button.TintColor.Current);
+                else
+                {
+                    auto imageTextureHandle = std::dynamic_pointer_cast<Texture2DAsset>(imageTexture)->GetHandle();
+                    imageTextureHandle->Bind(0);
+                    shader->SetInt("image", 0);
+                }
+            }
+            shader->SetInt("useImage", useImage);
+            shader->SetFloat4("imageColor", image.Color);
         }
 
         auto& meshItem = *mesh;

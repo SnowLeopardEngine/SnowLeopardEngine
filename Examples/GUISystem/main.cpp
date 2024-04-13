@@ -22,7 +22,7 @@ public:
     virtual void OnTick(float deltaTime) override
     {
         auto& inputSystem = DesktopApp::GetInstance()->GetEngine()->GetContext()->InputSys;
-        
+
         if (inputSystem->GetKey(KeyCode::Escape))
         {
             DesktopApp::GetInstance()->Quit();
@@ -107,22 +107,19 @@ public:
         awesomeFaceButtonComp.TintColor.TargetGraphicUUID = awesomeFaceTexture->GetUUID();
 
         Subscribe(m_ButtonClickedEventHandler);
-        //Create a tex;
-        Ref<Texture2DAsset> buttonTexture1;
-        
-        Entity button1                          = scene->CreateEntity("Button");
-        auto&  buttonRect1                      = button1.AddComponent<UI::RectTransformComponent>();
-        
-        buttonRect1.Size                        = {100, 60};
-        buttonRect1.Pivot                       = {0, 0};
-        buttonRect1.Pos                         = {250, 250, 0};
-        auto& buttonComp1                      = button1.AddComponent<UI::ImageComponent>();
-        auto nor = buttonComp1.TintTexture.NormalTexture = "Assets/Textures/CoolGay.png";
-        auto pre = buttonComp1.TintTexture.PressedTexture = "Assets/Textures/awesomeface.png";
-        buttonComp1.TintTexture.Current = nor;
-        Resources::Load<Texture2DAsset>(buttonComp1.TintTexture.Current, buttonTexture1, false);
 
-        buttonComp1.TintColor.TargetGraphicUUID = buttonTexture1->GetUUID();
+        // Create an image;
+        Ref<Texture2DAsset> imageTexture;
+        Resources::Load<Texture2DAsset>("Assets/Textures/SleepGay.jpg", imageTexture, false);
+
+        Entity sleepGayImage = scene->CreateEntity("SleepGayImage");
+        auto&  sleepGayRect  = sleepGayImage.AddComponent<UI::RectTransformComponent>();
+
+        sleepGayRect.Size                   = {320, 240};
+        sleepGayRect.Pivot                  = {0.5, 0.5};
+        sleepGayRect.Pos                    = {512, 384, 0};
+        auto& sleepGayImageComp             = sleepGayImage.AddComponent<UI::ImageComponent>();
+        sleepGayImageComp.TargetGraphicUUID = imageTexture->GetUUID();
     }
 
     virtual void OnUnload() { Unsubscribe(m_ButtonClickedEventHandler); }
