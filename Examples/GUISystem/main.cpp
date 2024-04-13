@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Event/UIEvents.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
@@ -7,6 +8,7 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
+#include <SnowLeopardEngine/Engine/EngineContext.h>
 #include <SnowLeopardEngine/Function/IO/Resources.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
@@ -83,20 +85,42 @@ public:
         animatorComponent.Controller.RegisterAnimator(animator);
         animatorComponent.Controller.SetEntryAnimator(animator);
 
-        // Create a gui button
-        Ref<Texture2DAsset> buttonTexture;
-        Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", buttonTexture, false);
-        Entity button                          = scene->CreateEntity("Button");
-        auto&  buttonRect                      = button.AddComponent<UI::RectTransformComponent>();
-        buttonRect.Size                        = {100, 60};
-        buttonRect.Pivot                       = {0, 0};
-        buttonRect.Pos                         = {10, 10, 0};
-        auto& buttonComp                       = button.AddComponent<UI::ButtonComponent>();
-        buttonComp.TintColor.TargetGraphicUUID = buttonTexture->GetUUID();
+        // Create gui buttons
+        Ref<Texture2DAsset> coolGayTexture, awesomeFaceTexture;
+        Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", coolGayTexture, false);
+        Resources::Load<Texture2DAsset>("Assets/Textures/awesomeface.png", awesomeFaceTexture, false);
+
+        Entity coolGayButton                          = scene->CreateEntity("CoolGayButton");
+        auto&  coolGayButtonRect                      = coolGayButton.AddComponent<UI::RectTransformComponent>();
+        coolGayButtonRect.Size                        = {100, 60};
+        coolGayButtonRect.Pivot                       = {0, 0};
+        coolGayButtonRect.Pos                         = {10, 10, 0};
+        auto& coolGayButtonComp                       = coolGayButton.AddComponent<UI::ButtonComponent>();
+        coolGayButtonComp.TintColor.TargetGraphicUUID = coolGayTexture->GetUUID();
+
+        Entity awesomeFaceButton     = scene->CreateEntity("AwesomeFaceButton");
+        auto&  awesomeFaceButtonRect = awesomeFaceButton.AddComponent<UI::RectTransformComponent>();
+        awesomeFaceButtonRect.Size   = {100, 60};
+        awesomeFaceButtonRect.Pivot  = {0, 0};
+        awesomeFaceButtonRect.Pos    = {10, 100, 0};
+        auto& awesomeFaceButtonComp  = awesomeFaceButton.AddComponent<UI::ButtonComponent>();
+        awesomeFaceButtonComp.TintColor.TargetGraphicUUID = awesomeFaceTexture->GetUUID();
+
+        Subscribe(m_ButtonClickedEventHandler);
     }
+
+    virtual void OnUnload() { Unsubscribe(m_ButtonClickedEventHandler); }
 
 private:
     EngineContext* m_EngineContext;
+
+    EventHandler<UIButtonClickedEvent> m_ButtonClickedEventHandler = [this](const UIButtonClickedEvent& e) {
+        auto   button       = e.GetButtonEntity();
+        Entity buttonEntity = {button, m_EngineContext->SceneMngr->GetActiveScene().get()};
+        SNOW_LEOPARD_INFO("Button (Name: {0}, UUID: {1}) was clicked!",
+                          buttonEntity.GetName(),
+                          to_string(buttonEntity.GetCoreUUID()));
+    };
 };
 
 int main(int argc, char** argv)
