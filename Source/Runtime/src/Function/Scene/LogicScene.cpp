@@ -377,7 +377,7 @@ namespace SnowLeopardEngine
 
         // Animators
         m_Registry.view<AnimatorComponent>().each(
-            [deltaTime](entt::entity entity, AnimatorComponent& animator) { animator.Controller.Update(deltaTime); });
+            [deltaTime](entt::entity entity, AnimatorComponent& animator) { animator.Animator.Update(deltaTime); });
     }
 
     void LogicScene::OnFixedTick()

@@ -86,9 +86,10 @@ namespace SnowLeopardEngine::Editor
         characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
-        auto animator = CreateRef<Animator>(g_Model->AnimationClips[0]);
-        animatorComponent.Controller.RegisterAnimator(animator);
-        animatorComponent.Controller.SetEntryAnimator(animator);
+        auto animationClip = g_Model->AnimationClips[0];
+        animatorComponent.Animator.AddController(std::make_shared<AnimatorController>(animatorComponent.Controller));
+        animatorComponent.Controller.RegisterAnimationClip(animationClip);
+        animatorComponent.Controller.SetEntryAnimationClip(animationClip);
 
         auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
 

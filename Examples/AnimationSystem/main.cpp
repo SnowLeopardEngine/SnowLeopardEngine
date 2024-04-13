@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
@@ -7,6 +8,7 @@
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
+#include <memory>
 
 using namespace SnowLeopardEngine;
 
@@ -77,9 +79,10 @@ public:
         characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
-        auto animator = CreateRef<Animator>(g_Model->AnimationClips[0]);
-        animatorComponent.Controller.RegisterAnimator(animator);
-        animatorComponent.Controller.SetEntryAnimator(animator);
+        auto animationClip = g_Model->AnimationClips[0];
+        animatorComponent.Animator.AddController(std::make_shared<AnimatorController>(animatorComponent.Controller));
+        animatorComponent.Controller.RegisterAnimationClip(animationClip);
+        animatorComponent.Controller.SetEntryAnimationClip(animationClip);
     }
 
 private:

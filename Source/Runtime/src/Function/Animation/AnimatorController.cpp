@@ -1,55 +1,62 @@
 #include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Animation/Transition.h"
 
 namespace SnowLeopardEngine
 {
     void AnimatorController::Init()
     {
-        InitAnimators();
+        //InitAnimators();
     }
 
-    void AnimatorController::Update(float deltaTime)
-    {
-        CheckParameters();
-        UpdateAnimators(deltaTime);
-    }
+    // void AnimatorController::Update(float deltaTime)
+    // {
+    //     CheckParameters();
+    //     UpdateAnimators(deltaTime);
+    // }
 
-    void AnimatorController::RegisterAnimator(const Ref<Animator>& animator) { m_Animators.push_back(animator); }
+    void AnimatorController::RegisterAnimationClip(const Ref<AnimationClip>& animationClip) { m_AnimationClips.push_back(animationClip); }
 
-    void AnimatorController::DeleteAnimator(const Ref<Animator>& animator)
+    void AnimatorController::DeleteAnimationClip(const Ref<AnimationClip>& animationClip)
     {
-        auto it = std::find(m_Animators.begin(), m_Animators.end(), animator);
-        if (it != m_Animators.end())
+        auto it = std::find(m_AnimationClips.begin(), m_AnimationClips.end(), animationClip);
+        if (it != m_AnimationClips.end())
         {
-            m_Animators.erase(it);
-            m_TransitionsInfoMap.erase(animator);
+            m_AnimationClips.erase(it);
+            m_TransitionsInfoMap.erase(animationClip);
+        }
+        else 
+        {
+            SNOW_LEOPARD_CORE_ERROR("[AnimatorController] Failed to delete animationClip, AnimationClip haven't been registered.");
         }
     }
 
-    void AnimatorController::RegisterTransition(const Ref<Animator>& sourceAnimator,
-                                                const Ref<Animator>& targetAnimator,
+    void AnimatorController::SetEntryAnimationClip(const Ref<AnimationClip>& animationClip) { m_CurrentAnimationClip = animationClip; }
+
+    void AnimatorController::RegisterTransition(const Ref<AnimationClip>& sourceAnimationClip,
+                                                const Ref<AnimationClip>& targetAnimationClip,
                                                 int                  duration)
     {
-        auto transition = CreateRef<Transition>(sourceAnimator, targetAnimator, duration);
+        auto transition = CreateRef<Transition>(sourceAnimationClip, targetAnimationClip, duration);
         transition->SetParameters(m_Parameters);
-        m_TransitionsInfoMap[sourceAnimator].push_back(transition);
+        m_TransitionsInfoMap[sourceAnimationClip].push_back(transition);
     }
 
-    void AnimatorController::DeleteTransition(const Ref<Animator>& sourceAnimator, const Ref<Animator>& targetAnimator)
+    void AnimatorController::DeleteTransition(const Ref<AnimationClip>& sourceAnimationClip, const Ref<AnimationClip>& targetAnimationClip)
     {
-        if (m_TransitionsInfoMap.count(sourceAnimator) == 0)
+        if (m_TransitionsInfoMap.count(sourceAnimationClip) == 0)
         {
-            SNOW_LEOPARD_CORE_ERROR("[AnimatorController] Failed to delete transition, unregisterd animator.");
+            SNOW_LEOPARD_CORE_ERROR("[AnimatorController] Failed to delete transition, transition haven't been registered.");
             return;
         }
 
         auto it =
-            std::find_if(m_TransitionsInfoMap[sourceAnimator].begin(),
-                         m_TransitionsInfoMap[sourceAnimator].end(),
-                         [targetAnimator](Ref<Transition> t) { return t->GetTargetAnimator() == targetAnimator; });
-        if (it != m_TransitionsInfoMap[sourceAnimator].end())
+            std::find_if(m_TransitionsInfoMap[sourceAnimationClip].begin(),
+                         m_TransitionsInfoMap[sourceAnimationClip].end(),
+                         [targetAnimationClip](Ref<Transition> t) { return t->GetTargetAnimationClip() == targetAnimationClip; });
+        if (it != m_TransitionsInfoMap[sourceAnimationClip].end())
         {
-            m_TransitionsInfoMap[sourceAnimator].erase(it);
+            m_TransitionsInfoMap[sourceAnimationClip].erase(it);
         }
     }
 
@@ -89,94 +96,20 @@ namespace SnowLeopardEngine
         m_Parameters->erase(parameterName);
     }
 
-    void AnimatorController::Blending(const Ref<Animator>& sourceAnimator, const Ref<Animator>& targetAnimator)
-    {
-        // targetAnimator->PlayAnimation();
-        m_CurrentAnimator = targetAnimator;
-    }
+    // void AnimatorController::InitAnimators()
+    // {
+    //     for (const auto& animator : m_Animators)
+    //     {
+    //         animator->Reset();
+    //         animator->Update(0);
+    //     }
+    // }
 
-    void AnimatorController::SetEntryAnimator(const Ref<Animator>& animator) { m_CurrentAnimator = animator; }
-
-    void AnimatorController::SetTrigger(const std::string& triggerName)
-    {
-        if (m_Parameters->count(triggerName) == 0)
-        {
-            SNOW_LEOPARD_CORE_ERROR("[AnimatorController] Failed to set trigger, unregistered parameter.");
-            return;
-        }
-
-        for (const auto& transition : m_TransitionsInfoMap[m_CurrentAnimator])
-        {
-            if (transition->JudgeCondition(true))
-            {
-                Blending(transition->GetSourceAnimator(), transition->GetTargetAnimator());
-                break;
-            }
-        }
-    }
-
-    void AnimatorController::SetFloat(const std::string& floatName, float value)
-    {
-        if (m_Parameters->count(floatName) == 0)
-        {
-            SNOW_LEOPARD_CORE_ERROR("[AnimatorController] Failed to modify the value, unregistered parameter.");
-            return;
-        }
-
-        if (std::holds_alternative<float>(m_Parameters->at(floatName)))
-        {
-            (*m_Parameters)[floatName] = value;
-        }
-        else
-        {
-            SNOW_LEOPARD_CORE_ERROR("[AnimatorController] Failed to modify the value, parameter is not float.");
-        }
-    }
-
-    void AnimatorController::SetBoolean(const std::string& booleanName, bool value)
-    {
-        if (m_Parameters->count(booleanName) == 0)
-        {
-            SNOW_LEOPARD_CORE_ERROR("[AnimatorController] Failed to modify the value, unregistered parameter.");
-            return;
-        }
-
-        if (std::holds_alternative<bool>(m_Parameters->at(booleanName)))
-        {
-            (*m_Parameters)[booleanName] = value;
-        }
-        else
-        {
-            SNOW_LEOPARD_CORE_ERROR("[AnimatorController] Failed to modify the value, parameter is not bool.");
-        }
-    }
-
-    void AnimatorController::InitAnimators()
-    {
-        for (const auto& animator : m_Animators)
-        {
-            animator->Reset();
-            animator->Update(0);
-        }
-    }
-
-    void AnimatorController::UpdateAnimators(float deltaTime)
-    {
-        for (const auto& animator : m_Animators)
-        {
-            animator->Update(deltaTime);
-        }
-    }
-
-    void AnimatorController::CheckParameters()
-    {
-        for (const auto& transition : m_TransitionsInfoMap[m_CurrentAnimator])
-        {
-            if (transition->JudgeCondition(false))
-            {
-                Blending(transition->GetSourceAnimator(), transition->GetTargetAnimator());
-                break;
-            }
-        }
-    }
+    // void AnimatorController::UpdateAnimators(float deltaTime)
+    // {
+    //     for (const auto& animator : m_Animators)
+    //     {
+    //         animator->Update(deltaTime);
+    //     }
+    // }
 } // namespace SnowLeopardEngine
