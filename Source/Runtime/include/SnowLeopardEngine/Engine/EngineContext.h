@@ -6,6 +6,7 @@
 #include "SnowLeopardEngine/Function/Audio/AudioSystem.h"
 #include "SnowLeopardEngine/Function/CSharpScripting/CSharpScriptingSystem.h"
 #include "SnowLeopardEngine/Function/Camera/CameraSystem.h"
+#include "SnowLeopardEngine/Function/GUI/GUISystem.h"
 #include "SnowLeopardEngine/Function/Input/InputSystem.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderSystem.h"
@@ -24,6 +25,7 @@ namespace SnowLeopardEngine
         SingletonWrapper<SceneManager>          SceneMngr;
         SingletonWrapper<PhysicsSystem>         PhysicsSys;
         SingletonWrapper<RenderSystem>          RenderSys;
+        SingletonWrapper<GUISystem>             GUISys;
         SingletonWrapper<CameraSystem>          CameraSys;
         SingletonWrapper<CSharpScriptingSystem> CSharpScriptingSys;
     };

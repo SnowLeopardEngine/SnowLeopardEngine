@@ -3,6 +3,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 #include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
+#include "SnowLeopardEngine/Function/GUI/GUITypeDef.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
@@ -14,7 +15,10 @@
 #include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "cereal/cereal.hpp"
+#include "glm/fwd.hpp"
 #include <PxPhysicsAPI.h>
+#include <optional>
+#include <string>
 
 // CppAst.NET Macro
 #if !defined(__cppast)
@@ -737,6 +741,118 @@ namespace SnowLeopardEngine
     };
     // -------- Animation Components DEFINITION END --------
 
+    // -------- In-Game GUI Components DEFINITION START --------
+    namespace UI
+    {
+        struct CanvasComponent
+        {
+            COMPONENT_NAME(CanvasComponent)
+
+            CoreUUID CanvasCameraUUID;
+
+            // NOLINTBEGIN
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive(CEREAL_NVP(CanvasCameraUUID));
+            }
+            // NOLINTEND
+
+            CanvasComponent()                       = default;
+            CanvasComponent(const CanvasComponent&) = default;
+        };
+
+        struct RectTransformComponent
+        {
+            COMPONENT_NAME(RectTransformComponent)
+
+            glm::vec3 Pos;
+            glm::vec2 Size;
+            glm::vec2 Pivot = {0.5, 0.5};
+
+            // NOLINTBEGIN
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive(CEREAL_NVP(Pos), CEREAL_NVP(Size), CEREAL_NVP(Pivot));
+            }
+            // NOLINTEND
+
+            RectTransformComponent()                              = default;
+            RectTransformComponent(const RectTransformComponent&) = default;
+        };
+
+        struct ButtonComponent
+        {
+            UI::ButtonTintType TintType = UI::ButtonTintType::Color;
+
+            UI::ColorTint   TintColor;
+            UI::TextureTint TintTexture;
+
+            MeshItem ImageMesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
+
+            // NOLINTBEGIN
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive(CEREAL_NVP(TintType), CEREAL_NVP(TintColor));
+            }
+            // NOLINTEND
+
+            ButtonComponent()                       = default;
+            ButtonComponent(const ButtonComponent&) = default;
+        };
+
+        struct ImageComponent
+        {
+            CoreUUID  TargetGraphicUUID;
+            glm::vec4 Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+            MeshItem ImageMesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
+
+            // NOLINTBEGIN
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive(CEREAL_NVP(TargetGraphicUUID), CEREAL_NVP(Color));
+            }
+            // NOLINTEND
+
+            ImageComponent()                      = default;
+            ImageComponent(const ImageComponent&) = default;
+        };
+
+        struct TextComponent
+        {
+            std::string  TextContent;
+            std::string  FontFilePath;
+            unsigned int FontSize = 24;
+            glm::vec4    Color    = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            enum Alignment
+            {
+                Left,
+                Center,
+                Right
+            } TextAlignment = Center;
+
+            // NOLINTBEGIN
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive(CEREAL_NVP(TextContent),
+                        CEREAL_NVP(FontFilePath),
+                        CEREAL_NVP(FontSize),
+                        CEREAL_NVP(Color),
+                        CEREAL_NVP(TextAlignment));
+            }
+            // NOLINTEND
+
+            TextComponent()                     = default;
+            TextComponent(const TextComponent&) = default;
+        };
+    }; // namespace UI
+    // -------- In-Game GUI Components DEFINITION END --------
+
     template<typename... Component>
     struct ComponentGroup
     {};
@@ -746,7 +862,8 @@ namespace SnowLeopardEngine
         NativeScriptingComponent, RigidBodyComponent, SphereColliderComponent, BoxColliderComponent, \
         CapsuleColliderComponent, TerrainColliderComponent, CharacterControllerComponent, MeshColliderComponent, \
         CameraComponent, FreeMoveCameraControllerComponent, DirectionalLightComponent, BaseRendererComponent, \
-        MeshFilterComponent, MeshRendererComponent, TerrainComponent, TerrainRendererComponent
+        MeshFilterComponent, MeshRendererComponent, TerrainComponent, TerrainRendererComponent, UI::CanvasComponent, \
+        UI::RectTransformComponent, UI::ButtonComponent //, UI::ImageComponent, UI::TextComponent
 
 #define ALL_SERIALIZABLE_COMPONENT_TYPES COMMON_COMPONENT_TYPES, IDComponent, NameComponent
 

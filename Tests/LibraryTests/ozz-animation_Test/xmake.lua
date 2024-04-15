@@ -1,5 +1,5 @@
 -- add requirements
-add_requires("ozz-animation", { configs = { shared = true }})
+add_requires("ozz-animation 0.14.2", { configs = { debug = is_mode("debug") }})
 add_requires("raylib")
 
 -- target defination, name: ozz-animation_Test

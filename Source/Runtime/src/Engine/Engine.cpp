@@ -35,6 +35,9 @@ namespace SnowLeopardEngine
         // Init render system
         g_EngineContext->RenderSys.Init();
 
+        // Init gui system
+        g_EngineContext->GUISys.Init();
+
         // Init camera system
         g_EngineContext->CameraSys.Init();
 
@@ -86,6 +89,9 @@ namespace SnowLeopardEngine
             // Tick Rendering
             g_EngineContext->RenderSys->OnTick(deltaTime);
 
+            // Tick GUI
+            g_EngineContext->GUISys->OnTick(deltaTime);
+
             // Present
             g_EngineContext->RenderSys->Present();
         }
@@ -120,6 +126,7 @@ namespace SnowLeopardEngine
 
         g_EngineContext->CSharpScriptingSys.Shutdown();
         g_EngineContext->CameraSys.Shutdown();
+        g_EngineContext->GUISys.Shutdown();
         g_EngineContext->RenderSys.Shutdown();
         g_EngineContext->PhysicsSys.Shutdown();
         g_EngineContext->SceneMngr->OnUnload();

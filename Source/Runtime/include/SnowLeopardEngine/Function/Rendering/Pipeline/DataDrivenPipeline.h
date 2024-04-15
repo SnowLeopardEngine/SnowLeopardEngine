@@ -29,6 +29,7 @@ namespace SnowLeopardEngine
         void RenderInstancedGeometry(const InstancingBatchGroup& group);
         void RenderGeometry(entt::entity geometry);
         void RenderSky(entt::entity sky);
+        void RenderUI(entt::entity ui);
         void RenderMeshItem(entt::entity    geometry,
                             entt::registry& registry,
                             MeshItem&       meshItem,
@@ -64,6 +65,7 @@ namespace SnowLeopardEngine
         std::vector<entt::entity> m_ShadowGroup;
         std::vector<entt::entity> m_GeometryGroup;
         std::vector<entt::entity> m_SkyGroup;
+        std::vector<entt::entity> m_UIGroup;
 
         Ref<FrameBuffer> m_RenderTarget = nullptr;
         LogicScene*      m_Scene        = nullptr;

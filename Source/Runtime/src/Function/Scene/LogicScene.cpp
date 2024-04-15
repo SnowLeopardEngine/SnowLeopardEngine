@@ -562,4 +562,10 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(TerrainRendererComponent) {}
 
     ON_COMPONENT_ADDED(AnimatorComponent) {}
+
+    ON_COMPONENT_ADDED(UI::CanvasComponent) {}
+    ON_COMPONENT_ADDED(UI::RectTransformComponent) {}
+    ON_COMPONENT_ADDED(UI::ButtonComponent) {}
+    ON_COMPONENT_ADDED(UI::ImageComponent) {}
+    ON_COMPONENT_ADDED(UI::TextComponent) {}
 } // namespace SnowLeopardEngine

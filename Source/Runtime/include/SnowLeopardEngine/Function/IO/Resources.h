@@ -2,7 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
-#include <memory>
+#include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 
 namespace SnowLeopardEngine
 {
@@ -12,6 +12,9 @@ namespace SnowLeopardEngine
     {
         // md5 -> asset handle
         extern std::unordered_map<std::string, Ref<Asset>> g_AssetCache;
+
+        // UUID -> asset handle
+        extern std::unordered_map<CoreUUID, Ref<Asset>> g_AssetMap;
 
         template<typename TAsset, typename... Args>
         static bool Load(const std::filesystem::path& path, Ref<TAsset>& outAsset, Args&&... args)
@@ -30,8 +33,18 @@ namespace SnowLeopardEngine
                 return false;
             }
 
-            g_AssetCache[md5] = outAsset;
+            g_AssetCache[md5]               = outAsset;
+            g_AssetMap[outAsset->GetUUID()] = outAsset;
             return true;
+        }
+
+        static Ref<Asset> GetAssetByUUID(CoreUUID uuid)
+        {
+            if (g_AssetMap.count(uuid) == 0)
+            {
+                return nullptr;
+            }
+            return g_AssetMap[uuid];
         }
     } // namespace Resources
 } // namespace SnowLeopardEngine
