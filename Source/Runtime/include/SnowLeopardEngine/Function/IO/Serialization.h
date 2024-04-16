@@ -1,8 +1,5 @@
 #pragma once
 
-#include "SnowLeopardEngine/Function/Project/Project.h"
-#include "SnowLeopardEngine/Function/Scene/LogicScene.h"
-
 #include <cereal/cereal.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/string.hpp>
@@ -66,6 +63,9 @@ namespace std
 
 namespace SnowLeopardEngine
 {
+    class LogicScene;
+    class Project;
+
     namespace IO
     {
         bool Serialize(LogicScene* scene, const std::filesystem::path& dstPath);

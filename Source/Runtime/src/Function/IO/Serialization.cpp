@@ -1,6 +1,8 @@
 #include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Project/Project.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
+#include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 
 namespace SnowLeopardEngine
 {
