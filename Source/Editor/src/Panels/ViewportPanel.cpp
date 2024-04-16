@@ -11,15 +11,12 @@
 #include "entt/entt.hpp"
 #include <imgui.h>
 
-SnowLeopardEngine::Model* g_Model;
-
 namespace SnowLeopardEngine::Editor
 {
-    void ViewportPanel::Init()
+    void ViewportPanel::Init(const PanelCommonInitInfo& initInfo)
     {
         REGISTER_TYPE(EditorCameraScript);
-        g_Model = new Model();
-
+        
         // Create RT
 
         // Color Attachment 0 - main target color

@@ -1,17 +1,31 @@
 #include "SnowLeopardEditor/EditorApp.h"
 #include "SnowLeopardEditor/EditorGUISystem.h"
-#include "SnowLeopardEditor/PanelManager.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine::Editor
 {
     EditorApp* EditorApp::s_Instance = nullptr;
 
-    EditorApp::EditorApp(int argc, char** argv) : DesktopApp(argc, argv) { s_Instance = this; }
+    EditorApp::EditorApp(int argc, char** argv) : DesktopApp(argc, argv)
+    {
+        m_Program.add_argument("--project").help("the .dzproj file").required();
+        m_Program.parse_args(argc, argv);
+        s_Instance = this;
+    }
 
     bool EditorApp::Init(const EditorAppInitInfo& initInfo)
     {
+        // handle CLI arguments
+        auto project = m_Program.get("--project");
+        std::cout << "Handling CLI argument: --project = " << project << std::endl;
+        if (!std::filesystem::exists(project))
+        {
+            std::cerr << "Failed to load the project: " << project << std::endl;
+            return false;
+        }
+
         // create the engine
         m_Engine = CreateRef<Engine>();
         if (!m_Engine->Init(initInfo.Engine))
@@ -21,7 +35,9 @@ namespace SnowLeopardEngine::Editor
         }
 
         // init GUI system
-        m_GUISystem.Init();
+        EditorGUISystemInitInfo guiInitInfo = {};
+        guiInitInfo.ProjectFilePath = project;
+        m_GUISystem.Init(guiInitInfo);
 
         // subscribe events
         Subscribe(m_WindowCloseHandler);

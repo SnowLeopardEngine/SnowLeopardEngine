@@ -3,6 +3,8 @@
 #include "SnowLeopardEditor/EditorGUISystem.h"
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
 
+#include <argparse/argparse.hpp>
+
 namespace SnowLeopardEngine::Editor
 {
     struct EditorAppInitInfo
@@ -52,7 +54,8 @@ namespace SnowLeopardEngine::Editor
         virtual void Shutdown() override;
 
     private:
-        EditorGUISystem m_GUISystem;
+        EditorGUISystem          m_GUISystem;
+        argparse::ArgumentParser m_Program;
 
         static EditorApp* s_Instance;
     };

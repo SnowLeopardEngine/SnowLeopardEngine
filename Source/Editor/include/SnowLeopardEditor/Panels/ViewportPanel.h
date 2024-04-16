@@ -22,7 +22,7 @@ namespace SnowLeopardEngine::Editor
     class ViewportPanel final : public PanelBase
     {
     public:
-        virtual void Init() override final;
+        virtual void Init(const PanelCommonInitInfo& initInfo) override final;
         virtual void OnFixedTick() override final;
         virtual void OnTick(float deltaTime) override final;
 
