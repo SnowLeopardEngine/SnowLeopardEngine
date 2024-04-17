@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 #include "SnowLeopardEngine/Function/Asset/Asset.h"
+#include "SnowLeopardEngine/Function/Asset/DzMaterialAsset.h"
 #include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
 #include "SnowLeopardEngine/Function/Project/ProjectTypeDef.h"
 
@@ -82,12 +83,27 @@ namespace SnowLeopardEngine
             return true;
         }
 
-        static void ImportAssets(const std::filesystem::path& assetRootPath)
+        static void ImportAssets(const std::filesystem::path&    assetRootPath,
+                                 const std::vector<std::string>& assetIgnoreTokens)
         {
             for (const auto& entry : std::filesystem::directory_iterator(assetRootPath))
             {
                 if (entry.is_regular_file())
                 {
+                    bool skip = false;
+                    for (const auto& ignoreToken : assetIgnoreTokens)
+                    {
+                        const auto& entryPathStr = entry.path().generic_string();
+                        if (entryPathStr.find(ignoreToken) != entryPathStr.npos)
+                        {
+                            skip = true;
+                            break;
+                        }
+                    }
+
+                    if (skip)
+                        continue;
+
                     std::string extension = entry.path().extension().string();
                     AssetType   assetType = ExtensionsToType[extension];
 
@@ -98,11 +114,18 @@ namespace SnowLeopardEngine
                         Load<Texture2DAsset>(entry.path(), outAsset, false);
                     }
 
+                    // Import dz materials
+                    if (assetType == AssetType::DzMaterial)
+                    {
+                        Ref<DzMaterialAsset> outAsset;
+                        Load<DzMaterialAsset>(entry.path(), outAsset);
+                    }
+
                     // TODO: Import other assets
                 }
                 else if (entry.is_directory())
                 {
-                    ImportAssets(entry.path());
+                    ImportAssets(entry.path(), assetIgnoreTokens);
                 }
             }
         }

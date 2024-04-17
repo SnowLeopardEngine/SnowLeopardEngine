@@ -8,9 +8,9 @@ namespace SnowLeopardEngine
     class Texture2DAsset : public Asset
     {
     public:
-        explicit Texture2DAsset(const std::filesystem::path& path,
-                                const CoreUUID&              uuid,
-                                const TextureLoadingOutput&  loadOutput) :
+        Texture2DAsset(const std::filesystem::path& path,
+                       const CoreUUID&              uuid,
+                       const TextureLoadingOutput&  loadOutput) :
             Asset(path, uuid),
             m_LoadOutput(loadOutput)
         {}

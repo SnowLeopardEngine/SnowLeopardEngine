@@ -27,13 +27,14 @@ namespace SnowLeopardEngine
     struct DzProject
     {
         std::string                Name;
+        std::vector<std::string>   AssetIgnoreTokens;
         std::vector<AssetMetaData> AssetMetaDatas;
 
         // NOLINTBEGIN
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(Name), CEREAL_NVP(AssetMetaDatas));
+            archive(CEREAL_NVP(Name), CEREAL_NVP(AssetIgnoreTokens), CEREAL_NVP(AssetMetaDatas));
         }
         // NOLINTEND
     };
