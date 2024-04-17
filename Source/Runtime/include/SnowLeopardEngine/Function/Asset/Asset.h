@@ -104,6 +104,23 @@ namespace SnowLeopardEngine
 
         CoreUUID GetUUID() const { return m_UUID; }
 
+        template<typename TAsset>
+        Ref<TAsset> As()
+        {
+            if (std::is_base_of<Asset, TAsset>::value)
+            {
+                TAsset* derived = dynamic_cast<TAsset*>(this);
+                if (derived)
+                    return Ref<TAsset>(derived);
+                else
+                    return nullptr;
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+
     protected:
         std::filesystem::path m_Path;
         CoreUUID              m_UUID;

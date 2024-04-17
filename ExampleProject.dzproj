@@ -1,6 +1,9 @@
 {
     "value0": {
         "Name": "ExampleProject",
+        "AssetIgnoreTokens": [
+            "../../../../../build"
+        ],
         "AssetMetaDatas": [
             {
                 "ID": {
@@ -155,6 +158,76 @@
                 },
                 "Path": "../../../../../Assets/Textures/white_1x1.jpg",
                 "MD5": "691BBA4E0E0D847C6694913B61172B73"
+            },
+            {
+                "ID": {
+                    "value0": "ced84ac2-d2c2-4744-a957-6816b92585fa"
+                },
+                "Path": "../../../../../Assets/Materials/Blue.dzmaterial",
+                "MD5": "D93C467EF0B087EF29553AD23479A434"
+            },
+            {
+                "ID": {
+                    "value0": "c77cc9ea-efa0-402a-b8cf-8e2a33052967"
+                },
+                "Path": "../../../../../Assets/Materials/CoolGay.dzmaterial",
+                "MD5": "B911BCC4937A11407428C5AD01B7C02F"
+            },
+            {
+                "ID": {
+                    "value0": "3ad8705f-c45a-495c-992a-8bc29194b557"
+                },
+                "Path": "../../../../../Assets/Materials/Foliage/Grass.dzmaterial",
+                "MD5": "30B5127C577C0CEA5D604254601EEE5A"
+            },
+            {
+                "ID": {
+                    "value0": "72b36ed7-330f-4c50-86d6-f42f00a6e52d"
+                },
+                "Path": "../../../../../Assets/Materials/Green.dzmaterial",
+                "MD5": "04AE77718E3199770392CBFBC31B0746"
+            },
+            {
+                "ID": {
+                    "value0": "cee36c15-b6d5-447a-8c00-eb221136c004"
+                },
+                "Path": "../../../../../Assets/Materials/Legacy/ShadowMapping.dzmaterial",
+                "MD5": "E917BCFB565642343788942829F34C54"
+            },
+            {
+                "ID": {
+                    "value0": "2905f39c-b09f-4c40-9f10-41fd48b75d77"
+                },
+                "Path": "../../../../../Assets/Materials/Red.dzmaterial",
+                "MD5": "1557BEFA80EC80E308506174D20C3647"
+            },
+            {
+                "ID": {
+                    "value0": "a320ab9f-c9a3-4eeb-a9af-e0f13486fd3d"
+                },
+                "Path": "../../../../../Assets/Materials/RustedIronPBR.dzmaterial",
+                "MD5": "2AE50D10533F5518B20E33DE7A4C3D91"
+            },
+            {
+                "ID": {
+                    "value0": "6c360b08-6671-4f90-8471-eef154a418db"
+                },
+                "Path": "../../../../../Assets/Materials/Skybox001.dzmaterial",
+                "MD5": "676AD7449ED95BE349907A4439A14F44"
+            },
+            {
+                "ID": {
+                    "value0": "9bc86414-dc50-418c-bf90-5d31ecb06634"
+                },
+                "Path": "../../../../../Assets/Materials/Vampire.dzmaterial",
+                "MD5": "94D71124382567DBF17D1292CD22FDBE"
+            },
+            {
+                "ID": {
+                    "value0": "4dcc2ab0-245c-481b-a47f-4bf81c4aab98"
+                },
+                "Path": "../../../../../Assets/Materials/White.dzmaterial",
+                "MD5": "0FA307B39FF919DC48665B7E98DE3965"
             }
         ]
     }
