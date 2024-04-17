@@ -13,7 +13,7 @@
 
 namespace SnowLeopardEngine::Editor
 {
-    void EditorGUISystem::Init()
+    void EditorGUISystem::Init(const EditorGUISystemInitInfo& initInfo)
     {
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -60,7 +60,9 @@ namespace SnowLeopardEngine::Editor
         ImGui_ImplOpenGL3_Init("#version 330");
 
         // init panel manager
-        PanelManager::Init();
+        PanelManagerInitInfo panelInitInfo = {};
+        panelInitInfo.ProjectFilePath = initInfo.ProjectFilePath;
+        PanelManager::Init(panelInitInfo);
 
         SNOW_LEOPARD_INFO("[EditorGUISystem] Initialized");
     }

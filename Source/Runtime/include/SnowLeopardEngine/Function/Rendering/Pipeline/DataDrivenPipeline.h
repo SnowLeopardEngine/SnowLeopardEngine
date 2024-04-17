@@ -31,7 +31,7 @@ namespace SnowLeopardEngine
         void RenderInstancedGeometryGroup(const InstancingBatchGroup& group);
         void RenderNonInstancedGeometryGroup(const NonInstancingBatchGroup& group);
         void RenderSky(entt::entity sky);
-
+        void RenderUI(entt::entity ui);
         void RenderMeshItem(entt::entity    geometry,
                             entt::registry& registry,
                             MeshItem&       meshItem,
@@ -61,16 +61,17 @@ namespace SnowLeopardEngine
                                           int&               resourceBinding);
 
     private:
-        std::vector<entt::entity> m_ShadowGroup;
-        std::vector<entt::entity> m_GeometryGroup;
-        std::vector<entt::entity> m_SkyGroup;
-
         std::vector<InstancingBatchGroup>    m_InstancingBatchGroups;
         std::vector<NonInstancingBatchGroup> m_NonInstancingBatchGroups;
 
         entt::entity m_MainCamera;
         entt::entity m_DirectionalLight;
         SceneUniform m_SceneUniform;
+
+        std::vector<entt::entity> m_ShadowGroup;
+        std::vector<entt::entity> m_GeometryGroup;
+        std::vector<entt::entity> m_SkyGroup;
+        std::vector<entt::entity> m_UIGroup;
 
         Ref<FrameBuffer> m_RenderTarget = nullptr;
         LogicScene*      m_Scene        = nullptr;

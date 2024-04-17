@@ -13,6 +13,8 @@ namespace SnowLeopardEngine
         auto                     blue = CreateRef<DzMaterial>();
         archive(*blue);
 
+        SNOW_LEOPARD_CORE_INFO("[DzMaterial] Loaded dz material from: {0}", path.generic_string());
+
         return blue;
     }
 

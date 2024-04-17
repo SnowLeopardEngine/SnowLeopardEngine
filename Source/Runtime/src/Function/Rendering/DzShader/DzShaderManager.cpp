@@ -23,7 +23,13 @@ namespace SnowLeopardEngine
             return;
         }
 
-        std::ifstream            shaderFile(dzShaderFilePath);
+        std::ifstream shaderFile(dzShaderFilePath);
+        if (!shaderFile.is_open())
+        {
+            SNOW_LEOPARD_CORE_ERROR("[DzShaderManager] Failed to open shader file: {0}",
+                                    dzShaderFilePath.generic_string());
+            return;
+        }
         cereal::JSONInputArchive archive(shaderFile);
 
         DzShader shaderFromFile;

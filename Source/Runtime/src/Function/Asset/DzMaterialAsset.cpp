@@ -1,9 +1,9 @@
-#include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
+#include "SnowLeopardEngine/Function/Asset/DzMaterialAsset.h"
 #include "SnowLeopardEngine/Function/IO/Resources.h"
 
 namespace SnowLeopardEngine
 {
-    bool Texture2DAsset::Load(const std::filesystem::path& path, Ref<Texture2DAsset>& outAsset, bool flip)
+    bool DzMaterialAsset::Load(const std::filesystem::path& path, Ref<DzMaterialAsset>& outAsset)
     {
         auto uuid = Resources::GetAssetUUIDByPath(path);
         if (uuid.is_nil())
@@ -11,14 +11,15 @@ namespace SnowLeopardEngine
             uuid = CoreUUIDHelper::CreateStandardUUID();
         }
 
-        TextureLoadingOutput output;
-        if (!TextureLoader::LoadTexture2D(path, flip, output))
+        auto handle = DzMaterial::LoadFromPath(path);
+        if (handle == nullptr)
         {
             outAsset = nullptr;
             return false;
         }
 
-        outAsset = CreateRef<Texture2DAsset>(path, uuid, output);
+        outAsset = CreateRef<DzMaterialAsset>(path, uuid, handle);
+
         return true;
     }
 } // namespace SnowLeopardEngine

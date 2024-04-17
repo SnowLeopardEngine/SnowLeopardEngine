@@ -20,7 +20,7 @@ namespace SnowLeopardEngine
     {
         static const MeshPrimitiveType Type = MeshPrimitiveType::Quad;
 
-        static MeshItem Create(float w = 1.0f)
+        static MeshItem Create(bool isUI = false, float w = 1.0f)
         {
             MeshItem quadMesh;
             quadMesh.Name = "Quad";
@@ -29,14 +29,26 @@ namespace SnowLeopardEngine
 
             const float side = w / 2.0f;
 
-            quadData.Vertices = {
-                {{-side, 0, -side}, {0, 1, 0}, {0, 0}},
-                {{-side, 0, side}, {0, 1, 0}, {0, 1}},
-                {{side, 0, side}, {0, 1, 0}, {1, 1}},
-                {{side, 0, -side}, {0, 1, 0}, {1, 0}},
-            };
+            if (!isUI)
+            {
+                quadData.Vertices = {
+                    {{-side, 0, -side}, {0, 1, 0}, {0, 0}},
+                    {{-side, 0, side}, {0, 1, 0}, {0, 1}},
+                    {{side, 0, side}, {0, 1, 0}, {1, 1}},
+                    {{side, 0, -side}, {0, 1, 0}, {1, 0}},
+                };
 
-            quadData.Indices = {0, 1, 2, 0, 2, 3};
+                quadData.Indices = {0, 1, 2, 0, 2, 3};
+            }
+            else
+            {
+                quadData.Vertices = {{{0, 1, 0}, {0, 0, 1}, {0, 1}},
+                                     {{0, 0, 0}, {0, 0, 1}, {0, 0}},
+                                     {{1, 0, 0}, {0, 0, 1}, {1, 0}},
+                                     {{1, 1, 0}, {0, 0, 1}, {1, 1}}};
+
+                quadData.Indices = {0, 1, 2, 0, 3, 2};
+            }
 
             quadMesh.Data = quadData;
             return quadMesh;
