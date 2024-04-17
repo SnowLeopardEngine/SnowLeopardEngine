@@ -29,6 +29,9 @@ namespace SnowLeopardEngine
         // Init scene manager
         g_EngineContext->SceneMngr.Init();
 
+        // Init project manager
+        g_EngineContext->ProjectMngr.Init();
+
         // Init physics system
         g_EngineContext->PhysicsSys.Init();
 
@@ -129,6 +132,7 @@ namespace SnowLeopardEngine
         g_EngineContext->GUISys.Shutdown();
         g_EngineContext->RenderSys.Shutdown();
         g_EngineContext->PhysicsSys.Shutdown();
+        g_EngineContext->ProjectMngr.Shutdown();
         g_EngineContext->SceneMngr->OnUnload();
         g_EngineContext->SceneMngr.Shutdown();
         g_EngineContext->InputSys.Shutdown();

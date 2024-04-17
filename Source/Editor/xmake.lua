@@ -1,5 +1,6 @@
 -- add requirements
 add_requires("imgui v1.90.1-docking", {configs = {glfw = true, opengl3 = true, wchar32 = true}})
+add_requires("argparse")
 
 -- target defination, name: SnowLeopardEditor
 target("SnowLeopardEditor")
@@ -28,6 +29,7 @@ target("SnowLeopardEditor")
 
     -- add packages
     add_packages("imgui", { public = true })
+    add_packages("argparse", { public = true })
 
     -- add dependencies
     add_deps("SnowLeopardEngine", "ImGuizmo", "IconFontCppHeaders")

@@ -47,7 +47,7 @@ namespace SnowLeopardEngine::Editor
         IsDirectory = std::filesystem::is_directory(GlobalPath);
     }
 
-    void ResourcePanel::Init()
+    void ResourcePanel::Init(const PanelCommonInitInfo& initInfo)
     {
         m_ShowHiddenFiles      = false;
         m_IsDragging           = false;

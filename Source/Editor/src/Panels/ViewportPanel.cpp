@@ -4,25 +4,19 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Asset/Model.h"
-#include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
-#include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "IconsMaterialDesignIcons.h"
 #include "entt/entt.hpp"
 #include <imgui.h>
-#include <memory>
-
-SnowLeopardEngine::Model* g_Model;
 
 namespace SnowLeopardEngine::Editor
 {
-    void ViewportPanel::Init()
+    void ViewportPanel::Init(const PanelCommonInitInfo& initInfo)
     {
         REGISTER_TYPE(EditorCameraScript);
-        g_Model = new Model();
-
+        
         // Create RT
 
         // Color Attachment 0 - main target color
@@ -51,79 +45,6 @@ namespace SnowLeopardEngine::Editor
 
         // Set RT
         g_EngineContext->RenderSys->SetRenderTarget(m_RenderTarget);
-
-        // TODO: remove , test only code
-        // Create a scene and set active, set simulation mode: editor
-        auto scene = g_EngineContext->SceneMngr->CreateScene("RenderingSystem", true);
-        scene->SetSimulationMode(LogicSceneSimulationMode::Editor);
-        m_EditingScene = scene;
-
-        // Create a camera
-        m_EditorCamera                                             = scene->CreateEntity("EditorCamera");
-        m_EditorCamera.GetComponent<TransformComponent>().Position = {0, 10, 30};
-        auto& cameraComponent                                      = m_EditorCamera.AddComponent<CameraComponent>();
-        cameraComponent.ClearFlags                                 = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterialFilePath                     = "Assets/Materials/Skybox001.dzmaterial";
-
-        // Attach a editor camera script
-        m_EditorCamera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EditorCameraScript));
-
-        OzzModelLoadConfig config = {};
-        config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
-        config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
-        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/animation_Dancing.ozz");
-        bool ok = OzzModelLoader::Load(config, g_Model);
-
-        // Create a character
-        Entity character              = scene->CreateEntity("Character");
-        auto&  characterTransform     = character.GetComponent<TransformComponent>();
-        characterTransform.Position.y = 0.6;
-        characterTransform.Scale      = {10, 10, 10};
-        auto& characterMeshFilter     = character.AddComponent<MeshFilterComponent>();
-        // characterMeshFilter.FilePath           = "Assets/Models/Vampire/Vampire_Dancing.fbx";
-        characterMeshFilter.Meshes             = &g_Model->Meshes;
-        auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
-        auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
-
-        auto animator = CreateRef<Animator>(g_Model->AnimationClips[0]);
-        animatorComponent.Controller.RegisterAnimator(animator);
-        animatorComponent.Controller.SetEntryAnimator(animator);
-
-        auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
-
-        // Create a sphere with RigidBodyComponent & SphereColliderComponent
-        Entity sphere = scene->CreateEntity("Sphere");
-
-        auto& sphereTransform    = sphere.GetComponent<TransformComponent>();
-        sphereTransform.Position = {5, 15, 0};
-        sphereTransform.Scale *= 3;
-
-        sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
-        sphere.AddComponent<SphereColliderComponent>(normalMaterial);
-        auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
-        sphereMeshFilter.UsePrimitive       = true;
-        sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
-        auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
-
-        // Create a floor
-        Entity floor = scene->CreateEntity("Floor");
-
-        auto& floorTransform = floor.GetComponent<TransformComponent>();
-        floorTransform.Scale = {200, 1, 200};
-        // set it to static, so that rigidBody will be static.
-        floor.GetComponent<EntityStatusComponent>().IsStatic = true;
-        floor.AddComponent<RigidBodyComponent>();
-        floor.AddComponent<BoxColliderComponent>(normalMaterial);
-        auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
-        floorMeshFilter.UsePrimitive       = true;
-        floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
-        auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.MaterialFilePath = "Assets/Materials/White.dzmaterial";
-
-        // Treat the floor as terrain for NavMesh baking test
-        floor.GetComponent<TagComponent>().TagValue = Tag::Terrain;
     }
 
     void ViewportPanel::OnFixedTick()
@@ -211,13 +132,16 @@ namespace SnowLeopardEngine::Editor
             m_IsWindowHovered = ImGui::IsWindowHovered();
 
             // Set EditorCamera states
-            if (m_EditorCameraScript == nullptr)
+            if (m_EditorCamera)
             {
-                m_EditorCameraScript = std::dynamic_pointer_cast<EditorCameraScript>(
-                    m_EditorCamera.GetComponent<NativeScriptingComponent>().ScriptInstance);
+                if (m_EditorCameraScript == nullptr)
+                {
+                    m_EditorCameraScript = std::dynamic_pointer_cast<EditorCameraScript>(
+                        m_EditorCamera.GetComponent<NativeScriptingComponent>().ScriptInstance);
+                }
+                m_EditorCameraScript->SetWindowHovered(m_IsWindowHovered);
+                m_EditorCameraScript->SetGrabMoveEnabled(m_GuizmoOperation == -1);
             }
-            m_EditorCameraScript->SetWindowHovered(m_IsWindowHovered);
-            m_EditorCameraScript->SetGrabMoveEnabled(m_GuizmoOperation == -1);
 
             // Gizmos
             auto selectedEntityUUID = Selector::GetLastSelection(SelectionCategory::Viewport);
@@ -290,7 +214,7 @@ namespace SnowLeopardEngine::Editor
         // Select hovered entity
 
         // Workaround for https://github.com/CedricGuillemet/ImGuizmo/issues/310
-#if defined(NDEBUG) 
+#if defined(NDEBUG)
         static bool isFirstTime = true;
         if (g_EngineContext->InputSys->GetMouseButtonDown(MouseCode::ButtonLeft) && m_IsWindowHovered &&
             (!ImGuizmo::IsOver() || isFirstTime))

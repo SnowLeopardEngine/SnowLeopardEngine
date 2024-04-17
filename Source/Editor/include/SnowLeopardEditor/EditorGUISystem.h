@@ -1,11 +1,18 @@
 #pragma once
 
+#include "SnowLeopardEngine/Core/Base/Base.h"
+
 namespace SnowLeopardEngine::Editor
 {
+    struct EditorGUISystemInitInfo
+    {
+        std::string ProjectFilePath;
+    };
+
     class EditorGUISystem
     {
     public:
-        void Init();
+        void Init(const EditorGUISystemInitInfo& initInfo);
         void Shutdown();
 
         void OnFixedTick();

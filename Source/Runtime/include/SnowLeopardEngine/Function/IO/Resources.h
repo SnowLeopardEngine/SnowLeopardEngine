@@ -3,10 +3,14 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
+#include "SnowLeopardEngine/Function/Asset/Asset.h"
+#include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
+#include "SnowLeopardEngine/Function/Project/ProjectTypeDef.h"
 
 namespace SnowLeopardEngine
 {
     class Asset;
+    class Project;
 
     namespace Resources
     {
@@ -15,6 +19,35 @@ namespace SnowLeopardEngine
 
         // UUID -> asset handle
         extern std::unordered_map<CoreUUID, Ref<Asset>> g_AssetMap;
+
+        extern std::vector<AssetMetaData> g_AssetMetaDatas;
+
+        static Ref<Asset> GetAssetByUUID(CoreUUID uuid)
+        {
+            if (g_AssetMap.count(uuid) == 0)
+            {
+                return nullptr;
+            }
+            return g_AssetMap[uuid];
+        }
+
+        static CoreUUID GetAssetUUIDByPath(const std::filesystem::path& path)
+        {
+            CoreUUID ret = {};
+
+            for (const auto& metaData : g_AssetMetaDatas)
+            {
+                if (metaData.Path == path)
+                {
+                    ret = metaData.ID;
+                    break;
+                }
+            }
+
+            return ret;
+        }
+
+        void OnProjectLoad(Project* project);
 
         template<typename TAsset, typename... Args>
         static bool Load(const std::filesystem::path& path, Ref<TAsset>& outAsset, Args&&... args)
@@ -35,16 +68,43 @@ namespace SnowLeopardEngine
 
             g_AssetCache[md5]               = outAsset;
             g_AssetMap[outAsset->GetUUID()] = outAsset;
+
+            auto uuid = GetAssetUUIDByPath(path);
+            if (uuid.is_nil())
+            {
+                AssetMetaData metaData = {};
+                metaData.ID            = outAsset->GetUUID();
+                metaData.MD5           = md5;
+                metaData.Path          = path.generic_string();
+                g_AssetMetaDatas.emplace_back(metaData);
+            }
+
             return true;
         }
 
-        static Ref<Asset> GetAssetByUUID(CoreUUID uuid)
+        static void ImportAssets(const std::filesystem::path& assetRootPath)
         {
-            if (g_AssetMap.count(uuid) == 0)
+            for (const auto& entry : std::filesystem::directory_iterator(assetRootPath))
             {
-                return nullptr;
+                if (entry.is_regular_file())
+                {
+                    std::string extension = entry.path().extension().string();
+                    AssetType   assetType = ExtensionsToType[extension];
+
+                    // Import textures
+                    if (assetType == AssetType::Texture)
+                    {
+                        Ref<Texture2DAsset> outAsset;
+                        Load<Texture2DAsset>(entry.path(), outAsset, false);
+                    }
+
+                    // TODO: Import other assets
+                }
+                else if (entry.is_directory())
+                {
+                    ImportAssets(entry.path());
+                }
             }
-            return g_AssetMap[uuid];
         }
     } // namespace Resources
 } // namespace SnowLeopardEngine

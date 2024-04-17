@@ -15,10 +15,7 @@
 #include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "cereal/cereal.hpp"
-#include "glm/fwd.hpp"
 #include <PxPhysicsAPI.h>
-#include <optional>
-#include <string>
 
 // CppAst.NET Macro
 #if !defined(__cppast)
