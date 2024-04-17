@@ -13,35 +13,27 @@ namespace SnowLeopardEngine
     {
         CoreUUID    ID;
         std::string Path;
+        std::string MD5;
 
         // NOLINTBEGIN
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(ID), CEREAL_NVP(Path));
+            archive(CEREAL_NVP(ID), CEREAL_NVP(Path), CEREAL_NVP(MD5));
         }
         // NOLINTEND
     };
 
-    // UUID -> Metadata
-    using AssetMap = std::map<CoreUUID, AssetMetaData>;
-
-    // MD5 -> UUID
-    using AssetContentMap = std::map<std::string, CoreUUID>;
-
-    struct ProjectInfo
+    struct DzProject
     {
-        std::string           Name;
-        std::filesystem::path RootPath;
-
-        AssetMap        AssetMapInfo;
-        AssetContentMap AssetContentInfo;
+        std::string                Name;
+        std::vector<AssetMetaData> AssetMetaDatas;
 
         // NOLINTBEGIN
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(Name), CEREAL_NVP(RootPath), CEREAL_NVP(AssetMapInfo), CEREAL_NVP(AssetContentInfo));
+            archive(CEREAL_NVP(Name), CEREAL_NVP(AssetMetaDatas));
         }
         // NOLINTEND
     };

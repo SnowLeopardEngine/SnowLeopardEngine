@@ -3,6 +3,7 @@
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/IO/Resources.h"
 
 namespace SnowLeopardEngine::Editor
 {
@@ -22,7 +23,7 @@ namespace SnowLeopardEngine::Editor
         std::cout << "Handling CLI argument: --project = " << project << std::endl;
         if (!std::filesystem::exists(project))
         {
-            std::cerr << "Failed to load the project: " << project << std::endl;
+            std::cerr << "Project file doesn't exist: " << project << std::endl;
             return false;
         }
 
@@ -34,9 +35,20 @@ namespace SnowLeopardEngine::Editor
             return false;
         }
 
+        // load the project
+        auto loadingProject = g_EngineContext->ProjectMngr->CreateProject();
+        if (!IO::Deserialize(loadingProject.get(), project))
+        {
+            std::cerr << "Failed to deserialize the project from: " << project << std::endl;
+            return false;
+        }
+        loadingProject->SetPath(project);
+        loadingProject->LoadAssets();
+        g_EngineContext->ProjectMngr->SetActiveProject(loadingProject);
+
         // init GUI system
         EditorGUISystemInitInfo guiInitInfo = {};
-        guiInitInfo.ProjectFilePath = project;
+        guiInitInfo.ProjectFilePath         = project;
         m_GUISystem.Init(guiInitInfo);
 
         // subscribe events
@@ -107,6 +119,13 @@ namespace SnowLeopardEngine::Editor
     void EditorApp::Shutdown()
     {
         SNOW_LEOPARD_INFO("[Editor] Shutting Down...");
+
+        // Save active project
+        auto activeProject = g_EngineContext->ProjectMngr->GetActiveProject();
+        if (activeProject != nullptr)
+        {
+            activeProject->Save();
+        }
 
         // GUI Shutdown
         m_GUISystem.Shutdown();

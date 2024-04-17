@@ -18,7 +18,7 @@ namespace SnowLeopardEngine
                 return false;
             }
 
-            cereal::JSONOutputArchive output {os};
+            cereal::JSONOutputArchive output(os);
             entt::snapshot {scene->GetRegistry()}.entities(output).component<ALL_SERIALIZABLE_COMPONENT_TYPES>(output);
 
             return true;
@@ -35,7 +35,7 @@ namespace SnowLeopardEngine
                 return false;
             }
 
-            cereal::JSONInputArchive input {is};
+            cereal::JSONInputArchive input(is);
             entt::snapshot_loader {scene->GetRegistry()}
                 .entities(input)
                 .component<ALL_SERIALIZABLE_COMPONENT_TYPES>(input)
@@ -54,7 +54,7 @@ namespace SnowLeopardEngine
                 return false;
             }
 
-            cereal::JSONOutputArchive output {os};
+            cereal::JSONOutputArchive output(os);
 
             output(project->GetInfo());
 
@@ -72,12 +72,12 @@ namespace SnowLeopardEngine
                 return false;
             }
 
-            cereal::JSONInputArchive input {is};
+            cereal::JSONInputArchive input(is);
 
-            ProjectInfo projectInfo;
-            input(projectInfo);
+            DzProject dzProject;
+            input(dzProject);
 
-            project->SetInfo(projectInfo);
+            project->SetInfo(dzProject);
 
             return true;
         }

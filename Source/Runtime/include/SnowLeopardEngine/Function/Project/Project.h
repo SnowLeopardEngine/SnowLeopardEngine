@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SnowLeopardEngine/Function/IO/Resources.h"
+#include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Function/Project/ProjectTypeDef.h"
 
 namespace SnowLeopardEngine
@@ -7,21 +9,31 @@ namespace SnowLeopardEngine
     class Project
     {
     public:
-        void               SetInfo(const ProjectInfo& info) { m_Info = info; }
-        const ProjectInfo& GetInfo() const { return m_Info; }
+        void             SetInfo(const DzProject& info) { m_Info = info; }
+        const DzProject& GetInfo() const { return m_Info; }
+
+        void                         SetPath(const std::filesystem::path& path) { m_Path = path; }
+        const std::filesystem::path& GetPath() const { return m_Path; }
 
         void               SetName(const std::string& name) { m_Info.Name = name; }
         const std::string& GetName() const { return m_Info.Name; }
 
-        void                         SetRootPath(const std::filesystem::path& rootPath) { m_Info.RootPath = rootPath; }
-        const std::filesystem::path& GetRootPath() const { return m_Info.RootPath; }
+        void LoadAssets();
 
-        void RecordAssetInfo(CoreUUID uuid, const AssetMetaData& metaData) { m_Info.AssetMapInfo[uuid] = metaData; }
+        void Save() { IO::Serialize(this, m_Path); }
+
+        void RecordAssetInfo(const AssetMetaData& metaData) { m_Info.AssetMetaDatas.emplace_back(metaData); }
 
         AssetMetaData* GetAssetMetaData(CoreUUID uuid)
         {
-            if (m_Info.AssetMapInfo.count(uuid) > 0)
-                return &m_Info.AssetMapInfo[uuid];
+            for (auto& metaData : m_Info.AssetMetaDatas)
+            {
+                if (metaData.ID == uuid)
+                {
+                    return &metaData;
+                }
+            }
+
             return nullptr;
         }
 
@@ -29,13 +41,20 @@ namespace SnowLeopardEngine
         {
             CoreUUID ret = {};
 
-            if (m_Info.AssetContentInfo.count(md5) > 0)
-                ret = m_Info.AssetContentInfo[md5];
+            for (auto& metaData : m_Info.AssetMetaDatas)
+            {
+                if (metaData.MD5 == md5)
+                {
+                    ret = metaData.ID;
+                    break;
+                }
+            }
 
             return ret;
         }
 
     private:
-        ProjectInfo m_Info;
+        DzProject             m_Info;
+        std::filesystem::path m_Path;
     };
 } // namespace SnowLeopardEngine

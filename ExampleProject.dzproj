@@ -1,6 +1,161 @@
 {
-    "Name": "ExampleProject",
-    "RootPath": ".",
-    "AssetInfo": {},
-    "AssetContentInfo": {}
+    "value0": {
+        "Name": "ExampleProject",
+        "AssetMetaDatas": [
+            {
+                "ID": {
+                    "value0": "a9866ed3-3693-4e79-94bb-add4ccad7978"
+                },
+                "Path": "../../../../../Assets/Models/Vampire/textures/Vampire_diffuse.png",
+                "MD5": "BFB331E2360E26931F80E8AB770523CA"
+            },
+            {
+                "ID": {
+                    "value0": "3aa5e14f-1e95-463c-ba3f-4c2d90f999b5"
+                },
+                "Path": "../../../../../Assets/Models/Vampire/textures/Vampire_diffuse_transparent.png",
+                "MD5": "616BFE6569F7A04CBA8D6AA9E1FCBDE9"
+            },
+            {
+                "ID": {
+                    "value0": "7fb35c59-07da-4966-8ec0-1aee05462759"
+                },
+                "Path": "../../../../../Assets/Models/Vampire/textures/Vampire_emission.png",
+                "MD5": "FA1770B42D24CF146D53206E662B924A"
+            },
+            {
+                "ID": {
+                    "value0": "a4e956f0-f1e4-4c1a-8034-0fddbb18a3df"
+                },
+                "Path": "../../../../../Assets/Models/Vampire/textures/Vampire_normal.png",
+                "MD5": "1391222C36EEEEB3DB69C2E911B3615C"
+            },
+            {
+                "ID": {
+                    "value0": "da9d162f-3eb5-43a7-a70a-ead0760ff2b0"
+                },
+                "Path": "../../../../../Assets/Models/Vampire/textures/Vampire_specular.png",
+                "MD5": "9E81958D6B6BE3C699413B73585FA05C"
+            },
+            {
+                "ID": {
+                    "value0": "9248263a-2fba-444e-9f5b-741bf9dcc8bd"
+                },
+                "Path": "../../../../../Assets/Textures/awesomeface.png",
+                "MD5": "734DC6C2401F125B69A950B72BF893EC"
+            },
+            {
+                "ID": {
+                    "value0": "03b11f06-9a00-40cf-80a6-7396f9e786cf"
+                },
+                "Path": "../../../../../Assets/Textures/CoolGay.png",
+                "MD5": "18B72BBD978F848351DC42FCE9CC5E30"
+            },
+            {
+                "ID": {
+                    "value0": "7c11b0fc-9e86-4504-9826-6835905a2982"
+                },
+                "Path": "../../../../../Assets/Textures/Grass.png",
+                "MD5": "A4FAA78A736C07EA3ACF5D417858CE8F"
+            },
+            {
+                "ID": {
+                    "value0": "1dcfaa5a-d272-4870-a12b-1f7627aa8408"
+                },
+                "Path": "../../../../../Assets/Textures/PBR/RustedIron2/rustediron2_basecolor.png",
+                "MD5": "1A53996F53D76FCC544F93901E9552B3"
+            },
+            {
+                "ID": {
+                    "value0": "21a8e9f5-c3e5-42b6-94d0-dc19a8149dde"
+                },
+                "Path": "../../../../../Assets/Textures/PBR/RustedIron2/rustediron2_metallic.png",
+                "MD5": "5E66F1FBFED4C2FD1B1102E77B28DC12"
+            },
+            {
+                "ID": {
+                    "value0": "7f360dcb-cd94-45aa-ad25-2c7c2b40d41f"
+                },
+                "Path": "../../../../../Assets/Textures/PBR/RustedIron2/rustediron2_normal.png",
+                "MD5": "55CE2413C5519183AF8EEF1745D51737"
+            },
+            {
+                "ID": {
+                    "value0": "12d119b0-0688-4da7-92ed-b376171e525c"
+                },
+                "Path": "../../../../../Assets/Textures/PBR/RustedIron2/rustediron2_roughness.png",
+                "MD5": "740415D34B0B607D90387EE66EA2F069"
+            },
+            {
+                "ID": {
+                    "value0": "ccfc7c3e-ccba-42e8-9c2d-7d61714f781c"
+                },
+                "Path": "../../../../../Assets/Textures/Perlin.png",
+                "MD5": "4217249D2F0755347F0A3BBBA7AF5291"
+            },
+            {
+                "ID": {
+                    "value0": "a8add0c3-1647-4b30-9277-5350c4df1ab2"
+                },
+                "Path": "../../../../../Assets/Textures/Skybox001/back.jpg",
+                "MD5": "16F4AFBDB4C32AD1358E6708484F5989"
+            },
+            {
+                "ID": {
+                    "value0": "c6c0a863-d13c-44f5-8ec8-67097a045d54"
+                },
+                "Path": "../../../../../Assets/Textures/Skybox001/bottom.jpg",
+                "MD5": "B0E58843805FA234658C194FB94D9199"
+            },
+            {
+                "ID": {
+                    "value0": "bdc08bfd-8053-40cc-94cb-3b57a00ec3cb"
+                },
+                "Path": "../../../../../Assets/Textures/Skybox001/front.jpg",
+                "MD5": "70EB3102E95B7FD3B18C7DA800C6BC39"
+            },
+            {
+                "ID": {
+                    "value0": "fe52b3f5-5609-40b4-9968-dc773981d418"
+                },
+                "Path": "../../../../../Assets/Textures/Skybox001/left.jpg",
+                "MD5": "4675318CF90646921A342F5FADF60C58"
+            },
+            {
+                "ID": {
+                    "value0": "7dac8723-dd38-4751-9efe-ba339d947b03"
+                },
+                "Path": "../../../../../Assets/Textures/Skybox001/right.jpg",
+                "MD5": "B48B94C1B0978EB919474DCD51FC2ECC"
+            },
+            {
+                "ID": {
+                    "value0": "6ee02a8a-4353-4ddf-b2bf-b9e3acecb3e4"
+                },
+                "Path": "../../../../../Assets/Textures/Skybox001/top.jpg",
+                "MD5": "E683604E77A7836047821F6A091FAF92"
+            },
+            {
+                "ID": {
+                    "value0": "81cc15ee-c7c9-4be9-91aa-747dc5d9bd2e"
+                },
+                "Path": "../../../../../Assets/Textures/SleepGay.jpg",
+                "MD5": "DCEB96CC4010B328B00EDCB02396D5F1"
+            },
+            {
+                "ID": {
+                    "value0": "e5d8f7e7-1ea7-4f7e-b073-fb870feb7b80"
+                },
+                "Path": "../../../../../Assets/Textures/UVTest.png",
+                "MD5": "6F5B9A639FBE51431C58BBBD440BDF2D"
+            },
+            {
+                "ID": {
+                    "value0": "a354bbe3-db7b-4435-8a09-9d2dca2a65ff"
+                },
+                "Path": "../../../../../Assets/Textures/white_1x1.jpg",
+                "MD5": "691BBA4E0E0D847C6694913B61172B73"
+            }
+        ]
+    }
 }

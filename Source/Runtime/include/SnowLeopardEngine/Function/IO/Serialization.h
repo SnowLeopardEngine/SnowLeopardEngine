@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SnowLeopardEngine/Core/Base/Base.h"
+
 #include <cereal/cereal.hpp>
 #include <cereal/types/map.hpp>
 #include <cereal/types/string.hpp>
