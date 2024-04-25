@@ -76,12 +76,7 @@ namespace SnowLeopardEngine
     {
         virtual ~PipelineState() = default;
 
-        std::string  Name;
         PipelineType Type = PipelineType::Graphics;
-
-        std::string VertexShaderName;
-        std::string FragmentShaderName;
-        // TODO: Kexuan Zhang More shader names
 
         DepthTestMode DepthTest  = DepthTestMode::Less;
         bool          DepthWrite = true;
