@@ -39,13 +39,13 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
 
-        m_Pipeline.RenderScene();
+        // Render FrameGraph
     }
 
     void RenderSystem::Present() { m_Context->SwapBuffers(); }
 
     void RenderSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e)
     {
-        m_Pipeline.SetupPipeline(e.GetLogicScene());
+        // Build renderables
     }
 } // namespace SnowLeopardEngine
