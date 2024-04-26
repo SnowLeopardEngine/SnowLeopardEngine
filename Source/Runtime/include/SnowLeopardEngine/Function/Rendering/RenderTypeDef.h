@@ -23,7 +23,9 @@ namespace SnowLeopardEngine
         RGB8,
         RGBA8,
         RGB32,
-        RGBA32
+        RGBA32,
+        RGB8_UNORM,
+        R32_SINT
     };
 
     enum class TextureType : uint8_t

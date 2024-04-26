@@ -47,7 +47,7 @@ namespace SnowLeopardEngine
         }
     }
 
-    GLTexture2D::GLTexture2D(const TextureDesc& desc, Buffer* data) : m_Desc(desc)
+    GLTexture2D::GLTexture2D(const TextureDesc& desc) : m_Desc(desc)
     {
         m_InternalFormat = PixelColorFormatToInternalFormat(m_Desc.Format);
         m_DataFormat     = PixelColorFormatToDataFormat(m_Desc.Format);
@@ -59,8 +59,6 @@ namespace SnowLeopardEngine
             glCreateTextures(GL_TEXTURE_2D, 1, &m_Name);
 
             glTextureStorage2D(m_Name, 1, m_InternalFormat, m_Desc.Width, m_Desc.Height);
-            glTextureSubImage2D(
-                m_Name, 0, 0, 0, m_Desc.Width, m_Desc.Height, m_DataFormat, GL_UNSIGNED_BYTE, data->Data);
 
             switch (desc.Config.WrapMode)
             {
@@ -110,16 +108,6 @@ namespace SnowLeopardEngine
             glGenTextures(1, &m_Name);
             glBindTexture(GL_TEXTURE_2D, m_Name);
 
-            glTexImage2D(GL_TEXTURE_2D,
-                         0,
-                         m_InternalFormat,
-                         m_Desc.Width,
-                         m_Desc.Height,
-                         0,
-                         m_DataFormat,
-                         GL_UNSIGNED_BYTE,
-                         data->Data);
-
             switch (desc.Config.WrapMode)
             {
                 case TextureWrapMode::Clamp:
@@ -165,6 +153,14 @@ namespace SnowLeopardEngine
         }
     }
 
+    GLTexture2D::GLTexture2D(const TextureDesc& desc, Buffer* data) : GLTexture2D(desc)
+    {
+        if (data != nullptr)
+        {
+            UploadBuffer(data);
+        }
+    }
+
     GLTexture2D::~GLTexture2D() { glDeleteTextures(1, &m_Name); }
 
     void GLTexture2D::Bind(uint32_t slot) const
@@ -182,7 +178,28 @@ namespace SnowLeopardEngine
 
     void GLTexture2D::Unbind() const { glBindTexture(GL_TEXTURE_2D, 0); }
 
-    GLCubemap::GLCubemap(const TextureDesc& desc, std::vector<Buffer*> dataList) : m_Desc(desc)
+    void GLTexture2D::UploadBuffer(Buffer* data) const
+    {
+        if (OpenGLAPI::IsDSASupported())
+        {
+            glTextureSubImage2D(
+                m_Name, 0, 0, 0, m_Desc.Width, m_Desc.Height, m_DataFormat, GL_UNSIGNED_BYTE, data->Data);
+        }
+        else
+        {
+            glTexImage2D(GL_TEXTURE_2D,
+                         0,
+                         m_InternalFormat,
+                         m_Desc.Width,
+                         m_Desc.Height,
+                         0,
+                         m_DataFormat,
+                         GL_UNSIGNED_BYTE,
+                         data->Data);
+        }
+    }
+
+    GLCubemap::GLCubemap(const TextureDesc& desc) : m_Desc(desc)
     {
         m_InternalFormat = PixelColorFormatToInternalFormat(m_Desc.Format);
         m_DataFormat     = PixelColorFormatToDataFormat(m_Desc.Format);
@@ -194,21 +211,6 @@ namespace SnowLeopardEngine
             glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_Name);
 
             glTextureStorage2D(m_Name, 1, m_InternalFormat, desc.Width, desc.Height);
-
-            for (size_t face = 0; face < 6; ++face)
-            {
-                glTextureSubImage3D(m_Name,
-                                    0,
-                                    0,
-                                    0,
-                                    face,
-                                    desc.Width,
-                                    desc.Height,
-                                    1,
-                                    m_DataFormat,
-                                    GL_UNSIGNED_BYTE,
-                                    dataList[face]->Data);
-            }
 
             glTextureParameteri(m_Name, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTextureParameteri(m_Name, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -243,19 +245,6 @@ namespace SnowLeopardEngine
             glGenTextures(1, &m_Name);
             glBindTexture(GL_TEXTURE_CUBE_MAP, m_Name);
 
-            for (size_t face = 0; face < 6; ++face)
-            {
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-                             0,
-                             m_InternalFormat,
-                             desc.Width,
-                             desc.Height,
-                             0,
-                             m_DataFormat,
-                             GL_UNSIGNED_BYTE,
-                             dataList[face]->Data);
-            }
-
             glTexParameteri(m_Name, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(m_Name, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glTexParameteri(m_Name, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -286,6 +275,11 @@ namespace SnowLeopardEngine
         }
     }
 
+    GLCubemap::GLCubemap(const TextureDesc& desc, const std::vector<Buffer*>& dataList) : GLCubemap(desc)
+    {
+        UploadBufferList(dataList);
+    }
+
     GLCubemap::~GLCubemap() { glDeleteTextures(1, &m_Name); }
 
     void GLCubemap::Bind(uint32_t slot) const
@@ -302,4 +296,40 @@ namespace SnowLeopardEngine
     }
 
     void GLCubemap::Unbind() const { glBindTexture(GL_TEXTURE_CUBE_MAP, 0); }
+
+    void GLCubemap::UploadBufferList(const std::vector<Buffer*> dataList) const
+    {
+        if (OpenGLAPI::IsDSASupported())
+        {
+            for (size_t face = 0; face < 6; ++face)
+            {
+                glTextureSubImage3D(m_Name,
+                                    0,
+                                    0,
+                                    0,
+                                    face,
+                                    m_Desc.Width,
+                                    m_Desc.Height,
+                                    1,
+                                    m_DataFormat,
+                                    GL_UNSIGNED_BYTE,
+                                    dataList[face]->Data);
+            }
+        }
+        else
+        {
+            for (size_t face = 0; face < 6; ++face)
+            {
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
+                             0,
+                             m_InternalFormat,
+                             m_Desc.Width,
+                             m_Desc.Height,
+                             0,
+                             m_DataFormat,
+                             GL_UNSIGNED_BYTE,
+                             dataList[face]->Data);
+            }
+        }
+    }
 } // namespace SnowLeopardEngine

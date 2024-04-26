@@ -36,7 +36,7 @@ rule("copy_assets")
     end)
     on_load(function(target)
         -- https://xmake.io/#/zh-cn/manual/builtin_modules?id=oscp
-        os.cp("$(projectdir)/Assets/", target:targetdir() .. "/Assets", {rootdir = "."})
+        os.cp("$(projectdir)/Assets/*", target:targetdir() .. "/Assets", {rootdir = "Assets"})
         os.cp("$(projectdir)/Tools/$(plat)/$(arch)/Coral/Coral**", target:targetdir())
     end)
 rule_end()

@@ -11,8 +11,8 @@ namespace SnowLeopardEngine
     public:
         RenderContext() = default;
 
-        Ref<Shader> CreateGraphicsProgram(const std::string&                vertPath,
-                                        const std::string&                fragPath,
-                                        const std::optional<std::string>& geomPath);
+        Ref<Shader> CreateGraphicsProgram(const std::string&                vertSource,
+                                          const std::string&                fragSource,
+                                          const std::optional<std::string>& geomSource = std::nullopt);
     };
 } // namespace SnowLeopardEngine

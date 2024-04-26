@@ -23,12 +23,24 @@ namespace SnowLeopardEngine
     class Texture2D : public Texture
     {
     public:
+        virtual void UploadBuffer(Buffer* data) const = 0;
+
+        // FrameGraph API
+        static Ref<Texture2D> Create(const TextureDesc& desc);
+
+        // Old API
         static Ref<Texture2D> Create(const TextureDesc& desc, Buffer* data);
     };
 
     class Cubemap : public Texture
     {
     public:
-        static Ref<Cubemap> Create(const TextureDesc& desc, std::vector<Buffer*> dataList);
+        virtual void UploadBufferList(std::vector<Buffer*> dataList) const = 0;
+
+        // FrameGraph API
+        static Ref<Cubemap> Create(const TextureDesc& desc);
+
+        // Old API
+        static Ref<Cubemap> Create(const TextureDesc& desc, const std::vector<Buffer*>& dataList);
     };
 } // namespace SnowLeopardEngine

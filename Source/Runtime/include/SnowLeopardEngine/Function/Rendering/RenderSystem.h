@@ -5,6 +5,7 @@
 #include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/WorldRenderer.h"
 
 namespace SnowLeopardEngine
 {
@@ -18,7 +19,7 @@ namespace SnowLeopardEngine
         void OnTick(float deltaTime);
         void Present();
 
-        void SetRenderTarget(const Ref<FrameBuffer>& renderTarget) { }
+        void SetRenderTarget(const Ref<FrameBuffer>& renderTarget) {}
 
         const Ref<GraphicsAPI>& GetAPI() const { return m_API; }
 
@@ -28,6 +29,7 @@ namespace SnowLeopardEngine
     protected:
         Ref<GraphicsContext> m_Context;
         Ref<GraphicsAPI>     m_API;
+        WorldRenderer        m_Renderer;
 
         EventHandler<LogicSceneLoadedEvent> m_LogicSceneLoadedHandler = [this](const LogicSceneLoadedEvent& e) {
             OnLogicSceneLoaded(e);

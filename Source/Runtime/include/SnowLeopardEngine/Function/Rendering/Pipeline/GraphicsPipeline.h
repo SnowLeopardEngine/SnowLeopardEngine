@@ -6,7 +6,6 @@
 namespace SnowLeopardEngine
 {
     class Shader;
-    class VertexArray;
 
     class GraphicsPipeline
     {
@@ -19,21 +18,17 @@ namespace SnowLeopardEngine
             Builder() = default;
 
             Builder& SetShaderProgram(const Ref<Shader>& program);
-            Builder& SetVertexArray(const Ref<VertexArray>& vao);
-
             Builder& SetPipelineState(const PipelineState& state);
 
             GraphicsPipeline Build();
 
         private:
-            Ref<Shader>      m_Program = nullptr;
-            Ref<VertexArray> m_VAO     = nullptr;
-            PipelineState    m_State;
+            Ref<Shader>   m_Program = nullptr;
+            PipelineState m_State;
         };
 
     private:
-        Ref<Shader>      m_Program = nullptr;
-        Ref<VertexArray> m_VAO     = nullptr;
-        PipelineState    m_State;
+        Ref<Shader>   m_Program = nullptr;
+        PipelineState m_State;
     };
 } // namespace SnowLeopardEngine

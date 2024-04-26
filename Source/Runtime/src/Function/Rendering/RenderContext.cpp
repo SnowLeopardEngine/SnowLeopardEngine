@@ -3,11 +3,11 @@
 
 namespace SnowLeopardEngine
 {
-    Ref<Shader> RenderContext::CreateGraphicsProgram(const std::string& vertPath,
-                                                     const std::string& fragPath,
-                                                     const std::optional<std::string>&)
+    Ref<Shader> RenderContext::CreateGraphicsProgram(const std::string&                vertSource,
+                                                     const std::string&                fragSource,
+                                                     const std::optional<std::string>& geomSource)
     {
         // TODO: Geometry, Compute
-        return Shader::Create(vertPath, fragPath);
+        return Shader::Create(vertSource, fragSource);
     }
 } // namespace SnowLeopardEngine

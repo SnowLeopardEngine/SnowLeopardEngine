@@ -8,7 +8,11 @@ namespace SnowLeopardEngine
         return CreateRef<GLTexture2D>(desc, data);
     }
 
-    Ref<Cubemap> Cubemap::Create(const TextureDesc& desc, std::vector<Buffer*> dataList)
+    Ref<Texture2D> Texture2D::Create(const TextureDesc& desc) { return CreateRef<GLTexture2D>(desc); }
+
+    Ref<Cubemap> Cubemap::Create(const TextureDesc& desc) { return CreateRef<GLCubemap>(desc); }
+
+    Ref<Cubemap> Cubemap::Create(const TextureDesc& desc, const std::vector<Buffer*>& dataList)
     {
         return CreateRef<GLCubemap>(desc, dataList);
     }

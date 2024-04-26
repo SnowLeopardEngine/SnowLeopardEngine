@@ -17,6 +17,8 @@ namespace SnowLeopardEngine
 
         m_API = GraphicsAPI::Create(GraphicsBackend::OpenGL);
 
+        m_Renderer.CreatePasses();
+
         Subscribe(m_LogicSceneLoadedHandler);
 
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Initialized");
@@ -39,13 +41,15 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
 
-        // Render FrameGraph
+        // Render
+        m_Renderer.RenderFrame();
     }
 
     void RenderSystem::Present() { m_Context->SwapBuffers(); }
 
     void RenderSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e)
     {
-        // Build renderables
+        // Filter renderables
+        m_Renderer.FilterRenderables();
     }
 } // namespace SnowLeopardEngine
