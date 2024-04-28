@@ -5,11 +5,11 @@
 
 layout(location = 0) in vec2 varingTexCoords;
 
-layout(location = 0) uniform sampler2D gPosition;
-layout(location = 1) uniform sampler2D gNormal;
-layout(location = 2) uniform sampler2D gAlbedo;
-layout(location = 3) uniform sampler2D gMetallicRoughnessAO;
-layout(location = 4) uniform sampler2D shadowMap;
+layout(location = 0, binding = 0) uniform sampler2D gPosition;
+layout(location = 1, binding = 1) uniform sampler2D gNormal;
+layout(location = 2, binding = 2) uniform sampler2D gAlbedo;
+layout(location = 3, binding = 3) uniform sampler2D gMetallicRoughnessAO;
+layout(location = 4, binding = 4) uniform sampler2D shadowMap;
 
 layout(location = 0) out vec3 FragColor;
 

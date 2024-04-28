@@ -62,8 +62,8 @@ public:
         camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Load materials
-        const std::string deferredWhiteMaterialFilePath = "Assets/Materials/Refactor.dzmaterial";
-        const std::string deferredPBRMaterialFilePath   = "Assets/Materials/Refactor.dzmaterial";
+        const std::string deferredWhiteMaterialFilePath = "Assets/Materials/Next/White.dzmaterial";
+        const std::string deferredPBRMaterialFilePath   = "Assets/Materials/Next/RustedIronPBRDeferred.dzmaterial";
 
         // Create spheres to test materials
         // Sphere 1

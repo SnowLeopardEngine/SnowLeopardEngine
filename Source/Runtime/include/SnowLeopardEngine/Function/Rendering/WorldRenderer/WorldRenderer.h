@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SnowLeopardEngine/Core/Math/AABB.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/TransientResources.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameUniform.h"
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
@@ -25,6 +26,8 @@ namespace SnowLeopardEngine
 
     private:
         void CreatePasses();
+
+        AABB GetRenderableSceneAABB();
 
     private:
         // -------- Context --------

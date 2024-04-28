@@ -12,6 +12,7 @@
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 
 #include <fg/Blackboard.hpp>
+#include <limits>
 
 namespace SnowLeopardEngine
 {
@@ -52,10 +53,13 @@ namespace SnowLeopardEngine
                     mesh.Data.VertBuffer = Ref<VertexBuffer>(new VertexBuffer {std::move(vertexBuffer)},
                                                              RenderContext::ResourceDeleter {*m_RenderContext});
 
+                    auto modelMatrix = transform.GetTransform();
+
                     Renderable renderable  = {};
                     renderable.Mesh        = &mesh;
                     renderable.Mat         = meshRenderer.Mat;
-                    renderable.ModelMatrix = transform.GetTransform();
+                    renderable.ModelMatrix = modelMatrix;
+                    renderable.BoundingBox = AABB::Build(mesh.Data.Vertices).Transform(modelMatrix);
                     m_Renderables.emplace_back(renderable);
                 }
             });
@@ -90,17 +94,26 @@ namespace SnowLeopardEngine
         m_FrameUniform.DirectionalLightDirection = directionalLightComponent.Direction;
         m_FrameUniform.DirectionalLightIntensity = directionalLightComponent.Intensity;
 
-        // TODO: Light frustum, get scene AABB and set borders.
-        glm::mat4 lightProjection = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 1.0f, 10000.0f);
-        auto      lightPos  = -1000.0f * directionalLightComponent.Direction; // simulate directional light position
-        glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 lightSpaceMatrix      = lightProjection * lightView;
+        // Get scene AABB and set light space.
+        auto sceneAABB       = GetRenderableSceneAABB();
+        auto sceneAABBCenter = sceneAABB.GetCenter();
+        auto sceneAABBSize   = sceneAABB.GetExtent();
+
+        float     lightDistance = 2.0f * glm::length(sceneAABBSize);
+        glm::vec3 lightPos      = sceneAABBCenter - lightDistance * directionalLightComponent.Direction;
+
+        glm::mat4 lightProjection = glm::ortho(
+            -sceneAABBSize.x, sceneAABBSize.x, -sceneAABBSize.y, sceneAABBSize.y, 0.0f, 2.0f * lightDistance);
+        glm::mat4 lightView = glm::lookAt(lightPos, sceneAABBCenter, glm::vec3(0.0f, 1.0f, 0.0f));
+
+        glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
         m_FrameUniform.LightSpaceMatrix = lightSpaceMatrix;
 
         uploadFrameUniform(fg, blackboard, m_FrameUniform);
 
         // Shadow pre pass
-        m_ShadowPrePass->AddToGraph(fg, blackboard, viewPort.Extent, m_Renderables);
+        m_ShadowPrePass->AddToGraph(fg, blackboard, {.Width = 2048, .Height = 2048}, m_Renderables);
 
         // G-Buffer pass
         m_GBufferPass->AddToGraph(fg, blackboard, viewPort.Extent, m_Renderables);
@@ -128,5 +141,18 @@ namespace SnowLeopardEngine
         m_GBufferPass          = CreateScope<GBufferPass>(*m_RenderContext);
         m_DeferredLightingPass = CreateScope<DeferredLightingPass>(*m_RenderContext);
         m_FinalPass            = CreateScope<FinalPass>(*m_RenderContext);
+    }
+
+    AABB WorldRenderer::GetRenderableSceneAABB()
+    {
+        float maxFloat  = std::numeric_limits<float>().max();
+        AABB  sceneAABB = {.Min = glm::vec3(maxFloat), .Max = glm::vec3(-maxFloat)};
+
+        for (const auto& renderable : m_Renderables)
+        {
+            sceneAABB.Merge(renderable.BoundingBox);
+        }
+
+        return sceneAABB;
     }
 } // namespace SnowLeopardEngine

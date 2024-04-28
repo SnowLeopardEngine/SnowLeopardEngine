@@ -14,16 +14,16 @@ layout(location = 3) out vec3 gMetallicRoughnessAO;
 layout(location = 4) out int gEnityID;
 
 layout(location = 0) uniform vec4 albedo;
-layout(location = 1) uniform sampler2D albedoMap;
+layout(location = 1, binding = 0) uniform sampler2D albedoMap;
 layout(location = 2) uniform int useAlbedoMap;
 layout(location = 3) uniform float metallic;
-layout(location = 4) uniform sampler2D metallicMap;
+layout(location = 4, binding = 1) uniform sampler2D metallicMap;
 layout(location = 5) uniform int useMetallicMap;
 layout(location = 6) uniform float roughness;
-layout(location = 7) uniform sampler2D roughnessMap;
+layout(location = 7, binding = 2) uniform sampler2D roughnessMap;
 layout(location = 8) uniform int useRoughnessMap;
 layout(location = 9) uniform float ao;
-layout(location = 10) uniform sampler2D aoMap;
+layout(location = 10, binding = 3) uniform sampler2D aoMap;
 layout(location = 11) uniform int useAoMap;
 
 void main() {

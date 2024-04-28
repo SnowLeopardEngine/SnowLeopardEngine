@@ -1,7 +1,7 @@
 #ifndef PBR_LIGHTING_GLSL
 #define PBR_LIGHTING_GLSL
 
-#include "Lib/LegacyShadow.glsl"
+#include "Lib/Shadow.glsl"
 #include "Lib/PBR.glsl"
 
 struct DirectionalLight {
@@ -50,7 +50,7 @@ vec3 CalPBRLighting(DirectionalLight directionalLight, vec3 normal, vec3 viewDir
 
     Lo += (kD * material.albedo / PI + specular) * radiance * NdotL;
 
-    float shadow = ShadowCalculation(fragPosLightSpace, shadowMap);
+    float shadow = ShadowCalculation(fragPosLightSpace, normal, L, shadowMap);
 
     vec3 ambient = vec3(0.03) * material.albedo * material.ao;
     vec3 color = ambient + (1.0 - shadow) * Lo;

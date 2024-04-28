@@ -26,7 +26,8 @@ namespace SnowLeopardEngine
                 builder.read(frameUniform);
 
                 data.ShadowMap = builder.create<FrameGraphTexture>(
-                    "ShadowMap", {.Extent = resolution, .Format = PixelFormat::Depth32F});
+                    "ShadowMap",
+                    {.Extent = resolution, .Format = PixelFormat::Depth32F, .Wrap = WrapMode::ClampToOpaqueWhite});
                 data.ShadowMap = builder.write(data.ShadowMap);
             },
             [=, this](const ShadowData& data, FrameGraphPassResources& resources, void* ctx) {
@@ -89,7 +90,7 @@ namespace SnowLeopardEngine
             })
             .SetRasterizerState({
                 .PolygonMode = PolygonMode::Fill,
-                .CullMode    = CullMode::Front,
+                .CullMode    = CullMode::Front, // Avoid peter panning
                 .ScissorTest = false,
             })
             .SetVAO(vertexArrayObject)

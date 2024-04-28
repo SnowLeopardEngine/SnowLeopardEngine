@@ -75,15 +75,10 @@ namespace SnowLeopardEngine
                 rc.BindGraphicsPipeline(m_Pipeline)
                     .BindUniformBuffer(0, getBuffer(resources, frameUniform))
                     .BindTexture(0, getTexture(resources, gBuffer.Position))
-                    .SetUniform1i("gPosition", 0)
                     .BindTexture(1, getTexture(resources, gBuffer.Normal))
-                    .SetUniform1i("gNormal", 1)
                     .BindTexture(2, getTexture(resources, gBuffer.Albedo))
-                    .SetUniform1i("gAlbedo", 2)
                     .BindTexture(3, getTexture(resources, gBuffer.MetallicRoughnessAO))
-                    .SetUniform1i("gMetallicRoughnessAO", 3)
                     .BindTexture(4, getTexture(resources, shadow.ShadowMap))
-                    .SetUniform1i("shadowMap", 4)
                     .DrawFullScreenTriangle();
 
                 rc.EndRendering(framebuffer);
