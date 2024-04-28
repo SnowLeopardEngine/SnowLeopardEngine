@@ -70,6 +70,15 @@ namespace SnowLeopardEngine
 
                 for (auto& renderable : renderables)
                 {
+                    // Skinned Mesh
+                    if (renderable.Mesh->Skinned())
+                    {
+                        rc.Upload(*renderable.Mesh->Data.VertBuffer,
+                                  0,
+                                  renderable.Mesh->Data.Vertices.size() * sizeof(MeshVertexData),
+                                  renderable.Mesh->Data.Vertices.data());
+                    }
+
                     rc.BindGraphicsPipeline(GetPipeline(*renderable.Mesh->Data.VertFormat, renderable.Mat))
                         .BindUniformBuffer(0, getBuffer(resources, frameUniform));
 

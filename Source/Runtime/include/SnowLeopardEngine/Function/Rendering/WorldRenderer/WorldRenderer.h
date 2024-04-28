@@ -3,8 +3,10 @@
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/TransientResources.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameUniform.h"
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FinalPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GBufferPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
 namespace SnowLeopardEngine
@@ -30,8 +32,10 @@ namespace SnowLeopardEngine
         Scope<TransientResources> m_TransientResources = nullptr;
 
         // -------- Passes --------
-        Scope<GBufferPass> m_GBufferPass = nullptr;
-        Scope<FinalPass>   m_FinalPass   = nullptr;
+        Scope<ShadowPrePass>        m_ShadowPrePass        = nullptr;
+        Scope<GBufferPass>          m_GBufferPass          = nullptr;
+        Scope<DeferredLightingPass> m_DeferredLightingPass = nullptr;
+        Scope<FinalPass>            m_FinalPass            = nullptr;
 
         // -------- Renderables --------
 

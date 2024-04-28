@@ -6,6 +6,8 @@
 #include "SnowLeopardEngine/Function/Rendering/FrameUniform.h"
 #include "SnowLeopardEngine/Function/Rendering/IndexBuffer.h"
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 
@@ -88,10 +90,23 @@ namespace SnowLeopardEngine
         m_FrameUniform.DirectionalLightDirection = directionalLightComponent.Direction;
         m_FrameUniform.DirectionalLightIntensity = directionalLightComponent.Intensity;
 
+        // TODO: Light frustum, get scene AABB and set borders.
+        glm::mat4 lightProjection = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 1.0f, 10000.0f);
+        auto      lightPos  = -1000.0f * directionalLightComponent.Direction; // simulate directional light position
+        glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 lightSpaceMatrix      = lightProjection * lightView;
+        m_FrameUniform.LightSpaceMatrix = lightSpaceMatrix;
+
         uploadFrameUniform(fg, blackboard, m_FrameUniform);
+
+        // Shadow pre pass
+        m_ShadowPrePass->AddToGraph(fg, blackboard, viewPort.Extent, m_Renderables);
 
         // G-Buffer pass
         m_GBufferPass->AddToGraph(fg, blackboard, viewPort.Extent, m_Renderables);
+
+        // Deferred lighting pass
+        m_DeferredLightingPass->AddToGraph(fg, blackboard);
 
         // Final composition
         m_FinalPass->Compose(fg, blackboard);
@@ -109,7 +124,9 @@ namespace SnowLeopardEngine
 
     void WorldRenderer::CreatePasses()
     {
-        m_GBufferPass = CreateScope<GBufferPass>(*m_RenderContext);
-        m_FinalPass   = CreateScope<FinalPass>(*m_RenderContext);
+        m_ShadowPrePass        = CreateScope<ShadowPrePass>(*m_RenderContext);
+        m_GBufferPass          = CreateScope<GBufferPass>(*m_RenderContext);
+        m_DeferredLightingPass = CreateScope<DeferredLightingPass>(*m_RenderContext);
+        m_FinalPass            = CreateScope<FinalPass>(*m_RenderContext);
     }
 } // namespace SnowLeopardEngine

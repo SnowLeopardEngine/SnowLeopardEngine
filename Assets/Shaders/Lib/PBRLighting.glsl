@@ -1,6 +1,8 @@
-#include "LegacySceneUniform.glsl"
-#include "LegacyShadow.glsl"
-#include "PBR.glsl"
+#ifndef PBR_LIGHTING_GLSL
+#define PBR_LIGHTING_GLSL
+
+#include "Lib/LegacyShadow.glsl"
+#include "Lib/PBR.glsl"
 
 struct DirectionalLight {
     vec3 direction;
@@ -58,3 +60,5 @@ vec3 CalPBRLighting(DirectionalLight directionalLight, vec3 normal, vec3 viewDir
 
     return color;
 }
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef LEGACY_SHADOW_GLSL
+#define LEGACY_SHADOW_GLSL
+
 float ShadowCalculation(vec4 fragPosLightSpace, sampler2D shadowMap) {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5; // remap to [0, 1] to fit depth
@@ -46,3 +49,5 @@ float ShadowCalculation(vec4 fragPosLightSpace, sampler2D shadowMap) {
 
     return shadow;
 }
+
+#endif

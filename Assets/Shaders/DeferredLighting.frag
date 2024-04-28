@@ -1,20 +1,17 @@
 #version 450
 
-#include "PBRLighting.glsl"
+#include "Common/FrameUniform.glsl"
+#include "Lib/PBRLighting.glsl"
 
 layout(location = 0) in vec2 varingTexCoords;
 
-layout(location = 0) uniform mat4 lightSpaceMatrix;
-layout(location = 1) uniform sampler2D gPosition;
-layout(location = 2) uniform sampler2D gNormal;
-layout(location = 3) uniform sampler2D gAlbedo;
-layout(location = 4) uniform sampler2D gMetallicRoughnessAO;
-layout(location = 5) uniform sampler2D gEntityID;
-layout(location = 6) uniform sampler2D shadowMap;
-layout(location = 7) uniform DirectionalLight directionalLight;
+layout(location = 0) uniform sampler2D gPosition;
+layout(location = 1) uniform sampler2D gNormal;
+layout(location = 2) uniform sampler2D gAlbedo;
+layout(location = 3) uniform sampler2D gMetallicRoughnessAO;
+layout(location = 4) uniform sampler2D shadowMap;
 
-layout(location = 0) out vec4 color0;
-layout(location = 1) out int color1;
+layout(location = 0) out vec3 FragColor;
 
 void main() {
     PBRMaterial material;
@@ -31,10 +28,14 @@ void main() {
     material.roughness = metallicRoughnessAO.g;
     material.ao = metallicRoughnessAO.b;
 
-    vec4 fragPosLightSpace = lightSpaceMatrix * vec4(fragPos, 1.0);
+    vec4 fragPosLightSpace = getLightSpaceMatrix() * vec4(fragPos, 1.0);
 
-    vec3 viewDir = normalize(viewPos - fragPos);
+    vec3 viewDir = normalize(getViewPos() - fragPos);
 
-    color0 = vec4(CalPBRLighting(directionalLight, worldNormal, viewDir, material, fragPosLightSpace, shadowMap), 1);
-    color1 = int(texture(gEntityID, varingTexCoords).r);
+    DirectionalLight directionalLight;
+    directionalLight.direction = getDirectionalLightDirection();
+    directionalLight.color = getDirectionalLightColor();
+    directionalLight.intensity = getDirectionalLightIntensity();
+
+    FragColor = CalPBRLighting(directionalLight, worldNormal, viewDir, material, fragPosLightSpace, shadowMap);
 }

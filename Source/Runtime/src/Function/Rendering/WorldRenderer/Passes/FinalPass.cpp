@@ -3,8 +3,9 @@
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/DeferredLightingData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
+
 
 namespace SnowLeopardEngine
 {
@@ -39,10 +40,10 @@ namespace SnowLeopardEngine
         const auto [frameUniform] = blackboard.get<FrameData>();
 
         // TODO: Remove, Test
-        auto output = blackboard.get<GBufferData>().Normal;
+        auto output = blackboard.get<DeferredLightingData>().SceneColor;
 
         fg.addCallbackPass(
-            "Final Composition",
+            "Final Composition Pass",
             [&](FrameGraph::Builder& builder, auto&) {
                 builder.read(frameUniform);
                 builder.read(output);

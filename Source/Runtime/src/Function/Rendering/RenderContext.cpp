@@ -147,7 +147,7 @@ namespace SnowLeopardEngine
     {
         GLuint buffer;
         glCreateBuffers(1, &buffer);
-        glNamedBufferStorage(buffer, size, data, data ? GL_NONE : GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT);
+        glNamedBufferStorage(buffer, size, data, GL_DYNAMIC_STORAGE_BIT);
 
         return {buffer, size};
     }
