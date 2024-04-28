@@ -802,7 +802,9 @@ namespace SnowLeopardEngine
 
         struct ImageComponent
         {
-            CoreUUID  TargetGraphicUUID;
+            std::filesystem::path TargetGraphicPath;
+            RenderTarget          TargetGraphic = nullptr;
+
             glm::vec4 Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
             MeshItem ImageMesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
@@ -811,7 +813,7 @@ namespace SnowLeopardEngine
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive(CEREAL_NVP(TargetGraphicUUID), CEREAL_NVP(Color));
+                archive(CEREAL_NVP(TargetGraphicPath), CEREAL_NVP(Color));
             }
             // NOLINTEND
 

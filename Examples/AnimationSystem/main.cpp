@@ -56,7 +56,7 @@ public:
         auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.MaterialFilePath = "Assets/Materials/Refactor.dzmaterial";
+        floorMeshRenderer.MaterialFilePath = "Assets/Materials/Next/White.dzmaterial";
 
         OzzModelLoadConfig config = {};
         config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
@@ -73,7 +73,7 @@ public:
         // characterMeshFilter.FilePath           = "Assets/Models/Walking.fbx";
         characterMeshFilter.Meshes             = &g_Model->Meshes;
         auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Refactor.dzmaterial";
+        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
         auto animator = CreateRef<Animator>(g_Model->AnimationClips[0]);

@@ -1,0 +1,30 @@
+{
+    "DzMaterial": {
+        "Name": "Vampire",
+        "RenderQueue": "Opaque",
+        "Properties": [
+            {
+                "Name": "albedoMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Models/Vampire/textures/Vampire_diffuse.png"
+            },
+            {
+                "Name": "useAlbedoMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "roughness",
+                "Type": "Float",
+                "Value": "1"
+            },
+            {
+                "Name": "ao",
+                "Type": "Float",
+                "Value": "1"
+            }
+        ],
+        "UserVertPath": "",
+        "UserFragPath": ""
+    }
+}

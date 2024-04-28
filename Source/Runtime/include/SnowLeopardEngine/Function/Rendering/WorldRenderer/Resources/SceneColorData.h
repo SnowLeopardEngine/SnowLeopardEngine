@@ -4,8 +4,8 @@
 
 namespace SnowLeopardEngine
 {
-    struct DeferredLightingData
+    struct SceneColorData
     {
-        FrameGraphResource SceneColor;
+        FrameGraphResource HDR;
     };
 } // namespace SnowLeopardEngine

@@ -22,7 +22,7 @@ namespace SnowLeopardEngine
                 return it->second;
             }
 
-            stbi_set_flip_vertically_on_load(true);
+            stbi_set_flip_vertically_on_load(false);
 
             auto* f = stbi__fopen(texturePath.string().c_str(), "rb");
             assert(f);

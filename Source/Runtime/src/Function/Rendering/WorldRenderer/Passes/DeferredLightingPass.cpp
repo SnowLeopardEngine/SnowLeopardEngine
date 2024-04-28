@@ -1,11 +1,12 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
+#include "FrameGraphResource.hpp"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/DeferredLightingData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SceneColorData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/ShadowData.h"
 
 namespace SnowLeopardEngine
@@ -35,7 +36,7 @@ namespace SnowLeopardEngine
     }
     DeferredLightingPass::~DeferredLightingPass() { m_RenderContext.Destroy(m_Pipeline); }
 
-    void DeferredLightingPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard)
+    FrameGraphResource DeferredLightingPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard)
     {
         const auto [frameUniform] = blackboard.get<FrameData>();
 
@@ -43,9 +44,13 @@ namespace SnowLeopardEngine
         const auto& gBuffer = blackboard.get<GBufferData>();
         const auto  extent  = fg.getDescriptor<FrameGraphTexture>(gBuffer.Depth).Extent;
 
-        blackboard.add<DeferredLightingData>() = fg.addCallbackPass<DeferredLightingData>(
+        struct Data
+        {
+            FrameGraphResource SceneColor;
+        };
+        const auto& deferredLighting = fg.addCallbackPass<Data>(
             "Deferred Lighting Pass",
-            [&](FrameGraph::Builder& builder, DeferredLightingData& data) {
+            [&](FrameGraph::Builder& builder, Data& data) {
                 builder.read(frameUniform);
 
                 builder.read(shadow.ShadowMap);
@@ -59,7 +64,7 @@ namespace SnowLeopardEngine
                     builder.create<FrameGraphTexture>("SceneColor", {.Extent = extent, .Format = PixelFormat::RGB16F});
                 data.SceneColor = builder.write(data.SceneColor);
             },
-            [=, this](const DeferredLightingData& data, FrameGraphPassResources& resources, void* ctx) {
+            [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},
                     .ColorAttachments = {{
@@ -83,5 +88,7 @@ namespace SnowLeopardEngine
 
                 rc.EndRendering(framebuffer);
             });
+
+        return deferredLighting.SceneColor;
     }
 } // namespace SnowLeopardEngine

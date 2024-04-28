@@ -241,14 +241,14 @@ namespace SnowLeopardEngine
             // TODO: Move to AssetManager
             if (FileSystem::Exists(renderer.MaterialFilePath))
             {
-                // FIXME: renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
+                renderer.Mat = IO::Load(renderer.MaterialFilePath);
             }
         });
         m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
             // TODO: Move to AssetManager
             if (FileSystem::Exists(camera.SkyboxMaterialFilePath))
             {
-                // FIXME: camera.SkyboxMaterial = DzMaterial::LoadFromPath(camera.SkyboxMaterialFilePath);
+                // FIXME: camera.SkyboxMat. = IO::Load(camera.SkyboxMaterialFilePath);
             }
         });
 

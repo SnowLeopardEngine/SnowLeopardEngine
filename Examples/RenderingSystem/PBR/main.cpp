@@ -62,29 +62,29 @@ public:
         camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Load materials
-        const std::string redMaterialFilePath = "Assets/Materials/Red.dzmaterial";
-        const std::string pbrMaterialFilePath = "Assets/Materials/RustedIronPBR.dzmaterial";
+        const std::string deferredWhiteMaterialFilePath = "Assets/Materials/Next/White.dzmaterial";
+        const std::string deferredPBRMaterialFilePath   = "Assets/Materials/Next/RustedIronPBRDeferred.dzmaterial";
 
         // Create spheres to test materials
         // Sphere 1
-        Entity sphere1 = CreateSphere(pbrMaterialFilePath, {-21, 10, 0}, scene);
-        Entity sphere2 = CreateSphere(redMaterialFilePath, {-15, 10, 0}, scene);
-        Entity sphere3 = CreateSphere(redMaterialFilePath, {-9, 10, 0}, scene);
-        Entity sphere4 = CreateSphere(redMaterialFilePath, {-3, 10, 0}, scene);
-        Entity sphere5 = CreateSphere(redMaterialFilePath, {3, 10, 0}, scene);
-        Entity sphere6 = CreateSphere(redMaterialFilePath, {9, 10, 0}, scene);
-        Entity sphere7 = CreateSphere(redMaterialFilePath, {15, 10, 0}, scene);
-        Entity sphere8 = CreateSphere(redMaterialFilePath, {21, 10, 0}, scene);
+        Entity sphere1 = CreateSphere(deferredPBRMaterialFilePath, {-21, 10, 0}, scene);
+        Entity sphere2 = CreateSphere(deferredPBRMaterialFilePath, {-15, 10, 0}, scene);
+        Entity sphere3 = CreateSphere(deferredPBRMaterialFilePath, {-9, 10, 0}, scene);
+        Entity sphere4 = CreateSphere(deferredPBRMaterialFilePath, {-3, 10, 0}, scene);
+        Entity sphere5 = CreateSphere(deferredPBRMaterialFilePath, {3, 10, 0}, scene);
+        Entity sphere6 = CreateSphere(deferredPBRMaterialFilePath, {9, 10, 0}, scene);
+        Entity sphere7 = CreateSphere(deferredPBRMaterialFilePath, {15, 10, 0}, scene);
+        Entity sphere8 = CreateSphere(deferredPBRMaterialFilePath, {21, 10, 0}, scene);
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
 
-        auto& floorTransform          = floor.GetComponent<TransformComponent>();
-        floorTransform.Scale          = {100, 1, 100};
-        auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
-        floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        // floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
+        auto& floorTransform               = floor.GetComponent<TransformComponent>();
+        floorTransform.Scale               = {100, 1, 100};
+        auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
+        floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
+        auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
+        floorMeshRenderer.MaterialFilePath = deferredWhiteMaterialFilePath;
     }
 
 private:

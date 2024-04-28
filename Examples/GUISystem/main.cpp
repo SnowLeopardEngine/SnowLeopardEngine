@@ -3,6 +3,8 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
+#include "SnowLeopardEngine/Function/IO/TextureLoader.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
@@ -46,7 +48,7 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
+        // cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         // camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
@@ -59,7 +61,7 @@ public:
         auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.MaterialFilePath = "Assets/Materials/Red.dzmaterial";
+        floorMeshRenderer.MaterialFilePath = "Assets/Materials/Next/White.dzmaterial";
 
         OzzModelLoadConfig config = {};
         config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
@@ -76,48 +78,42 @@ public:
         // characterMeshFilter.FilePath           = "Assets/Models/Walking.fbx";
         characterMeshFilter.Meshes             = &g_Model->Meshes;
         auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
+        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
         auto animator = CreateRef<Animator>(g_Model->AnimationClips[0]);
         animatorComponent.Controller.RegisterAnimator(animator);
         animatorComponent.Controller.SetEntryAnimator(animator);
 
-        // // Create gui buttons
-        // Ref<Texture2DAsset> coolGayTexture, awesomeFaceTexture;
-        // Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", coolGayTexture, false);
-        // Resources::Load<Texture2DAsset>("Assets/Textures/awesomeface.png", awesomeFaceTexture, false);
+        auto* tempRC = new RenderContext();
 
-        // Entity coolGayButton                          = scene->CreateEntity("CoolGayButton");
-        // auto&  coolGayButtonRect                      = coolGayButton.AddComponent<UI::RectTransformComponent>();
-        // coolGayButtonRect.Size                        = {100, 60};
-        // coolGayButtonRect.Pivot                       = {0, 0};
-        // coolGayButtonRect.Pos                         = {10, 10, 0};
-        // auto& coolGayButtonComp                       = coolGayButton.AddComponent<UI::ButtonComponent>();
-        // coolGayButtonComp.TintColor.TargetGraphicUUID = coolGayTexture->GetUUID();
+        Entity coolGayButton                      = scene->CreateEntity("CoolGayButton");
+        auto&  coolGayButtonRect                  = coolGayButton.AddComponent<UI::RectTransformComponent>();
+        coolGayButtonRect.Size                    = {100, 60};
+        coolGayButtonRect.Pivot                   = {0, 0};
+        coolGayButtonRect.Pos                     = {10, 10, 0};
+        auto& coolGayButtonComp                   = coolGayButton.AddComponent<UI::ButtonComponent>();
+        coolGayButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/CoolGay.png", *tempRC);
 
-        // Entity awesomeFaceButton     = scene->CreateEntity("AwesomeFaceButton");
-        // auto&  awesomeFaceButtonRect = awesomeFaceButton.AddComponent<UI::RectTransformComponent>();
-        // awesomeFaceButtonRect.Size   = {100, 60};
-        // awesomeFaceButtonRect.Pivot  = {0, 0};
-        // awesomeFaceButtonRect.Pos    = {10, 100, 0};
-        // auto& awesomeFaceButtonComp  = awesomeFaceButton.AddComponent<UI::ButtonComponent>();
-        // awesomeFaceButtonComp.TintColor.TargetGraphicUUID = awesomeFaceTexture->GetUUID();
+        Entity awesomeFaceButton                      = scene->CreateEntity("AwesomeFaceButton");
+        auto&  awesomeFaceButtonRect                  = awesomeFaceButton.AddComponent<UI::RectTransformComponent>();
+        awesomeFaceButtonRect.Size                    = {100, 60};
+        awesomeFaceButtonRect.Pivot                   = {0, 0};
+        awesomeFaceButtonRect.Pos                     = {10, 100, 0};
+        auto& awesomeFaceButtonComp                   = awesomeFaceButton.AddComponent<UI::ButtonComponent>();
+        awesomeFaceButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/awesomeface.png", *tempRC);
 
-        // Subscribe(m_ButtonClickedEventHandler);
+        Subscribe(m_ButtonClickedEventHandler);
 
-        // // Create an image;
-        // Ref<Texture2DAsset> imageTexture;
-        // Resources::Load<Texture2DAsset>("Assets/Textures/SleepGay.jpg", imageTexture, false);
+        // Create an image;
+        Entity sleepGayImage = scene->CreateEntity("SleepGayImage");
+        auto&  sleepGayRect  = sleepGayImage.AddComponent<UI::RectTransformComponent>();
 
-        // Entity sleepGayImage = scene->CreateEntity("SleepGayImage");
-        // auto&  sleepGayRect  = sleepGayImage.AddComponent<UI::RectTransformComponent>();
-
-        // sleepGayRect.Size                   = {320, 240};
-        // sleepGayRect.Pivot                  = {0.5, 0.5};
-        // sleepGayRect.Pos                    = {512, 384, 0};
-        // auto& sleepGayImageComp             = sleepGayImage.AddComponent<UI::ImageComponent>();
-        // sleepGayImageComp.TargetGraphicUUID = imageTexture->GetUUID();
+        sleepGayRect.Size               = {320, 240};
+        sleepGayRect.Pivot              = {0.5, 0.5};
+        sleepGayRect.Pos                = {512, 384, 0};
+        auto& sleepGayImageComp         = sleepGayImage.AddComponent<UI::ImageComponent>();
+        sleepGayImageComp.TargetGraphic = IO::Load("Assets/Textures/SleepGay.jpg", *tempRC);
     }
 
     virtual void OnUnload() { Unsubscribe(m_ButtonClickedEventHandler); }

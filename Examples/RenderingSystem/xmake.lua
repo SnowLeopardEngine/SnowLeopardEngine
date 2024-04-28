@@ -1,3 +1,2 @@
-includes("PBR")
 includes("Instancing")
-includes("DeferredPBR")
+includes("PBR")

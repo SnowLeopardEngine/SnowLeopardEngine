@@ -53,7 +53,7 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
+        // cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
 
@@ -76,7 +76,7 @@ public:
         auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
         sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
         auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
+        sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Blue.dzmaterial";
 
         sphere.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(SphereScript));
 
@@ -90,7 +90,7 @@ public:
         testSphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
         auto& testSphereMeshCollider            = testSphere.AddComponent<MeshColliderComponent>();
         auto& testSphereMeshRenderer            = testSphere.AddComponent<MeshRendererComponent>();
-        testSphereMeshRenderer.MaterialFilePath = "Assets/Materials/Red.dzmaterial";
+        testSphereMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Red.dzmaterial";
 
         // // Create a floor with RigidBodyComponent & BoxColliderComponent
         // Entity floor = scene->CreateEntity("Floor");
@@ -122,8 +122,8 @@ public:
         terrainComponent.YScale = yScale;
         terrainComponent.ZScale = zScale;
         terrain.AddComponent<TerrainColliderComponent>(normalMaterial);
-        auto& terrainRenderer    = terrain.AddComponent<TerrainRendererComponent>();
-        // terrainRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/CoolGay.dzmaterial");
+        auto& terrainRenderer            = terrain.AddComponent<TerrainRendererComponent>();
+        terrainRenderer.MaterialFilePath = "Assets/Materials/Next/Green.dzmaterial";
     }
 
 private:

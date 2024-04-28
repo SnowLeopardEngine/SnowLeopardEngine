@@ -22,11 +22,17 @@ namespace SnowLeopardEngine
 
         void OnLogicSceneLoaded(LogicScene* scene);
 
+        void CookRenderableScene();
+
         void RenderFrame(float deltaTime);
 
     private:
         void CreatePasses();
 
+        std::vector<Renderable> FilterVisableRenderables(std::span<Renderable> renderables,
+                                                         const glm::mat4&      cameraViewProjection);
+
+        AABB GetVisableAABB(std::span<Renderable> visableRenderables);
         AABB GetRenderableSceneAABB();
 
     private:

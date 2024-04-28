@@ -5,6 +5,7 @@
 
 #include <fg/Blackboard.hpp>
 #include <fg/FrameGraph.hpp>
+#include <fg/FrameGraphResource.hpp>
 
 namespace SnowLeopardEngine
 {
@@ -14,7 +15,7 @@ namespace SnowLeopardEngine
         explicit DeferredLightingPass(RenderContext&);
         ~DeferredLightingPass();
 
-        void AddToGraph(FrameGraph&, FrameGraphBlackboard&);
+        FrameGraphResource AddToGraph(FrameGraph&, FrameGraphBlackboard&);
 
     private:
         RenderContext&   m_RenderContext;
