@@ -152,78 +152,7 @@ namespace SnowLeopardEngine
                    EntityStatusComponent&   entityStatus,
                    RigidBodyComponent&      rigidBody,
                    SphereColliderComponent& sphereCollider) {
-                // create a rigidBody
-                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
-
-                rigidBody.IsStatic = entityStatus.IsStatic;
-
-                PxRigidActor* body;
-                if (entityStatus.IsStatic)
-                {
-                    body = m_Physics->createRigidStatic(pxTransform);
-                }
-                else
-                {
-                    // TODO: Jubiao Lin setLinearDamping, setAngularDamping, enable ccd here:
-                    // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
-                    body = m_Physics->createRigidDynamic(pxTransform);
-                    static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
-                    static_cast<PxRigidDynamic*>(body)->setLinearDamping(rigidBody.LinearDamping);
-                    static_cast<PxRigidDynamic*>(body)->setAngularDamping(rigidBody.AngularDamping);
-
-                    PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
-                    if (rigidBody.EnableCCD)
-                    {
-                        currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
-                    }
-                    else
-                    {
-                        currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
-                    }
-                    static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
-                }
-
-                // create a sphere shape
-                PxMaterial* material;
-                if (sphereCollider.Material == nullptr)
-                {
-                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-                }
-                else
-                {
-                    material = m_Physics->createMaterial(sphereCollider.Material->DynamicFriction,
-                                                         sphereCollider.Material->StaticFriction,
-                                                         sphereCollider.Material->Bounciness);
-                }
-
-                PxShapeFlags shapeFlags;
-                if (sphereCollider.IsTrigger)
-                {
-                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
-                }
-                else
-                {
-                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
-                }
-
-                if (sphereCollider.Radius == 0)
-                {
-                    sphereCollider.Radius = 0.5f * transform.Scale.x;
-                }
-                PxSphereGeometry sphereGeometry(sphereCollider.Radius);
-                auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
-
-                // attach the shape to the rigidBody
-                if (body->attachShape(*sphereShape))
-                {
-                    sphereShape->release();
-                    sphereShape = nullptr;
-                }
-
-                // add the rigidBody to the scene
-                m_Scene->addActor(*body);
-
-                rigidBody.InternalBody = body;
+                createSphere(transform, entityStatus, rigidBody, sphereCollider);
             });
 
         // Case 2: RigidBody + BoxCollider
@@ -232,82 +161,7 @@ namespace SnowLeopardEngine
                    TransformComponent&    transform,
                    EntityStatusComponent& entityStatus,
                    RigidBodyComponent&    rigidBody,
-                   BoxColliderComponent&  boxCollider) {
-                // create a rigidBody
-                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
-                pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(boxCollider.Offset);
-
-                rigidBody.IsStatic = entityStatus.IsStatic;
-
-                PxRigidActor* body;
-                if (entityStatus.IsStatic)
-                {
-                    body = m_Physics->createRigidStatic(pxTransform);
-                }
-                else
-                {
-                    // TODO: Jubiao Lin setLinearDamping, setAngularDamping, enable ccd here:
-                    // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
-                    body = m_Physics->createRigidDynamic(pxTransform);
-                    static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
-                    static_cast<PxRigidDynamic*>(body)->setLinearDamping(rigidBody.LinearDamping);
-                    static_cast<PxRigidDynamic*>(body)->setAngularDamping(rigidBody.AngularDamping);
-
-                    PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
-                    if (rigidBody.EnableCCD)
-                    {
-                        currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
-                    }
-                    else
-                    {
-                        currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
-                    }
-                    static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
-                }
-
-                // create a box shape
-                PxMaterial* material;
-                if (boxCollider.Material == nullptr)
-                {
-                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-                }
-                else
-                {
-                    material = m_Physics->createMaterial(boxCollider.Material->DynamicFriction,
-                                                         boxCollider.Material->StaticFriction,
-                                                         boxCollider.Material->Bounciness);
-                }
-
-                PxShapeFlags shapeFlags;
-                if (boxCollider.IsTrigger)
-                {
-                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
-                }
-                else
-                {
-                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
-                }
-
-                if (boxCollider.Size == glm::vec3(0, 0, 0))
-                {
-                    boxCollider.Size = transform.Scale;
-                }
-                PxBoxGeometry boxGeometry(
-                    boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
-                auto* boxShape = m_Physics->createShape(boxGeometry, *material);
-
-                // attach the shape to the rigidBody
-                if (body->attachShape(*boxShape))
-                {
-                    boxShape->release();
-                    boxShape = nullptr;
-                }
-
-                // add the rigidBody to the scene
-                m_Scene->addActor(*body);
-
-                rigidBody.InternalBody = body;
-            });
+                   BoxColliderComponent&  boxCollider) { createBox(transform, entityStatus, rigidBody, boxCollider); });
 
         // case3: RigidBodyComponent + CapsuleColliderComponent
         registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, CapsuleColliderComponent>().each(
@@ -316,60 +170,7 @@ namespace SnowLeopardEngine
                    EntityStatusComponent&    entityStatus,
                    RigidBodyComponent&       rigidBody,
                    CapsuleColliderComponent& capsuleCollider) {
-                // create a rigidBody
-                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
-                pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(capsuleCollider.Offset);
-
-                rigidBody.IsStatic = entityStatus.IsStatic;
-
-                PxRigidActor* body;
-                if (entityStatus.IsStatic)
-                {
-                    body = m_Physics->createRigidStatic(pxTransform);
-                }
-                else
-                {
-                    body = m_Physics->createRigidDynamic(pxTransform);
-                    static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
-                    static_cast<PxRigidDynamic*>(body)->setLinearDamping(rigidBody.LinearDamping);
-                    static_cast<PxRigidDynamic*>(body)->setAngularDamping(rigidBody.AngularDamping);
-
-                    PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
-                    if (rigidBody.EnableCCD)
-                    {
-                        currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
-                    }
-                    else
-                    {
-                        currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
-                    }
-                    static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
-                }
-
-                // create a box shape
-                PxMaterial* material;
-                if (capsuleCollider.Material == nullptr)
-                {
-                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-                }
-                else
-                {
-                    material = m_Physics->createMaterial(capsuleCollider.Material->DynamicFriction,
-                                                         capsuleCollider.Material->StaticFriction,
-                                                         capsuleCollider.Material->Bounciness);
-                }
-
-                PxCapsuleGeometry capsuleGeometry(capsuleCollider.Radius, capsuleCollider.Height);
-                auto*             capsuleShape = m_Physics->createShape(capsuleGeometry, *material);
-                if (body->attachShape(*capsuleShape))
-                {
-                    capsuleShape->release();
-                    capsuleShape = nullptr;
-                }
-
-                m_Scene->addActor(*body);
-
-                rigidBody.InternalBody = body;
+                createCapsule(transform, entityStatus, rigidBody, capsuleCollider);
             });
 
         // case4: TerrainComponent + TerrainColliderComponent
@@ -378,94 +179,13 @@ namespace SnowLeopardEngine
                    TransformComponent&       transform,
                    EntityStatusComponent&    entityStatus,
                    TerrainComponent&         terrain,
-                   TerrainColliderComponent& terrainCollider) {
-                uint32_t             heightMapWidth  = terrain.TerrainHeightMap.Width;
-                uint32_t             heightMapHeight = terrain.TerrainHeightMap.Height;
-                PxHeightFieldSample* hfSample        = new PxHeightFieldSample[heightMapWidth * heightMapHeight];
-
-                for (uint32_t row = 0; row < heightMapHeight; ++row)
-                {
-                    for (uint32_t column = 0; column < heightMapWidth; ++column)
-                    {
-                        uint32_t sampleIndex = row + column * heightMapHeight;
-                        // reverse because PhysX row = our column.
-                        hfSample[sampleIndex].height = static_cast<PxI16>(terrain.TerrainHeightMap.Get(row, column));
-                        hfSample[sampleIndex].materialIndex0 = hfSample[sampleIndex].materialIndex1 = 0;
-                    }
-                }
-
-                PxHeightFieldDesc hfDesc;
-                hfDesc.format         = PxHeightFieldFormat::eS16_TM;
-                hfDesc.nbColumns      = heightMapWidth;
-                hfDesc.nbRows         = heightMapHeight;
-                hfDesc.samples.data   = hfSample;
-                hfDesc.samples.stride = sizeof(PxHeightFieldSample);
-
-                PxHeightField* heightField = PxCreateHeightField(hfDesc, m_Physics->getPhysicsInsertionCallback());
-                delete[] hfSample;
-
-                // reverse X-Z because PhysX row = our column.
-                PxHeightFieldGeometry hfGeometry(
-                    heightField, PxMeshGeometryFlags(), terrain.YScale, terrain.XScale, terrain.ZScale);
-                PxMaterial* material;
-                if (terrainCollider.Material == nullptr)
-                {
-                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-                }
-                else
-                {
-                    material = m_Physics->createMaterial(terrainCollider.Material->DynamicFriction,
-                                                         terrainCollider.Material->StaticFriction,
-                                                         terrainCollider.Material->Bounciness);
-                }
-
-                PxRigidStatic* body =
-                    m_Physics->createRigidStatic(PxTransform(PhysXGLMHelpers::GetPhysXVec3(transform.Position)));
-
-                PxShape* shape = m_Physics->createShape(hfGeometry, *material);
-                if (body->attachShape(*shape))
-                {
-                    shape->release();
-                    shape = nullptr;
-                }
-
-                m_Scene->addActor(*body);
-
-                terrainCollider.InternalBody = body;
-            });
+                   TerrainColliderComponent& terrainCollider) { createTerrain(transform, terrain, terrainCollider); });
 
         // case5: CharacterController
         registry.view<TransformComponent, CharacterControllerComponent>().each(
             [this](
                 entt::entity entity, TransformComponent& transform, CharacterControllerComponent& characterController) {
-                PxMaterial* material;
-                if (characterController.Material == nullptr)
-                {
-                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-                }
-                else
-                {
-                    material = m_Physics->createMaterial(characterController.Material->DynamicFriction,
-                                                         characterController.Material->StaticFriction,
-                                                         characterController.Material->Bounciness);
-                }
-
-                // Set Controller Descripoter
-                PxCapsuleControllerDesc desc;
-                desc.height   = characterController.Height;
-                desc.radius   = characterController.Radius;
-                desc.material = material;
-                desc.position.set(transform.Position.x + characterController.Offset.x,
-                                  transform.Position.y + characterController.Offset.y,
-                                  transform.Position.z + characterController.Offset.z);
-                desc.upDirection = PxVec3(0, 1, 0);
-                desc.slopeLimit  = cosf(characterController.SlopeLimit);
-                desc.stepOffset  = characterController.StepOffset;
-                desc.material    = material;
-
-                PxController* controller = m_ControllerManager->createController(desc);
-
-                characterController.InternalController = controller;
+                createCharacter(transform, characterController);
             });
 
         // case6: MeshFilterComponent + MeshColliderComponent + RigidBodyComponent
@@ -481,106 +201,7 @@ namespace SnowLeopardEngine
                          RigidBodyComponent&    rigidBody,
                          MeshFilterComponent&   meshFilter,
                          MeshColliderComponent& meshCollider) {
-                PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
-                pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(meshCollider.Offset);
-
-                rigidBody.IsStatic = entityStatus.IsStatic;
-
-                PxRigidActor* body;
-                if (entityStatus.IsStatic)
-                {
-                    body = m_Physics->createRigidStatic(pxTransform);
-                }
-                else
-                {
-                    body = m_Physics->createRigidDynamic(pxTransform);
-                    // static_cast<PxRigidDynamic*>(body)->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-                    static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);                   // set Mass
-                    static_cast<PxRigidDynamic*>(body)->setLinearDamping(rigidBody.LinearDamping); // set Linear Damping
-                    static_cast<PxRigidDynamic*>(body)->setAngularDamping(
-                        rigidBody.AngularDamping); // set Angular Damping
-
-                    PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
-                    if (rigidBody.EnableCCD) // Continuous Collision Detection
-                    {
-                        currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
-                    }
-                    else
-                    {
-                        currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
-                    }
-                    static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
-                }
-                // create a mesh collider shape
-                PxMaterial* material;
-                if (meshCollider.Material == nullptr)
-                {
-                    material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-                }
-                else
-                {
-                    material = m_Physics->createMaterial(meshCollider.Material->DynamicFriction,
-                                                         meshCollider.Material->StaticFriction,
-                                                         meshCollider.Material->Bounciness);
-                }
-
-                PxShapeFlags shapeFlags;
-                if (meshCollider.IsTrigger)
-                {
-                    shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
-                }
-                else
-                {
-                    shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
-                }
-
-                size_t totalVertexCount = 0;
-                for (const auto& meshItem : meshFilter.Meshes.Items)
-                {
-                    if (meshItem.Data.HasAnimationInfo())
-                    {
-                        totalVertexCount += meshItem.Data.AnimatedVertices.size();
-                    }
-                    else
-                    {
-                        totalVertexCount += meshItem.Data.StaticVertices.size();
-                    }
-                }
-
-                PxVec3* vertices     = new PxVec3[totalVertexCount];
-                size_t  vertexOffset = 0;
-                for (const auto& meshItem : meshFilter.Meshes.Items)
-                {
-                    for (const auto& vertex : meshItem.Data.StaticVertices)
-                    {
-                        vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
-                    }
-                    for (const auto& vertex : meshItem.Data.AnimatedVertices)
-                    {
-                        vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
-                    }
-                }
-
-                // Switch to dynamic body by attach another convex mesh shape
-                PxConvexMeshDesc convexDesc;
-                convexDesc.points.count  = totalVertexCount;
-                convexDesc.points.stride = sizeof(PxVec3);
-                convexDesc.points.data   = vertices;
-                convexDesc.flags         = PxConvexFlag::eCOMPUTE_CONVEX;
-
-                PxDefaultMemoryOutputStream     writeBuffer;
-                PxConvexMeshCookingResult::Enum result;
-                m_Cooking->cookConvexMesh(convexDesc, writeBuffer, &result);
-
-                PxDefaultMemoryInputData input(writeBuffer.getData(), writeBuffer.getSize());
-                PxConvexMesh*            convexMesh = m_Physics->createConvexMesh(input);
-
-                PxRigidActorExt::createExclusiveShape(*body, PxConvexMeshGeometry(convexMesh), *material);
-                m_Scene->addActor(*body);
-
-                rigidBody.InternalBody = body;
-
-                delete[] vertices;
+                createMesh(transform, entityStatus, rigidBody, meshFilter, meshCollider);
             });
 
         // TODO: More cases
@@ -829,18 +450,6 @@ namespace SnowLeopardEngine
                 rigidBodyComp.InternalBody = nullptr;
             }
         }
-        if (entity.HasComponent<SphereColliderComponent>())
-        {
-        }
-        if (entity.HasComponent<BoxColliderComponent>())
-        {
-        }
-        if (entity.HasComponent<CapsuleColliderComponent>())
-        {
-        }
-        if (entity.HasComponent<TerrainComponent>())
-        {
-        } 
         if (entity.HasComponent<TerrainColliderComponent>())
         {
             TerrainColliderComponent& terrainColliderComp = entity.GetComponent<TerrainColliderComponent>();
@@ -858,12 +467,6 @@ namespace SnowLeopardEngine
                 characterControllerComp.InternalController->release();
                 characterControllerComp.InternalController = nullptr;
             }
-        }
-        if (entity.HasComponent<MeshColliderComponent>())
-        {
-        }
-        if (entity.HasComponent<MeshFilterComponent>())
-        {
         }
     }
 
