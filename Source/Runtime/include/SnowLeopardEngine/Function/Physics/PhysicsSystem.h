@@ -2,6 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Base/EngineSubSystem.h"
+#include "SnowLeopardEngine/Core/Event/Event.h"
 #include "SnowLeopardEngine/Core/Event/EventHandler.h"
 #include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
@@ -45,6 +46,36 @@ namespace SnowLeopardEngine
         void OnLogicSceneLoaded(const LogicSceneLoadedEvent& e);
         void ReleaseInternalResources();
 
+        void OnEntityCreate(const EntityCreateEvent& e);
+        void OnEntityDestroy(const EntityDestroyEvent& e);
+
+        void createSphere(TransformComponent&      transform,
+                          EntityStatusComponent&   entityStatus,
+                          RigidBodyComponent&      rigidBody,
+                          SphereColliderComponent& sphereCollider);
+
+        void createBox(TransformComponent&    transform,
+                       EntityStatusComponent& entityStatus,
+                       RigidBodyComponent&    rigidBody,
+                       BoxColliderComponent&  boxCollider);
+
+        void createCapsule(TransformComponent&       transform,
+                           EntityStatusComponent&    entityStatus,
+                           RigidBodyComponent&       rigidBody,
+                           CapsuleColliderComponent& capsuleCollider);
+
+        void createTerrain(TransformComponent&       transform,
+                           TerrainComponent&         terrain,
+                           TerrainColliderComponent& terrainCollider);
+
+        void createCharacter(TransformComponent& transform, CharacterControllerComponent& characterController);
+
+        void createMesh(TransformComponent&    transform,
+                        EntityStatusComponent& entityStatus,
+                        RigidBodyComponent&    rigidBody,
+                        MeshFilterComponent&   meshFilter,
+                        MeshColliderComponent& meshCollider);
+
     private:
         physx::PxDefaultAllocator   m_Allocator;
         PhysicsErrorCallback        m_ErrorCallback;
@@ -57,6 +88,13 @@ namespace SnowLeopardEngine
 
         EventHandler<LogicSceneLoadedEvent> m_LogicSceneLoadedHandler = [this](const LogicSceneLoadedEvent& e) {
             OnLogicSceneLoaded(e);
+        };
+
+        EventHandler<EntityCreateEvent> m_EntityCreateHandler = [this](const EntityCreateEvent& e) {
+            OnEntityCreate(e);
+        };
+        EventHandler<EntityDestroyEvent> m_EntityDestroyHandler = [this](const EntityDestroyEvent& e) {
+            OnEntityDestroy(e);
         };
     };
 } // namespace SnowLeopardEngine

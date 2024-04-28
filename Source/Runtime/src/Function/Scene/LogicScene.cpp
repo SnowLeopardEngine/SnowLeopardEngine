@@ -10,6 +10,7 @@
 #include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/IndexBuffer.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
@@ -170,6 +171,24 @@ namespace SnowLeopardEngine
         m_Registry.destroy(entity);
     }
 
+    void LogicScene::TriggerEntityDestroy(Entity entity)
+    {
+        if (m_IsLoaded)
+        {
+            EntityDestroyEvent entityDestroyEvent(entity);
+            TriggerEvent(entityDestroyEvent);
+        }
+    }
+
+    void LogicScene::TriggerEntityCreate(Entity entity)
+    {
+        if (m_IsLoaded)
+        {
+            EntityCreateEvent entityCreateEvent(entity);
+            TriggerEvent(entityCreateEvent);
+        }
+    }
+
     Entity LogicScene::GetEntityWithCoreUUID(CoreUUID id) const { return m_EntityMap->at(id); }
 
     void LogicScene::OnLoad()
@@ -291,6 +310,8 @@ namespace SnowLeopardEngine
 
         LogicSceneLoadedEvent loadedEvent(this);
         TriggerEvent(loadedEvent);
+
+        m_IsLoaded = true;
     }
 
     void LogicScene::OnTick(float deltaTime)

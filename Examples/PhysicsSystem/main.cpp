@@ -20,7 +20,7 @@ public:
         g_EngineContext->AudioSys->Play("sounds/jump.mp3");
     }
 
-    virtual void OnFixedTick() override
+    virtual void OnTick(float) override
     {
         auto& inputSystem = g_EngineContext->InputSys;
 
@@ -28,17 +28,39 @@ public:
         {
             DesktopApp::GetInstance()->Quit();
         }
-
-        auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
-        auto& rigider    = m_OwnerEntity->GetComponent<RigidBodyComponent>();
-        g_EngineContext->PhysicsSys->Move(controller, glm::vec3(-0.1f, -0.1f, 0), Time::FixedDeltaTime);
-        g_EngineContext->PhysicsSys->AddForce(rigider, glm::vec3(-5.f, -5.f, 0));
     }
 };
 
 class CustomLifeTime final : public LifeTimeComponent
 {
 public:
+    void OnTick(float) override
+    {
+        if (m_EngineContext->InputSys->GetKeyDown(KeyCode::Space))
+        {
+            auto   scene                 = m_EngineContext->SceneMngr->GetActiveScene();
+
+            // Create a sphere with RigidBodyComponent & SphereColliderComponent
+            auto   normalMaterial    = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
+
+            Entity sphere            = scene->CreateEntity("Sphere");
+            auto&  sphereTransform   = sphere.GetComponent<TransformComponent>();
+            sphereTransform.Position = {5, 20, 0};
+            sphereTransform.Scale *= 3;
+
+            sphere.AddComponent<RigidBodyComponent>();
+            sphere.AddComponent<SphereColliderComponent>(normalMaterial);
+
+            auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
+            sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
+            auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
+            sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
+
+            sphere.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(SphereScript));
+
+            scene->TriggerEntityCreate(sphere);
+        }
+    }
     virtual void OnLoad() override final
     {
         m_EngineContext = DesktopApp::GetInstance()->GetEngine()->GetContext();

@@ -83,7 +83,7 @@ namespace SnowLeopardEngine
     protected:
         Ref<Engine> m_Engine = nullptr;
         Timer       m_Timer;
-        bool        m_IsRunning         = false;
+        bool        m_IsRunning = false;
 
         EventHandler<WindowResizeEvent> m_WindowResizeHandler = [this](const WindowResizeEvent& e) {
             OnWindowResize(e);
