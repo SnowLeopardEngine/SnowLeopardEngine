@@ -98,6 +98,6 @@ namespace SnowLeopardEngine
         auto h = e.GetHeight();
 
         SNOW_LEOPARD_CORE_ASSERT(w != 0 && h != 0, "[App] Window size must be greater than (0, 0)");
-        g_EngineContext->RenderSys->GetAPI()->UpdateViewport(0, 0, w, h);
+        // FIXME: g_EngineContext->RenderSys->GetAPI()->UpdateViewport(0, 0, w, h);
     }
 } // namespace SnowLeopardEngine

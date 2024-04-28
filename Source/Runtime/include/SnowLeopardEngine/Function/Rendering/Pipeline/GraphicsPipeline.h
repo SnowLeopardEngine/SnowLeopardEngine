@@ -1,15 +1,15 @@
 #pragma once
 
-#include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
+
+#include <glad/glad.h>
 
 namespace SnowLeopardEngine
 {
-    class Shader;
-
     class GraphicsPipeline
     {
     public:
+        friend class RenderContext;
         GraphicsPipeline() = default;
 
         class Builder
@@ -17,18 +17,31 @@ namespace SnowLeopardEngine
         public:
             Builder() = default;
 
-            Builder& SetShaderProgram(const Ref<Shader>& program);
-            Builder& SetPipelineState(const PipelineState& state);
+            Builder& SetShaderProgram(GLuint program);
+            Builder& SetVAO(GLuint vao);
+            Builder& SetDepthStencil(const DepthStencilState&);
+            Builder& SetRasterizerState(const RasterizerState&);
+            Builder& SetBlendState(uint32_t attachment, const BlendState&);
 
             GraphicsPipeline Build();
 
         private:
-            Ref<Shader>   m_Program = nullptr;
-            PipelineState m_State;
+            GLuint m_Program = GL_NONE;
+            GLuint m_VAO     = GL_NONE;
+
+            DepthStencilState                          m_DepthStencilState {};
+            RasterizerState                            m_RasterizerState {};
+            std::array<BlendState, kMaxNumBlendStates> m_BlendStates {};
         };
 
     private:
-        Ref<Shader>   m_Program = nullptr;
-        PipelineState m_State;
+        Rect2D m_Viewport, m_Scissor;
+
+        GLuint m_Program = GL_NONE;
+        GLuint m_VAO     = GL_NONE;
+
+        DepthStencilState                          m_DepthStencilState {};
+        RasterizerState                            m_RasterizerState {};
+        std::array<BlendState, kMaxNumBlendStates> m_BlendStates {};
     };
 } // namespace SnowLeopardEngine

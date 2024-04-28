@@ -1,18 +1,15 @@
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
+#include "SnowLeopardEngine/Function/Rendering/FrameGraph/TransientResources.h"
 
 namespace SnowLeopardEngine
 {
-    void FrameGraphTexture2D::create(const Desc& desc, void*)
+    void FrameGraphTexture::create(const Desc& desc, void* allocator)
     {
-        m_Texture = Texture2D::Create({desc.Width, desc.Height, desc.Format, desc.Config});
+        Handle = static_cast<TransientResources*>(allocator)->AcquireTexture(desc);
     }
 
-    void FrameGraphTexture2D::destroy(const Desc& desc, void*) {}
-
-    void FrameGraphCubemap::create(const Desc& desc, void*)
+    void FrameGraphTexture::destroy(const Desc& desc, void* allocator)
     {
-        m_Cubemap = Cubemap::Create({desc.Width, desc.Height, desc.Format, desc.Config});
+        static_cast<TransientResources*>(allocator)->ReleaseTexture(desc, Handle);
     }
-
-    void FrameGraphCubemap::destroy(const Desc& desc, void*) {}
 } // namespace SnowLeopardEngine

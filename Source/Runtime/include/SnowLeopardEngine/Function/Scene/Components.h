@@ -8,8 +8,7 @@
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
-#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
+#include "SnowLeopardEngine/Function/Rendering/Material.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/LayerManager.h"
 #include "SnowLeopardEngine/Function/Scene/TagManager.h"
@@ -530,10 +529,10 @@ namespace SnowLeopardEngine
         float            ViewportHeight = 0;
         bool             IsPrimary      = true;
 
-        Ref<Cubemap>          Cubemap = nullptr;
+        // Ref<Cubemap>          Cubemap = nullptr;
         std::filesystem::path SkyboxMaterialFilePath;
-        Ref<DzMaterial>       SkyboxMaterial = nullptr;
-        MeshItem              SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
+        // Ref<DzMaterial>       SkyboxMaterial = nullptr;
+        MeshItem SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
 
         // NOLINTBEGIN
         template<class Archive>
@@ -587,7 +586,7 @@ namespace SnowLeopardEngine
         float     Intensity = 0.8;
         glm::vec3 Color     = {1, 0.996, 0.885};
 
-        Ref<DzMaterial> ShadowMaterial = nullptr;
+        // Ref<DzMaterial> ShadowMaterial = nullptr;
 
         // NOLINTBEGIN
         template<class Archive>
@@ -651,7 +650,8 @@ namespace SnowLeopardEngine
         bool CastShadow = true;
 
         std::filesystem::path MaterialFilePath;
-        Ref<DzMaterial>       Material;
+        // Ref<DzMaterial>       Material;
+        Material* Mat = nullptr;
 
         // NOLINTBEGIN
         template<class Archive>

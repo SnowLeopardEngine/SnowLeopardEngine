@@ -67,6 +67,7 @@ namespace SnowLeopardEngine
 {
     class LogicScene;
     class Project;
+    class Material;
 
     namespace IO
     {
@@ -75,5 +76,8 @@ namespace SnowLeopardEngine
 
         bool Serialize(Project* project, const std::filesystem::path& dstPath);
         bool Deserialize(Project* project, const std::filesystem::path& srcPath);
+
+        bool Serialize(Material* material, const std::filesystem::path& dstPath);
+        bool Deserialize(Material* material, const std::filesystem::path& srcPath);
     } // namespace IO
 } // namespace SnowLeopardEngine

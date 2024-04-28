@@ -2,22 +2,20 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
+#include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
 
 namespace SnowLeopardEngine
 {
     RenderSystem::RenderSystem()
     {
-        m_Context = GraphicsContext::Create();
+        m_Context = CreateRef<GraphicsContext>();
         m_Context->Init();
 
         // TODO: Configurable vsync
         // Disable VSync
         m_Context->SetVSync(false);
 
-        m_API = GraphicsAPI::Create(GraphicsBackend::OpenGL);
-
-        m_Renderer.CreatePasses();
+        m_Renderer.Init();
 
         Subscribe(m_LogicSceneLoadedHandler);
 
@@ -42,7 +40,7 @@ namespace SnowLeopardEngine
         SNOW_LEOPARD_PROFILE_FUNCTION
 
         // Render
-        m_Renderer.RenderFrame();
+        m_Renderer.RenderFrame(deltaTime);
     }
 
     void RenderSystem::Present() { m_Context->SwapBuffers(); }
@@ -50,6 +48,6 @@ namespace SnowLeopardEngine
     void RenderSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e)
     {
         // Filter renderables
-        m_Renderer.FilterRenderables();
+        m_Renderer.OnLogicSceneLoaded(e.GetLogicScene());
     }
 } // namespace SnowLeopardEngine

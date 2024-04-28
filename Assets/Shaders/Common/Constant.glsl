@@ -1,0 +1,7 @@
+#ifndef CONSTANT_GLSL
+#define CONSTANT_GLSL
+
+#define PI 3.1415926535
+#define MAX_POINT_LIGHT_COUNT 10
+
+#endif

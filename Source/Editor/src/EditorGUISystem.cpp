@@ -2,7 +2,6 @@
 #include "SnowLeopardEditor/PanelManager.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 
 #include <GLFW/glfw3.h>
 #include <IconsMaterialDesignIcons.h>
@@ -61,7 +60,7 @@ namespace SnowLeopardEngine::Editor
 
         // init panel manager
         PanelManagerInitInfo panelInitInfo = {};
-        panelInitInfo.ProjectFilePath = initInfo.ProjectFilePath;
+        panelInitInfo.ProjectFilePath      = initInfo.ProjectFilePath;
         PanelManager::Init(panelInitInfo);
 
         SNOW_LEOPARD_INFO("[EditorGUISystem] Initialized");
@@ -119,7 +118,7 @@ namespace SnowLeopardEngine::Editor
         style.WindowMinSize.x = minWinSizeX;
         style.WindowMinSize.y = minWinSizeY;
 
-        g_EngineContext->RenderSys->GetAPI()->ClearColor(glm::vec4(0, 0, 0, 0), ClearBit::Default);
+        // FIXME: g_EngineContext->RenderSys->GetAPI()->ClearColor(glm::vec4(0, 0, 0, 0), ClearBit::Default);
         ImGui::ShowDemoWindow();
 
         PanelManager::OnTick(deltaTime);

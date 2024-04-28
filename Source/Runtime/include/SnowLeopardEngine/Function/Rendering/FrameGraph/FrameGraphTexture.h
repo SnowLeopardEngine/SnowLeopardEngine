@@ -1,47 +1,38 @@
 #pragma once
 
-#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
-#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
+#include "SnowLeopardEngine/Function/Rendering/Texture.h"
 
 namespace SnowLeopardEngine
 {
-    // NOLINTBEGIN
-    class FrameGraphTexture2D
+    enum class WrapMode
+    {
+        ClampToEdge = 0,
+        ClampToOpaqueBlack,
+        ClampToOpaqueWhite
+    };
+
+    class FrameGraphTexture
     {
     public:
         struct Desc
         {
-            uint32_t         Width  = 1;
-            uint32_t         Height = 1;
-            PixelColorFormat Format = PixelColorFormat::RGBA8;
+            Extent2D    Extent;
+            uint32_t    Depth {0};
+            uint32_t    NumMipLevels {1};
+            uint32_t    Layers {0};
+            PixelFormat Format {PixelFormat::Unknown};
 
-            TextureConfig Config;
+            bool        ShadowSampler {false};
+            WrapMode    Wrap {WrapMode::ClampToEdge};
+            TexelFilter Filter {TexelFilter::Linear};
         };
 
+        // NOLINTBEGIN
         void create(const Desc& desc, void* allocator);
         void destroy(const Desc& desc, void* allocator);
+        // NOLINTEND
 
-    private:
-        Ref<Texture2D> m_Texture = nullptr;
+        Texture* Handle = nullptr;
     };
 
-    class FrameGraphCubemap
-    {
-    public:
-        struct Desc
-        {
-            uint32_t         Width  = 1;
-            uint32_t         Height = 1;
-            PixelColorFormat Format = PixelColorFormat::RGBA8;
-
-            TextureConfig Config;
-        };
-
-        void create(const Desc& desc, void* allocator);
-        void destroy(const Desc& desc, void* allocator);
-
-    private:
-        Ref<Cubemap> m_Cubemap = nullptr;
-    };
-    // NOLINTEND
 } // namespace SnowLeopardEngine

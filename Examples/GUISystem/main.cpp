@@ -1,10 +1,8 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Event/UIEvents.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
-#include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
@@ -85,41 +83,41 @@ public:
         animatorComponent.Controller.RegisterAnimator(animator);
         animatorComponent.Controller.SetEntryAnimator(animator);
 
-        // Create gui buttons
-        Ref<Texture2DAsset> coolGayTexture, awesomeFaceTexture;
-        Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", coolGayTexture, false);
-        Resources::Load<Texture2DAsset>("Assets/Textures/awesomeface.png", awesomeFaceTexture, false);
+        // // Create gui buttons
+        // Ref<Texture2DAsset> coolGayTexture, awesomeFaceTexture;
+        // Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", coolGayTexture, false);
+        // Resources::Load<Texture2DAsset>("Assets/Textures/awesomeface.png", awesomeFaceTexture, false);
 
-        Entity coolGayButton                          = scene->CreateEntity("CoolGayButton");
-        auto&  coolGayButtonRect                      = coolGayButton.AddComponent<UI::RectTransformComponent>();
-        coolGayButtonRect.Size                        = {100, 60};
-        coolGayButtonRect.Pivot                       = {0, 0};
-        coolGayButtonRect.Pos                         = {10, 10, 0};
-        auto& coolGayButtonComp                       = coolGayButton.AddComponent<UI::ButtonComponent>();
-        coolGayButtonComp.TintColor.TargetGraphicUUID = coolGayTexture->GetUUID();
+        // Entity coolGayButton                          = scene->CreateEntity("CoolGayButton");
+        // auto&  coolGayButtonRect                      = coolGayButton.AddComponent<UI::RectTransformComponent>();
+        // coolGayButtonRect.Size                        = {100, 60};
+        // coolGayButtonRect.Pivot                       = {0, 0};
+        // coolGayButtonRect.Pos                         = {10, 10, 0};
+        // auto& coolGayButtonComp                       = coolGayButton.AddComponent<UI::ButtonComponent>();
+        // coolGayButtonComp.TintColor.TargetGraphicUUID = coolGayTexture->GetUUID();
 
-        Entity awesomeFaceButton     = scene->CreateEntity("AwesomeFaceButton");
-        auto&  awesomeFaceButtonRect = awesomeFaceButton.AddComponent<UI::RectTransformComponent>();
-        awesomeFaceButtonRect.Size   = {100, 60};
-        awesomeFaceButtonRect.Pivot  = {0, 0};
-        awesomeFaceButtonRect.Pos    = {10, 100, 0};
-        auto& awesomeFaceButtonComp  = awesomeFaceButton.AddComponent<UI::ButtonComponent>();
-        awesomeFaceButtonComp.TintColor.TargetGraphicUUID = awesomeFaceTexture->GetUUID();
+        // Entity awesomeFaceButton     = scene->CreateEntity("AwesomeFaceButton");
+        // auto&  awesomeFaceButtonRect = awesomeFaceButton.AddComponent<UI::RectTransformComponent>();
+        // awesomeFaceButtonRect.Size   = {100, 60};
+        // awesomeFaceButtonRect.Pivot  = {0, 0};
+        // awesomeFaceButtonRect.Pos    = {10, 100, 0};
+        // auto& awesomeFaceButtonComp  = awesomeFaceButton.AddComponent<UI::ButtonComponent>();
+        // awesomeFaceButtonComp.TintColor.TargetGraphicUUID = awesomeFaceTexture->GetUUID();
 
-        Subscribe(m_ButtonClickedEventHandler);
+        // Subscribe(m_ButtonClickedEventHandler);
 
-        // Create an image;
-        Ref<Texture2DAsset> imageTexture;
-        Resources::Load<Texture2DAsset>("Assets/Textures/SleepGay.jpg", imageTexture, false);
+        // // Create an image;
+        // Ref<Texture2DAsset> imageTexture;
+        // Resources::Load<Texture2DAsset>("Assets/Textures/SleepGay.jpg", imageTexture, false);
 
-        Entity sleepGayImage = scene->CreateEntity("SleepGayImage");
-        auto&  sleepGayRect  = sleepGayImage.AddComponent<UI::RectTransformComponent>();
+        // Entity sleepGayImage = scene->CreateEntity("SleepGayImage");
+        // auto&  sleepGayRect  = sleepGayImage.AddComponent<UI::RectTransformComponent>();
 
-        sleepGayRect.Size                   = {320, 240};
-        sleepGayRect.Pivot                  = {0.5, 0.5};
-        sleepGayRect.Pos                    = {512, 384, 0};
-        auto& sleepGayImageComp             = sleepGayImage.AddComponent<UI::ImageComponent>();
-        sleepGayImageComp.TargetGraphicUUID = imageTexture->GetUUID();
+        // sleepGayRect.Size                   = {320, 240};
+        // sleepGayRect.Pivot                  = {0.5, 0.5};
+        // sleepGayRect.Pos                    = {512, 384, 0};
+        // auto& sleepGayImageComp             = sleepGayImage.AddComponent<UI::ImageComponent>();
+        // sleepGayImageComp.TargetGraphicUUID = imageTexture->GetUUID();
     }
 
     virtual void OnUnload() { Unsubscribe(m_ButtonClickedEventHandler); }

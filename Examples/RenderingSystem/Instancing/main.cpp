@@ -3,10 +3,8 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
@@ -22,14 +20,14 @@ public:
     {
         auto& transform    = m_OwnerEntity->GetComponent<TransformComponent>();
         auto& meshRenderer = m_OwnerEntity->GetComponent<MeshRendererComponent>();
-        meshRenderer.Material->SetColor(
-            "instanceColor",
-            glm::vec4(Random::GetRandomFloat(), Random::GetRandomFloat(), Random::GetRandomFloat(), 1));
-        meshRenderer.Material->SetVector("instancePosition", glm::vec4(transform.Position, 1));
-        auto      quaternion = transform.GetRotation();
-        glm::vec4 vec4Representation(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
-        meshRenderer.Material->SetVector("instanceQuaternion", vec4Representation);
-        meshRenderer.Material->SetVector("instanceScale", glm::vec4(transform.Scale, 1));
+        // meshRenderer.Material->SetColor(
+        //     "instanceColor",
+        //     glm::vec4(Random::GetRandomFloat(), Random::GetRandomFloat(), Random::GetRandomFloat(), 1));
+        // meshRenderer.Material->SetVector("instancePosition", glm::vec4(transform.Position, 1));
+        // auto      quaternion = transform.GetRotation();
+        // glm::vec4 vec4Representation(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+        // meshRenderer.Material->SetVector("instanceQuaternion", vec4Representation);
+        // meshRenderer.Material->SetVector("instanceScale", glm::vec4(transform.Scale, 1));
     }
 };
 
@@ -105,12 +103,12 @@ public:
         scene->SaveTo("Test.dzscene");
         scene->LoadFrom("Test.dzscene");
 
-        Ref<Texture2DAsset> assetA, assetB, assetC;
-        Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", assetA, true);
-        Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", assetB, true);
-        Resources::Load<Texture2DAsset>("Assets/Textures/Grass.png", assetC, true);
-        assert(assetA->GetUUID() == assetB->GetUUID());
-        assert(assetA->GetUUID() != assetC->GetUUID());
+        // Ref<Texture2DAsset> assetA, assetB, assetC;
+        // Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", assetA, true);
+        // Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", assetB, true);
+        // Resources::Load<Texture2DAsset>("Assets/Textures/Grass.png", assetC, true);
+        // assert(assetA->GetUUID() == assetB->GetUUID());
+        // assert(assetA->GetUUID() != assetC->GetUUID());
     }
 
 private:

@@ -7,15 +7,18 @@ namespace SnowLeopardEngine
     class GraphicsContext
     {
     public:
-        virtual void Init()     = 0;
-        virtual void Shutdown() = 0;
+        void Init();
+        void Shutdown();
 
-        virtual void SwapBuffers()               = 0;
-        virtual void SetVSync(bool vsyncEnabled) = 0;
-
-        static Ref<GraphicsContext> Create();
+        void SwapBuffers();
+        void SetVSync(bool vsyncEnabled);
 
         bool IsSupportDSA() const { return m_SupportDSA; }
+
+    private:
+        int LoadGL();
+        int GetMinMajor();
+        int GetMinMinor();
 
     protected:
         bool m_SupportDSA;

@@ -4,69 +4,51 @@
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Asset/OzzMesh.h"
 
+#include <glad/glad.h>
+
 namespace SnowLeopardEngine
 {
-    // forward
-    class VertexArray;
+    class IndexBuffer;
+    class VertexBuffer;
+    class VertexFormat;
 
-    struct ViewportDesc
+    // clang-format off
+    struct Offset2D
     {
-        float X;
-        float Y;
-        float Width;
-        float Height;
+        int32_t X {0}, Y {0};
+
+        auto operator<=> (const Offset2D&) const = default;
     };
 
-    enum class PixelColorFormat : uint8_t
+    struct Extent2D
     {
-        Invalid = 0,
-        RGB8,
-        RGBA8,
-        RGB32,
-        RGBA32,
-        RGB8_UNORM,
-        R32_SINT
+        uint32_t Width {0}, Height {0};
+
+        auto operator<=> (const Extent2D&) const = default;
     };
 
-    enum class TextureType : uint8_t
+    struct Rect2D
     {
-        Invalid = 0,
-        Texture2D,
-        Texture3D // Cubemap
+        Offset2D Offset;
+        Extent2D Extent;
+
+        auto operator<=> (const Rect2D&) const = default;
+    };
+    // clang-format on
+
+    enum class CompareOp : GLenum
+    {
+        Never          = GL_NEVER,
+        Less           = GL_LESS,
+        Equal          = GL_EQUAL,
+        LessOrEqual    = GL_LEQUAL,
+        Greater        = GL_GREATER,
+        NotEqual       = GL_NOTEQUAL,
+        GreaterOrEqual = GL_GEQUAL,
+        Always         = GL_ALWAYS
     };
 
-    enum class TextureWrapMode : uint8_t
-    {
-        Invalid = 0,
-        Clamp,
-        Repeat,
-        Mirror
-    };
-
-    enum class TextureFilterMode : uint8_t
-    {
-        Invalid = 0,
-        Point,
-        Linear,
-        Nearest
-    };
-
-    struct TextureConfig
-    {
-        TextureWrapMode   WrapMode     = TextureWrapMode::Repeat;
-        TextureFilterMode FilterMode   = TextureFilterMode::Linear;
-        bool              IsFlip       = true;
-        bool              IsGenMipMaps = true;
-    };
-
-    struct TextureDesc
-    {
-        uint32_t         Width  = 1;
-        uint32_t         Height = 1;
-        PixelColorFormat Format = PixelColorFormat::RGBA8;
-
-        TextureConfig Config;
-    };
+    using ViewportDesc = Rect2D;
 
     struct MeshVertexData
     {
@@ -83,12 +65,14 @@ namespace SnowLeopardEngine
         std::vector<MeshVertexData> Vertices;
         std::vector<uint32_t>       Indices;
 
-        Ref<VertexArray> VertexArray = nullptr;
+        Ref<IndexBuffer>  IdxBuffer  = nullptr;
+        Ref<VertexBuffer> VertBuffer = nullptr;
+        Ref<VertexFormat> VertFormat = nullptr;
     };
 
     struct MeshItem
     {
-        std::string Name;
+        std::string Name = "Untitled Mesh";
         MeshData    Data;
 
         ozz::sample::Mesh OzzMesh;
@@ -99,11 +83,5 @@ namespace SnowLeopardEngine
     struct MeshGroup
     {
         std::vector<MeshItem> Items;
-    };
-
-    class RenderResource
-    {
-    public:
-        virtual ~RenderResource() = default;
     };
 } // namespace SnowLeopardEngine

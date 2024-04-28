@@ -20,7 +20,7 @@ namespace SnowLeopardEngine
                                                    const char*          requesting_source,
                                                    size_t               include_depth) override final
         {
-            const std::filesystem::path search_paths[] = {"Assets/Shaders/include"};
+            const std::filesystem::path search_paths[] = {"Assets/Shaders"};
 
             for (const auto& search_path : search_paths)
             {

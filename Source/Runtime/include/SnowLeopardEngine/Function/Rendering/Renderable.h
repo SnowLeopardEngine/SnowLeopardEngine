@@ -1,17 +1,14 @@
 #pragma once
 
+#include "SnowLeopardEngine/Function/Rendering/Material.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
 namespace SnowLeopardEngine
 {
-    class Renderable
+    struct Renderable
     {
-    public:
-        explicit Renderable(MeshItem& mesh) : m_Mesh(mesh) {}
-
-        void Render() const { std::cout << m_Mesh.Name << " render" << std::endl; }
-
-    private:
-        MeshItem& m_Mesh;
+        MeshItem* Mesh        = nullptr;
+        Material* Mat         = nullptr;
+        glm::mat4 ModelMatrix = glm::mat4(1.0f);
     };
 } // namespace SnowLeopardEngine

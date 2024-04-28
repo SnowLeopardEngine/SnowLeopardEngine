@@ -84,6 +84,8 @@ namespace glm
 
 namespace SnowLeopardEngine::Math
 {
+    inline constexpr bool IsPowerOf2(uint32_t v) { return v && !(v & (v - 1)); }
+
     static glm::mat4 GetTransformMatrix(const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale)
     {
         glm::mat4 result(1.0f);

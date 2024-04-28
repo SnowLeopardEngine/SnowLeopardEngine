@@ -6,9 +6,9 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/IO/MaterialLoader.h"
 #include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
@@ -234,21 +234,21 @@ namespace SnowLeopardEngine
             // TODO: Move to AssetManager
             if (FileSystem::Exists(renderer.MaterialFilePath))
             {
-                renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
+                renderer.Mat = IO::Load(renderer.MaterialFilePath);
             }
         });
         m_Registry.view<TerrainRendererComponent>().each([](entt::entity entity, TerrainRendererComponent& renderer) {
             // TODO: Move to AssetManager
             if (FileSystem::Exists(renderer.MaterialFilePath))
             {
-                renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
+                // FIXME: renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
             }
         });
         m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
             // TODO: Move to AssetManager
             if (FileSystem::Exists(camera.SkyboxMaterialFilePath))
             {
-                camera.SkyboxMaterial = DzMaterial::LoadFromPath(camera.SkyboxMaterialFilePath);
+                // FIXME: camera.SkyboxMaterial = DzMaterial::LoadFromPath(camera.SkyboxMaterialFilePath);
             }
         });
 
@@ -469,8 +469,9 @@ namespace SnowLeopardEngine
     {
         Entity directionalLight          = CreateEntity("Directional Light");
         auto&  directionalLightComponent = directionalLight.AddComponent<DirectionalLightComponent>();
-        directionalLightComponent.ShadowMaterial =
-            DzMaterial::LoadFromPath("Assets/Materials/Legacy/ShadowMapping.dzmaterial");
+        // FIXME:
+        // directionalLightComponent.ShadowMaterial =
+        //     DzMaterial::LoadFromPath("Assets/Materials/Legacy/ShadowMapping.dzmaterial");
     }
 
     std::string LogicScene::GetNameFromEntity(Entity entity) const

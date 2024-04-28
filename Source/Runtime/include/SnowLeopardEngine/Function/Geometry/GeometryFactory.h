@@ -3,6 +3,7 @@
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
+#include "SnowLeopardEngine/Function/Rendering/VertexFormat.h"
 
 namespace SnowLeopardEngine
 {
@@ -49,6 +50,8 @@ namespace SnowLeopardEngine
 
                 quadData.Indices = {0, 1, 2, 0, 3, 2};
             }
+
+            quadData.VertFormat = VertexFormat::Builder {}.BuildDefault();
 
             quadMesh.Data = quadData;
             return quadMesh;
@@ -98,6 +101,8 @@ namespace SnowLeopardEngine
                 16, 17, 18, 16, 18, 19, // Left
                 20, 22, 21, 22, 20, 23  // Right
             };
+
+            cubeData.VertFormat = VertexFormat::Builder {}.BuildDefault();
 
             cubeMesh.Data = cubeData;
             return cubeMesh;
@@ -150,6 +155,8 @@ namespace SnowLeopardEngine
                     sphereData.Indices.push_back(next + 1);
                 }
             }
+
+            sphereData.VertFormat = VertexFormat::Builder {}.BuildDefault();
 
             sphereMesh.Data = sphereData;
             return sphereMesh;
@@ -300,6 +307,8 @@ namespace SnowLeopardEngine
                 }
             }
 
+            capsuleData.VertFormat = VertexFormat::Builder {}.BuildDefault();
+
             capsuleMesh.Data = capsuleData;
             return capsuleMesh;
         }
@@ -377,6 +386,8 @@ namespace SnowLeopardEngine
                     heightfieldData.Indices.push_back(next + 1);
                 }
             }
+
+            heightfieldData.VertFormat = VertexFormat::Builder {}.BuildDefault();
 
             heightfieldMesh.Data = heightfieldData;
             return heightfieldMesh;

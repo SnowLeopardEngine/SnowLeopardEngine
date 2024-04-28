@@ -4,8 +4,6 @@
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 #include "SnowLeopardEngine/Function/Asset/Asset.h"
-#include "SnowLeopardEngine/Function/Asset/DzMaterialAsset.h"
-#include "SnowLeopardEngine/Function/Asset/TextureAsset.h"
 #include "SnowLeopardEngine/Function/Project/ProjectTypeDef.h"
 
 namespace SnowLeopardEngine
@@ -107,19 +105,7 @@ namespace SnowLeopardEngine
                     std::string extension = entry.path().extension().string();
                     AssetType   assetType = ExtensionsToType[extension];
 
-                    // Import textures
-                    if (assetType == AssetType::Texture)
-                    {
-                        Ref<Texture2DAsset> outAsset;
-                        Load<Texture2DAsset>(entry.path(), outAsset, false);
-                    }
-
-                    // Import dz materials
-                    if (assetType == AssetType::DzMaterial)
-                    {
-                        Ref<DzMaterialAsset> outAsset;
-                        Load<DzMaterialAsset>(entry.path(), outAsset);
-                    }
+                    // Import assets
 
                     // TODO: Import other assets
                 }
