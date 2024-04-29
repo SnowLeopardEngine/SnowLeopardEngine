@@ -86,6 +86,18 @@ namespace SnowLeopardEngine::Math
 {
     inline constexpr bool IsPowerOf2(uint32_t v) { return v && !(v & (v - 1)); }
 
+    inline constexpr uint64_t NextPowerOf2(uint64_t v)
+    {
+        v--;
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        v |= v >> 8;
+        v |= v >> 16;
+        v++;
+        return v;
+    }
+
     static glm::mat4 GetTransformMatrix(const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale)
     {
         glm::mat4 result(1.0f);

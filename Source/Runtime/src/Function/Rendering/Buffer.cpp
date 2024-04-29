@@ -14,8 +14,9 @@ namespace SnowLeopardEngine
     Buffer::~Buffer()
     {
         if (m_Id != GL_NONE)
-            SNOW_LEOPARD_CORE_ERROR("Texture leak: {0}", m_Id);
+            SNOW_LEOPARD_CORE_ERROR("Buffer leak: {0}", m_Id);
     }
+
     Buffer& Buffer::operator=(Buffer&& rhs) noexcept
     {
         if (this != &rhs)

@@ -145,6 +145,7 @@ namespace SnowLeopardEngine
         RenderContext& BindMaterial(Material*);
 
         RenderContext& DrawFullScreenTriangle();
+        RenderContext& DrawCube();
         RenderContext& Draw(OptionalReference<const VertexBuffer> vertexBuffer,
                             OptionalReference<const IndexBuffer>  indexBuffer,
                             uint32_t                              numIndices,

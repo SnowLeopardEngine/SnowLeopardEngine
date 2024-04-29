@@ -1,6 +1,6 @@
 #ifndef PBR_GLSL
 
-#include "Common/Constant.glsl"
+#include "Lib/Math.glsl"
 
 struct PBRMaterial {
     vec3 albedo;

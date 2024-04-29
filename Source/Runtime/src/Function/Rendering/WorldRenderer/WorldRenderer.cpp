@@ -3,6 +3,8 @@
 #include "SnowLeopardEngine/Core/Math/Frustum.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/IO/TextureLoader.h"
+#include "SnowLeopardEngine/Function/Rendering/Converters/CubemapConverter.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/TransientResources.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameUniform.h"
 #include "SnowLeopardEngine/Function/Rendering/IndexBuffer.h"
@@ -10,6 +12,7 @@
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SkyboxPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SceneColorData.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
@@ -23,10 +26,26 @@ namespace SnowLeopardEngine
         m_RenderContext      = CreateScope<RenderContext>();
         m_TransientResources = CreateScope<TransientResources>(*m_RenderContext);
 
+        m_Viewport = m_RenderContext->GetViewport();
+
+        CreateTools();
         CreatePasses();
     }
 
-    void WorldRenderer::OnLogicSceneLoaded(LogicScene* scene) {}
+    void WorldRenderer::Shutdown() { m_RenderContext->Destroy(m_Skybox); }
+
+    void WorldRenderer::OnLogicSceneLoaded(LogicScene* scene)
+    {
+        auto& registry = scene->GetRegistry();
+
+        // Camera
+        Entity mainCamera = {registry.view<TransformComponent, CameraComponent>().front(), scene};
+
+        // TODO: Use texture path defined in camera
+        auto* equirectangular = IO::Load("Assets/Textures/newport_loft.hdr", *m_RenderContext);
+        m_Skybox              = m_CubemapConverter->EquirectangularToCubemap(*equirectangular);
+        m_RenderContext->Destroy(*equirectangular);
+    }
 
     void WorldRenderer::RenderFrame(float deltaTime)
     {
@@ -40,29 +59,30 @@ namespace SnowLeopardEngine
             return;
         }
 
-        auto viewPort = m_RenderContext->GetViewport();
-
-        // Update frame uniform
+        // Update & upload frame uniform
         UpdateFrameUniform();
         uploadFrameUniform(fg, blackboard, m_FrameUniform);
+
+        // Update & upload light uniform
+        UpdateLightUniform();
+        uploadLightUniform(fg, blackboard, m_LightUniform);
 
         // Filter visable renderables (CPU Frustum culling)
         auto visableRenderables =
             FilterVisableRenderables(m_Renderables, m_FrameUniform.ProjectionMatrix * m_FrameUniform.ViewMatrix);
 
-        // Update light uniform
-        UpdateLightUniform(visableRenderables);
-        uploadLightUniform(fg, blackboard, m_LightUniform);
-
         // Shadow pre pass
         m_ShadowPrePass->AddToGraph(fg, blackboard, {.Width = 2048, .Height = 2048}, m_Renderables);
 
         // G-Buffer pass
-        m_GBufferPass->AddToGraph(fg, blackboard, viewPort.Extent, visableRenderables);
+        m_GBufferPass->AddToGraph(fg, blackboard, m_Viewport.Extent, visableRenderables);
 
         // Deferred lighting pass
         auto& sceneColor = blackboard.add<SceneColorData>();
         sceneColor.HDR   = m_DeferredLightingPass->AddToGraph(fg, blackboard);
+
+        // Skybox pass
+        sceneColor.HDR = m_SkyboxPass->AddToGraph(fg, blackboard, sceneColor.HDR, &m_Skybox);
 
         // Final composition
         m_FinalPass->Compose(fg, blackboard);
@@ -78,12 +98,21 @@ namespace SnowLeopardEngine
         m_TransientResources->Update(deltaTime);
     }
 
+    void WorldRenderer::CreateTools()
+    {
+        auto& rc           = *m_RenderContext;
+        m_CubemapConverter = CreateScope<CubemapConverter>(rc);
+    }
+
     void WorldRenderer::CreatePasses()
     {
-        m_ShadowPrePass        = CreateScope<ShadowPrePass>(*m_RenderContext);
-        m_GBufferPass          = CreateScope<GBufferPass>(*m_RenderContext);
-        m_DeferredLightingPass = CreateScope<DeferredLightingPass>(*m_RenderContext);
-        m_FinalPass            = CreateScope<FinalPass>(*m_RenderContext);
+        auto& rc = *m_RenderContext;
+
+        m_ShadowPrePass        = CreateScope<ShadowPrePass>(rc);
+        m_GBufferPass          = CreateScope<GBufferPass>(rc);
+        m_DeferredLightingPass = CreateScope<DeferredLightingPass>(rc);
+        m_SkyboxPass           = CreateScope<SkyboxPass>(rc);
+        m_FinalPass            = CreateScope<FinalPass>(rc);
     }
 
     void WorldRenderer::CookRenderableScene()
@@ -187,7 +216,7 @@ namespace SnowLeopardEngine
         m_FrameUniform.ProjectionMatrix = g_EngineContext->CameraSys->GetProjectionMatrix(mainCameraComponent);
     }
 
-    void WorldRenderer::UpdateLightUniform(std::span<Renderable> visableRenderables)
+    void WorldRenderer::UpdateLightUniform()
     {
         auto& directionalLightComponent = m_DirectionalLight.GetComponent<DirectionalLightComponent>();
 

@@ -30,4 +30,21 @@ float getElapsedTime() {
     return uFrame.elapsedTime;
 }
 
+vec4 worldToView(vec4 v) {
+    return uFrame.viewMatrix * v;
+}
+
+vec4 viewToWorld(vec4 v) {
+    return inverse(uFrame.viewMatrix) * v;
+}
+
+vec3 viewToClip(vec4 v) {
+    vec4 clip = uFrame.projectionMatrix * v;
+    return clip.xyz / clip.w;
+}
+vec3 clipToView(vec4 v) {
+    const vec4 view = inverse(uFrame.projectionMatrix) * v;
+    return view.xyz / view.w;
+}
+
 #endif

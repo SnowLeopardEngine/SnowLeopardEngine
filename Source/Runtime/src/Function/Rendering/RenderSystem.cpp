@@ -29,6 +29,7 @@ namespace SnowLeopardEngine
 
         Unsubscribe(m_LogicSceneLoadedHandler);
 
+        m_Renderer.Shutdown();
         m_Context->Shutdown();
         m_Context.reset();
 

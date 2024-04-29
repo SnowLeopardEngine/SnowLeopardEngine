@@ -46,7 +46,7 @@ namespace SnowLeopardEngine
                 data.EntityID = builder.write(data.EntityID);
 
                 data.Depth =
-                    builder.create<FrameGraphTexture>("Depth", {.Extent = resolution, .Format = PixelFormat::Depth24});
+                    builder.create<FrameGraphTexture>("Depth", {.Extent = resolution, .Format = PixelFormat::Depth32F});
                 data.Depth = builder.write(data.Depth);
             },
             [=, this](const GBufferData& data, FrameGraphPassResources& resources, void* ctx) {

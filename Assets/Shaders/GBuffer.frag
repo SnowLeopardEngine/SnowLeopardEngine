@@ -2,6 +2,9 @@
 
 #include "Lib/PBR.glsl"
 
+// https://www.khronos.org/opengl/wiki/Early_Fragment_Test
+layout(early_fragment_tests) in;
+
 layout(location = 0) in vec2 varingTexCoords;
 layout(location = 1) flat in int varingEntityID;
 layout(location = 2) in vec3 worldNormal;

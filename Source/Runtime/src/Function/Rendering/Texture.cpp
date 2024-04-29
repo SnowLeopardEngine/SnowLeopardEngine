@@ -12,6 +12,7 @@ namespace SnowLeopardEngine
     {
         memset(&other, 0, sizeof(Texture));
     }
+
     Texture::~Texture()
     {
         if (m_Id != GL_NONE)
