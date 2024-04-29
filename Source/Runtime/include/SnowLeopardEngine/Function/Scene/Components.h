@@ -605,7 +605,7 @@ namespace SnowLeopardEngine
         float Constant  = 1.0f;
         float Linear    = 0.09f;
         float Quadratic = 0.032f;
-        float Intensity = 5.0;
+        float Intensity = 10.0;
 
         // NOLINTBEGIN
         template<class Archive>

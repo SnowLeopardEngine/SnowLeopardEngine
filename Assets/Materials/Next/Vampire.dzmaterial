@@ -6,7 +6,7 @@
             {
                 "Name": "albedoMap",
                 "Type": "Texture2D",
-                "Value": "Assets/Models/Vampire/textures/Vampire_diffuse.png"
+                "Value": "Assets/Models/Vampire/textures/Vampire_diffuse_transparent.png"
             },
             {
                 "Name": "useAlbedoMap",
@@ -16,7 +16,7 @@
             {
                 "Name": "roughness",
                 "Type": "Float",
-                "Value": "1"
+                "Value": "0.8"
             },
             {
                 "Name": "ao",

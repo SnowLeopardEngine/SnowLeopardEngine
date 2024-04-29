@@ -55,7 +55,7 @@ public:
         auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.MaterialFilePath = "Assets/Materials/Next/White.dzmaterial";
+        floorMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Red.dzmaterial";
 
         OzzModelLoadConfig config = {};
         config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";

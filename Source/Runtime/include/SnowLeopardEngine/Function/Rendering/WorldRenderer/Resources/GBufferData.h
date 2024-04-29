@@ -9,6 +9,7 @@ namespace SnowLeopardEngine
         FrameGraphResource Position;
         FrameGraphResource Normal;
         FrameGraphResource Albedo;
+        FrameGraphResource Emissive;
         FrameGraphResource MetallicRoughnessAO;
         FrameGraphResource EntityID;
 

@@ -6,7 +6,7 @@
             {
                 "Name": "albedo",
                 "Type": "Color",
-                "Value": "(0.1, 0.1, 1, 1)"
+                "Value": "(0, 0, 1, 1)"
             },
             {
                 "Name": "metallic",
@@ -16,7 +16,7 @@
             {
                 "Name": "roughness",
                 "Type": "Float",
-                "Value": "1"
+                "Value": "0.5"
             },
             {
                 "Name": "ao",

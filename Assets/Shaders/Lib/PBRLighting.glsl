@@ -11,7 +11,7 @@ vec3 CalDirectionalLight(DirectionalLight directionalLight, vec3 F0, vec3 N, vec
     vec3 radiance = directionalLight.color * directionalLight.intensity;
 
     // cook-torrance brdf
-    float gamma = 4.0;
+    float gamma = 2.0;
     float NDF = DistributionGTR(N, H, material.roughness, gamma);
     float G = GeometrySmith(N, V, L, material.roughness);
     vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
@@ -36,7 +36,7 @@ vec3 CalPointLight(PointLight pointLight, vec3 F0, vec3 N, vec3 V, PBRMaterial m
     vec3 radiance = pointLight.color * pointLight.intensity;
 
     // cook-torrance brdf
-    float gamma = 4.0;
+    float gamma = 2.0;
     float NDF = DistributionGTR(N, H, material.roughness, gamma);
     float G = GeometrySmith(N, V, L, material.roughness);
     vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
@@ -66,8 +66,7 @@ vec3 CalPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NU
     // directional light contribution
     Lo += CalDirectionalLight(directionalLight, F0, N, V, material);
     // point lights contribution
-    for (uint i = 0; i < numPointLights; ++i)
-    {
+    for(uint i = 0; i < numPointLights; ++i) {
         Lo += CalPointLight(pointLights[i], F0, N, V, material, fragPos);
     }
 
@@ -75,7 +74,7 @@ vec3 CalPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NU
     float shadow = ShadowCalculation(fragPosLightSpace, normal, normalize(-directionalLight.direction), shadowMap);
 
     vec3 ambient = vec3(0.03) * material.albedo * material.ao;
-    vec3 color = ambient + (1.0 - shadow) * Lo;
+    vec3 color = material.emissive + ambient + (1.0 - shadow) * Lo;
 
     return color;
 }

@@ -60,6 +60,7 @@ namespace SnowLeopardEngine
                 builder.read(gBuffer.Position);
                 builder.read(gBuffer.Normal);
                 builder.read(gBuffer.Albedo);
+                builder.read(gBuffer.Emissive);
                 builder.read(gBuffer.MetallicRoughnessAO);
 
                 data.SceneColor =
@@ -85,8 +86,9 @@ namespace SnowLeopardEngine
                     .BindTexture(0, getTexture(resources, gBuffer.Position))
                     .BindTexture(1, getTexture(resources, gBuffer.Normal))
                     .BindTexture(2, getTexture(resources, gBuffer.Albedo))
-                    .BindTexture(3, getTexture(resources, gBuffer.MetallicRoughnessAO))
-                    .BindTexture(4, getTexture(resources, shadow.ShadowMap))
+                    .BindTexture(3, getTexture(resources, gBuffer.Emissive))
+                    .BindTexture(4, getTexture(resources, gBuffer.MetallicRoughnessAO))
+                    .BindTexture(5, getTexture(resources, shadow.ShadowMap))
                     .DrawFullScreenTriangle();
 
                 rc.EndRendering(framebuffer);

@@ -37,6 +37,10 @@ namespace SnowLeopardEngine
                     builder.create<FrameGraphTexture>("Albedo", {.Extent = resolution, .Format = PixelFormat::RGB16F});
                 data.Albedo = builder.write(data.Albedo);
 
+                data.Emissive = builder.create<FrameGraphTexture>(
+                    "Emissive", {.Extent = resolution, .Format = PixelFormat::RGB16F});
+                data.Emissive = builder.write(data.Emissive);
+
                 data.MetallicRoughnessAO = builder.create<FrameGraphTexture>(
                     "Metallic Roughness AO", {.Extent = resolution, .Format = PixelFormat::RGBA8_UNorm});
                 data.MetallicRoughnessAO = builder.write(data.MetallicRoughnessAO);
@@ -60,6 +64,7 @@ namespace SnowLeopardEngine
                     .ColorAttachments = {{.Image = getTexture(resources, data.Position), .ClearValue = kBlackColor},
                                          {.Image = getTexture(resources, data.Normal), .ClearValue = kBlackColor},
                                          {.Image = getTexture(resources, data.Albedo), .ClearValue = kBlackColor},
+                                         {.Image = getTexture(resources, data.Emissive), .ClearValue = kBlackColor},
                                          {.Image      = getTexture(resources, data.MetallicRoughnessAO),
                                           .ClearValue = kBlackColor},
                                          {.Image = getTexture(resources, data.EntityID), .ClearValue = kBlackColor}},

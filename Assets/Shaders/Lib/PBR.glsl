@@ -4,6 +4,7 @@
 
 struct PBRMaterial {
     vec3 albedo;
+    vec3 emissive;
     float metallic;
     float roughness;
     float ao;

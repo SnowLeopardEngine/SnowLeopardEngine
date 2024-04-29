@@ -16,7 +16,7 @@
             {
                 "Name": "roughness",
                 "Type": "Float",
-                "Value": "1"
+                "Value": "0.5"
             },
             {
                 "Name": "ao",
