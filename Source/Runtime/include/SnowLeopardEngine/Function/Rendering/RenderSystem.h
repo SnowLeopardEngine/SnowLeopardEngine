@@ -20,13 +20,15 @@ namespace SnowLeopardEngine
 
         void SetRenderTarget(const Ref<FrameBuffer>& renderTarget) {}
 
-        Ref<GraphicsContext> GetContext() const { return m_Context; }
+        Ref<GraphicsContext> GetGraphicsContext() const { return m_Context; }
+        Ref<RenderContext>   GetGlobalRenderContext() const { return m_GlobalRenderContext; }
 
     private:
         void OnLogicSceneLoaded(const LogicSceneLoadedEvent& e);
 
     protected:
-        Ref<GraphicsContext> m_Context;
+        Ref<GraphicsContext> m_Context             = nullptr;
+        Ref<RenderContext>   m_GlobalRenderContext = nullptr;
         WorldRenderer        m_Renderer;
 
         EventHandler<LogicSceneLoadedEvent> m_LogicSceneLoadedHandler = [this](const LogicSceneLoadedEvent& e) {

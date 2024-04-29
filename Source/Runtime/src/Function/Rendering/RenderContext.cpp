@@ -691,7 +691,7 @@ namespace SnowLeopardEngine
 
     RenderContext& RenderContext::DrawFullScreenTriangle() { return Draw({}, {}, 0, 3); }
 
-    RenderContext& RenderContext::DrawCube() { return Draw({}, {}, 0, 4); }
+    RenderContext& RenderContext::DrawCube() { return Draw({}, {}, 0, 36); }
 
     RenderContext& RenderContext::Draw(OptionalReference<const VertexBuffer> vertexBuffer,
                                        OptionalReference<const IndexBuffer>  indexBuffer,

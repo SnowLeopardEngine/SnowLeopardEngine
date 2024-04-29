@@ -19,6 +19,11 @@ void main() {
     if(invertY)
         texCoord.y *= -1.0;
     texCoord = clamp(texCoord, 0.0, 1.0);
-    const vec3 sampleColor = textureLod(equirectangularMap, texCoord, 0.0).rgb;
+    vec3 sampleColor = textureLod(equirectangularMap, texCoord, 0.0).rgb;
+
+    // Gamma-Correction
+    sampleColor = sampleColor / (sampleColor + vec3(1.0));
+    sampleColor = pow(sampleColor, vec3(1.0/2.2));
+
     FragColor = sampleColor;
 }

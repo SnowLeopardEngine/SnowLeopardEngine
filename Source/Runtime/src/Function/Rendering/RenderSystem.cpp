@@ -3,6 +3,7 @@
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 
 namespace SnowLeopardEngine
 {
@@ -15,6 +16,7 @@ namespace SnowLeopardEngine
         // Disable VSync
         m_Context->SetVSync(false);
 
+        m_GlobalRenderContext = CreateRef<RenderContext>();
         m_Renderer.Init();
 
         Subscribe(m_LogicSceneLoadedHandler);

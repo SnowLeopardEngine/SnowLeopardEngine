@@ -11,6 +11,8 @@ const std::filesystem::path g_ShaderPath = "Assets/Shaders/";
 
 namespace SnowLeopardEngine
 {
+    std::unordered_map<std::filesystem::path, std::string> g_ShaderLibrary;
+
     // NOLINTBEGIN
     class MyIncluder : public shaderc::CompileOptions::IncluderInterface
     {
@@ -92,6 +94,12 @@ namespace SnowLeopardEngine
     {
         ShaderCompileResult result = {};
 
+        if (g_ShaderLibrary.count(shaderPath) > 0)
+        {
+            result.ProgramCode = g_ShaderLibrary[shaderPath];
+            return result;
+        }
+
         auto glslSource = FileSystem::ReadAllText(shaderPath.generic_string());
         if (glslSource.empty())
         {
@@ -121,7 +129,9 @@ namespace SnowLeopardEngine
         std::string compiledGLSL;
         CompileSPV2GLSL(spvBinary, compiledGLSL);
 
-        result.ProgramCode = compiledGLSL;
+        g_ShaderLibrary[shaderPath] = compiledGLSL;
+        result.ProgramCode          = compiledGLSL;
+
         return result;
     }
 

@@ -529,10 +529,8 @@ namespace SnowLeopardEngine
         float            ViewportHeight = 0;
         bool             IsPrimary      = true;
 
-        // Ref<Cubemap>          Cubemap = nullptr;
-        std::filesystem::path SkyboxMaterialFilePath;
-        // Ref<DzMaterial>       SkyboxMaterial = nullptr;
-        MeshItem SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
+        bool                  IsEnvironmentMapHDR    = true;
+        std::filesystem::path EnvironmentMapFilePath = "Assets/Textures/DefaultSky.hdr";
 
         // NOLINTBEGIN
         template<class Archive>
@@ -545,7 +543,7 @@ namespace SnowLeopardEngine
                     CEREAL_NVP(Near),
                     CEREAL_NVP(Far),
                     CEREAL_NVP(IsPrimary),
-                    CEREAL_NVP(SkyboxMaterialFilePath));
+                    CEREAL_NVP(EnvironmentMapFilePath));
         }
         // NOLINTEND
 

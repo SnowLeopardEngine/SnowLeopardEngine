@@ -8,7 +8,7 @@ namespace SnowLeopardEngine
 
     namespace IO
     {
-        Texture* Load(const std::filesystem::path& texturePath, RenderContext& rc);
+        Texture* Load(const std::filesystem::path& texturePath, RenderContext& rc, bool flip = false);
 
         extern std::unordered_map<size_t, Texture*> g_TextureCache;
     } // namespace IO

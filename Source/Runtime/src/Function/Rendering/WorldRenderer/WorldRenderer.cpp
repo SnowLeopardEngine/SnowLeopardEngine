@@ -39,10 +39,12 @@ namespace SnowLeopardEngine
         auto& registry = scene->GetRegistry();
 
         // Camera
-        Entity mainCamera = {registry.view<TransformComponent, CameraComponent>().front(), scene};
+        Entity mainCamera          = {registry.view<TransformComponent, CameraComponent>().front(), scene};
+        auto&  mainCameraComponent = mainCamera.GetComponent<CameraComponent>();
 
         // TODO: Use texture path defined in camera
-        auto* equirectangular = IO::Load("Assets/Textures/newport_loft.hdr", *m_RenderContext);
+        assert(mainCameraComponent.IsEnvironmentMapHDR);
+        auto* equirectangular = IO::Load(mainCameraComponent.EnvironmentMapFilePath, *m_RenderContext, true);
         m_Skybox              = m_CubemapConverter->EquirectangularToCubemap(*equirectangular);
         m_RenderContext->Destroy(*equirectangular);
     }
@@ -210,10 +212,12 @@ namespace SnowLeopardEngine
         mainCameraComponent.ViewportWidth  = g_EngineContext->WindowSys->GetWidth();
         mainCameraComponent.ViewportHeight = g_EngineContext->WindowSys->GetHeight();
 
-        m_FrameUniform.ElapsedTime      = Time::ElapsedTime;
-        m_FrameUniform.ViewPos          = mainCameraTransformComponent.Position;
-        m_FrameUniform.ViewMatrix       = g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransformComponent);
-        m_FrameUniform.ProjectionMatrix = g_EngineContext->CameraSys->GetProjectionMatrix(mainCameraComponent);
+        m_FrameUniform.ElapsedTime        = Time::ElapsedTime;
+        m_FrameUniform.ViewPos            = mainCameraTransformComponent.Position;
+        m_FrameUniform.ViewMatrix         = g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransformComponent);
+        m_FrameUniform.InversedViewMatrix = glm::inverse(m_FrameUniform.ViewMatrix);
+        m_FrameUniform.ProjectionMatrix   = g_EngineContext->CameraSys->GetProjectionMatrix(mainCameraComponent);
+        m_FrameUniform.InversedProjectionMatrix = glm::inverse(m_FrameUniform.ProjectionMatrix);
     }
 
     void WorldRenderer::UpdateLightUniform()

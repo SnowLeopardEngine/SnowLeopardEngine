@@ -43,7 +43,6 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        // cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));

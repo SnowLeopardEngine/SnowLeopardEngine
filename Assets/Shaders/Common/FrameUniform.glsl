@@ -4,7 +4,9 @@
 layout(binding = 0, std140) uniform FrameUniform {
     float elapsedTime;
     mat4 viewMatrix;
+    mat4 inversedViewMatrix;
     mat4 projectionMatrix;
+    mat4 inversedProjectionMatrix;
     vec3 viewPos;
 } uFrame;
 
@@ -35,7 +37,7 @@ vec4 worldToView(vec4 v) {
 }
 
 vec4 viewToWorld(vec4 v) {
-    return inverse(uFrame.viewMatrix) * v;
+    return uFrame.inversedViewMatrix * v;
 }
 
 vec3 viewToClip(vec4 v) {
@@ -43,7 +45,7 @@ vec3 viewToClip(vec4 v) {
     return clip.xyz / clip.w;
 }
 vec3 clipToView(vec4 v) {
-    const vec4 view = inverse(uFrame.projectionMatrix) * v;
+    const vec4 view = uFrame.inversedProjectionMatrix * v;
     return view.xyz / view.w;
 }
 

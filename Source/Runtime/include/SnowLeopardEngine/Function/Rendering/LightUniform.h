@@ -12,7 +12,7 @@ namespace SnowLeopardEngine
     {
         float Intensity = 0;
 
-        alignas(16) glm::mat4 LightSpaceMatrix;
+        alignas(16) glm::mat4 LightSpaceMatrix {1.0};
         alignas(16) glm::vec3 Direction;
         alignas(16) glm::vec3 Color;
     };
@@ -23,7 +23,7 @@ namespace SnowLeopardEngine
         float Linear    = 0;
         float Quadratic = 0;
 
-        alignas(16) glm::mat4 LightSpaceMatrix;
+        alignas(16) glm::mat4 LightSpaceMatrix {1.0};
         alignas(16) glm::vec3 Position;
         alignas(16) glm::vec3 Color;
     };

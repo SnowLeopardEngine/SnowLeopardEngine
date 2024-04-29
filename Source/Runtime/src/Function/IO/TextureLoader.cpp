@@ -8,7 +8,7 @@ namespace SnowLeopardEngine
 {
     namespace IO
     {
-        Texture* Load(const std::filesystem::path& texturePath, RenderContext& rc)
+        Texture* Load(const std::filesystem::path& texturePath, RenderContext& rc, bool flip)
         {
             if (texturePath.empty())
             {
@@ -22,7 +22,7 @@ namespace SnowLeopardEngine
                 return it->second;
             }
 
-            stbi_set_flip_vertically_on_load(false);
+            stbi_set_flip_vertically_on_load(flip);
 
             auto* f = stbi__fopen(texturePath.string().c_str(), "rb");
             assert(f);
