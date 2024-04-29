@@ -581,7 +581,7 @@ namespace SnowLeopardEngine
         COMPONENT_NAME(DirectionalLight)
 
         glm::vec3 Direction = glm::normalize(glm::vec3(-0.6, -1, -1.2));
-        float     Intensity = 0.8;
+        float     Intensity = 5.0;
         glm::vec3 Color     = {1, 0.996, 0.885};
 
         // NOLINTBEGIN
@@ -605,7 +605,7 @@ namespace SnowLeopardEngine
         float Constant  = 1.0f;
         float Linear    = 0.09f;
         float Quadratic = 0.032f;
-        float Intensity = 0.8;
+        float Intensity = 5.0;
 
         // NOLINTBEGIN
         template<class Archive>

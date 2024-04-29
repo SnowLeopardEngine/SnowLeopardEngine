@@ -90,6 +90,9 @@ namespace SnowLeopardEngine
         // Tone-Mapping pass
         sceneColor.LDR = m_ToneMappingPass->AddToGraph(fg, sceneColor.HDR);
 
+        // FXAA pass
+        sceneColor.LDR = m_FXAAPass->AddToGraph(fg, sceneColor.LDR);
+
         // Final composition
         m_FinalPass->Compose(fg, blackboard);
 
@@ -119,6 +122,7 @@ namespace SnowLeopardEngine
         m_DeferredLightingPass = CreateScope<DeferredLightingPass>(rc);
         m_SkyboxPass           = CreateScope<SkyboxPass>(rc);
         m_ToneMappingPass      = CreateScope<ToneMappingPass>(rc);
+        m_FXAAPass             = CreateScope<FXAAPass>(rc);
         m_FinalPass            = CreateScope<FinalPass>(rc);
     }
 
@@ -217,7 +221,10 @@ namespace SnowLeopardEngine
         mainCameraComponent.ViewportWidth  = g_EngineContext->WindowSys->GetWidth();
         mainCameraComponent.ViewportHeight = g_EngineContext->WindowSys->GetHeight();
 
-        m_FrameUniform.ElapsedTime        = Time::ElapsedTime;
+        m_FrameUniform.ElapsedTime = Time::ElapsedTime;
+
+        m_FrameUniform.Resolution = {m_Viewport.Extent.Width, m_Viewport.Extent.Height};
+
         m_FrameUniform.ViewPos            = mainCameraTransformComponent.Position;
         m_FrameUniform.ViewMatrix         = g_EngineContext->CameraSys->GetViewMatrix(mainCameraTransformComponent);
         m_FrameUniform.InversedViewMatrix = glm::inverse(m_FrameUniform.ViewMatrix);

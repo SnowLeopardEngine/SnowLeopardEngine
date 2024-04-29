@@ -1,4 +1,4 @@
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ToneMappingPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FXAAPass.h"
 #include "FrameGraphResource.hpp"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
@@ -7,12 +7,12 @@
 
 namespace SnowLeopardEngine
 {
-    ToneMappingPass::ToneMappingPass(RenderContext& rc) : m_RenderContext(rc)
+    FXAAPass::FXAAPass(RenderContext& rc) : m_RenderContext(rc)
     {
         auto vertResult = ShaderCompiler::Compile("Assets/Shaders/FullScreenTriangle.vert");
         SNOW_LEOPARD_CORE_ASSERT(vertResult.Success, "{0}", vertResult.Message);
 
-        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/ToneMappingPass.frag");
+        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/FXAAPass.frag");
         SNOW_LEOPARD_CORE_ASSERT(fragResult.Success, "{0}", fragResult.Message);
 
         auto program = m_RenderContext.CreateGraphicsProgram(vertResult.ProgramCode, fragResult.ProgramCode);
@@ -31,9 +31,9 @@ namespace SnowLeopardEngine
                          .Build();
     }
 
-    ToneMappingPass::~ToneMappingPass() { m_RenderContext.Destroy(m_Pipeline); }
+    FXAAPass::~FXAAPass() { m_RenderContext.Destroy(m_Pipeline); }
 
-    FrameGraphResource ToneMappingPass::AddToGraph(FrameGraph& fg, FrameGraphResource input)
+    FrameGraphResource FXAAPass::AddToGraph(FrameGraph& fg, FrameGraphResource input)
     {
         const auto extent = fg.getDescriptor<FrameGraphTexture>(input).Extent;
 
@@ -42,11 +42,11 @@ namespace SnowLeopardEngine
             FrameGraphResource Output;
         };
         const auto& pass = fg.addCallbackPass<Data>(
-            "Tone-Mapping Pass",
+            "FXAA Pass",
             [&](FrameGraph::Builder& builder, Data& data) {
                 builder.read(input);
 
-                data.Output = builder.create<FrameGraphTexture>("Tone-mapped SceneColor",
+                data.Output = builder.create<FrameGraphTexture>("Anti-Aliased SceneColor (FXAA)",
                                                                 {.Extent = extent, .Format = PixelFormat::RGB8_UNorm});
                 data.Output = builder.write(data.Output);
             },

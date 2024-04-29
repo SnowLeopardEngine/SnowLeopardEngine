@@ -16,6 +16,7 @@ namespace SnowLeopardEngine
         alignas(16) glm::mat4 InversedProjectionMatrix {1.0};
 
         alignas(16) glm::vec3 ViewPos;
+        alignas(16) glm::vec2 Resolution;
     };
 
     void uploadFrameUniform(FrameGraph&, FrameGraphBlackboard&, const FrameUniform&);
