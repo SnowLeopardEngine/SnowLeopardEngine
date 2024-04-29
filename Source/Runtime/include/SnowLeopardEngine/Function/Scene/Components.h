@@ -605,12 +605,17 @@ namespace SnowLeopardEngine
         float Constant  = 1.0f;
         float Linear    = 0.09f;
         float Quadratic = 0.032f;
+        float Intensity = 0.8;
 
         // NOLINTBEGIN
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(Color), CEREAL_NVP(Constant), CEREAL_NVP(Linear), CEREAL_NVP(Quadratic));
+            archive(CEREAL_NVP(Color),
+                    CEREAL_NVP(Constant),
+                    CEREAL_NVP(Linear),
+                    CEREAL_NVP(Quadratic),
+                    CEREAL_NVP(Intensity));
         }
         // NOLINTEND
 

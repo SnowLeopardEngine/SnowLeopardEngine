@@ -13,6 +13,7 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SkyboxPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ToneMappingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SceneColorData.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
@@ -86,6 +87,9 @@ namespace SnowLeopardEngine
         // Skybox pass
         sceneColor.HDR = m_SkyboxPass->AddToGraph(fg, blackboard, sceneColor.HDR, &m_Skybox);
 
+        // Tone-Mapping pass
+        sceneColor.LDR = m_ToneMappingPass->AddToGraph(fg, sceneColor.HDR);
+
         // Final composition
         m_FinalPass->Compose(fg, blackboard);
 
@@ -114,6 +118,7 @@ namespace SnowLeopardEngine
         m_GBufferPass          = CreateScope<GBufferPass>(rc);
         m_DeferredLightingPass = CreateScope<DeferredLightingPass>(rc);
         m_SkyboxPass           = CreateScope<SkyboxPass>(rc);
+        m_ToneMappingPass      = CreateScope<ToneMappingPass>(rc);
         m_FinalPass            = CreateScope<FinalPass>(rc);
     }
 
@@ -262,6 +267,7 @@ namespace SnowLeopardEngine
             gpuPointLight.Constant  = pointLightComponent.Constant;
             gpuPointLight.Linear    = pointLightComponent.Linear;
             gpuPointLight.Quadratic = pointLightComponent.Quadratic;
+            gpuPointLight.Intensity = pointLightComponent.Intensity;
             gpuPointLight.Position  = pointLight.GetComponent<TransformComponent>().Position;
             gpuPointLight.Color     = pointLightComponent.Color;
 

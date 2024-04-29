@@ -38,8 +38,7 @@ namespace SnowLeopardEngine
     {
         const auto [frameUniform] = blackboard.get<FrameData>();
 
-        // TODO: Remove, Test
-        auto output = blackboard.get<SceneColorData>().HDR;
+        auto output = blackboard.get<SceneColorData>().LDR;
 
         fg.addCallbackPass(
             "Final Composition Pass",

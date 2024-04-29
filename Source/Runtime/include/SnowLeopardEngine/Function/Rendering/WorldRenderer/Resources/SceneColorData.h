@@ -7,5 +7,6 @@ namespace SnowLeopardEngine
     struct SceneColorData
     {
         FrameGraphResource HDR;
+        FrameGraphResource LDR;
     };
 } // namespace SnowLeopardEngine

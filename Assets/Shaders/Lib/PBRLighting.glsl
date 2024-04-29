@@ -33,7 +33,7 @@ vec3 CalDirectionalLight(DirectionalLight directionalLight, vec3 F0, vec3 N, vec
 vec3 CalPointLight(PointLight pointLight, vec3 F0, vec3 N, vec3 V, PBRMaterial material, vec3 fragPos) {
     vec3 L = normalize(pointLight.position - fragPos);
     vec3 H = normalize(V + L);
-    vec3 radiance = pointLight.color;
+    vec3 radiance = pointLight.color * pointLight.intensity;
 
     // cook-torrance brdf
     float gamma = 4.0;
@@ -76,9 +76,6 @@ vec3 CalPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NU
 
     vec3 ambient = vec3(0.03) * material.albedo * material.ao;
     vec3 color = ambient + (1.0 - shadow) * Lo;
-
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0 / 2.2));
 
     return color;
 }

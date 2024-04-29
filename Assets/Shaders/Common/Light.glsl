@@ -14,6 +14,7 @@ struct PointLight {
     float constant;
     float linear;
     float quadratic;
+    float intensity;
     mat4 lightSpaceMatrix;
     vec3 position;
     vec3 color;

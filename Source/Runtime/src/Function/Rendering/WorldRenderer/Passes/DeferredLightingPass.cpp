@@ -7,7 +7,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/LightData.h"
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SceneColorData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/ShadowData.h"
 
 namespace SnowLeopardEngine
@@ -17,7 +16,7 @@ namespace SnowLeopardEngine
         auto vertResult = ShaderCompiler::Compile("Assets/Shaders/FullScreenTriangle.vert");
         SNOW_LEOPARD_CORE_ASSERT(vertResult.Success, "{0}", vertResult.Message);
 
-        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/DeferredLighting.frag");
+        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/DeferredLightingPass.frag");
         SNOW_LEOPARD_CORE_ASSERT(fragResult.Success, "{0}", fragResult.Message);
 
         auto program = m_RenderContext.CreateGraphicsProgram(vertResult.ProgramCode, fragResult.ProgramCode);

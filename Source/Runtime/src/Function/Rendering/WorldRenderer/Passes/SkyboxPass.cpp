@@ -13,10 +13,10 @@ namespace SnowLeopardEngine
 {
     SkyboxPass::SkyboxPass(RenderContext& rc) : m_RenderContext(rc)
     {
-        auto vertResult = ShaderCompiler::Compile("Assets/Shaders/Skybox.vert");
+        auto vertResult = ShaderCompiler::Compile("Assets/Shaders/SkyboxPass.vert");
         SNOW_LEOPARD_CORE_ASSERT(vertResult.Success, "{0}", vertResult.Message);
 
-        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/Skybox.frag");
+        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/SkyboxPass.frag");
         SNOW_LEOPARD_CORE_ASSERT(fragResult.Success, "{0}", fragResult.Message);
 
         auto program = m_RenderContext.CreateGraphicsProgram(vertResult.ProgramCode, fragResult.ProgramCode);

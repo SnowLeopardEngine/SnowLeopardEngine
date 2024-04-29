@@ -47,6 +47,8 @@ static Entity CreatePointLight(const glm::vec3& position, const glm::vec3& color
     auto& pointLightComponent    = pointLight.AddComponent<PointLightComponent>();
     pointLightComponent.Color    = color;
 
+    pointLightComponent.Intensity = 100; // To test HDR & ToneMapping
+
     return pointLight;
 }
 

@@ -106,7 +106,7 @@ namespace SnowLeopardEngine
 
         auto fragResult =
             ShaderCompiler::Compile(!material->GetDefine().UserFragPath.empty() ? material->GetDefine().UserFragPath :
-                                                                                  "Assets/Shaders/GBuffer.frag");
+                                                                                  "Assets/Shaders/GBufferPass.frag");
         SNOW_LEOPARD_CORE_ASSERT(fragResult.Success, "{0}", fragResult.Message);
 
         auto program = m_RenderContext.CreateGraphicsProgram(vertResult.ProgramCode, fragResult.ProgramCode);

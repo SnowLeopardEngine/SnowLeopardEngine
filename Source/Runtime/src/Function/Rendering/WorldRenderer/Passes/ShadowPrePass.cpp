@@ -78,10 +78,10 @@ namespace SnowLeopardEngine
     {
         auto vertexArrayObject = m_RenderContext.GetVertexArray(vertexFormat.GetAttributes());
 
-        auto vertResult = ShaderCompiler::Compile("Assets/Shaders/ShadowMapping.vert");
+        auto vertResult = ShaderCompiler::Compile("Assets/Shaders/ShadowPrePass.vert");
         SNOW_LEOPARD_CORE_ASSERT(vertResult.Success, "{0}", vertResult.Message);
 
-        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/ShadowMapping.frag");
+        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/ShadowPrePass.frag");
         SNOW_LEOPARD_CORE_ASSERT(fragResult.Success, "{0}", fragResult.Message);
 
         auto program = m_RenderContext.CreateGraphicsProgram(vertResult.ProgramCode, fragResult.ProgramCode);

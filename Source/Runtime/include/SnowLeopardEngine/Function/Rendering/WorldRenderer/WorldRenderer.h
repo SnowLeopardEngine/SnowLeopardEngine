@@ -12,6 +12,7 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GBufferPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SkyboxPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ToneMappingPass.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
 namespace SnowLeopardEngine
@@ -60,6 +61,7 @@ namespace SnowLeopardEngine
         Scope<GBufferPass>          m_GBufferPass          = nullptr;
         Scope<DeferredLightingPass> m_DeferredLightingPass = nullptr;
         Scope<SkyboxPass>           m_SkyboxPass           = nullptr;
+        Scope<ToneMappingPass>      m_ToneMappingPass      = nullptr;
         Scope<FinalPass>            m_FinalPass            = nullptr;
 
         // -------- Renderables --------

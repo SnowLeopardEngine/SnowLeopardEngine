@@ -22,6 +22,7 @@ namespace SnowLeopardEngine
         float Constant  = 0;
         float Linear    = 0;
         float Quadratic = 0;
+        float Intensity = 0;
 
         alignas(16) glm::mat4 LightSpaceMatrix {1.0};
         alignas(16) glm::vec3 Position;
