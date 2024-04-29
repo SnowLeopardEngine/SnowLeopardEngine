@@ -2,17 +2,11 @@
 #define FRAME_UNIFORM_GLSL
 
 layout(binding = 0, std140) uniform FrameUniform {
-    float DirectionalLightIntensity;
-    float ElapsedTime;
-
-    mat4 ViewMatrix;
-    mat4 ProjectionMatrix;
-    mat4 LightSpaceMatrix;
-
-    vec3 ViewPos;
-    vec3 DirectionalLightDirection;
-    vec3 DirectionalLightColor;
-} uFrameUniform;
+    float elapsedTime;
+    mat4 viewMatrix;
+    mat4 projectionMatrix;
+    vec3 viewPos;
+} uFrame;
 
 layout(location = 100) uniform mat4 model;
 
@@ -21,35 +15,19 @@ mat4 getModelMatrix() {
 }
 
 mat4 getViewMatrix() {
-    return uFrameUniform.ViewMatrix;
+    return uFrame.viewMatrix;
 }
 
 mat4 getProjectionMatrix() {
-    return uFrameUniform.ProjectionMatrix;
-}
-
-mat4 getLightSpaceMatrix() {
-    return uFrameUniform.LightSpaceMatrix;
+    return uFrame.projectionMatrix;
 }
 
 vec3 getViewPos() {
-    return uFrameUniform.ViewPos;
-}
-
-vec3 getDirectionalLightDirection() {
-    return uFrameUniform.DirectionalLightDirection;
-}
-
-vec3 getDirectionalLightColor() {
-    return uFrameUniform.DirectionalLightColor;
-}
-
-float getDirectionalLightIntensity() {
-    return uFrameUniform.DirectionalLightIntensity;
+    return uFrame.viewPos;
 }
 
 float getElapsedTime() {
-    return uFrameUniform.ElapsedTime;
+    return uFrame.elapsedTime;
 }
 
 #endif

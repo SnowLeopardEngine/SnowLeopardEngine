@@ -3,6 +3,7 @@
 #include "SnowLeopardEngine/Core/Math/AABB.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/TransientResources.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameUniform.h"
+#include "SnowLeopardEngine/Function/Rendering/LightUniform.h"
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FinalPass.h"
@@ -22,12 +23,15 @@ namespace SnowLeopardEngine
 
         void OnLogicSceneLoaded(LogicScene* scene);
 
-        void CookRenderableScene();
-
         void RenderFrame(float deltaTime);
 
     private:
         void CreatePasses();
+
+        void CookRenderableScene();
+
+        void UpdateFrameUniform();
+        void UpdateLightUniform(std::span<Renderable> visableRenderables);
 
         std::vector<Renderable> FilterVisableRenderables(std::span<Renderable> renderables,
                                                          const glm::mat4&      cameraViewProjection);
@@ -37,7 +41,9 @@ namespace SnowLeopardEngine
 
     private:
         // -------- Context --------
-        Scope<RenderContext>      m_RenderContext      = nullptr;
+        Scope<RenderContext> m_RenderContext = nullptr;
+
+        // -------- FrameGraph Transient Resource Manager --------
         Scope<TransientResources> m_TransientResources = nullptr;
 
         // -------- Passes --------
@@ -47,12 +53,15 @@ namespace SnowLeopardEngine
         Scope<FinalPass>            m_FinalPass            = nullptr;
 
         // -------- Renderables --------
-
         std::vector<Renderable> m_Renderables;
 
-        // -------- Frame UBO --------
-        Entity       m_MainCamera;
-        Entity       m_DirectionalLight;
+        // -------- Camera, Lights --------
+        Entity              m_MainCamera;
+        Entity              m_DirectionalLight;
+        std::vector<Entity> m_PointLights;
+
+        // -------- UBO --------
         FrameUniform m_FrameUniform;
+        LightUniform m_LightUniform;
     };
 } // namespace SnowLeopardEngine

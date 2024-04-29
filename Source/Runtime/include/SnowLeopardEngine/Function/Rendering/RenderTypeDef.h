@@ -74,6 +74,7 @@ namespace SnowLeopardEngine
     {
         std::string Name = "Untitled Mesh";
         MeshData    Data;
+        bool        RenderLoaded = false;
 
         ozz::sample::Mesh OzzMesh;
 

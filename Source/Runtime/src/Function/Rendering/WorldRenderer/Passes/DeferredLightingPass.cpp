@@ -6,6 +6,7 @@
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/LightData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SceneColorData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/ShadowData.h"
 
@@ -39,6 +40,7 @@ namespace SnowLeopardEngine
     FrameGraphResource DeferredLightingPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard)
     {
         const auto [frameUniform] = blackboard.get<FrameData>();
+        const auto [lightUniform] = blackboard.get<LightData>();
 
         const auto& shadow  = blackboard.get<ShadowData>();
         const auto& gBuffer = blackboard.get<GBufferData>();
@@ -52,6 +54,7 @@ namespace SnowLeopardEngine
             "Deferred Lighting Pass",
             [&](FrameGraph::Builder& builder, Data& data) {
                 builder.read(frameUniform);
+                builder.read(lightUniform);
 
                 builder.read(shadow.ShadowMap);
 
@@ -79,6 +82,7 @@ namespace SnowLeopardEngine
 
                 rc.BindGraphicsPipeline(m_Pipeline)
                     .BindUniformBuffer(0, getBuffer(resources, frameUniform))
+                    .BindUniformBuffer(1, getBuffer(resources, lightUniform))
                     .BindTexture(0, getTexture(resources, gBuffer.Position))
                     .BindTexture(1, getTexture(resources, gBuffer.Normal))
                     .BindTexture(2, getTexture(resources, gBuffer.Albedo))

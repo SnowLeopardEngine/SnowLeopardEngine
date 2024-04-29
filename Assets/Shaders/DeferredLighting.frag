@@ -1,6 +1,7 @@
 #version 450
 
 #include "Common/FrameUniform.glsl"
+#include "Common/LightUniform.glsl"
 #include "Lib/PBRLighting.glsl"
 
 layout(location = 0) in vec2 varingTexCoords;
@@ -28,14 +29,7 @@ void main() {
     material.roughness = metallicRoughnessAO.g;
     material.ao = metallicRoughnessAO.b;
 
-    vec4 fragPosLightSpace = getLightSpaceMatrix() * vec4(fragPos, 1.0);
-
     vec3 viewDir = normalize(getViewPos() - fragPos);
 
-    DirectionalLight directionalLight;
-    directionalLight.direction = getDirectionalLightDirection();
-    directionalLight.color = getDirectionalLightColor();
-    directionalLight.intensity = getDirectionalLightIntensity();
-
-    FragColor = CalPBRLighting(directionalLight, worldNormal, viewDir, material, fragPosLightSpace, shadowMap);
+    FragColor = CalPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, viewDir, material, fragPos, shadowMap);
 }

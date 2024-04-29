@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Base/Random.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
@@ -38,6 +39,17 @@ static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3&
     return sphere;
 }
 
+static Entity CreatePointLight(const glm::vec3& position, const glm::vec3& color, const Ref<LogicScene>& scene)
+{
+    Entity pointLight            = scene->CreateEntity("Point Light");
+    auto&  pointLightTransform   = pointLight.GetComponent<TransformComponent>();
+    pointLightTransform.Position = position;
+    auto& pointLightComponent    = pointLight.AddComponent<PointLightComponent>();
+    pointLightComponent.Color    = color;
+
+    return pointLight;
+}
+
 class CustomLifeTime final : public LifeTimeComponent
 {
 public:
@@ -66,7 +78,6 @@ public:
         const std::string deferredPBRMaterialFilePath   = "Assets/Materials/Next/RustedIronPBRDeferred.dzmaterial";
 
         // Create spheres to test materials
-        // Sphere 1
         Entity sphere1 = CreateSphere(deferredPBRMaterialFilePath, {-21, 10, 0}, scene);
         Entity sphere2 = CreateSphere(deferredPBRMaterialFilePath, {-15, 10, 0}, scene);
         Entity sphere3 = CreateSphere(deferredPBRMaterialFilePath, {-9, 10, 0}, scene);
@@ -85,6 +96,20 @@ public:
         floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
         floorMeshRenderer.MaterialFilePath = deferredWhiteMaterialFilePath;
+
+        // Create 4 point lights
+
+        // red
+        CreatePointLight(glm::vec3(-50, 20, 50), glm::vec3(1, 0, 0), scene);
+
+        // green
+        CreatePointLight(glm::vec3(-50, 20, -50), glm::vec3(0, 1, 0), scene);
+
+        // blue
+        CreatePointLight(glm::vec3(50, 20, 50), glm::vec3(0, 0, 1), scene);
+
+        // yellow
+        CreatePointLight(glm::vec3(50, 20, -50), glm::vec3(1, 1, 0), scene);
     }
 
 private:

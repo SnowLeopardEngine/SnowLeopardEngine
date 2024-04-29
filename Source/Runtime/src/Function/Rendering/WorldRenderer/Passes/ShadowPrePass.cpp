@@ -7,6 +7,7 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/LightData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/ShadowData.h"
 
 namespace SnowLeopardEngine
@@ -19,11 +20,13 @@ namespace SnowLeopardEngine
                                    std::span<Renderable> renderables)
     {
         const auto [frameUniform] = blackboard.get<FrameData>();
+        const auto [lightUniform] = blackboard.get<LightData>();
 
         blackboard.add<ShadowData>() = fg.addCallbackPass<ShadowData>(
             "Shadow Pre-Pass",
             [&, resolution](FrameGraph::Builder& builder, ShadowData& data) {
                 builder.read(frameUniform);
+                builder.read(lightUniform);
 
                 data.ShadowMap = builder.create<FrameGraphTexture>(
                     "ShadowMap",
@@ -55,7 +58,8 @@ namespace SnowLeopardEngine
                     }
 
                     rc.BindGraphicsPipeline(GetPipeline(*renderable.Mesh->Data.VertFormat, renderable.Mat))
-                        .BindUniformBuffer(0, getBuffer(resources, frameUniform));
+                        .BindUniformBuffer(0, getBuffer(resources, frameUniform))
+                        .BindUniformBuffer(1, getBuffer(resources, lightUniform));
 
                     SetTransform(renderable.ModelMatrix);
 

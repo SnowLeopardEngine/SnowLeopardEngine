@@ -586,8 +586,6 @@ namespace SnowLeopardEngine
         float     Intensity = 0.8;
         glm::vec3 Color     = {1, 0.996, 0.885};
 
-        // Ref<DzMaterial> ShadowMaterial = nullptr;
-
         // NOLINTBEGIN
         template<class Archive>
         void serialize(Archive& archive)
@@ -598,6 +596,28 @@ namespace SnowLeopardEngine
 
         DirectionalLightComponent()                                 = default;
         DirectionalLightComponent(const DirectionalLightComponent&) = default;
+    };
+
+    struct PointLightComponent
+    {
+        COMPONENT_NAME(PointLight)
+
+        glm::vec3 Color = {1, 0.996, 0.885};
+
+        float Constant  = 1.0f;
+        float Linear    = 0.09f;
+        float Quadratic = 0.032f;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(Color), CEREAL_NVP(Constant), CEREAL_NVP(Linear), CEREAL_NVP(Quadratic));
+        }
+        // NOLINTEND
+
+        PointLightComponent()                           = default;
+        PointLightComponent(const PointLightComponent&) = default;
     };
 
     struct MeshFilterComponent
@@ -650,8 +670,7 @@ namespace SnowLeopardEngine
         bool CastShadow = true;
 
         std::filesystem::path MaterialFilePath;
-        // Ref<DzMaterial>       Material;
-        Material* Mat = nullptr;
+        Material*             Mat = nullptr;
 
         // NOLINTBEGIN
         template<class Archive>
@@ -860,9 +879,9 @@ namespace SnowLeopardEngine
     TagComponent, LayerComponent, TreeNodeComponent, TransformComponent, EntityStatusComponent, \
         NativeScriptingComponent, RigidBodyComponent, SphereColliderComponent, BoxColliderComponent, \
         CapsuleColliderComponent, TerrainColliderComponent, CharacterControllerComponent, MeshColliderComponent, \
-        CameraComponent, FreeMoveCameraControllerComponent, DirectionalLightComponent, BaseRendererComponent, \
-        MeshFilterComponent, MeshRendererComponent, TerrainComponent, TerrainRendererComponent, UI::CanvasComponent, \
-        UI::RectTransformComponent, UI::ButtonComponent //, UI::ImageComponent, UI::TextComponent
+        CameraComponent, FreeMoveCameraControllerComponent, DirectionalLightComponent, PointLightComponent, \
+        BaseRendererComponent, MeshFilterComponent, MeshRendererComponent, TerrainComponent, TerrainRendererComponent, \
+        UI::CanvasComponent, UI::RectTransformComponent, UI::ButtonComponent, UI::ImageComponent, UI::TextComponent
 
 #define ALL_SERIALIZABLE_COMPONENT_TYPES COMMON_COMPONENT_TYPES, IDComponent, NameComponent
 

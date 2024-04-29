@@ -557,6 +557,7 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(CameraComponent) {}
     ON_COMPONENT_ADDED(FreeMoveCameraControllerComponent) {}
     ON_COMPONENT_ADDED(DirectionalLightComponent) {}
+    ON_COMPONENT_ADDED(PointLightComponent) {}
     ON_COMPONENT_ADDED(MeshFilterComponent) {}
     ON_COMPONENT_ADDED(MeshRendererComponent) {}
     ON_COMPONENT_ADDED(TerrainComponent) {}
