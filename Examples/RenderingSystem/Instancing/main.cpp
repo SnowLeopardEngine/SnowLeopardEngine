@@ -13,24 +13,6 @@
 
 using namespace SnowLeopardEngine;
 
-class QuadScript : public NativeScriptInstance
-{
-public:
-    virtual void OnLoad() override
-    {
-        auto& transform    = m_OwnerEntity->GetComponent<TransformComponent>();
-        auto& meshRenderer = m_OwnerEntity->GetComponent<MeshRendererComponent>();
-        // meshRenderer.Material->SetColor(
-        //     "instanceColor",
-        //     glm::vec4(Random::GetRandomFloat(), Random::GetRandomFloat(), Random::GetRandomFloat(), 1));
-        // meshRenderer.Material->SetVector("instancePosition", glm::vec4(transform.Position, 1));
-        // auto      quaternion = transform.GetRotation();
-        // glm::vec4 vec4Representation(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
-        // meshRenderer.Material->SetVector("instanceQuaternion", vec4Representation);
-        // meshRenderer.Material->SetVector("instanceScale", glm::vec4(transform.Scale, 1));
-    }
-};
-
 class EscScript : public NativeScriptInstance
 {
 public:
@@ -60,9 +42,6 @@ static Entity CreateQuad(const std::string& materialFilePath, const glm::vec3& p
     // Enable GPU Instancing
     quadMeshRenderer.EnableInstancing = true;
 
-    // Attach a script for changing instance color
-    quad.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(QuadScript));
-
     return quad;
 }
 
@@ -89,7 +68,7 @@ public:
         camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Load materials
-        const std::string instancingMaterialPath = "Assets/Materials/Foliage/Grass.dzmaterial";
+        const std::string instancingMaterialPath = "Assets/Materials/Next/Grass.dzmaterial";
 
         // Create grass quad instances
         for (size_t i = 0; i < 250; ++i)
@@ -99,15 +78,8 @@ public:
             CreateQuad(instancingMaterialPath, randomPosition, scene);
         }
 
-        scene->SaveTo("Test.dzscene");
-        scene->LoadFrom("Test.dzscene");
-
-        // Ref<Texture2DAsset> assetA, assetB, assetC;
-        // Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", assetA, true);
-        // Resources::Load<Texture2DAsset>("Assets/Textures/CoolGay.png", assetB, true);
-        // Resources::Load<Texture2DAsset>("Assets/Textures/Grass.png", assetC, true);
-        // assert(assetA->GetUUID() == assetB->GetUUID());
-        // assert(assetA->GetUUID() != assetC->GetUUID());
+        // scene->SaveTo("Test.dzscene");
+        // scene->LoadFrom("Test.dzscene");
     }
 
 private:
@@ -116,7 +88,6 @@ private:
 
 int main(int argc, char** argv) TRY
 {
-    REGISTER_TYPE(QuadScript);
     REGISTER_TYPE(EscScript);
 
     DesktopAppInitInfo initInfo {};

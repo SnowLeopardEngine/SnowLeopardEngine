@@ -14,4 +14,18 @@ namespace SnowLeopardEngine
 
         AABB BoundingBox;
     };
+
+    enum class RenderableGroupType
+    {
+        Default = 0,
+        Instancing
+    };
+
+    struct RenderableGroup
+    {
+        RenderableGroupType     GroupType;
+        std::vector<Renderable> Renderables;
+    };
+
+    using RenderableGroups = std::unordered_map<size_t, RenderableGroup>;
 } // namespace SnowLeopardEngine

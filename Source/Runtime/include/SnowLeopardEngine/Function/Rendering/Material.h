@@ -36,6 +36,9 @@ namespace SnowLeopardEngine
         std::string UserVertPath;
         std::string UserFragPath;
 
+        bool EnableInstancing = false;
+        bool TextureFlipY     = false;
+
         // NOLINTBEGIN
         template<class Archive>
         void serialize(Archive& archive)
@@ -44,7 +47,9 @@ namespace SnowLeopardEngine
                     CEREAL_NVP(RenderQueue),
                     CEREAL_NVP(Properties),
                     CEREAL_NVP(UserVertPath),
-                    CEREAL_NVP(UserFragPath));
+                    CEREAL_NVP(UserFragPath),
+                    CEREAL_NVP(EnableInstancing),
+                    CEREAL_NVP(TextureFlipY));
         }
         // NOLINTEND
     };

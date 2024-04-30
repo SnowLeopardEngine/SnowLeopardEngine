@@ -40,6 +40,8 @@
             }
         ],
         "UserVertPath": "",
-        "UserFragPath": ""
+        "UserFragPath": "",
+        "EnableInstancing": true,
+        "TextureFlipY": true
     }
 }

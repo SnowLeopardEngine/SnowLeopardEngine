@@ -45,6 +45,8 @@ namespace SnowLeopardEngine
         std::vector<Renderable> FilterVisableRenderables(std::span<Renderable> renderables,
                                                          const glm::mat4&      cameraViewProjection);
 
+        RenderableGroups FilterRenderableGroups(std::span<Renderable> renderables);
+
         AABB GetVisableAABB(std::span<Renderable> visableRenderables);
         AABB GetRenderableSceneAABB();
 

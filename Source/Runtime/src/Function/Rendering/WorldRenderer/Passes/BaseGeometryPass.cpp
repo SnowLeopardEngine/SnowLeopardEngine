@@ -18,6 +18,11 @@ namespace SnowLeopardEngine
         m_RenderContext.SetUniformMat4("model", modelMatrix);
     }
 
+    void BaseGeometryPass::SetTransform(const glm::mat4& modelMatrix, uint32_t instanceId)
+    {
+        m_RenderContext.SetUniformMat4("models[" + std::to_string(instanceId) + "]", modelMatrix);
+    }
+
     GraphicsPipeline& BaseGeometryPass::GetPipeline(const VertexFormat& vertexFormat, const Material* material)
     {
         SNOW_LEOPARD_CORE_ASSERT(material != nullptr, "[BaseGeometryPass] Material is nullptr!");

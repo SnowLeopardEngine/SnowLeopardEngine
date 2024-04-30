@@ -25,6 +25,8 @@
             }
         ],
         "UserVertPath": "",
-        "UserFragPath": ""
+        "UserFragPath": "",
+        "EnableInstancing": false,
+        "TextureFlipY": true
     }
 }

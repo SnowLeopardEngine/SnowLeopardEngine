@@ -1,12 +1,12 @@
 {
     "DzMaterial": {
-        "Name": "Vampire",
+        "Name": "Grass",
         "RenderQueue": "Opaque",
         "Properties": [
             {
                 "Name": "albedoMap",
                 "Type": "Texture2D",
-                "Value": "Assets/Models/Vampire/textures/Vampire_diffuse_transparent.png"
+                "Value": "Assets/Textures/Grass.png"
             },
             {
                 "Name": "useAlbedoMap",
@@ -16,7 +16,7 @@
             {
                 "Name": "roughness",
                 "Type": "Float",
-                "Value": "0.8"
+                "Value": "0.5"
             },
             {
                 "Name": "ao",
@@ -26,7 +26,7 @@
         ],
         "UserVertPath": "",
         "UserFragPath": "",
-        "EnableInstancing": false,
-        "TextureFlipY": false
+        "EnableInstancing": true,
+        "TextureFlipY": true
     }
 }

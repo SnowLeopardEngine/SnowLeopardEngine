@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/WorldRenderer.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Base/Hash.h"
 #include "SnowLeopardEngine/Core/Math/Frustum.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
@@ -49,7 +50,7 @@ namespace SnowLeopardEngine
 
         // TODO: Use texture path defined in camera
         assert(mainCameraComponent.IsEnvironmentMapHDR);
-        auto* equirectangular = IO::Load(mainCameraComponent.EnvironmentMapFilePath, *m_RenderContext, true);
+        auto* equirectangular = IO::Load(mainCameraComponent.EnvironmentMapFilePath, *m_RenderContext);
         m_Skybox              = m_CubemapConverter->EquirectangularToCubemap(*equirectangular);
         m_RenderContext->Destroy(*equirectangular);
     }
@@ -82,7 +83,8 @@ namespace SnowLeopardEngine
         m_ShadowPrePass->AddToGraph(fg, blackboard, {.Width = 2048, .Height = 2048}, m_Renderables);
 
         // G-Buffer pass
-        m_GBufferPass->AddToGraph(fg, blackboard, m_Viewport.Extent, visableRenderables);
+        auto groups = FilterRenderableGroups(visableRenderables);
+        m_GBufferPass->AddToGraph(fg, blackboard, m_Viewport.Extent, groups);
 
         // SSAO pass
         m_SSAOPass->AddToGraph(fg, blackboard);
@@ -322,6 +324,31 @@ namespace SnowLeopardEngine
         }
 
         return visableRenderables;
+    }
+
+    RenderableGroups WorldRenderer::FilterRenderableGroups(std::span<Renderable> renderables)
+    {
+        RenderableGroups groups;
+
+        for (auto& renderable : renderables)
+        {
+            auto hash = renderable.Mesh->Data.VertFormat->GetHash();
+            if (renderable.Mat)
+                hashCombine(hash, renderable.Mat->GetHash());
+
+            if (groups.count(hash) == 0)
+            {
+                groups[hash] = {};
+                if (renderable.Mat->GetDefine().EnableInstancing)
+                {
+                    groups[hash].GroupType = RenderableGroupType::Instancing;
+                }
+            }
+
+            groups[hash].Renderables.emplace_back(renderable);
+        }
+
+        return groups;
     }
 
     AABB WorldRenderer::GetVisableAABB(std::span<Renderable> visableRenderables)

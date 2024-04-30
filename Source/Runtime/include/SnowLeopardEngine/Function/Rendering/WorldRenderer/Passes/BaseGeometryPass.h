@@ -15,6 +15,7 @@ namespace SnowLeopardEngine
 
     protected:
         void SetTransform(const glm::mat4& modelMatrix);
+        void SetTransform(const glm::mat4& modelMatrix, uint32_t instanceId);
 
         GraphicsPipeline&        GetPipeline(const VertexFormat&, const Material* material);
         virtual GraphicsPipeline CreateBasePassPipeline(const VertexFormat&, const Material* material) = 0;

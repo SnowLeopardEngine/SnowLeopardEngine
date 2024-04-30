@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
+#include "SnowLeopardEngine/Core/Base/Hash.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Platform/Platform.h"
@@ -12,7 +13,7 @@ const std::filesystem::path g_ShaderPath = "Assets/Shaders/";
 
 namespace SnowLeopardEngine
 {
-    std::unordered_map<std::filesystem::path, std::string> g_ShaderLibrary;
+    std::unordered_map<size_t, std::string> g_ShaderLibrary;
 
     // NOLINTBEGIN
     class MyIncluder : public shaderc::CompileOptions::IncluderInterface
@@ -96,9 +97,24 @@ namespace SnowLeopardEngine
     {
         ShaderCompileResult result = {};
 
-        if (g_ShaderLibrary.count(shaderPath) > 0)
+        size_t hash = std::filesystem::hash_value(shaderPath);
+
+        for (const auto& keyword : keywords)
         {
-            result.ProgramCode = g_ShaderLibrary[shaderPath];
+            if (std::holds_alternative<std::string>(keyword))
+            {
+                hashCombine(hash, std::get<std::string>(keyword));
+            }
+            else if (std::holds_alternative<std::tuple<std::string, std::string>>(keyword))
+            {
+                auto [key, value] = std::get<std::tuple<std::string, std::string>>(keyword);
+                hashCombine(hash, key, value);
+            }
+        }
+
+        if (g_ShaderLibrary.count(hash) > 0)
+        {
+            result.ProgramCode = g_ShaderLibrary[hash];
             return result;
         }
 
@@ -131,8 +147,9 @@ namespace SnowLeopardEngine
         std::string compiledGLSL;
         CompileSPV2GLSL(spvBinary, compiledGLSL);
 
-        g_ShaderLibrary[shaderPath] = compiledGLSL;
-        result.ProgramCode          = compiledGLSL;
+        g_ShaderLibrary[hash] = compiledGLSL;
+
+        result.ProgramCode = compiledGLSL;
 
         return result;
     }

@@ -16,10 +16,10 @@ namespace SnowLeopardEngine
 {
     GBufferPass::GBufferPass(RenderContext& renderContext) : BaseGeometryPass(renderContext) {}
 
-    void GBufferPass::AddToGraph(FrameGraph&           fg,
-                                 FrameGraphBlackboard& blackboard,
-                                 const Extent2D&       resolution,
-                                 std::span<Renderable> renderables)
+    void GBufferPass::AddToGraph(FrameGraph&             fg,
+                                 FrameGraphBlackboard&   blackboard,
+                                 const Extent2D&         resolution,
+                                 const RenderableGroups& groups)
     {
         const auto [frameUniform] = blackboard.get<FrameData>();
 
@@ -76,27 +76,59 @@ namespace SnowLeopardEngine
 
                 auto frameBuffer = rc.BeginRendering(renderingInfo);
 
-                for (auto& renderable : renderables)
+                for (const auto& [_, group] : groups)
                 {
-                    // Skinned Mesh
-                    if (renderable.Mesh->Skinned())
+                    // Default group
+                    if (group.GroupType == RenderableGroupType::Default)
                     {
-                        rc.Upload(*renderable.Mesh->Data.VertBuffer,
-                                  0,
-                                  renderable.Mesh->Data.Vertices.size() * sizeof(MeshVertexData),
-                                  renderable.Mesh->Data.Vertices.data());
+                        for (const auto& renderable : group.Renderables)
+                        {
+                            // Skinned Mesh
+                            if (renderable.Mesh->Skinned())
+                            {
+                                rc.Upload(*renderable.Mesh->Data.VertBuffer,
+                                          0,
+                                          renderable.Mesh->Data.Vertices.size() * sizeof(MeshVertexData),
+                                          renderable.Mesh->Data.Vertices.data());
+                            }
+
+                            rc.BindGraphicsPipeline(GetPipeline(*renderable.Mesh->Data.VertFormat, renderable.Mat))
+                                .BindUniformBuffer(0, getBuffer(resources, frameUniform));
+
+                            SetTransform(renderable.ModelMatrix);
+
+                            rc.BindMaterial(renderable.Mat)
+                                .Draw(*renderable.Mesh->Data.VertBuffer,
+                                      *renderable.Mesh->Data.IdxBuffer,
+                                      renderable.Mesh->Data.Indices.size(),
+                                      renderable.Mesh->Data.Vertices.size());
+                        }
                     }
+                    // Instancing group
+                    else if (group.GroupType == RenderableGroupType::Instancing)
+                    {
+                        assert(!group.Renderables.empty());
+                        const auto& renderableTemplate = group.Renderables[0];
 
-                    rc.BindGraphicsPipeline(GetPipeline(*renderable.Mesh->Data.VertFormat, renderable.Mat))
-                        .BindUniformBuffer(0, getBuffer(resources, frameUniform));
+                        // TODO: support skinned mesh instancing
 
-                    SetTransform(renderable.ModelMatrix);
+                        rc.BindGraphicsPipeline(
+                              GetPipeline(*renderableTemplate.Mesh->Data.VertFormat, renderableTemplate.Mat))
+                            .BindUniformBuffer(0, getBuffer(resources, frameUniform));
 
-                    rc.BindMaterial(renderable.Mat)
-                        .Draw(*renderable.Mesh->Data.VertBuffer,
-                              *renderable.Mesh->Data.IdxBuffer,
-                              renderable.Mesh->Data.Indices.size(),
-                              renderable.Mesh->Data.Vertices.size());
+                        uint32_t instanceCount = group.Renderables.size();
+                        for (uint32_t instanceId = 0; instanceId < instanceCount; ++instanceId)
+                        {
+                            SetTransform(group.Renderables[instanceId].ModelMatrix, instanceId);
+                        }
+
+                        rc.BindMaterial(renderableTemplate.Mat)
+                            .Draw(*renderableTemplate.Mesh->Data.VertBuffer,
+                                  *renderableTemplate.Mesh->Data.IdxBuffer,
+                                  renderableTemplate.Mesh->Data.Indices.size(),
+                                  renderableTemplate.Mesh->Data.Vertices.size(),
+                                  instanceCount);
+                    }
                 }
 
                 rc.EndRendering(frameBuffer);
@@ -107,9 +139,17 @@ namespace SnowLeopardEngine
     {
         auto vertexArrayObject = m_RenderContext.GetVertexArray(vertexFormat.GetAttributes());
 
+        std::vector<std::variant<std::string, std::tuple<std::string, std::string>>> defines;
+
+        if (material->GetDefine().EnableInstancing)
+        {
+            defines.emplace_back("ENABLE_INSTANCING");
+        }
+
         auto vertResult =
             ShaderCompiler::Compile(!material->GetDefine().UserVertPath.empty() ? material->GetDefine().UserVertPath :
-                                                                                  "Assets/Shaders/Geometry.vert");
+                                                                                  "Assets/Shaders/Geometry.vert",
+                                    defines);
         SNOW_LEOPARD_CORE_ASSERT(vertResult.Success, "{0}", vertResult.Message);
 
         auto fragResult =

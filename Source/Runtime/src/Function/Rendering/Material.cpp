@@ -103,7 +103,7 @@ namespace SnowLeopardEngine
 
     void Material::SetTexture2D(RenderContext& rc, const std::string& propertyName, const std::string& texturePath)
     {
-        auto* texture = IO::Load(texturePath, rc);
+        auto* texture = IO::Load(texturePath, rc, m_Define.TextureFlipY);
         if (texture == nullptr)
         {
             return;
@@ -129,8 +129,13 @@ std::size_t
 std::hash<SnowLeopardEngine::DzMaterial>::operator()(const SnowLeopardEngine::DzMaterial& dzMaterial) const noexcept
 {
     std::size_t h {0};
-    SnowLeopardEngine::hashCombine(
-        h, dzMaterial.Name, dzMaterial.RenderQueue, dzMaterial.UserFragPath, dzMaterial.UserVertPath);
+    SnowLeopardEngine::hashCombine(h,
+                                   dzMaterial.Name,
+                                   dzMaterial.RenderQueue,
+                                   dzMaterial.UserFragPath,
+                                   dzMaterial.UserVertPath,
+                                   dzMaterial.EnableInstancing,
+                                   dzMaterial.TextureFlipY);
 
     for (const auto& property : dzMaterial.Properties)
     {

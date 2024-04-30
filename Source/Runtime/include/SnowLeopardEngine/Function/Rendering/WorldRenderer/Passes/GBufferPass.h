@@ -16,10 +16,10 @@ namespace SnowLeopardEngine
         explicit GBufferPass(RenderContext& renderContext);
         ~GBufferPass() = default;
 
-        void AddToGraph(FrameGraph&           fg,
-                        FrameGraphBlackboard& blackboard,
-                        const Extent2D&       resolution,
-                        std::span<Renderable> renderables);
+        void AddToGraph(FrameGraph&             fg,
+                        FrameGraphBlackboard&   blackboard,
+                        const Extent2D&         resolution,
+                        const RenderableGroups& group);
 
     protected:
         GraphicsPipeline CreateBasePassPipeline(const VertexFormat&, const Material* material) override final;
