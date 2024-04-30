@@ -11,14 +11,18 @@
 #include "SnowLeopardEngine/Function/Rendering/LightUniform.h"
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GaussianBlurPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SSAOPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SkyboxPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ToneMappingPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SSAOData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SceneColorData.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 
 #include <fg/Blackboard.hpp>
+#include <fg/FrameGraph.hpp>
 
 namespace SnowLeopardEngine
 {
@@ -80,6 +84,11 @@ namespace SnowLeopardEngine
         // G-Buffer pass
         m_GBufferPass->AddToGraph(fg, blackboard, m_Viewport.Extent, visableRenderables);
 
+        // SSAO pass
+        m_SSAOPass->AddToGraph(fg, blackboard);
+        auto& ssao = blackboard.get<SSAOData>().SSAO;
+        ssao       = m_GaussianBlurPass->AddToGraph(fg, ssao, 1.0f);
+
         // Deferred lighting pass
         auto& sceneColor = blackboard.add<SceneColorData>();
         sceneColor.HDR   = m_DeferredLightingPass->AddToGraph(fg, blackboard);
@@ -119,6 +128,8 @@ namespace SnowLeopardEngine
 
         m_ShadowPrePass        = CreateScope<ShadowPrePass>(rc);
         m_GBufferPass          = CreateScope<GBufferPass>(rc);
+        m_SSAOPass             = CreateScope<SSAOPass>(rc);
+        m_GaussianBlurPass     = CreateScope<GaussianBlurPass>(rc);
         m_DeferredLightingPass = CreateScope<DeferredLightingPass>(rc);
         m_SkyboxPass           = CreateScope<SkyboxPass>(rc);
         m_ToneMappingPass      = CreateScope<ToneMappingPass>(rc);

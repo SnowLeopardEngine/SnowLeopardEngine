@@ -7,13 +7,16 @@
 
 namespace SnowLeopardEngine
 {
-    class FXAAPass
+    class GaussianBlurPass
     {
     public:
-        explicit FXAAPass(RenderContext&);
-        ~FXAAPass();
+        explicit GaussianBlurPass(RenderContext&);
+        ~GaussianBlurPass();
 
-        FrameGraphResource AddToGraph(FrameGraph&, FrameGraphResource input);
+        FrameGraphResource AddToGraph(FrameGraph&, FrameGraphResource input, float scale);
+
+    private:
+        FrameGraphResource AddToGraph(FrameGraph&, FrameGraphResource input, float scale, bool horizontal);
 
     private:
         RenderContext&   m_RenderContext;

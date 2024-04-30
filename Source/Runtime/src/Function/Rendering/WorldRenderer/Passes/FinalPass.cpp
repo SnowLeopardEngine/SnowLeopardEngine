@@ -6,6 +6,9 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SceneColorData.h"
 
+#include <fg/Blackboard.hpp>
+#include <fg/FrameGraph.hpp>
+
 namespace SnowLeopardEngine
 {
     FinalPass::FinalPass(RenderContext& rc) : m_RenderContext(rc)

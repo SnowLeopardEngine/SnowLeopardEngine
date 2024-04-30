@@ -10,6 +10,9 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/LightData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/ShadowData.h"
 
+#include <fg/Blackboard.hpp>
+#include <fg/FrameGraph.hpp>
+
 namespace SnowLeopardEngine
 {
     ShadowPrePass::ShadowPrePass(RenderContext& renderContext) : BaseGeometryPass(renderContext) {}

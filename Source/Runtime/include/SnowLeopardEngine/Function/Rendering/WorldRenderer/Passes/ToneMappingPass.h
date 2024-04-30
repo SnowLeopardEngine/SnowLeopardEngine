@@ -3,8 +3,7 @@
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/GraphicsPipeline.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 
-#include <fg/Blackboard.hpp>
-#include <fg/FrameGraph.hpp>
+#include <fg/Fwd.hpp>
 
 namespace SnowLeopardEngine
 {

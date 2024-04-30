@@ -6,6 +6,7 @@
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
+#include <variant>
 
 const std::filesystem::path g_ShaderPath = "Assets/Shaders/";
 
@@ -89,8 +90,9 @@ namespace SnowLeopardEngine
         }
     }
 
-    ShaderCompileResult ShaderCompiler::Compile(const std::filesystem::path&    shaderPath,
-                                                const std::vector<std::string>& keywords)
+    ShaderCompileResult ShaderCompiler::Compile(
+        const std::filesystem::path&                                                        shaderPath,
+        const std::vector<std::variant<std::string, std::tuple<std::string, std::string>>>& keywords)
     {
         ShaderCompileResult result = {};
 
@@ -135,13 +137,14 @@ namespace SnowLeopardEngine
         return result;
     }
 
-    bool ShaderCompiler::CompileGLSL2SPV(const std::string&              glslSourceText,
-                                         const std::string&              stageSuffix,
-                                         const std::string&              stageEntryPoint,
-                                         const std::string&              shaderName,
-                                         const std::vector<std::string>& keywords,
-                                         std::vector<uint32_t>&          spvBinary,
-                                         std::string&                    message)
+    bool ShaderCompiler::CompileGLSL2SPV(
+        const std::string&                                                                  glslSourceText,
+        const std::string&                                                                  stageSuffix,
+        const std::string&                                                                  stageEntryPoint,
+        const std::string&                                                                  shaderName,
+        const std::vector<std::variant<std::string, std::tuple<std::string, std::string>>>& keywords,
+        std::vector<uint32_t>&                                                              spvBinary,
+        std::string&                                                                        message)
     {
         shaderc::Compiler       compiler;
         shaderc::CompileOptions options;
@@ -154,7 +157,15 @@ namespace SnowLeopardEngine
         // Setup keywords
         for (const auto& keyword : keywords)
         {
-            options.AddMacroDefinition(keyword);
+            if (std::holds_alternative<std::string>(keyword))
+            {
+                options.AddMacroDefinition(std::get<std::string>(keyword));
+            }
+            else if (std::holds_alternative<std::tuple<std::string, std::string>>(keyword))
+            {
+                auto [key, value] = std::get<std::tuple<std::string, std::string>>(keyword);
+                options.AddMacroDefinition(key, value);
+            }
         }
 
         // Preprocess

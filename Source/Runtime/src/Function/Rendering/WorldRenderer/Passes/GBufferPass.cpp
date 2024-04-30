@@ -9,6 +9,9 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
 
+#include <fg/Blackboard.hpp>
+#include <fg/FrameGraph.hpp>
+
 namespace SnowLeopardEngine
 {
     GBufferPass::GBufferPass(RenderContext& renderContext) : BaseGeometryPass(renderContext) {}

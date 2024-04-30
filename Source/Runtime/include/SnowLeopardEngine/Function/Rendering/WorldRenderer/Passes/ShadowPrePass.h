@@ -6,8 +6,7 @@
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BaseGeometryPass.h"
 
-#include <fg/Blackboard.hpp>
-#include <fg/FrameGraph.hpp>
+#include <fg/Fwd.hpp>
 
 namespace SnowLeopardEngine
 {

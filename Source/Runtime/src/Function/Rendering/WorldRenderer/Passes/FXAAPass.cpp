@@ -1,9 +1,11 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FXAAPass.h"
-#include "FrameGraphResource.hpp"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
+
+#include <fg/Blackboard.hpp>
+#include <fg/FrameGraph.hpp>
 
 namespace SnowLeopardEngine
 {
