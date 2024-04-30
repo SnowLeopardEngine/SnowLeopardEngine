@@ -7,6 +7,7 @@ layout(binding = 0, std140) uniform FrameUniform {
     mat4 inversedViewMatrix;
     mat4 projectionMatrix;
     mat4 inversedProjectionMatrix;
+    mat4 orthoProjectionMatrix;
     vec3 viewPos;
     vec2 resolution;
 } uFrame;
@@ -23,6 +24,10 @@ mat4 getViewMatrix() {
 
 mat4 getProjectionMatrix() {
     return uFrame.projectionMatrix;
+}
+
+mat4 getOrthoProjectionMatrix() {
+    return uFrame.orthoProjectionMatrix;
 }
 
 vec3 getViewPos() {

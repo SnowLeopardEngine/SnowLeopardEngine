@@ -786,6 +786,7 @@ namespace SnowLeopardEngine
             COMPONENT_NAME(RectTransformComponent)
 
             glm::vec3 Pos;
+            float     RotationAngle = 0;
             glm::vec2 Size;
             glm::vec2 Pivot = {0.5, 0.5};
 
@@ -793,7 +794,7 @@ namespace SnowLeopardEngine
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive(CEREAL_NVP(Pos), CEREAL_NVP(Size), CEREAL_NVP(Pivot));
+                archive(CEREAL_NVP(Pos), CEREAL_NVP(RotationAngle), CEREAL_NVP(Size), CEREAL_NVP(Pivot));
             }
             // NOLINTEND
 
@@ -810,11 +811,14 @@ namespace SnowLeopardEngine
 
             MeshItem ImageMesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
 
+            std::filesystem::path MaterialFilePath;
+            Material*             Mat = nullptr;
+
             // NOLINTBEGIN
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive(CEREAL_NVP(TintType), CEREAL_NVP(TintColor));
+                archive(CEREAL_NVP(TintType), CEREAL_NVP(TintColor), CEREAL_NVP(MaterialFilePath));
             }
             // NOLINTEND
 
@@ -831,11 +835,14 @@ namespace SnowLeopardEngine
 
             MeshItem ImageMesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
 
+            std::filesystem::path MaterialFilePath;
+            Material*             Mat = nullptr;
+
             // NOLINTBEGIN
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive(CEREAL_NVP(TargetGraphicPath), CEREAL_NVP(Color));
+                archive(CEREAL_NVP(TargetGraphicPath), CEREAL_NVP(Color), CEREAL_NVP(MaterialFilePath));
             }
             // NOLINTEND
 

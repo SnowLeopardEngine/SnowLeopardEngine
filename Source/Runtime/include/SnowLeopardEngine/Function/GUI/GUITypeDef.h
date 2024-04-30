@@ -37,8 +37,7 @@ namespace SnowLeopardEngine::UI
 
     struct TextureTint
     {
-        std::filesystem::path TargetGraphicPath;
-        RenderTarget          TargetGraphic = nullptr;
+        RenderTarget TargetGraphic = nullptr;
 
         std::filesystem::path NormalTexture;
         std::filesystem::path PressedTexture;
@@ -50,7 +49,7 @@ namespace SnowLeopardEngine::UI
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(TargetGraphicPath), CEREAL_NVP(NormalTexture), CEREAL_NVP(PressedTexture), CEREAL_NVP(Current));
+            archive(CEREAL_NVP(NormalTexture), CEREAL_NVP(PressedTexture));
         }
         // NOLINTEND
     };

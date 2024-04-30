@@ -7,11 +7,13 @@
 #include "SnowLeopardEngine/Function/Rendering/LightUniform.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BlitUIPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FXAAPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FinalPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GBufferPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GaussianBlurPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/InGameGUIPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SSAOPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SkyboxPass.h"
@@ -40,15 +42,16 @@ namespace SnowLeopardEngine
         void CookRenderableScene();
 
         void UpdateFrameUniform();
-        void UpdateLightUniform();
+        void UpdateLightUniform(const AABB& renderablesAABB);
 
         std::vector<Renderable> FilterVisableRenderables(std::span<Renderable> renderables,
                                                          const glm::mat4&      cameraViewProjection);
 
+        std::vector<Renderable> FilterRenderables(std::span<Renderable> src, auto&& predicate);
+
         RenderableGroups FilterRenderableGroups(std::span<Renderable> renderables);
 
-        AABB GetVisableAABB(std::span<Renderable> visableRenderables);
-        AABB GetRenderableSceneAABB();
+        AABB GetRenderablesAABB(std::span<Renderable> renderables);
 
     private:
         // -------- Context --------
@@ -70,6 +73,8 @@ namespace SnowLeopardEngine
         Scope<SkyboxPass>           m_SkyboxPass           = nullptr;
         Scope<ToneMappingPass>      m_ToneMappingPass      = nullptr;
         Scope<FXAAPass>             m_FXAAPass             = nullptr;
+        Scope<InGameGUIPass>        m_InGameGUIPass        = nullptr;
+        Scope<BlitUIPass>             m_BlitUIPass             = nullptr;
         Scope<FinalPass>            m_FinalPass            = nullptr;
 
         // -------- Renderables --------

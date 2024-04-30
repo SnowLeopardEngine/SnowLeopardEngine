@@ -25,6 +25,7 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#include <ranges>
 
 #include <fmt/core.h>
 

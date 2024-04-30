@@ -244,6 +244,20 @@ namespace SnowLeopardEngine
                 renderer.Mat = IO::Load(renderer.MaterialFilePath);
             }
         });
+        m_Registry.view<UI::ImageComponent>().each([](entt::entity e, UI::ImageComponent& image){
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(image.MaterialFilePath))
+            {
+                image.Mat = IO::Load(image.MaterialFilePath);
+            }
+        });
+        m_Registry.view<UI::ButtonComponent>().each([](entt::entity e, UI::ButtonComponent& button){
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(button.MaterialFilePath))
+            {
+                button.Mat = IO::Load(button.MaterialFilePath);
+            }
+        });
 
         // Init Animators
         m_Registry.view<AnimatorComponent>().each(

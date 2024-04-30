@@ -86,13 +86,16 @@ public:
 
         auto* tempRC = new RenderContext();
 
+        const std::string uiMaterialPath = "Assets/Materials/Next/UI.dzmaterial";
+
         Entity coolGayButton                      = scene->CreateEntity("CoolGayButton");
         auto&  coolGayButtonRect                  = coolGayButton.AddComponent<UI::RectTransformComponent>();
         coolGayButtonRect.Size                    = {100, 60};
         coolGayButtonRect.Pivot                   = {0, 0};
         coolGayButtonRect.Pos                     = {10, 10, 0};
         auto& coolGayButtonComp                   = coolGayButton.AddComponent<UI::ButtonComponent>();
-        coolGayButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/CoolGay.png", *tempRC);
+        coolGayButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/CoolGay.png", *tempRC, false);
+        coolGayButtonComp.MaterialFilePath        = uiMaterialPath;
 
         Entity awesomeFaceButton                      = scene->CreateEntity("AwesomeFaceButton");
         auto&  awesomeFaceButtonRect                  = awesomeFaceButton.AddComponent<UI::RectTransformComponent>();
@@ -100,7 +103,8 @@ public:
         awesomeFaceButtonRect.Pivot                   = {0, 0};
         awesomeFaceButtonRect.Pos                     = {10, 100, 0};
         auto& awesomeFaceButtonComp                   = awesomeFaceButton.AddComponent<UI::ButtonComponent>();
-        awesomeFaceButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/awesomeface.png", *tempRC);
+        awesomeFaceButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/awesomeface.png", *tempRC, false);
+        awesomeFaceButtonComp.MaterialFilePath        = uiMaterialPath;
 
         Subscribe(m_ButtonClickedEventHandler);
 
@@ -108,11 +112,12 @@ public:
         Entity sleepGayImage = scene->CreateEntity("SleepGayImage");
         auto&  sleepGayRect  = sleepGayImage.AddComponent<UI::RectTransformComponent>();
 
-        sleepGayRect.Size               = {320, 240};
-        sleepGayRect.Pivot              = {0.5, 0.5};
-        sleepGayRect.Pos                = {512, 384, 0};
-        auto& sleepGayImageComp         = sleepGayImage.AddComponent<UI::ImageComponent>();
-        sleepGayImageComp.TargetGraphic = IO::Load("Assets/Textures/SleepGay.jpg", *tempRC);
+        sleepGayRect.Size                  = {320, 240};
+        sleepGayRect.Pivot                 = {0.5, 0.5};
+        sleepGayRect.Pos                   = {512, 384, 0};
+        auto& sleepGayImageComp            = sleepGayImage.AddComponent<UI::ImageComponent>();
+        sleepGayImageComp.TargetGraphic    = IO::Load("Assets/Textures/SleepGay.jpg", *tempRC, false);
+        sleepGayImageComp.MaterialFilePath = uiMaterialPath;
     }
 
     virtual void OnUnload() { Unsubscribe(m_ButtonClickedEventHandler); }
