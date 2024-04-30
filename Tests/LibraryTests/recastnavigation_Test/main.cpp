@@ -184,6 +184,110 @@ void generateNavMesh(const std::vector<float>& vertices, const std::vector<unsig
     delete ctx;
 }
 
+
+bool loadNavMeshData(const char* filename, std::vector<unsigned char>& data) {
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+    if (!file) {
+        std::cerr << "Failed to open file for reading: " << filename << std::endl;
+        return false;
+    }
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    data.resize(size);
+    if (!file.read(reinterpret_cast<char*>(data.data()), size)) {
+        std::cerr << "Failed to read file: " << filename << std::endl;
+        return false;
+    }
+
+    file.close();
+    return true;
+}
+
+dtNavMesh* loadNavMesh(const std::vector<unsigned char>& data) {
+    dtNavMesh* navMesh = dtAllocNavMesh();
+    if (!navMesh) {
+        std::cerr << "Failed to create Detour nav mesh." << std::endl;
+        return nullptr;
+    }
+
+    unsigned char* navData = const_cast<unsigned char*>(data.data());
+    dtStatus status = navMesh->init(navData, data.size(), DT_TILE_FREE_DATA);
+    if (dtStatusFailed(status)) {
+        dtFreeNavMesh(navMesh);
+        std::cerr << "Failed to initialize Detour nav mesh." << std::endl;
+        return nullptr;
+    }
+
+    return navMesh;
+}
+
+dtNavMeshQuery* createNavQuery(dtNavMesh* navMesh) {
+    dtNavMeshQuery* navQuery = dtAllocNavMeshQuery();
+    if (!navQuery) {
+        std::cerr << "Failed to create Detour nav mesh query." << std::endl;
+        return nullptr;
+    }
+
+    dtStatus status = navQuery->init(navMesh, 2048);
+    if (dtStatusFailed(status)) {
+        dtFreeNavMeshQuery(navQuery);
+        std::cerr << "Failed to initialize nav mesh query." << std::endl;
+        return nullptr;
+    }
+
+    return navQuery;
+}
+
+void findPath(dtNavMeshQuery* navQuery, const float* startPos, const float* endPos) {
+    if (!navQuery) {
+        std::cerr << "Invalid navigation query." << std::endl;
+        return;
+    }
+
+    dtQueryFilter filter;
+    // 设置过滤器，根据需要设置 include 和 exclude 标志位
+
+    static const int MAX_POLYS = 256;
+    dtPolyRef polys[MAX_POLYS];
+    float straight[MAX_POLYS * 3];
+    const float polyPickExt[3] = {2,4,2};
+    // 查找起始点所在的多边形
+    dtPolyRef startRef;
+    navQuery->findNearestPoly(startPos, polyPickExt, &filter, &startRef, nullptr);
+
+    // 查找终点所在的多边形
+    dtPolyRef endRef;
+    navQuery->findNearestPoly(endPos, polyPickExt, &filter, &endRef, nullptr);
+
+    // 如果起点或终点不在有效的多边形内，返回
+    if (!startRef || !endRef) {
+        std::cerr << "Failed to find valid start or end polygon." << std::endl;
+        return;
+    }
+
+    // 查找路径
+    int pathCount = 0;
+    navQuery->findPath(startRef, endRef, startPos, endPos, &filter, polys, &pathCount, MAX_POLYS);
+
+    // 如果找到路径，进一步获取直线路径
+    if (pathCount > 0) {
+        navQuery->findStraightPath(startPos, endPos, polys, pathCount, straight, 0, 0, &pathCount, MAX_POLYS);
+
+       /* // 输出路径信息
+        std::cout << "Found path with " << pathCount << " segments:" << std::endl;
+        for (int i = 0; i < pathCount; ++i) {
+            std::cout << "Segment " << i + 1 << ": (" << straight[i * 3] << ", " << straight[i * 3 + 1] << ", " << straight[i * 3 + 2] << ")" << std::endl;
+        }*/
+    } else {
+        std::cerr << "Failed to find path." << std::endl;
+    }
+}
+
+
+
+
 int main() {
     std::string objFilename = "assets/nav_test.obj";
 
