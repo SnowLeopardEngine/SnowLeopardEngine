@@ -20,4 +20,9 @@ struct PointLight {
     vec3 color;
 };
 
+struct LightContribution {
+    vec3 Diffuse;
+    vec3 Specular;
+};
+
 #endif

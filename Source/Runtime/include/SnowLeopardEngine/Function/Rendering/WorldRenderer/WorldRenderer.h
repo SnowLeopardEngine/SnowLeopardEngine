@@ -1,12 +1,14 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Math/AABB.h"
-#include "SnowLeopardEngine/Function/Rendering/Converters/CubemapConverter.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/TransientResources.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameUniform.h"
+#include "SnowLeopardEngine/Function/Rendering/LightProbe.h"
 #include "SnowLeopardEngine/Function/Rendering/LightUniform.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
+#include "SnowLeopardEngine/Function/Rendering/Tools/CubemapConverter.h"
+#include "SnowLeopardEngine/Function/Rendering/Tools/IBLDataGenerator.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BlitUIPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FXAAPass.h"
@@ -63,6 +65,7 @@ namespace SnowLeopardEngine
 
         // -------- Tools --------
         Scope<CubemapConverter> m_CubemapConverter = nullptr;
+        Scope<IBLDataGenerator> m_IBLDataGenerator = nullptr;
 
         // -------- Passes --------
         Scope<ShadowPrePass>        m_ShadowPrePass        = nullptr;
@@ -74,17 +77,21 @@ namespace SnowLeopardEngine
         Scope<ToneMappingPass>      m_ToneMappingPass      = nullptr;
         Scope<FXAAPass>             m_FXAAPass             = nullptr;
         Scope<InGameGUIPass>        m_InGameGUIPass        = nullptr;
-        Scope<BlitUIPass>             m_BlitUIPass             = nullptr;
+        Scope<BlitUIPass>           m_BlitUIPass           = nullptr;
         Scope<FinalPass>            m_FinalPass            = nullptr;
 
         // -------- Renderables --------
         std::vector<Renderable> m_Renderables;
 
-        // -------- Camera, Lights, Skybox --------
+        // -------- Camera, Lights, Skybox, etc. --------
         Entity              m_MainCamera;
         Entity              m_DirectionalLight;
         std::vector<Entity> m_PointLights;
         Texture             m_Skybox;
+
+        // -------- IBL Data --------
+        LightProbe m_GlobalLightProbe;
+        Texture    m_BrdfLUT;
 
         // -------- UBO --------
         FrameUniform m_FrameUniform;

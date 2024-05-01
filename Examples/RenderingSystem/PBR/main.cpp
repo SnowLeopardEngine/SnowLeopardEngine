@@ -76,10 +76,11 @@ public:
         // Load materials
         const std::string deferredWhiteMaterialFilePath = "Assets/Materials/Next/White.dzmaterial";
         const std::string deferredPBRMaterialFilePath   = "Assets/Materials/Next/RustedIronPBRDeferred.dzmaterial";
+        const std::string pureMetalMaterialFilePath   = "Assets/Materials/Next/PureMetal.dzmaterial";
 
         // Create spheres to test materials
         Entity sphere1 = CreateSphere(deferredPBRMaterialFilePath, {-21, 10, 0}, scene);
-        Entity sphere2 = CreateSphere(deferredPBRMaterialFilePath, {-15, 10, 0}, scene);
+        Entity sphere2 = CreateSphere(pureMetalMaterialFilePath, {-15, 10, 0}, scene);
         Entity sphere3 = CreateSphere(deferredPBRMaterialFilePath, {-9, 10, 0}, scene);
         Entity sphere4 = CreateSphere(deferredPBRMaterialFilePath, {-3, 10, 0}, scene);
         Entity sphere5 = CreateSphere(deferredPBRMaterialFilePath, {3, 10, 0}, scene);
@@ -100,16 +101,16 @@ public:
         // Create 4 point lights
 
         // red
-        CreatePointLight(glm::vec3(-50, 20, 50), glm::vec3(1, 0, 0), scene);
+        // CreatePointLight(glm::vec3(-50, 20, 50), glm::vec3(1, 0, 0), scene);
 
-        // green
-        CreatePointLight(glm::vec3(-50, 20, -50), glm::vec3(0, 1, 0), scene);
+        // // green
+        // CreatePointLight(glm::vec3(-50, 20, -50), glm::vec3(0, 1, 0), scene);
 
-        // blue
-        CreatePointLight(glm::vec3(50, 20, 50), glm::vec3(0, 0, 1), scene);
+        // // blue
+        // CreatePointLight(glm::vec3(50, 20, 50), glm::vec3(0, 0, 1), scene);
 
-        // yellow
-        CreatePointLight(glm::vec3(50, 20, -50), glm::vec3(1, 1, 0), scene);
+        // // yellow
+        // CreatePointLight(glm::vec3(50, 20, -50), glm::vec3(1, 1, 0), scene);
     }
 
 private:

@@ -4,6 +4,7 @@
 #include "Common/Light.glsl"
 #include "Lib/Shadow.glsl"
 #include "Lib/PBR.glsl"
+#include "Lib/IBL.glsl"
 
 vec3 CalDirectionalLight(DirectionalLight directionalLight, vec3 F0, vec3 N, vec3 V, PBRMaterial material) {
     vec3 L = normalize(-directionalLight.direction);
@@ -55,11 +56,18 @@ vec3 CalPointLight(PointLight pointLight, vec3 F0, vec3 N, vec3 V, PBRMaterial m
     return (kD * material.albedo / PI + specular) * radiance * NdotL;
 }
 
-vec3 CalPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NUM_MAX_POINT_LIGHT], uint numPointLights, vec3 normal, vec3 viewDir, PBRMaterial material, vec3 fragPos, sampler2D shadowMap) {
+vec3 CalIBLAmbient(vec3 diffuseColor, vec3 F0, vec3 N, vec3 V, PBRMaterial material, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
+    float NdotV = dot(N, V);
+    LightContribution iblContribution = CalIBL(diffuseColor, F0, 0.5, material.roughness, N, V, NdotV, brdfLUT, irradianceMap, prefilteredEnvMap);
+    return iblContribution.Diffuse * material.ao + iblContribution.Specular * material.ao;
+}
+
+vec3 CalPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NUM_MAX_POINT_LIGHT], uint numPointLights, vec3 normal, vec3 viewDir, PBRMaterial material, vec3 fragPos, sampler2D shadowMap, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
     vec3 N = normalize(normal);
     vec3 V = normalize(viewDir);
 
     vec3 F0 = vec3(0.04);
+    const vec3 diffuseColor = mix(material.albedo * (1.0 - F0), vec3(0.0), material.metallic);
     F0 = mix(F0, material.albedo, material.metallic);
 
     vec3 Lo = vec3(0.0);
@@ -69,6 +77,8 @@ vec3 CalPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NU
     for(uint i = 0; i < numPointLights; ++i) {
         Lo += CalPointLight(pointLights[i], F0, N, V, material, fragPos);
     }
+
+    Lo += CalIBLAmbient(diffuseColor, F0, N, V, material, brdfLUT, irradianceMap, prefilteredEnvMap);
 
     vec4 fragPosLightSpace = directionalLight.lightSpaceMatrix * vec4(fragPos, 1.0);
     float shadow = ShadowCalculation(fragPosLightSpace, normal, normalize(-directionalLight.direction), shadowMap);

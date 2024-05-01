@@ -5,7 +5,7 @@
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/IO/TextureLoader.h"
-#include "SnowLeopardEngine/Function/Rendering/Converters/CubemapConverter.h"
+#include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/TransientResources.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameUniform.h"
 #include "SnowLeopardEngine/Function/Rendering/IndexBuffer.h"
@@ -19,17 +19,27 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SkyboxPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ToneMappingPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/BRDFData.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GlobalLightProbeData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/InGameGUIData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SSAOData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SceneColorData.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 
+
 #include <fg/Blackboard.hpp>
 #include <fg/FrameGraph.hpp>
 
 namespace SnowLeopardEngine
 {
+    void importLightProbe(FrameGraph& fg, FrameGraphBlackboard& blackboard, LightProbe& lightProbe)
+    {
+        auto& globalLightProbe    = blackboard.add<GlobalLightProbeData>();
+        globalLightProbe.Diffuse  = importTexture(fg, "DiffuseIBL", &lightProbe.Diffuse);
+        globalLightProbe.Specular = importTexture(fg, "SpecularIBL", &lightProbe.Specular);
+    }
+
     void WorldRenderer::Init()
     {
         m_RenderContext      = CreateScope<RenderContext>();
@@ -39,9 +49,17 @@ namespace SnowLeopardEngine
 
         CreateTools();
         CreatePasses();
+
+        m_BrdfLUT = m_IBLDataGenerator->GenerateBrdfLUT();
     }
 
-    void WorldRenderer::Shutdown() { m_RenderContext->Destroy(m_Skybox); }
+    void WorldRenderer::Shutdown()
+    {
+        m_RenderContext->Destroy(m_BrdfLUT)
+            .Destroy(m_GlobalLightProbe.Diffuse)
+            .Destroy(m_GlobalLightProbe.Specular)
+            .Destroy(m_Skybox);
+    }
 
     void WorldRenderer::OnLogicSceneLoaded(LogicScene* scene)
     {
@@ -51,11 +69,15 @@ namespace SnowLeopardEngine
         Entity mainCamera          = {registry.view<TransformComponent, CameraComponent>().front(), scene};
         auto&  mainCameraComponent = mainCamera.GetComponent<CameraComponent>();
 
-        // TODO: Use texture path defined in camera
         assert(mainCameraComponent.IsEnvironmentMapHDR);
         auto* equirectangular = IO::Load(mainCameraComponent.EnvironmentMapFilePath, *m_RenderContext);
         m_Skybox              = m_CubemapConverter->EquirectangularToCubemap(*equirectangular);
         m_RenderContext->Destroy(*equirectangular);
+
+        // Generate Glbal light probe for IBL
+        m_GlobalLightProbe          = {};
+        m_GlobalLightProbe.Diffuse  = m_IBLDataGenerator->GenerateIrradiance(m_Skybox);
+        m_GlobalLightProbe.Specular = m_IBLDataGenerator->PrefilterEnvMap(m_Skybox);
     }
 
     void WorldRenderer::RenderFrame(float deltaTime)
@@ -69,6 +91,10 @@ namespace SnowLeopardEngine
         {
             return;
         }
+
+        // Import BRDF LUT & Light probe data for IBL
+        blackboard.add<BRDFData>().LUT = importTexture(fg, "BRDF LUT", &m_BrdfLUT);
+        importLightProbe(fg, blackboard, m_GlobalLightProbe);
 
         auto defaultRenderables = FilterRenderables(m_Renderables, isDefault);
 
@@ -138,6 +164,7 @@ namespace SnowLeopardEngine
     {
         auto& rc           = *m_RenderContext;
         m_CubemapConverter = CreateScope<CubemapConverter>(rc);
+        m_IBLDataGenerator = CreateScope<IBLDataGenerator>(rc);
     }
 
     void WorldRenderer::CreatePasses()

@@ -3,8 +3,10 @@
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/BRDFData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GlobalLightProbeData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/LightData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SSAOData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/ShadowData.h"
@@ -44,10 +46,12 @@ namespace SnowLeopardEngine
         const auto [frameUniform] = blackboard.get<FrameData>();
         const auto [lightUniform] = blackboard.get<LightData>();
 
-        const auto& shadow  = blackboard.get<ShadowData>();
-        const auto& gBuffer = blackboard.get<GBufferData>();
-        const auto& ssao    = blackboard.get<SSAOData>();
-        const auto  extent  = fg.getDescriptor<FrameGraphTexture>(gBuffer.Depth).Extent;
+        const auto& shadow           = blackboard.get<ShadowData>();
+        const auto& gBuffer          = blackboard.get<GBufferData>();
+        const auto& brdf             = blackboard.get<BRDFData>();
+        const auto& globalLightProbe = blackboard.get<GlobalLightProbeData>();
+        const auto& ssao             = blackboard.get<SSAOData>();
+        const auto  extent           = fg.getDescriptor<FrameGraphTexture>(gBuffer.Depth).Extent;
 
         struct Data
         {
@@ -66,6 +70,10 @@ namespace SnowLeopardEngine
                 builder.read(gBuffer.Albedo);
                 builder.read(gBuffer.Emissive);
                 builder.read(gBuffer.MetallicRoughnessAO);
+
+                builder.read(brdf.LUT);
+                builder.read(globalLightProbe.Diffuse);
+                builder.read(globalLightProbe.Specular);
 
                 builder.read(ssao.SSAO);
 
@@ -95,10 +103,12 @@ namespace SnowLeopardEngine
                     .BindTexture(3, getTexture(resources, gBuffer.Emissive))
                     .BindTexture(4, getTexture(resources, gBuffer.MetallicRoughnessAO))
                     .BindTexture(5, getTexture(resources, shadow.ShadowMap))
-                    .BindTexture(6, getTexture(resources, ssao.SSAO))
-                    .DrawFullScreenTriangle();
-
-                rc.EndRendering(framebuffer);
+                    .BindTexture(6, getTexture(resources, brdf.LUT))
+                    .BindTexture(7, getTexture(resources, globalLightProbe.Diffuse))
+                    .BindTexture(8, getTexture(resources, globalLightProbe.Specular))
+                    .BindTexture(9, getTexture(resources, ssao.SSAO))
+                    .DrawFullScreenTriangle()
+                    .EndRendering(framebuffer);
             });
 
         return deferredLighting.SceneColor;
