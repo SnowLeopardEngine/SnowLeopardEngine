@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FinalPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
@@ -51,6 +52,9 @@ namespace SnowLeopardEngine
                 builder.setSideEffect();
             },
             [=, this](const auto&, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("Final Composition Pass");
+                SNOW_LEOPARD_PROFILE_GL("Final Composition Pass");
+
                 const auto extent = resources.getDescriptor<FrameGraphTexture>(output).Extent;
                 auto&      rc     = *static_cast<RenderContext*>(ctx);
 

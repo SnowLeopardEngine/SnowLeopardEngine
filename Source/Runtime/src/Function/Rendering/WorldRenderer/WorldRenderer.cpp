@@ -19,6 +19,8 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SkyboxPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ToneMappingPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/TransparencyComposePass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/WeightedBlendedPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/BRDFData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/BrightColorData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GlobalLightProbeData.h"
@@ -120,6 +122,10 @@ namespace SnowLeopardEngine
 
         m_GBufferPass->AddToGraph(fg, blackboard, m_Viewport.Extent, groups);
 
+        // Weighted Blended OIT Pass
+        auto transparentRenderables = FilterRenderables(visableRenderables, isTransparent);
+        m_WeightedBlendedPass->AddToGraph(fg, blackboard, transparentRenderables);
+
         // SSAO pass
         m_SSAOPass->AddToGraph(fg, blackboard);
         auto& ssao = blackboard.get<SSAOData>().SSAO;
@@ -131,6 +137,8 @@ namespace SnowLeopardEngine
 
         // Skybox pass
         sceneColor.HDR = m_SkyboxPass->AddToGraph(fg, blackboard, sceneColor.HDR, &m_Skybox);
+
+        sceneColor.HDR = m_TransparencyComposePass->AddToGraph(fg, blackboard, sceneColor.HDR);
 
         // Bloom pass
         auto& [bloom]  = blackboard.add<BrightColorData>();
@@ -176,18 +184,20 @@ namespace SnowLeopardEngine
     {
         auto& rc = *m_RenderContext;
 
-        m_ShadowPrePass        = CreateScope<ShadowPrePass>(rc);
-        m_GBufferPass          = CreateScope<GBufferPass>(rc);
-        m_SSAOPass             = CreateScope<SSAOPass>(rc);
-        m_GaussianBlurPass     = CreateScope<GaussianBlurPass>(rc);
-        m_DeferredLightingPass = CreateScope<DeferredLightingPass>(rc);
-        m_SkyboxPass           = CreateScope<SkyboxPass>(rc);
-        m_BloomPass            = CreateScope<BloomPass>(rc);
-        m_ToneMappingPass      = CreateScope<ToneMappingPass>(rc);
-        m_FXAAPass             = CreateScope<FXAAPass>(rc);
-        m_InGameGUIPass        = CreateScope<InGameGUIPass>(rc);
-        m_BlitUIPass           = CreateScope<BlitUIPass>(rc);
-        m_FinalPass            = CreateScope<FinalPass>(rc);
+        m_ShadowPrePass           = CreateScope<ShadowPrePass>(rc);
+        m_GBufferPass             = CreateScope<GBufferPass>(rc);
+        m_WeightedBlendedPass     = CreateScope<WeightedBlendedPass>(rc);
+        m_SSAOPass                = CreateScope<SSAOPass>(rc);
+        m_GaussianBlurPass        = CreateScope<GaussianBlurPass>(rc);
+        m_DeferredLightingPass    = CreateScope<DeferredLightingPass>(rc);
+        m_SkyboxPass              = CreateScope<SkyboxPass>(rc);
+        m_TransparencyComposePass = CreateScope<TransparencyComposePass>(rc);
+        m_BloomPass               = CreateScope<BloomPass>(rc);
+        m_ToneMappingPass         = CreateScope<ToneMappingPass>(rc);
+        m_FXAAPass                = CreateScope<FXAAPass>(rc);
+        m_InGameGUIPass           = CreateScope<InGameGUIPass>(rc);
+        m_BlitUIPass              = CreateScope<BlitUIPass>(rc);
+        m_FinalPass               = CreateScope<FinalPass>(rc);
     }
 
     void WorldRenderer::CookRenderableScene()

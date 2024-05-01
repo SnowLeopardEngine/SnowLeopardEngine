@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/UpsamplePass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
@@ -59,6 +60,9 @@ namespace SnowLeopardEngine
                 data.Upsampled = builder.write(data.Upsampled);
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("Upsample Pass");
+                SNOW_LEOPARD_PROFILE_GL("Upsample Pass");
+
                 auto& targetTexture = getTexture(resources, data.Upsampled);
 
                 const RenderingInfo renderingInfo {

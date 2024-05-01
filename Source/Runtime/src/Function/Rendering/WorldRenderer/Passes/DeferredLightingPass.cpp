@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
@@ -82,6 +83,9 @@ namespace SnowLeopardEngine
                 data.SceneColor = builder.write(data.SceneColor);
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("Deferred Lighting Pass");
+                SNOW_LEOPARD_PROFILE_GL("Deferred Lighting Pass");
+
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},
                     .ColorAttachments = {{

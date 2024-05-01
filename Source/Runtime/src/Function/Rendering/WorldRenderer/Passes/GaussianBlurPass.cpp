@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GaussianBlurPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
@@ -61,6 +62,9 @@ namespace SnowLeopardEngine
                 data.Output = builder.write(data.Output);
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER(name);
+                SNOW_LEOPARD_PROFILE_GL("Gaussian Blur Pass");
+
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = desc.Extent},
                     .ColorAttachments = {{

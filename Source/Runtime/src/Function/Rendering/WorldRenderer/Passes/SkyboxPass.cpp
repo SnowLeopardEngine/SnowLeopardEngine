@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SkyboxPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
@@ -62,6 +63,9 @@ namespace SnowLeopardEngine
                 target = builder.write(target);
             },
             [=, this](const auto&, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("Skybox Pass");
+                SNOW_LEOPARD_PROFILE_GL("Skybox Pass");
+
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},
                     .ColorAttachments = {{

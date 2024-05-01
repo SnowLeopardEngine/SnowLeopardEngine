@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DownsamplePass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
@@ -62,6 +63,9 @@ namespace SnowLeopardEngine
                 data.Downsampled = builder.write(data.Downsampled);
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("Downsample Pass");
+                SNOW_LEOPARD_PROFILE_GL("Downsample Pass");
+
                 auto& targetTexture = getTexture(resources, data.Downsampled);
 
                 const RenderingInfo renderingInfo {

@@ -6,13 +6,13 @@
 
 namespace SnowLeopardEngine
 {
-    class FinalPass
+    class TransparencyComposePass
     {
     public:
-        explicit FinalPass(RenderContext&);
-        ~FinalPass();
+        explicit TransparencyComposePass(RenderContext&);
+        ~TransparencyComposePass();
 
-        void Compose(FrameGraph&, const FrameGraphBlackboard&);
+        FrameGraphResource AddToGraph(FrameGraph&, FrameGraphBlackboard&, FrameGraphResource target);
 
     private:
         RenderContext&   m_RenderContext;

@@ -1,23 +1,22 @@
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BlitUIPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/TransparencyComposePass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
-#include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
-#include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/WeightedBlendedData.h"
 
 #include <fg/Blackboard.hpp>
 #include <fg/FrameGraph.hpp>
 
 namespace SnowLeopardEngine
 {
-    BlitUIPass::BlitUIPass(RenderContext& rc) : m_RenderContext(rc)
+    TransparencyComposePass::TransparencyComposePass(RenderContext& rc) : m_RenderContext(rc)
     {
         auto vertResult = ShaderCompiler::Compile("Assets/Shaders/FullScreenTriangle.vert");
         SNOW_LEOPARD_CORE_ASSERT(vertResult.Success, "{0}", vertResult.Message);
 
-        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/BlitUIPass.frag");
+        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/TransparencyComposePass.frag");
         SNOW_LEOPARD_CORE_ASSERT(fragResult.Success, "{0}", fragResult.Message);
 
         auto program = m_RenderContext.CreateGraphicsProgram(vertResult.ProgramCode, fragResult.ProgramCode);
@@ -36,40 +35,46 @@ namespace SnowLeopardEngine
                          .SetBlendState(0,
                                         {
                                             .Enabled   = true,
-                                            .SrcColor  = BlendFactor::One,
-                                            .DestColor = BlendFactor::Zero,
+                                            .SrcColor  = BlendFactor::SrcColor,
+                                            .DestColor = BlendFactor::OneMinusSrcColor,
+                                            .SrcAlpha  = BlendFactor::SrcAlpha,
+                                            .DestAlpha = BlendFactor::OneMinusSrcAlpha,
                                         })
                          .Build();
     }
 
-    BlitUIPass::~BlitUIPass() { m_RenderContext.Destroy(m_Pipeline); }
+    TransparencyComposePass::~TransparencyComposePass() { m_RenderContext.Destroy(m_Pipeline); }
 
-    FrameGraphResource BlitUIPass::AddToGraph(FrameGraph& fg, FrameGraphResource target, FrameGraphResource source)
+    FrameGraphResource
+    TransparencyComposePass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard, FrameGraphResource target)
     {
-        assert(target != source);
+        const auto& weightedBlended = blackboard.get<WeightedBlendedData>();
+        const auto  extent          = fg.getDescriptor<FrameGraphTexture>(target).Extent;
 
         fg.addCallbackPass(
-            "Blit Pass",
+            "TransparencyCompose Pass",
             [&](FrameGraph::Builder& builder, auto&) {
-                builder.read(source);
+                builder.read(weightedBlended.Accum);
+                builder.read(weightedBlended.Reveal);
 
                 target = builder.write(target);
             },
-            [=, this](const auto&, FrameGraphPassResources& resources, void* ctx) {
-                NAMED_DEBUG_MARKER("Blit Pass");
-                SNOW_LEOPARD_PROFILE_GL("Blit Pass");
+            [=, this](auto&, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("TransparencyCompose Pass");
+                SNOW_LEOPARD_PROFILE_GL("TransparencyCompose Pass");
 
-                const auto          extent = resources.getDescriptor<FrameGraphTexture>(target).Extent;
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},
                     .ColorAttachments = {{
                         .Image = getTexture(resources, target),
                     }},
                 };
+
                 auto&      rc          = *static_cast<RenderContext*>(ctx);
                 const auto framebuffer = rc.BeginRendering(renderingInfo);
                 rc.BindGraphicsPipeline(m_Pipeline)
-                    .BindTexture(0, getTexture(resources, source))
+                    .BindTexture(0, getTexture(resources, weightedBlended.Accum))
+                    .BindTexture(1, getTexture(resources, weightedBlended.Reveal))
                     .DrawFullScreenTriangle()
                     .EndRendering(framebuffer);
             });

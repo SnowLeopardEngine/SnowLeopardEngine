@@ -15,6 +15,12 @@ float random(vec2 co) {
     return fract(sin(sn) * c);
 }
 
+float max3(vec3 v) { return max(max(v.x, v.y), v.z); }
+
+bool isApproximatelyEqual(float a, float b) {
+  return abs(a - b) <= (abs(a) < abs(b) ? abs(b) : abs(a)) * EPSILON;
+}
+
 mat3 generateTBN(vec3 N) {
     vec3 B = vec3(0.0, 1.0, 0.0);
     float NdotUp = dot(N, vec3(0.0, 1.0, 0.0));

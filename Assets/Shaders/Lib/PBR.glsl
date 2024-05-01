@@ -8,6 +8,7 @@ struct PBRMaterial {
     float metallic;
     float roughness;
     float ao;
+    float opacity;
 };
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0) {

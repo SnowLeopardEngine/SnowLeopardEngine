@@ -1,6 +1,5 @@
 #pragma once
 
-#include "SnowLeopardEngine/Function/Rendering/Pipeline/GraphicsPipeline.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 
 #include <fg/Fwd.hpp>

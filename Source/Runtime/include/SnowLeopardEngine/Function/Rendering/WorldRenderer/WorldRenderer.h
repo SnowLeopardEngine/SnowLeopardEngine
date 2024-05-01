@@ -21,6 +21,8 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SkyboxPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ToneMappingPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/TransparencyComposePass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/WeightedBlendedPass.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
 namespace SnowLeopardEngine
@@ -69,18 +71,20 @@ namespace SnowLeopardEngine
         Scope<IBLDataGenerator> m_IBLDataGenerator = nullptr;
 
         // -------- Passes --------
-        Scope<ShadowPrePass>        m_ShadowPrePass        = nullptr;
-        Scope<GBufferPass>          m_GBufferPass          = nullptr;
-        Scope<SSAOPass>             m_SSAOPass             = nullptr;
-        Scope<GaussianBlurPass>     m_GaussianBlurPass     = nullptr;
-        Scope<DeferredLightingPass> m_DeferredLightingPass = nullptr;
-        Scope<SkyboxPass>           m_SkyboxPass           = nullptr;
-        Scope<BloomPass>            m_BloomPass            = nullptr;
-        Scope<ToneMappingPass>      m_ToneMappingPass      = nullptr;
-        Scope<FXAAPass>             m_FXAAPass             = nullptr;
-        Scope<InGameGUIPass>        m_InGameGUIPass        = nullptr;
-        Scope<BlitUIPass>           m_BlitUIPass           = nullptr;
-        Scope<FinalPass>            m_FinalPass            = nullptr;
+        Scope<ShadowPrePass>           m_ShadowPrePass           = nullptr;
+        Scope<GBufferPass>             m_GBufferPass             = nullptr;
+        Scope<WeightedBlendedPass>     m_WeightedBlendedPass     = nullptr;
+        Scope<SSAOPass>                m_SSAOPass                = nullptr;
+        Scope<GaussianBlurPass>        m_GaussianBlurPass        = nullptr;
+        Scope<DeferredLightingPass>    m_DeferredLightingPass    = nullptr;
+        Scope<SkyboxPass>              m_SkyboxPass              = nullptr;
+        Scope<TransparencyComposePass> m_TransparencyComposePass = nullptr;
+        Scope<BloomPass>               m_BloomPass               = nullptr;
+        Scope<ToneMappingPass>         m_ToneMappingPass         = nullptr;
+        Scope<FXAAPass>                m_FXAAPass                = nullptr;
+        Scope<InGameGUIPass>           m_InGameGUIPass           = nullptr;
+        Scope<BlitUIPass>              m_BlitUIPass              = nullptr;
+        Scope<FinalPass>               m_FinalPass               = nullptr;
 
         // -------- Renderables --------
         std::vector<Renderable> m_Renderables;

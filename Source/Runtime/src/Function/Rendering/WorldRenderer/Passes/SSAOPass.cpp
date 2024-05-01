@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SSAOPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
@@ -36,10 +37,13 @@ namespace SnowLeopardEngine
                 builder.read(gBuffer.Normal);
 
                 data.SSAO =
-                    builder.create<FrameGraphTexture>("SSAO Pass", {.Extent = extent, .Format = PixelFormat::R8_UNorm});
+                    builder.create<FrameGraphTexture>("SSAO Map", {.Extent = extent, .Format = PixelFormat::R8_UNorm});
                 data.SSAO = builder.write(data.SSAO);
             },
             [=, this](const SSAOData& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("SSAO Pass");
+                SNOW_LEOPARD_PROFILE_GL("SSAO Pass");
+
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},
                     .ColorAttachments = {{

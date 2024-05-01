@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Platform/Platform.h"
 
@@ -17,7 +18,7 @@ namespace SnowLeopardEngine
                                   GLchar const* message,
                                   void const* /*userParam*/)
     {
-        if (id == 131185 || id == 131218)
+        if (id == 131185 || id == 131218 || id == 0)
         {
             return;
         }
@@ -123,6 +124,8 @@ namespace SnowLeopardEngine
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
         glDebugMessageCallback(GLMessageCallback, nullptr);
 #endif
+
+        SNOW_LEOPARD_PROFILE_GL_INIT_CONTEXT;
     }
 
     void GraphicsContext::Shutdown() {}

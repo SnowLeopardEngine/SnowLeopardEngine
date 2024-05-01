@@ -1087,4 +1087,10 @@ namespace SnowLeopardEngine
             }
         }
     }
+
+    DebugMarker::DebugMarker(std::string_view name)
+    {
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name.data());
+    }
+    DebugMarker::~DebugMarker() { glPopDebugGroup(); }
 } // namespace SnowLeopardEngine

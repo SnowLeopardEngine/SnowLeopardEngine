@@ -202,4 +202,21 @@ namespace SnowLeopardEngine
         GLuint                                  m_DummyVAO {GL_NONE};
         std::unordered_map<std::size_t, GLuint> m_VertexArrays;
     };
+
+    class DebugMarker
+    {
+    public:
+        explicit DebugMarker(std::string_view name);
+        ~DebugMarker();
+    };
+
+#if 1
+#define NAMED_DEBUG_MARKER(name) \
+    const DebugMarker dm##__LINE__ { name }
+#define DEBUG_MARKER() \
+    const DebugMarker dm##__LINE__ { __FUNCTION__ }
+#else
+#define NAMED_DEBUG_MARKER(name)
+#define DEBUG_MARKER()
+#endif
 } // namespace SnowLeopardEngine

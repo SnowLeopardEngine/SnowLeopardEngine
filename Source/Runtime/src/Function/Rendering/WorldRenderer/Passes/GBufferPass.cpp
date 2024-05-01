@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GBufferPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
@@ -57,6 +58,9 @@ namespace SnowLeopardEngine
                 data.Depth = builder.write(data.Depth);
             },
             [=, this](const GBufferData& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("GBuffer Pass");
+                SNOW_LEOPARD_PROFILE_GL("GBuffer Pass");
+
                 auto& rc = *static_cast<RenderContext*>(ctx);
 
                 constexpr glm::vec4 kBlackColor {0.0f};

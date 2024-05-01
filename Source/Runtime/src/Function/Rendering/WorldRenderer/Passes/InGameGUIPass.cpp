@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/InGameGUIPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
@@ -38,6 +39,9 @@ namespace SnowLeopardEngine
                 data.UIDepth = builder.write(data.UIDepth);
             },
             [=, this](const InGameGUIData& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("In-Game GUI Pass");
+                SNOW_LEOPARD_PROFILE_GL("In-Game GUI Pass");
+
                 auto& rc = *static_cast<RenderContext*>(ctx);
 
                 constexpr glm::vec4 kTransparentBlack {0.0f};

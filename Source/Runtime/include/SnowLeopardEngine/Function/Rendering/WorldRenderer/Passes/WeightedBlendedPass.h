@@ -8,16 +8,13 @@
 
 namespace SnowLeopardEngine
 {
-    class GBufferPass : BaseGeometryPass
+    class WeightedBlendedPass : BaseGeometryPass
     {
     public:
-        explicit GBufferPass(RenderContext& renderContext);
-        ~GBufferPass() = default;
+        explicit WeightedBlendedPass(RenderContext& renderContext);
+        ~WeightedBlendedPass() = default;
 
-        void AddToGraph(FrameGraph&             fg,
-                        FrameGraphBlackboard&   blackboard,
-                        const Extent2D&         resolution,
-                        const RenderableGroups& group);
+        void AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard, std::span<Renderable> transparentRenderables);
 
     protected:
         GraphicsPipeline CreateBasePassPipeline(const VertexFormat&, const Material* material) override final;

@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
@@ -37,6 +38,9 @@ namespace SnowLeopardEngine
                 data.ShadowMap = builder.write(data.ShadowMap);
             },
             [=, this](const ShadowData& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("Shadow Pre-Pass");
+                SNOW_LEOPARD_PROFILE_GL("Shadow Pre-Pass");
+
                 auto& rc = *static_cast<RenderContext*>(ctx);
 
                 constexpr glm::vec4 kBlackColor {0.0f};

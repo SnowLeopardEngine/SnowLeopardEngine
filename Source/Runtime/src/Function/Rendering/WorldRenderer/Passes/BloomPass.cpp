@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BloomPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
@@ -69,6 +70,9 @@ namespace SnowLeopardEngine
                 data.Output      = builder.write(data.Output);
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("Bloom Pass");
+                SNOW_LEOPARD_PROFILE_GL("Bloom Pass");
+
                 auto& rc = *static_cast<RenderContext*>(ctx);
 
                 auto& outputTexture = getTexture(resources, data.Output);
