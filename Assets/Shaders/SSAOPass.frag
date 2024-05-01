@@ -3,20 +3,21 @@
 #include "Common/FrameUniform.glsl"
 #include "Lib/Depth.glsl"
 
+const float kRadius = 0.5;
+const float kBias = 0.025;
+
 layout(location = 0) in vec2 varingTexCoords;
 
-layout(binding = 0) uniform sampler2D gDepth;
-layout(binding = 1) uniform sampler2D gNormal;
-layout(binding = 2) uniform sampler2D noiseMap;
+layout(location = 0) out float FragColor;
+
+layout(location = 0, binding = 0) uniform sampler2D gDepth;
+layout(location = 1, binding = 1) uniform sampler2D gNormal;
+layout(location = 2, binding = 2) uniform sampler2D noiseMap;
 
 layout(binding = 1, std140) uniform KernelBlock {
     vec4 samples[KERNEL_SIZE];
 } uKernel;
 
-const float kRadius = 0.5;
-const float kBias = 0.025;
-
-layout(location = 0) out float FragColor;
 void main() {
     const float depth = texture(gDepth, varingTexCoords).r;
     if(depth >= 1.0)

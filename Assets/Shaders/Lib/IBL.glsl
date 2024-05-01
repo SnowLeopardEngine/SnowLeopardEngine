@@ -4,7 +4,7 @@
 #include "Common/Light.glsl"
 #include "Lib/Texture.glsl"
 
-LightContribution CalIBL(
+LightContribution calIBL(
     vec3 diffuseColor,
     vec3 F0,
     float specularWeight,

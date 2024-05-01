@@ -1,7 +1,7 @@
 #ifndef SHADOW_GLSL
 #define SHADOW_GLSL
 
-float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir, sampler2D shadowMap) {
+float calShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir, sampler2D shadowMap) {
     // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // Transform to [0,1] range

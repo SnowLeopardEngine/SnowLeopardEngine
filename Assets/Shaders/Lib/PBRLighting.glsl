@@ -6,7 +6,7 @@
 #include "Lib/PBR.glsl"
 #include "Lib/IBL.glsl"
 
-vec3 CalDirectionalLight(DirectionalLight directionalLight, vec3 F0, vec3 N, vec3 V, PBRMaterial material) {
+vec3 calDirectionalLight(DirectionalLight directionalLight, vec3 F0, vec3 N, vec3 V, PBRMaterial material) {
     vec3 L = normalize(-directionalLight.direction);
     vec3 H = normalize(V + L);
     vec3 radiance = directionalLight.color * directionalLight.intensity;
@@ -31,7 +31,7 @@ vec3 CalDirectionalLight(DirectionalLight directionalLight, vec3 F0, vec3 N, vec
     return (kD * material.albedo / PI + specular) * radiance * NdotL;
 }
 
-vec3 CalPointLight(PointLight pointLight, vec3 F0, vec3 N, vec3 V, PBRMaterial material, vec3 fragPos) {
+vec3 calPointLight(PointLight pointLight, vec3 F0, vec3 N, vec3 V, PBRMaterial material, vec3 fragPos) {
     vec3 L = normalize(pointLight.position - fragPos);
     vec3 H = normalize(V + L);
     vec3 radiance = pointLight.color * pointLight.intensity;
@@ -56,13 +56,13 @@ vec3 CalPointLight(PointLight pointLight, vec3 F0, vec3 N, vec3 V, PBRMaterial m
     return (kD * material.albedo / PI + specular) * radiance * NdotL;
 }
 
-vec3 CalIBLAmbient(vec3 diffuseColor, vec3 F0, vec3 N, vec3 V, PBRMaterial material, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
+vec3 calIBLAmbient(vec3 diffuseColor, vec3 F0, vec3 N, vec3 V, PBRMaterial material, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
     float NdotV = dot(N, V);
-    LightContribution iblContribution = CalIBL(diffuseColor, F0, 0.5, material.roughness, N, V, NdotV, brdfLUT, irradianceMap, prefilteredEnvMap);
+    LightContribution iblContribution = calIBL(diffuseColor, F0, 0.5, material.roughness, N, V, NdotV, brdfLUT, irradianceMap, prefilteredEnvMap);
     return iblContribution.Diffuse * material.ao + iblContribution.Specular * material.ao;
 }
 
-vec3 CalPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NUM_MAX_POINT_LIGHT], uint numPointLights, vec3 normal, vec3 viewDir, PBRMaterial material, vec3 fragPos, sampler2D shadowMap, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
+vec3 calPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NUM_MAX_POINT_LIGHT], uint numPointLights, vec3 normal, vec3 viewDir, PBRMaterial material, vec3 fragPos, sampler2D shadowMap, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
     vec3 N = normalize(normal);
     vec3 V = normalize(viewDir);
 
@@ -72,18 +72,18 @@ vec3 CalPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NU
 
     vec3 Lo = vec3(0.0);
     // directional light contribution
-    Lo += CalDirectionalLight(directionalLight, F0, N, V, material);
+    Lo += calDirectionalLight(directionalLight, F0, N, V, material);
     // point lights contribution
     for(uint i = 0; i < numPointLights; ++i) {
-        Lo += CalPointLight(pointLights[i], F0, N, V, material, fragPos);
+        Lo += calPointLight(pointLights[i], F0, N, V, material, fragPos);
     }
 
-    Lo += CalIBLAmbient(diffuseColor, F0, N, V, material, brdfLUT, irradianceMap, prefilteredEnvMap);
+    Lo += calIBLAmbient(diffuseColor, F0, N, V, material, brdfLUT, irradianceMap, prefilteredEnvMap);
 
     vec4 fragPosLightSpace = directionalLight.lightSpaceMatrix * vec4(fragPos, 1.0);
-    float shadow = ShadowCalculation(fragPosLightSpace, normal, normalize(-directionalLight.direction), shadowMap);
+    float shadow = calShadow(fragPosLightSpace, normal, normalize(-directionalLight.direction), shadowMap);
 
-    vec3 ambient = vec3(0.03) * material.albedo * material.ao;
+    vec3 ambient = vec3(0.01) * material.albedo * material.ao;
     vec3 color = material.emissive + ambient + (1.0 - shadow) * Lo;
 
     return color;

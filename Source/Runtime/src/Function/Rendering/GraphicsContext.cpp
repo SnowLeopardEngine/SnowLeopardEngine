@@ -17,7 +17,7 @@ namespace SnowLeopardEngine
                                   GLchar const* message,
                                   void const* /*userParam*/)
     {
-        if (id == 131185)
+        if (id == 131185 || id == 131218)
         {
             return;
         }

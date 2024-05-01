@@ -6,6 +6,8 @@
 
 layout(location = 0) in vec2 varingTexCoords;
 
+layout(location = 0) out vec3 FragColor;
+
 layout(location = 0, binding = 0) uniform sampler2D gPosition;
 layout(location = 1, binding = 1) uniform sampler2D gNormal;
 layout(location = 2, binding = 2) uniform sampler2D gAlbedo;
@@ -16,8 +18,6 @@ layout(location = 6, binding = 6) uniform sampler2D brdfLUT;
 layout(location = 7, binding = 7) uniform samplerCube irradianceMap;
 layout(location = 8, binding = 8) uniform samplerCube prefilteredEnvMap;
 layout(location = 9, binding = 9) uniform sampler2D ssao;
-
-layout(location = 0) out vec3 FragColor;
 
 void main() {
     PBRMaterial material;
@@ -38,5 +38,5 @@ void main() {
     material.ao = metallicRoughnessAO.b * texture(ssao, varingTexCoords).r; // combine AO texture & SSAO
 
     vec3 viewDir = normalize(getViewPos() - fragPos);
-    FragColor = CalPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, viewDir, material, fragPos, shadowMap, brdfLUT, irradianceMap, prefilteredEnvMap);
+    FragColor = calPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, viewDir, material, fragPos, shadowMap, brdfLUT, irradianceMap, prefilteredEnvMap);
 }

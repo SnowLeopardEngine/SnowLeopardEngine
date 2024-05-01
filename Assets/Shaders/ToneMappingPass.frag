@@ -11,8 +11,8 @@ layout(location = 0, binding = 0) uniform sampler2D texture0;
 void main() {
     const vec4 source = texture(texture0, varyTexCoords);
 
-    vec3 color = LinearToGamma(source.rgb);
-    color = ToneMapACES(color);
+    vec3 color = linearToGamma(source.rgb);
+    color = toneMapACES(color);
 
     FragColor = color;
 }

@@ -11,10 +11,9 @@ layout(location = 0) in vec2 varingTexCoords;
 
 layout(location = 0) out vec3 FragColor;
 
-layout(binding = 0) uniform sampler2D texture0;
-
-layout(location = 0) uniform bool horizontal;
-layout(location = 1) uniform float scale = 1.0;
+layout(location = 0, binding = 0) uniform sampler2D texture0;
+layout(location = 1) uniform bool horizontal;
+layout(location = 2) uniform float scale = 1.0;
 
 vec3 HorizontalBlur() {
     const float texOffset = getTexelSize(texture0).x * scale;

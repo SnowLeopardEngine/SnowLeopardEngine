@@ -109,7 +109,8 @@ namespace SnowLeopardEngine
             return;
         }
 
-        rc.BindTexture(m_TextureSlot++, *texture);
+        rc.BindTexture(m_TextureSlot, *texture);
+        rc.SetUniform1i(propertyName, m_TextureSlot++);
     }
 
     void Material::SetCubemap(RenderContext&                            rc,

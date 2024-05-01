@@ -4,8 +4,8 @@
 
 layout(location = 0) in vec3 fragPos;
 
-layout(binding = 0) uniform sampler2D equirectangularMap;
-layout(location = 1) uniform bool invertY = false;
+layout(location = 1, binding = 0) uniform sampler2D equirectangularMap;
+layout(location = 2) uniform bool invertY = false;
 
 vec2 SampleSphericalMap(vec3 dir) {
     vec2 v = vec2(atan(dir.z, dir.x), asin(dir.y));

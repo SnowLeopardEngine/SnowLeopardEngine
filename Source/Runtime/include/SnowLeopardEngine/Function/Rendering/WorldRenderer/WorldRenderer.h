@@ -10,6 +10,7 @@
 #include "SnowLeopardEngine/Function/Rendering/Tools/CubemapConverter.h"
 #include "SnowLeopardEngine/Function/Rendering/Tools/IBLDataGenerator.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BlitUIPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BloomPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FXAAPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FinalPass.h"
@@ -74,6 +75,7 @@ namespace SnowLeopardEngine
         Scope<GaussianBlurPass>     m_GaussianBlurPass     = nullptr;
         Scope<DeferredLightingPass> m_DeferredLightingPass = nullptr;
         Scope<SkyboxPass>           m_SkyboxPass           = nullptr;
+        Scope<BloomPass>            m_BloomPass            = nullptr;
         Scope<ToneMappingPass>      m_ToneMappingPass      = nullptr;
         Scope<FXAAPass>             m_FXAAPass             = nullptr;
         Scope<InGameGUIPass>        m_InGameGUIPass        = nullptr;

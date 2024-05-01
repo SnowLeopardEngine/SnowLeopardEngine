@@ -20,13 +20,13 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SkyboxPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ToneMappingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/BRDFData.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/BrightColorData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GlobalLightProbeData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/InGameGUIData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SSAOData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SceneColorData.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
-
 
 #include <fg/Blackboard.hpp>
 #include <fg/FrameGraph.hpp>
@@ -132,19 +132,24 @@ namespace SnowLeopardEngine
         // Skybox pass
         sceneColor.HDR = m_SkyboxPass->AddToGraph(fg, blackboard, sceneColor.HDR, &m_Skybox);
 
+        // Bloom pass
+        auto& [bloom]  = blackboard.add<BrightColorData>();
+        bloom          = m_BloomPass->Resample(fg, sceneColor.HDR, 0.005f);
+        sceneColor.HDR = m_BloomPass->Compose(fg, sceneColor.HDR, bloom, 0.04f);
+
         // Tone-Mapping pass
         sceneColor.LDR = m_ToneMappingPass->AddToGraph(fg, sceneColor.HDR);
-
-        // FXAA pass
-        sceneColor.LDR = m_FXAAPass->AddToGraph(fg, sceneColor.LDR);
 
         // In-Game GUI pass
         auto uiRenderables = FilterRenderables(m_Renderables, isUI);
         m_InGameGUIPass->AddToGraph(fg, blackboard, m_Viewport.Extent, uiRenderables);
 
-        // Blit pass
+        // Blit UI pass
         auto& [uiTarget, _] = blackboard.get<InGameGUIData>();
         sceneColor.LDR      = m_BlitUIPass->AddToGraph(fg, sceneColor.LDR, uiTarget);
+
+        // FXAA pass
+        sceneColor.LDR = m_FXAAPass->AddToGraph(fg, sceneColor.LDR);
 
         // Final composition
         m_FinalPass->Compose(fg, blackboard);
@@ -177,6 +182,7 @@ namespace SnowLeopardEngine
         m_GaussianBlurPass     = CreateScope<GaussianBlurPass>(rc);
         m_DeferredLightingPass = CreateScope<DeferredLightingPass>(rc);
         m_SkyboxPass           = CreateScope<SkyboxPass>(rc);
+        m_BloomPass            = CreateScope<BloomPass>(rc);
         m_ToneMappingPass      = CreateScope<ToneMappingPass>(rc);
         m_FXAAPass             = CreateScope<FXAAPass>(rc);
         m_InGameGUIPass        = CreateScope<InGameGUIPass>(rc);
