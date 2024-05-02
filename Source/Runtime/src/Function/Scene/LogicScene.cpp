@@ -6,9 +6,9 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/IO/MaterialLoader.h"
 #include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
@@ -234,21 +234,35 @@ namespace SnowLeopardEngine
             // TODO: Move to AssetManager
             if (FileSystem::Exists(renderer.MaterialFilePath))
             {
-                renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
+                renderer.Mat = IO::Load(renderer.MaterialFilePath);
             }
         });
         m_Registry.view<TerrainRendererComponent>().each([](entt::entity entity, TerrainRendererComponent& renderer) {
             // TODO: Move to AssetManager
             if (FileSystem::Exists(renderer.MaterialFilePath))
             {
-                renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
+                renderer.Mat = IO::Load(renderer.MaterialFilePath);
             }
         });
-        m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
+        m_Registry.view<UI::ImageComponent>().each([](entt::entity e, UI::ImageComponent& image) {
             // TODO: Move to AssetManager
-            if (FileSystem::Exists(camera.SkyboxMaterialFilePath))
+            if (FileSystem::Exists(image.MaterialFilePath))
             {
-                camera.SkyboxMaterial = DzMaterial::LoadFromPath(camera.SkyboxMaterialFilePath);
+                image.Mat = IO::Load(image.MaterialFilePath);
+            }
+        });
+        m_Registry.view<UI::ButtonComponent>().each([](entt::entity e, UI::ButtonComponent& button) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(button.MaterialFilePath))
+            {
+                button.Mat = IO::Load(button.MaterialFilePath);
+            }
+        });
+        m_Registry.view<UI::TextComponent>().each([](entt::entity e, UI::TextComponent& text) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(text.MaterialFilePath))
+            {
+                text.Mat = IO::Load(text.MaterialFilePath);
             }
         });
 
@@ -469,8 +483,9 @@ namespace SnowLeopardEngine
     {
         Entity directionalLight          = CreateEntity("Directional Light");
         auto&  directionalLightComponent = directionalLight.AddComponent<DirectionalLightComponent>();
-        directionalLightComponent.ShadowMaterial =
-            DzMaterial::LoadFromPath("Assets/Materials/Legacy/ShadowMapping.dzmaterial");
+        // FIXME:
+        // directionalLightComponent.ShadowMaterial =
+        //     DzMaterial::LoadFromPath("Assets/Materials/Legacy/ShadowMapping.dzmaterial");
     }
 
     std::string LogicScene::GetNameFromEntity(Entity entity) const
@@ -556,6 +571,7 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(CameraComponent) {}
     ON_COMPONENT_ADDED(FreeMoveCameraControllerComponent) {}
     ON_COMPONENT_ADDED(DirectionalLightComponent) {}
+    ON_COMPONENT_ADDED(PointLightComponent) {}
     ON_COMPONENT_ADDED(MeshFilterComponent) {}
     ON_COMPONENT_ADDED(MeshRendererComponent) {}
     ON_COMPONENT_ADDED(TerrainComponent) {}

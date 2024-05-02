@@ -8,8 +8,7 @@
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
-#include "SnowLeopardEngine/Function/Rendering/RHI/Texture.h"
+#include "SnowLeopardEngine/Function/Rendering/Material.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/LayerManager.h"
 #include "SnowLeopardEngine/Function/Scene/TagManager.h"
@@ -530,10 +529,8 @@ namespace SnowLeopardEngine
         float            ViewportHeight = 0;
         bool             IsPrimary      = true;
 
-        Ref<Cubemap>          Cubemap = nullptr;
-        std::filesystem::path SkyboxMaterialFilePath;
-        Ref<DzMaterial>       SkyboxMaterial = nullptr;
-        MeshItem              SkyboxCubeMesh = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
+        bool                  IsEnvironmentMapHDR    = true;
+        std::filesystem::path EnvironmentMapFilePath = "Assets/Textures/DefaultSky.hdr";
 
         // NOLINTBEGIN
         template<class Archive>
@@ -546,7 +543,7 @@ namespace SnowLeopardEngine
                     CEREAL_NVP(Near),
                     CEREAL_NVP(Far),
                     CEREAL_NVP(IsPrimary),
-                    CEREAL_NVP(SkyboxMaterialFilePath));
+                    CEREAL_NVP(EnvironmentMapFilePath));
         }
         // NOLINTEND
 
@@ -584,10 +581,8 @@ namespace SnowLeopardEngine
         COMPONENT_NAME(DirectionalLight)
 
         glm::vec3 Direction = glm::normalize(glm::vec3(-0.6, -1, -1.2));
-        float     Intensity = 0.8;
+        float     Intensity = 5.0;
         glm::vec3 Color     = {1, 0.996, 0.885};
-
-        Ref<DzMaterial> ShadowMaterial = nullptr;
 
         // NOLINTBEGIN
         template<class Archive>
@@ -599,6 +594,33 @@ namespace SnowLeopardEngine
 
         DirectionalLightComponent()                                 = default;
         DirectionalLightComponent(const DirectionalLightComponent&) = default;
+    };
+
+    struct PointLightComponent
+    {
+        COMPONENT_NAME(PointLight)
+
+        glm::vec3 Color = {1, 0.996, 0.885};
+
+        float Constant  = 1.0f;
+        float Linear    = 0.09f;
+        float Quadratic = 0.032f;
+        float Intensity = 10.0;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(Color),
+                    CEREAL_NVP(Constant),
+                    CEREAL_NVP(Linear),
+                    CEREAL_NVP(Quadratic),
+                    CEREAL_NVP(Intensity));
+        }
+        // NOLINTEND
+
+        PointLightComponent()                           = default;
+        PointLightComponent(const PointLightComponent&) = default;
     };
 
     struct MeshFilterComponent
@@ -651,7 +673,7 @@ namespace SnowLeopardEngine
         bool CastShadow = true;
 
         std::filesystem::path MaterialFilePath;
-        Ref<DzMaterial>       Material;
+        Material*             Mat = nullptr;
 
         // NOLINTBEGIN
         template<class Archive>
@@ -764,6 +786,7 @@ namespace SnowLeopardEngine
             COMPONENT_NAME(RectTransformComponent)
 
             glm::vec3 Pos;
+            float     RotationAngle = 0;
             glm::vec2 Size;
             glm::vec2 Pivot = {0.5, 0.5};
 
@@ -771,7 +794,7 @@ namespace SnowLeopardEngine
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive(CEREAL_NVP(Pos), CEREAL_NVP(Size), CEREAL_NVP(Pivot));
+                archive(CEREAL_NVP(Pos), CEREAL_NVP(RotationAngle), CEREAL_NVP(Size), CEREAL_NVP(Pivot));
             }
             // NOLINTEND
 
@@ -788,11 +811,14 @@ namespace SnowLeopardEngine
 
             MeshItem ImageMesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
 
+            std::filesystem::path MaterialFilePath;
+            Material*             Mat = nullptr;
+
             // NOLINTBEGIN
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive(CEREAL_NVP(TintType), CEREAL_NVP(TintColor));
+                archive(CEREAL_NVP(TintType), CEREAL_NVP(TintColor), CEREAL_NVP(MaterialFilePath));
             }
             // NOLINTEND
 
@@ -802,16 +828,21 @@ namespace SnowLeopardEngine
 
         struct ImageComponent
         {
-            CoreUUID  TargetGraphicUUID;
+            std::filesystem::path TargetGraphicPath;
+            RenderTarget          TargetGraphic = nullptr;
+
             glm::vec4 Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
             MeshItem ImageMesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
+
+            std::filesystem::path MaterialFilePath;
+            Material*             Mat = nullptr;
 
             // NOLINTBEGIN
             template<class Archive>
             void serialize(Archive& archive)
             {
-                archive(CEREAL_NVP(TargetGraphicUUID), CEREAL_NVP(Color));
+                archive(CEREAL_NVP(TargetGraphicPath), CEREAL_NVP(Color), CEREAL_NVP(MaterialFilePath));
             }
             // NOLINTEND
 
@@ -823,7 +854,7 @@ namespace SnowLeopardEngine
         {
             std::string  TextContent;
             std::string  FontFilePath;
-            unsigned int FontSize = 24;
+            unsigned int FontSize = 12;
             glm::vec4    Color    = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             enum Alignment
             {
@@ -831,6 +862,11 @@ namespace SnowLeopardEngine
                 Center,
                 Right
             } TextAlignment = Center;
+
+            MeshItem Mesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
+
+            std::filesystem::path MaterialFilePath;
+            Material*             Mat = nullptr;
 
             // NOLINTBEGIN
             template<class Archive>
@@ -858,9 +894,9 @@ namespace SnowLeopardEngine
     TagComponent, LayerComponent, TreeNodeComponent, TransformComponent, EntityStatusComponent, \
         NativeScriptingComponent, RigidBodyComponent, SphereColliderComponent, BoxColliderComponent, \
         CapsuleColliderComponent, TerrainColliderComponent, CharacterControllerComponent, MeshColliderComponent, \
-        CameraComponent, FreeMoveCameraControllerComponent, DirectionalLightComponent, BaseRendererComponent, \
-        MeshFilterComponent, MeshRendererComponent, TerrainComponent, TerrainRendererComponent, UI::CanvasComponent, \
-        UI::RectTransformComponent, UI::ButtonComponent //, UI::ImageComponent, UI::TextComponent
+        CameraComponent, FreeMoveCameraControllerComponent, DirectionalLightComponent, PointLightComponent, \
+        BaseRendererComponent, MeshFilterComponent, MeshRendererComponent, TerrainComponent, TerrainRendererComponent, \
+        UI::CanvasComponent, UI::RectTransformComponent, UI::ButtonComponent, UI::ImageComponent, UI::TextComponent
 
 #define ALL_SERIALIZABLE_COMPONENT_TYPES COMMON_COMPONENT_TYPES, IDComponent, NameComponent
 

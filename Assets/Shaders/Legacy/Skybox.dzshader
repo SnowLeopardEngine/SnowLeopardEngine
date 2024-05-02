@@ -15,7 +15,8 @@
             "CullFaceMode": "NoCull"
         },
         "Tags": {
-            "RenderQueue": "Sky"
+            "RenderQueue": "Sky",
+            "LightingMode": "Forward"
         },
         "Keywords": [
             "FORWARD_LIGHTING"

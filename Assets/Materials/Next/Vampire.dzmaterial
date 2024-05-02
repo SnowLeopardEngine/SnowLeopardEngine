@@ -1,0 +1,42 @@
+{
+    "DzMaterial": {
+        "Name": "Vampire",
+        "RenderQueue": "Opaque",
+        "Properties": [
+            {
+                "Name": "albedoMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Models/Vampire/textures/Vampire_diffuse_transparent.png"
+            },
+            {
+                "Name": "useAlbedoMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "emissiveMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Models/Vampire/textures/Vampire_emission.png"
+            },
+            {
+                "Name": "useEmissiveMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "roughness",
+                "Type": "Float",
+                "Value": "0.8"
+            },
+            {
+                "Name": "ao",
+                "Type": "Float",
+                "Value": "1"
+            }
+        ],
+        "UserVertPath": "",
+        "UserFragPath": "",
+        "EnableInstancing": false,
+        "TextureFlipY": false
+    }
+}

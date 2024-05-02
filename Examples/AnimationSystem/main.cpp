@@ -1,9 +1,8 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
-#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
@@ -44,7 +43,6 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
@@ -57,7 +55,7 @@ public:
         auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
         floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
         auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.MaterialFilePath = "Assets/Materials/Red.dzmaterial";
+        floorMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Red.dzmaterial";
 
         OzzModelLoadConfig config = {};
         config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
@@ -74,7 +72,7 @@ public:
         // characterMeshFilter.FilePath           = "Assets/Models/Walking.fbx";
         characterMeshFilter.Meshes             = &g_Model->Meshes;
         auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
+        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
         auto animator = CreateRef<Animator>(g_Model->AnimationClips[0]);
@@ -86,7 +84,7 @@ private:
     EngineContext* m_EngineContext;
 };
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) TRY
 {
     REGISTER_TYPE(EscScript);
 
@@ -117,3 +115,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+CATCH

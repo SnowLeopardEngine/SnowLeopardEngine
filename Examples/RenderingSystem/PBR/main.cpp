@@ -1,8 +1,8 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
@@ -13,12 +13,6 @@ using namespace SnowLeopardEngine;
 class EscScript : public NativeScriptInstance
 {
 public:
-    virtual void OnColliderEnter() override
-    {
-        SNOW_LEOPARD_INFO("[SphereScript] OnColliderEnter");
-        DesktopApp::GetInstance()->GetEngine()->GetContext()->AudioSys->Play("sounds/jump.mp3");
-    }
-
     virtual void OnTick(float deltaTime) override
     {
         auto& inputSystem = DesktopApp::GetInstance()->GetEngine()->GetContext()->InputSys;
@@ -44,6 +38,19 @@ static Entity CreateSphere(const std::string& materialFilePath, const glm::vec3&
     return sphere;
 }
 
+static Entity CreatePointLight(const glm::vec3& position, const glm::vec3& color, const Ref<LogicScene>& scene)
+{
+    Entity pointLight            = scene->CreateEntity("Point Light");
+    auto&  pointLightTransform   = pointLight.GetComponent<TransformComponent>();
+    pointLightTransform.Position = position;
+    auto& pointLightComponent    = pointLight.AddComponent<PointLightComponent>();
+    pointLightComponent.Color    = color;
+
+    pointLightComponent.Intensity = 100; // To test HDR & ToneMapping
+
+    return pointLight;
+}
+
 class CustomLifeTime final : public LifeTimeComponent
 {
 public:
@@ -62,42 +69,60 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterial = DzMaterial::LoadFromPath("Assets/Materials/Skybox001.dzmaterial");
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
         camera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EscScript));
 
         // Load materials
-        const std::string redMaterialFilePath = "Assets/Materials/Red.dzmaterial";
-        const std::string pbrMaterialFilePath = "Assets/Materials/RustedIronPBR.dzmaterial";
+        const std::string deferredWhiteMaterialFilePath = "Assets/Materials/Next/White.dzmaterial";
+        const std::string deferredPBRMaterialFilePath   = "Assets/Materials/Next/RustedIronPBRDeferred.dzmaterial";
+        const std::string pureMetalMaterialFilePath     = "Assets/Materials/Next/PureMetal.dzmaterial";
+        const std::string transWhiteMaterialFilePath    = "Assets/Materials/Next/WhiteTransparent.dzmaterial";
+        const std::string transRedMaterialFilePath      = "Assets/Materials/Next/RedTransparent.dzmaterial";
+        const std::string plasticMaterialFilePath       = "Assets/Materials/Next/Plastic015A.dzmaterial";
+        const std::string woodMaterialFilePath          = "Assets/Materials/Next/Wood049.dzmaterial";
+        const std::string metalMaterialFilePath         = "Assets/Materials/Next/Metal042A.dzmaterial";
 
         // Create spheres to test materials
-        // Sphere 1
-        Entity sphere1 = CreateSphere(pbrMaterialFilePath, {-21, 10, 0}, scene);
-        Entity sphere2 = CreateSphere(redMaterialFilePath, {-15, 10, 0}, scene);
-        Entity sphere3 = CreateSphere(redMaterialFilePath, {-9, 10, 0}, scene);
-        Entity sphere4 = CreateSphere(redMaterialFilePath, {-3, 10, 0}, scene);
-        Entity sphere5 = CreateSphere(redMaterialFilePath, {3, 10, 0}, scene);
-        Entity sphere6 = CreateSphere(redMaterialFilePath, {9, 10, 0}, scene);
-        Entity sphere7 = CreateSphere(redMaterialFilePath, {15, 10, 0}, scene);
-        Entity sphere8 = CreateSphere(redMaterialFilePath, {21, 10, 0}, scene);
+        Entity sphere1 = CreateSphere(deferredPBRMaterialFilePath, {-21, 10, 0}, scene);
+        Entity sphere2 = CreateSphere(pureMetalMaterialFilePath, {-15, 10, 0}, scene);
+        Entity sphere3 = CreateSphere(transWhiteMaterialFilePath, {-9, 10, 0}, scene);
+        Entity sphere4 = CreateSphere(transRedMaterialFilePath, {-3, 10, 0}, scene);
+        Entity sphere5 = CreateSphere(plasticMaterialFilePath, {3, 10, 0}, scene);
+        Entity sphere6 = CreateSphere(woodMaterialFilePath, {9, 10, 0}, scene);
+        Entity sphere7 = CreateSphere(metalMaterialFilePath, {15, 10, 0}, scene);
+        Entity sphere8 = CreateSphere(deferredWhiteMaterialFilePath, {21, 10, 0}, scene);
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
 
-        auto& floorTransform          = floor.GetComponent<TransformComponent>();
-        floorTransform.Scale          = {100, 1, 100};
-        auto& floorMeshFilter         = floor.AddComponent<MeshFilterComponent>();
-        floorMeshFilter.PrimitiveType = MeshPrimitiveType::Cube;
-        auto& floorMeshRenderer       = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.Material    = DzMaterial::LoadFromPath("Assets/Materials/White.dzmaterial");
+        auto& floorTransform               = floor.GetComponent<TransformComponent>();
+        floorTransform.Scale               = {100, 1, 100};
+        auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
+        floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
+        auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
+        floorMeshRenderer.MaterialFilePath = deferredWhiteMaterialFilePath;
+
+        // Create 4 point lights
+
+        // red
+        // CreatePointLight(glm::vec3(-50, 20, 50), glm::vec3(1, 0, 0), scene);
+
+        // // green
+        // CreatePointLight(glm::vec3(-50, 20, -50), glm::vec3(0, 1, 0), scene);
+
+        // // blue
+        // CreatePointLight(glm::vec3(50, 20, 50), glm::vec3(0, 0, 1), scene);
+
+        // // yellow
+        // CreatePointLight(glm::vec3(50, 20, -50), glm::vec3(1, 1, 0), scene);
     }
 
 private:
     EngineContext* m_EngineContext;
 };
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) TRY
 {
     REGISTER_TYPE(EscScript);
 
@@ -124,3 +149,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+CATCH

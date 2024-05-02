@@ -23,6 +23,7 @@ namespace SnowLeopardEngine
         bool GetMouseButtonUp(MouseCode button);
 
         glm::vec2 GetMousePosition() { return m_MousePosition; }
+        glm::vec2 GetMousePositionFlipY() { return m_MousePositionFlipY; }
         glm::vec2 GetMouseScrollDelta() { return m_MouseScrollDelta; }
 
     private:
@@ -36,6 +37,7 @@ namespace SnowLeopardEngine
         void SetKeyState(int key, int action);
         void SetMouseButtonState(int button, int action);
         void SetMousePosition(const glm::vec2& position) { m_MousePosition = position; }
+        void SetMousePositionFlipY(const glm::vec2& positionFlipY) { m_MousePositionFlipY = positionFlipY; }
         void SetMouseScrollDelta(const glm::vec2& scrollDelta) { m_MouseScrollDelta = scrollDelta; };
 
         void ClearStates();
@@ -51,7 +53,8 @@ namespace SnowLeopardEngine
         std::map<int, bool> m_MouseButtonDownStates;
         std::map<int, bool> m_MouseButtonUpStates;
 
-        glm::vec2 m_MousePosition    = {0, 0};
-        glm::vec2 m_MouseScrollDelta = {0, 0};
+        glm::vec2 m_MousePosition      = {0, 0};
+        glm::vec2 m_MousePositionFlipY = {0, 0};
+        glm::vec2 m_MouseScrollDelta   = {0, 0};
     };
 } // namespace SnowLeopardEngine

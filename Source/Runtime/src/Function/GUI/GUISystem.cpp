@@ -39,22 +39,22 @@ namespace SnowLeopardEngine
         if (g_EngineContext->InputSys->GetMouseButtonDown(MouseCode::ButtonLeft))
         {
             leftMouseButtonDown = true;
-            mousePos            = g_EngineContext->InputSys->GetMousePosition();
+            mousePos            = g_EngineContext->InputSys->GetMousePositionFlipY();
         }
 
         if (g_EngineContext->InputSys->GetMouseButtonUp(MouseCode::ButtonLeft))
         {
             leftMouseButtonUp = true;
-            mousePos          = g_EngineContext->InputSys->GetMousePosition();
+            mousePos          = g_EngineContext->InputSys->GetMousePositionFlipY();
         }
 
         registry.view<UI::RectTransformComponent, UI::ButtonComponent>().each(
             [&registry, mousePos, leftMouseButtonDown, leftMouseButtonUp](
                 entt::entity entity, UI::RectTransformComponent& rect, UI::ButtonComponent& button) {
-                glm::vec2 tl = glm::vec2(rect.Pos) - glm::vec2(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y);
+                glm::vec2 bl = glm::vec2(rect.Pos) - glm::vec2(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y);
 
-                if (mousePos.x >= tl.x && mousePos.x < tl.x + rect.Size.x && mousePos.y >= tl.y &&
-                    mousePos.y < tl.y + rect.Size.y)
+                if (mousePos.x >= bl.x && mousePos.x < bl.x + rect.Size.x && mousePos.y >= bl.y &&
+                    mousePos.y < bl.y + rect.Size.y)
                 {
                     if (leftMouseButtonDown)
                     {

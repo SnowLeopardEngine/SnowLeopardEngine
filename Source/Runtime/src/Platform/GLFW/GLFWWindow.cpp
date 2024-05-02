@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Platform/GLFW/GLFWWindow.h"
 #include "SnowLeopardEngine/Core/Event/WindowEvents.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
@@ -62,7 +63,7 @@ namespace SnowLeopardEngine
         glfwGetFramebufferSize(m_Window, &frameBufferWidth, &frameBufferHeight);
         m_Data.Width  = frameBufferWidth;
         m_Data.Height = frameBufferHeight;
-        
+
         // Get vid mode
         const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
@@ -136,6 +137,7 @@ namespace SnowLeopardEngine
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
             WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
+            g_EngineContext->InputSys->SetMousePositionFlipY(glm::vec2(xPos, data.Height - yPos));
             g_EngineContext->InputSys->SetMousePosition(glm::vec2(xPos, yPos));
         });
 
@@ -171,7 +173,11 @@ namespace SnowLeopardEngine
 
     void GLFWWindow::MakeCurrentContext() { glfwMakeContextCurrent(m_Window); }
 
-    void GLFWWindow::SwapBuffers() { glfwSwapBuffers(m_Window); }
+    void GLFWWindow::SwapBuffers()
+    {
+        glfwSwapBuffers(m_Window);
+        SNOW_LEOPARD_PROFILE_GL_COLLECT;
+    }
 
     void GLFWWindow::SetHideCursor(bool hide)
     {

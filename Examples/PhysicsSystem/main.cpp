@@ -1,10 +1,9 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
-#include "glm/fwd.hpp"
 #include <SnowLeopardEngine/Core/Time/Time.h>
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
@@ -54,7 +53,6 @@ public:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterialFilePath             = "Assets/Materials/Skybox001.dzmaterial";
 
         camera.AddComponent<FreeMoveCameraControllerComponent>();
 
@@ -77,7 +75,7 @@ public:
         auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
         sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
         auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
+        sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Blue.dzmaterial";
 
         sphere.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(SphereScript));
 
@@ -91,7 +89,7 @@ public:
         testSphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
         auto& testSphereMeshCollider            = testSphere.AddComponent<MeshColliderComponent>();
         auto& testSphereMeshRenderer            = testSphere.AddComponent<MeshRendererComponent>();
-        testSphereMeshRenderer.MaterialFilePath = "Assets/Materials/Red.dzmaterial";
+        testSphereMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Red.dzmaterial";
 
         // // Create a floor with RigidBodyComponent & BoxColliderComponent
         // Entity floor = scene->CreateEntity("Floor");
@@ -110,28 +108,28 @@ public:
         // Create a terrain
         int    heightMapWidth                               = 100;
         int    heightMapHeight                              = 100;
-        float  xScale                                       = 3;
-        float  yScale                                       = 3;
-        float  zScale                                       = 8;
+        float  xScale                                       = 1;
+        float  yScale                                       = 1;
+        float  zScale                                       = 1;
         Entity terrain                                      = scene->CreateEntity("Terrain");
         terrain.GetComponent<TransformComponent>().Position = {
             -heightMapWidth * 0.5f * xScale, 0, -heightMapHeight * 0.5f * zScale}; // fix center
         auto& terrainComponent = terrain.AddComponent<TerrainComponent>();
         terrainComponent.TerrainHeightMap =
-            Utils::GenerateWaveHeightMap(heightMapWidth, heightMapHeight); // create a 100 x 100 height map
+            Utils::GenerateWaveHeightMap(heightMapWidth, heightMapHeight);
         terrainComponent.XScale = xScale;
         terrainComponent.YScale = yScale;
         terrainComponent.ZScale = zScale;
         terrain.AddComponent<TerrainColliderComponent>(normalMaterial);
-        auto& terrainRenderer    = terrain.AddComponent<TerrainRendererComponent>();
-        terrainRenderer.Material = DzMaterial::LoadFromPath("Assets/Materials/CoolGay.dzmaterial");
+        auto& terrainRenderer            = terrain.AddComponent<TerrainRendererComponent>();
+        terrainRenderer.MaterialFilePath = "Assets/Materials/Next/Green.dzmaterial";
     }
 
 private:
     EngineContext* m_EngineContext;
 };
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) TRY
 {
     REGISTER_TYPE(SphereScript);
 
@@ -158,3 +156,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+CATCH
