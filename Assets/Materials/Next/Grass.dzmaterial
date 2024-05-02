@@ -1,7 +1,7 @@
 {
     "DzMaterial": {
         "Name": "Grass",
-        "RenderQueue": "Opaque",
+        "RenderQueue": "Transparent",
         "Properties": [
             {
                 "Name": "albedoMap",
@@ -14,18 +14,28 @@
                 "Value": "1"
             },
             {
+                "Name": "metallic",
+                "Type": "Float",
+                "Value": "0.8"
+            },
+            {
                 "Name": "roughness",
                 "Type": "Float",
-                "Value": "0.5"
+                "Value": "0.2"
             },
             {
                 "Name": "ao",
                 "Type": "Float",
                 "Value": "1"
+            },
+            {
+                "Name": "opacity",
+                "Type": "Float",
+                "Value": "1"
             }
         ],
         "UserVertPath": "",
-        "UserFragPath": "",
+        "UserFragPath": "Assets/Shaders/Grass.frag",
         "EnableInstancing": true,
         "TextureFlipY": true
     }

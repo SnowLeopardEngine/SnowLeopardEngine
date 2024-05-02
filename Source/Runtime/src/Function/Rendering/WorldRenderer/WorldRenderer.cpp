@@ -124,7 +124,8 @@ namespace SnowLeopardEngine
 
         // Weighted Blended OIT Pass
         auto transparentRenderables = FilterRenderables(visableRenderables, isTransparent);
-        m_WeightedBlendedPass->AddToGraph(fg, blackboard, transparentRenderables);
+        auto transGroups            = FilterRenderableGroups(transparentRenderables);
+        m_WeightedBlendedPass->AddToGraph(fg, blackboard, transGroups);
 
         // SSAO pass
         m_SSAOPass->AddToGraph(fg, blackboard);

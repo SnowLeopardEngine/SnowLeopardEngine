@@ -8,13 +8,13 @@
 
 namespace SnowLeopardEngine
 {
-    class WeightedBlendedPass : BaseGeometryPass
+    class GrassPass : BaseGeometryPass
     {
     public:
-        explicit WeightedBlendedPass(RenderContext& renderContext);
-        ~WeightedBlendedPass() = default;
+        explicit GrassPass(RenderContext& renderContext);
+        ~GrassPass() = default;
 
-        void AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard, const RenderableGroups& groups);
+        FrameGraphResource AddToGraph(FrameGraph&, FrameGraphBlackboard&, const RenderableGroups& group);
 
     protected:
         GraphicsPipeline CreateBasePassPipeline(const VertexFormat&, const Material* material) override final;

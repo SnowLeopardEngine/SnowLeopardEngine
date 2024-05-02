@@ -11,7 +11,8 @@ namespace SnowLeopardEngine
     enum class RenderableType
     {
         Default = 0,
-        UI
+        UI,
+        Grass
     };
 
     struct RenderableUISpecs

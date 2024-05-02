@@ -854,7 +854,7 @@ namespace SnowLeopardEngine
         {
             std::string  TextContent;
             std::string  FontFilePath;
-            unsigned int FontSize = 24;
+            unsigned int FontSize = 12;
             glm::vec4    Color    = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             enum Alignment
             {

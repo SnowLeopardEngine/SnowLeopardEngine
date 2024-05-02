@@ -89,46 +89,39 @@ public:
         const std::string uiImageMaterialPath = "Assets/Materials/Next/UIImage.dzmaterial";
         const std::string uiTextMaterialPath  = "Assets/Materials/Next/UIText.dzmaterial";
 
-        Entity coolGayButton                      = scene->CreateEntity("CoolGayButton");
-        auto&  coolGayButtonRect                  = coolGayButton.AddComponent<UI::RectTransformComponent>();
-        coolGayButtonRect.Size                    = {100, 60};
-        coolGayButtonRect.Pivot                   = {0, 0};
-        coolGayButtonRect.Pos                     = {10, 10, 0};
-        auto& coolGayButtonComp                   = coolGayButton.AddComponent<UI::ButtonComponent>();
-        coolGayButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/CoolGay.png", *tempRC);
-        coolGayButtonComp.MaterialFilePath        = uiImageMaterialPath;
+        // Create an background panel (image)
+        Entity panelImage = scene->CreateEntity("PanelImage");
+        auto&  panelRect  = panelImage.AddComponent<UI::RectTransformComponent>();
 
-        Entity awesomeFaceButton                      = scene->CreateEntity("AwesomeFaceButton");
-        auto&  awesomeFaceButtonRect                  = awesomeFaceButton.AddComponent<UI::RectTransformComponent>();
-        awesomeFaceButtonRect.Size                    = {100, 60};
-        awesomeFaceButtonRect.Pivot                   = {0, 0};
-        awesomeFaceButtonRect.Pos                     = {10, 100, 0};
-        auto& awesomeFaceButtonComp                   = awesomeFaceButton.AddComponent<UI::ButtonComponent>();
-        awesomeFaceButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/awesomeface.png", *tempRC);
-        awesomeFaceButtonComp.MaterialFilePath        = uiImageMaterialPath;
+        panelRect.Size                  = {320, 240};
+        panelRect.Pivot                 = {0.5, 0.5};
+        panelRect.Pos                   = {512, 384, -0.1};
+        auto& panelImageComp            = panelImage.AddComponent<UI::ImageComponent>();
+        panelImageComp.TargetGraphic    = IO::Load("Assets/Textures/GUI/Panel/Window/Big.png", *tempRC);
+        panelImageComp.MaterialFilePath = uiImageMaterialPath;
+
+        // Create a play button
+        Entity playButton     = scene->CreateEntity("PlayButton");
+        auto&  playButtonRect = playButton.AddComponent<UI::RectTransformComponent>();
+        playButtonRect.Size   = {100, 60};
+        playButtonRect.Pivot  = {0.5, 0.5};
+        playButtonRect.Pos    = {512, 384, 0};
+        auto& playButtonComp  = playButton.AddComponent<UI::ButtonComponent>();
+        playButtonComp.TintColor.TargetGraphic =
+            IO::Load("Assets/Textures/GUI/Buttons/Rect-Medium/PlayText/Default.png", *tempRC);
+        playButtonComp.MaterialFilePath = uiImageMaterialPath;
 
         Subscribe(m_ButtonClickedEventHandler);
 
-        // Create an image;
-        Entity sleepGayImage = scene->CreateEntity("SleepGayImage");
-        auto&  sleepGayRect  = sleepGayImage.AddComponent<UI::RectTransformComponent>();
-
-        sleepGayRect.Size                  = {320, 240};
-        sleepGayRect.Pivot                 = {0.5, 0.5};
-        sleepGayRect.Pos                   = {512, 384, 0};
-        auto& sleepGayImageComp            = sleepGayImage.AddComponent<UI::ImageComponent>();
-        sleepGayImageComp.TargetGraphic    = IO::Load("Assets/Textures/SleepGay.jpg", *tempRC);
-        sleepGayImageComp.MaterialFilePath = uiImageMaterialPath;
-
         // Create a text
-        Entity helloText = scene->CreateEntity("HelloText");
-        auto& helloTextRect = helloText.AddComponent<UI::RectTransformComponent>();
+        Entity helloText     = scene->CreateEntity("HelloText");
+        auto&  helloTextRect = helloText.AddComponent<UI::RectTransformComponent>();
 
-        helloTextRect.Size = {100, 30};
-        helloTextRect.Pos = {300, 100, 0};
-        auto& helloTextComp = helloText.AddComponent<UI::TextComponent>();
-        helloTextComp.TextContent = "Hello World!";
-        helloTextComp.Color = glm::vec4(1.0f);
+        helloTextRect.Size             = {100, 30};
+        helloTextRect.Pos              = {300, 100, 0};
+        auto& helloTextComp            = helloText.AddComponent<UI::TextComponent>();
+        helloTextComp.TextContent      = "Hello, GUI System!";
+        helloTextComp.Color            = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
         helloTextComp.MaterialFilePath = uiTextMaterialPath;
     }
 

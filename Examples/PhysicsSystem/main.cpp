@@ -108,15 +108,15 @@ public:
         // Create a terrain
         int    heightMapWidth                               = 100;
         int    heightMapHeight                              = 100;
-        float  xScale                                       = 3;
-        float  yScale                                       = 3;
-        float  zScale                                       = 8;
+        float  xScale                                       = 1;
+        float  yScale                                       = 1;
+        float  zScale                                       = 1;
         Entity terrain                                      = scene->CreateEntity("Terrain");
         terrain.GetComponent<TransformComponent>().Position = {
             -heightMapWidth * 0.5f * xScale, 0, -heightMapHeight * 0.5f * zScale}; // fix center
         auto& terrainComponent = terrain.AddComponent<TerrainComponent>();
         terrainComponent.TerrainHeightMap =
-            Utils::GenerateWaveHeightMap(heightMapWidth, heightMapHeight); // create a 100 x 100 height map
+            Utils::GenerateWaveHeightMap(heightMapWidth, heightMapHeight);
         terrainComponent.XScale = xScale;
         terrainComponent.YScale = yScale;
         terrainComponent.ZScale = zScale;

@@ -9,5 +9,6 @@ layout(location = 1) uniform int useImage;
 layout(location = 2) uniform vec4 baseColor;
 
 void main() {
-    FragColor = (1 - useImage) * baseColor + useImage * texture(image, vec2(varingTexCoords.x, 1.0 - varingTexCoords.y)) * baseColor;
+    vec4 sampled = texture(image, vec2(varingTexCoords.x, 1.0 - varingTexCoords.y));
+    FragColor = (1 - useImage) * baseColor + useImage * vec4(sampled.rgb * sampled.a, 1.0) * baseColor;
 }

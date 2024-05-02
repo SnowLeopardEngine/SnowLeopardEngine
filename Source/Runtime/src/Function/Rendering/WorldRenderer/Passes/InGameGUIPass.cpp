@@ -168,6 +168,14 @@ namespace SnowLeopardEngine
                 .CullMode    = CullMode::Back,
                 .ScissorTest = false,
             })
+            .SetBlendState(0,
+                           {
+                               .Enabled   = true,
+                               .SrcColor  = BlendFactor::SrcColor,
+                               .DestColor = BlendFactor::OneMinusSrcColor,
+                               .SrcAlpha  = BlendFactor::SrcAlpha,
+                               .DestAlpha = BlendFactor::OneMinusSrcAlpha,
+                           })
             .SetVAO(vertexArrayObject)
             .SetShaderProgram(program)
             .Build();

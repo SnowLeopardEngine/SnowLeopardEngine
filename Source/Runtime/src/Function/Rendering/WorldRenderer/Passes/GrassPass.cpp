@@ -1,4 +1,4 @@
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/WeightedBlendedPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GrassPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
@@ -7,64 +7,49 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/BRDFData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GlobalLightProbeData.h"
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/ShadowData.h"
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/WeightedBlendedData.h"
 
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
 #include <fg/Blackboard.hpp>
 #include <fg/FrameGraph.hpp>
 
 namespace SnowLeopardEngine
 {
-    WeightedBlendedPass::WeightedBlendedPass(RenderContext& renderContext) : BaseGeometryPass(renderContext) {}
+    GrassPass::GrassPass(RenderContext& renderContext) : BaseGeometryPass(renderContext) {}
 
-    void
-    WeightedBlendedPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard, const RenderableGroups& groups)
+    FrameGraphResource
+    GrassPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard, const RenderableGroups& groups)
     {
-        const auto [frameUniform]    = blackboard.get<FrameData>();
-        const auto& shadow           = blackboard.get<ShadowData>();
-        const auto& gBuffer          = blackboard.get<GBufferData>();
-        const auto& brdf             = blackboard.get<BRDFData>();
-        const auto& globalLightProbe = blackboard.get<GlobalLightProbeData>();
-        const auto  extent           = fg.getDescriptor<FrameGraphTexture>(gBuffer.Depth).Extent;
+        const auto [frameUniform] = blackboard.get<FrameData>();
+        const auto& gBuffer       = blackboard.get<GBufferData>();
+        const auto& extent        = fg.getDescriptor<FrameGraphTexture>(gBuffer.Depth).Extent;
 
-        blackboard.add<WeightedBlendedData>() = fg.addCallbackPass<WeightedBlendedData>(
-            "Weighted Blended OIT Pass",
-            [&](FrameGraph::Builder& builder, WeightedBlendedData& data) {
+        struct Data
+        {
+            FrameGraphResource Output;
+        };
+        const auto& pass = fg.addCallbackPass<Data>(
+            "Grass Pass",
+            [&](FrameGraph::Builder& builder, Data& data) {
                 builder.read(frameUniform);
                 builder.read(gBuffer.Depth);
 
-                builder.read(shadow.ShadowMap);
-
-                builder.read(brdf.LUT);
-                builder.read(globalLightProbe.Diffuse);
-                builder.read(globalLightProbe.Specular);
-
-                data.Accum =
-                    builder.create<FrameGraphTexture>("Accum", {.Extent = extent, .Format = PixelFormat::RGBA16F});
-                data.Accum = builder.write(data.Accum);
-
-                data.Reveal =
-                    builder.create<FrameGraphTexture>("Reveal", {.Extent = extent, .Format = PixelFormat::R8_UNorm});
-                data.Reveal = builder.write(data.Reveal);
+                data.Output =
+                    builder.create<FrameGraphTexture>("Position", {.Extent = extent, .Format = PixelFormat::RGBA16F});
+                data.Output = builder.write(data.Output);
             },
-            [=, this](const WeightedBlendedData& data, FrameGraphPassResources& resources, void* ctx) {
-                NAMED_DEBUG_MARKER("Weighted Blended OIT Pass");
-                SNOW_LEOPARD_PROFILE_GL("Weighted Blended OIT Pass");
+            [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("Grass Pass");
+                SNOW_LEOPARD_PROFILE_GL("Grass Pass");
 
                 auto& rc = *static_cast<RenderContext*>(ctx);
 
+                constexpr glm::vec4 kBlackColor {0.0f};
+
                 RenderingInfo renderingInfo = {
-                    .Area = {.Extent = extent},
-                    .ColorAttachments =
-                        {
-                            {.Image = getTexture(resources, data.Accum), .ClearValue = glm::vec4(0.0f)},
-                            {.Image = getTexture(resources, data.Reveal), .ClearValue = glm::vec4(1.0f)},
-                        },
-                    .DepthAttachment = AttachmentInfo {.Image = getTexture(resources, gBuffer.Depth)}};
+                    .Area             = {.Extent = extent},
+                    .ColorAttachments = {{.Image = getTexture(resources, data.Output), .ClearValue = kBlackColor}},
+                    .DepthAttachment  = AttachmentInfo {.Image = getTexture(resources, gBuffer.Depth)}};
 
                 auto frameBuffer = rc.BeginRendering(renderingInfo);
 
@@ -125,10 +110,11 @@ namespace SnowLeopardEngine
 
                 rc.EndRendering(frameBuffer);
             });
+
+        return pass.Output;
     }
 
-    GraphicsPipeline WeightedBlendedPass::CreateBasePassPipeline(const VertexFormat& vertexFormat,
-                                                                 const Material*     material)
+    GraphicsPipeline GrassPass::CreateBasePassPipeline(const VertexFormat& vertexFormat, const Material* material)
     {
         auto vertexArrayObject = m_RenderContext.GetVertexArray(vertexFormat.GetAttributes());
 
@@ -145,9 +131,9 @@ namespace SnowLeopardEngine
                                     defines);
         SNOW_LEOPARD_CORE_ASSERT(vertResult.Success, "{0}", vertResult.Message);
 
-        auto fragResult = ShaderCompiler::Compile(!material->GetDefine().UserFragPath.empty() ?
-                                                      material->GetDefine().UserFragPath :
-                                                      "Assets/Shaders/WeightedBlendedPass.frag");
+        auto fragResult =
+            ShaderCompiler::Compile(!material->GetDefine().UserFragPath.empty() ? material->GetDefine().UserFragPath :
+                                                                                  "Assets/Shaders/Grass.frag");
         SNOW_LEOPARD_CORE_ASSERT(fragResult.Success, "{0}", fragResult.Message);
 
         auto program = m_RenderContext.CreateGraphicsProgram(vertResult.ProgramCode, fragResult.ProgramCode);
@@ -155,25 +141,9 @@ namespace SnowLeopardEngine
         return GraphicsPipeline::Builder {}
             .SetDepthStencil({
                 .DepthTest      = true,
-                .DepthWrite     = false,
+                .DepthWrite     = true,
                 .DepthCompareOp = CompareOp::LessOrEqual,
             })
-            .SetBlendState(0,
-                           {
-                               .Enabled   = true,
-                               .SrcColor  = BlendFactor::One,
-                               .DestColor = BlendFactor::One,
-                               .SrcAlpha  = BlendFactor::One,
-                               .DestAlpha = BlendFactor::One,
-                           })
-            .SetBlendState(1,
-                           {
-                               .Enabled   = true,
-                               .SrcColor  = BlendFactor::Zero,
-                               .DestColor = BlendFactor::OneMinusSrcColor,
-                               .SrcAlpha  = BlendFactor::Zero,
-                               .DestAlpha = BlendFactor::OneMinusSrcAlpha,
-                           })
             .SetRasterizerState({
                 .PolygonMode = PolygonMode::Fill,
                 .CullMode    = CullMode::None,
