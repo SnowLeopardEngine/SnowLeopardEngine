@@ -1,0 +1,37 @@
+{
+    "DzMaterial": {
+        "Name": "Plastic015A",
+        "RenderQueue": "Opaque",
+        "Properties": [
+            {
+                "Name": "albedoMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/Plastic015A/Plastic015A_1K-JPG_Color.jpg"
+            },
+            {
+                "Name": "useAlbedoMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "roughnessMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/Plastic015A/Plastic015A_1K-JPG_Roughness.jpg"
+            },
+            {
+                "Name": "useRoughnessMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "ao",
+                "Type": "Float",
+                "Value": "1"
+            }
+        ],
+        "UserVertPath": "",
+        "UserFragPath": "",
+        "EnableInstancing": true,
+        "TextureFlipY": true
+    }
+}

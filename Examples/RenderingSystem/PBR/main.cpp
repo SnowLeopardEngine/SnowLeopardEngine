@@ -76,19 +76,22 @@ public:
         // Load materials
         const std::string deferredWhiteMaterialFilePath = "Assets/Materials/Next/White.dzmaterial";
         const std::string deferredPBRMaterialFilePath   = "Assets/Materials/Next/RustedIronPBRDeferred.dzmaterial";
-        const std::string pureMetalMaterialFilePath   = "Assets/Materials/Next/PureMetal.dzmaterial";
-        const std::string transWhiteMaterialFilePath   = "Assets/Materials/Next/WhiteTransparent.dzmaterial";
-        const std::string transRedMaterialFilePath   = "Assets/Materials/Next/RedTransparent.dzmaterial";
+        const std::string pureMetalMaterialFilePath     = "Assets/Materials/Next/PureMetal.dzmaterial";
+        const std::string transWhiteMaterialFilePath    = "Assets/Materials/Next/WhiteTransparent.dzmaterial";
+        const std::string transRedMaterialFilePath      = "Assets/Materials/Next/RedTransparent.dzmaterial";
+        const std::string plasticMaterialFilePath       = "Assets/Materials/Next/Plastic015A.dzmaterial";
+        const std::string woodMaterialFilePath          = "Assets/Materials/Next/Wood049.dzmaterial";
+        const std::string metalMaterialFilePath         = "Assets/Materials/Next/Metal042A.dzmaterial";
 
         // Create spheres to test materials
         Entity sphere1 = CreateSphere(deferredPBRMaterialFilePath, {-21, 10, 0}, scene);
         Entity sphere2 = CreateSphere(pureMetalMaterialFilePath, {-15, 10, 0}, scene);
         Entity sphere3 = CreateSphere(transWhiteMaterialFilePath, {-9, 10, 0}, scene);
         Entity sphere4 = CreateSphere(transRedMaterialFilePath, {-3, 10, 0}, scene);
-        Entity sphere5 = CreateSphere(deferredPBRMaterialFilePath, {3, 10, 0}, scene);
-        Entity sphere6 = CreateSphere(deferredPBRMaterialFilePath, {9, 10, 0}, scene);
-        Entity sphere7 = CreateSphere(deferredPBRMaterialFilePath, {15, 10, 0}, scene);
-        Entity sphere8 = CreateSphere(deferredPBRMaterialFilePath, {21, 10, 0}, scene);
+        Entity sphere5 = CreateSphere(plasticMaterialFilePath, {3, 10, 0}, scene);
+        Entity sphere6 = CreateSphere(woodMaterialFilePath, {9, 10, 0}, scene);
+        Entity sphere7 = CreateSphere(metalMaterialFilePath, {15, 10, 0}, scene);
+        Entity sphere8 = CreateSphere(deferredWhiteMaterialFilePath, {21, 10, 0}, scene);
 
         // Create a floor
         Entity floor = scene->CreateEntity("Floor");
