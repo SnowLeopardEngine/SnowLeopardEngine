@@ -70,8 +70,13 @@ namespace SnowLeopardEngine
         auto& registry = scene->GetRegistry();
 
         // Camera
-        Entity mainCamera          = {registry.view<TransformComponent, CameraComponent>().front(), scene};
-        auto&  mainCameraComponent = mainCamera.GetComponent<CameraComponent>();
+        Entity mainCamera = {registry.view<TransformComponent, CameraComponent>().front(), scene};
+        if (!mainCamera)
+        {
+            return;
+        }
+
+        auto& mainCameraComponent = mainCamera.GetComponent<CameraComponent>();
 
         assert(mainCameraComponent.IsEnvironmentMapHDR);
         auto* equirectangular = IO::Load(mainCameraComponent.EnvironmentMapFilePath, *m_RenderContext);
@@ -219,9 +224,17 @@ namespace SnowLeopardEngine
 
         // Camera
         m_MainCamera = {registry.view<TransformComponent, CameraComponent>().front(), scene.get()};
+        if (!m_MainCamera)
+        {
+            return;
+        }
 
         // Lights
         m_DirectionalLight = {registry.view<TransformComponent, DirectionalLightComponent>().front(), scene.get()};
+        if (!m_DirectionalLight)
+        {
+            return;
+        }
 
         m_PointLights.clear();
         registry.view<TransformComponent, PointLightComponent>().each(
