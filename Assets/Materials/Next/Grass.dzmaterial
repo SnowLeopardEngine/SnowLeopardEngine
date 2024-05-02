@@ -1,8 +1,13 @@
 {
     "DzMaterial": {
         "Name": "Grass",
-        "RenderQueue": "Transparent",
+        "RenderQueue": "Opaque",
         "Properties": [
+            {
+                "Name": "noiseMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/Perlin.png"
+            },
             {
                 "Name": "albedoMap",
                 "Type": "Texture2D",
@@ -14,28 +19,18 @@
                 "Value": "1"
             },
             {
-                "Name": "metallic",
-                "Type": "Float",
-                "Value": "0.8"
-            },
-            {
                 "Name": "roughness",
                 "Type": "Float",
-                "Value": "0.2"
+                "Value": "0.5"
             },
             {
                 "Name": "ao",
                 "Type": "Float",
                 "Value": "1"
-            },
-            {
-                "Name": "opacity",
-                "Type": "Float",
-                "Value": "1"
             }
         ],
         "UserVertPath": "",
-        "UserFragPath": "Assets/Shaders/Grass.frag",
+        "UserFragPath": "",
         "EnableInstancing": true,
         "TextureFlipY": true
     }

@@ -8,10 +8,10 @@ layout(location = 0, binding = 0) uniform sampler2D source;
 layout(location = 1, binding = 1) uniform sampler2D target;
 
 void main() {
-    const vec4 ui = texture(source, varyTexCoords);
-    const vec4 sceneColor = vec4(texture(target, varyTexCoords).rgb, 1.0);
+    const vec4 sourceSampled = texture(source, varyTexCoords);
+    const vec4 targetSampled = vec4(texture(target, varyTexCoords).rgb, 1.0);
 
-    vec4 blendedColor = ui * ui.a + sceneColor * (1.0 - ui.a);
+    vec4 blendedColor = sourceSampled * sourceSampled.a + targetSampled * (1.0 - sourceSampled.a);
 
     FragColor = blendedColor;
 }

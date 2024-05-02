@@ -8,8 +8,9 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
-
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GrassData.h"
+
 #include <fg/Blackboard.hpp>
 #include <fg/FrameGraph.hpp>
 
@@ -17,28 +18,23 @@ namespace SnowLeopardEngine
 {
     GrassPass::GrassPass(RenderContext& renderContext) : BaseGeometryPass(renderContext) {}
 
-    FrameGraphResource
-    GrassPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard, const RenderableGroups& groups)
+    void GrassPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard, const RenderableGroups& groups)
     {
         const auto [frameUniform] = blackboard.get<FrameData>();
         const auto& gBuffer       = blackboard.get<GBufferData>();
         const auto& extent        = fg.getDescriptor<FrameGraphTexture>(gBuffer.Depth).Extent;
 
-        struct Data
-        {
-            FrameGraphResource Output;
-        };
-        const auto& pass = fg.addCallbackPass<Data>(
+        blackboard.add<GrassData>() = fg.addCallbackPass<GrassData>(
             "Grass Pass",
-            [&](FrameGraph::Builder& builder, Data& data) {
+            [&](FrameGraph::Builder& builder, GrassData& data) {
                 builder.read(frameUniform);
                 builder.read(gBuffer.Depth);
 
-                data.Output =
-                    builder.create<FrameGraphTexture>("Position", {.Extent = extent, .Format = PixelFormat::RGBA16F});
-                data.Output = builder.write(data.Output);
+                data.GrassTarget = builder.create<FrameGraphTexture>(
+                    "Grass Target", {.Extent = extent, .Format = PixelFormat::RGBA16F});
+                data.GrassTarget = builder.write(data.GrassTarget);
             },
-            [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
+            [=, this](const GrassData& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Grass Pass");
                 SNOW_LEOPARD_PROFILE_GL("Grass Pass");
 
@@ -48,7 +44,7 @@ namespace SnowLeopardEngine
 
                 RenderingInfo renderingInfo = {
                     .Area             = {.Extent = extent},
-                    .ColorAttachments = {{.Image = getTexture(resources, data.Output), .ClearValue = kBlackColor}},
+                    .ColorAttachments = {{.Image = getTexture(resources, data.GrassTarget), .ClearValue = kBlackColor}},
                     .DepthAttachment  = AttachmentInfo {.Image = getTexture(resources, gBuffer.Depth)}};
 
                 auto frameBuffer = rc.BeginRendering(renderingInfo);
@@ -100,6 +96,7 @@ namespace SnowLeopardEngine
                         }
 
                         rc.BindMaterial(renderableTemplate.Mat)
+                            .SetUniformVec3("windDirection", glm::vec3(1, 0, 1))
                             .Draw(*renderableTemplate.Mesh->Data.VertBuffer,
                                   *renderableTemplate.Mesh->Data.IdxBuffer,
                                   renderableTemplate.Mesh->Data.Indices.size(),
@@ -110,8 +107,6 @@ namespace SnowLeopardEngine
 
                 rc.EndRendering(frameBuffer);
             });
-
-        return pass.Output;
     }
 
     GraphicsPipeline GrassPass::CreateBasePassPipeline(const VertexFormat& vertexFormat, const Material* material)
@@ -127,7 +122,7 @@ namespace SnowLeopardEngine
 
         auto vertResult =
             ShaderCompiler::Compile(!material->GetDefine().UserVertPath.empty() ? material->GetDefine().UserVertPath :
-                                                                                  "Assets/Shaders/Geometry.vert",
+                                                                                  "Assets/Shaders/Grass.vert",
                                     defines);
         SNOW_LEOPARD_CORE_ASSERT(vertResult.Success, "{0}", vertResult.Message);
 

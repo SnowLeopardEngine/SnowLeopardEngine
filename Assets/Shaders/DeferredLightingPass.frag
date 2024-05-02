@@ -25,6 +25,10 @@ void main() {
     // Retrieve data from G-Buffer
     vec3 fragPos = texture(gPosition, varingTexCoords).rgb;
     vec3 worldNormal = texture(gNormal, varingTexCoords).rgb;
+    if (worldNormal == vec3(0))
+    {
+        discard;
+    }
 
     vec3 albedo = texture(gAlbedo, varingTexCoords).rgb;
     material.albedo = albedo;

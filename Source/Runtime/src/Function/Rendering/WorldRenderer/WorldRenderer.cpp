@@ -11,9 +11,10 @@
 #include "SnowLeopardEngine/Function/Rendering/IndexBuffer.h"
 #include "SnowLeopardEngine/Function/Rendering/LightUniform.h"
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BlitUIPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BlitPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GaussianBlurPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GrassPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/InGameGUIPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SSAOPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
@@ -24,6 +25,7 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/BRDFData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/BrightColorData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GlobalLightProbeData.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GrassData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/InGameGUIData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SSAOData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SceneColorData.h"
@@ -119,8 +121,12 @@ namespace SnowLeopardEngine
         auto opaqueRenderables        = FilterRenderables(visableRenderables, isOpaque);
         auto defaultOpaqueRenderables = FilterRenderables(opaqueRenderables, isDefault);
         auto groups                   = FilterRenderableGroups(defaultOpaqueRenderables);
-
         m_GBufferPass->AddToGraph(fg, blackboard, m_Viewport.Extent, groups);
+
+        // Grass pass
+        auto grassRenderables = FilterRenderables(opaqueRenderables, isGrass);
+        auto grassGroups      = FilterRenderableGroups(grassRenderables);
+        m_GrassPass->AddToGraph(fg, blackboard, grassGroups);
 
         // Weighted Blended OIT Pass
         auto transparentRenderables = FilterRenderables(visableRenderables, isTransparent);
@@ -136,8 +142,12 @@ namespace SnowLeopardEngine
         auto& sceneColor = blackboard.add<SceneColorData>();
         sceneColor.HDR   = m_DeferredLightingPass->AddToGraph(fg, blackboard);
 
+        // Blit Grass + Scene pass
+        auto& [grassTarget] = blackboard.get<GrassData>();
+        auto grassBlitted   = m_BlitPass->AddToGraph(fg, blackboard, sceneColor.HDR, grassTarget);
+
         // Skybox pass
-        sceneColor.HDR = m_SkyboxPass->AddToGraph(fg, blackboard, sceneColor.HDR, &m_Skybox);
+        sceneColor.HDR = m_SkyboxPass->AddToGraph(fg, blackboard, grassBlitted, &m_Skybox);
 
         sceneColor.HDR = m_TransparencyComposePass->AddToGraph(fg, blackboard, sceneColor.HDR);
 
@@ -155,7 +165,7 @@ namespace SnowLeopardEngine
 
         // Blit UI pass
         auto& [uiTarget, _] = blackboard.get<InGameGUIData>();
-        auto blitted        = m_BlitUIPass->AddToGraph(fg, blackboard, sceneColor.LDR, uiTarget);
+        auto blitted        = m_BlitPass->AddToGraph(fg, blackboard, sceneColor.LDR, uiTarget);
 
         // FXAA pass
         sceneColor.LDR = m_FXAAPass->AddToGraph(fg, blitted);
@@ -187,6 +197,7 @@ namespace SnowLeopardEngine
 
         m_ShadowPrePass           = CreateScope<ShadowPrePass>(rc);
         m_GBufferPass             = CreateScope<GBufferPass>(rc);
+        m_GrassPass               = CreateScope<GrassPass>(rc);
         m_WeightedBlendedPass     = CreateScope<WeightedBlendedPass>(rc);
         m_SSAOPass                = CreateScope<SSAOPass>(rc);
         m_GaussianBlurPass        = CreateScope<GaussianBlurPass>(rc);
@@ -197,7 +208,7 @@ namespace SnowLeopardEngine
         m_ToneMappingPass         = CreateScope<ToneMappingPass>(rc);
         m_FXAAPass                = CreateScope<FXAAPass>(rc);
         m_InGameGUIPass           = CreateScope<InGameGUIPass>(rc);
-        m_BlitUIPass              = CreateScope<BlitUIPass>(rc);
+        m_BlitPass                = CreateScope<BlitPass>(rc);
         m_FinalPass               = CreateScope<FinalPass>(rc);
     }
 
@@ -252,6 +263,13 @@ namespace SnowLeopardEngine
                     renderable.Mat         = meshRenderer.Mat;
                     renderable.ModelMatrix = modelMatrix;
                     renderable.BoundingBox = AABB::Build(mesh.Data.Vertices).Transform(modelMatrix);
+
+                    // Grass is special
+                    if (meshRenderer.Mat->GetDefine().Name == "Grass")
+                    {
+                        renderable.Type = RenderableType::Grass;
+                    }
+
                     m_Renderables.emplace_back(renderable);
                 }
             });

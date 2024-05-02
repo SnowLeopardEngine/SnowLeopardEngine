@@ -23,7 +23,7 @@ float DistributionGGX(vec3 N, vec3 H, float roughness) {
 
     float num = a2;
     float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = PI * denom * denom;
+    denom = PI * denom * denom + 1e-12;
 
     return num / denom;
 }
@@ -38,7 +38,7 @@ float DistributionGTR(vec3 N, vec3 H, float roughness, float gamma) {
     denom = PI * pow(denom, gamma);
 
     float c = alpha2;
-    float D = c / denom;
+    float D = c / denom + 1e-12;
 
     return D;
 }
@@ -48,7 +48,7 @@ float GeometrySchlickGGX(float NdotV, float roughness) {
     float k = (r * r) / 8.0;
 
     float num = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
+    float denom = NdotV * (1.0 - k) + k + 1e-12;
 
     return num / denom;
 }
@@ -75,7 +75,7 @@ float V_SmithGGXCorrelated(float NdotV, float NdotL, float roughness) {
     const float a2 = pow(roughness, 4.0);
     const float GGXV = NdotL * sqrt(NdotV * NdotV * (1.0 - a2) + a2);
     const float GGXL = NdotV * sqrt(NdotL * NdotL * (1.0 - a2) + a2);
-    return 0.5 / (GGXV + GGXL);
+    return 0.5 / (GGXV + GGXL + 1e-12);
 }
 
 #endif

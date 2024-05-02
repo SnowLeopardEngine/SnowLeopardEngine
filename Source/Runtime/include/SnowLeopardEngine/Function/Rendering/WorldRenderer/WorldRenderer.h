@@ -9,13 +9,14 @@
 #include "SnowLeopardEngine/Function/Rendering/Renderable.h"
 #include "SnowLeopardEngine/Function/Rendering/Tools/CubemapConverter.h"
 #include "SnowLeopardEngine/Function/Rendering/Tools/IBLDataGenerator.h"
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BlitUIPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BlitPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BloomPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/DeferredLightingPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FXAAPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/FinalPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GBufferPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GaussianBlurPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/GrassPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/InGameGUIPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/SSAOPass.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/ShadowPrePass.h"
@@ -73,6 +74,7 @@ namespace SnowLeopardEngine
         // -------- Passes --------
         Scope<ShadowPrePass>           m_ShadowPrePass           = nullptr;
         Scope<GBufferPass>             m_GBufferPass             = nullptr;
+        Scope<GrassPass>               m_GrassPass               = nullptr;
         Scope<WeightedBlendedPass>     m_WeightedBlendedPass     = nullptr;
         Scope<SSAOPass>                m_SSAOPass                = nullptr;
         Scope<GaussianBlurPass>        m_GaussianBlurPass        = nullptr;
@@ -83,7 +85,7 @@ namespace SnowLeopardEngine
         Scope<ToneMappingPass>         m_ToneMappingPass         = nullptr;
         Scope<FXAAPass>                m_FXAAPass                = nullptr;
         Scope<InGameGUIPass>           m_InGameGUIPass           = nullptr;
-        Scope<BlitUIPass>              m_BlitUIPass              = nullptr;
+        Scope<BlitPass>              m_BlitPass              = nullptr;
         Scope<FinalPass>               m_FinalPass               = nullptr;
 
         // -------- Renderables --------

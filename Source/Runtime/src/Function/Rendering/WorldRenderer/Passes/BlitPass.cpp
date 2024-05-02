@@ -1,4 +1,4 @@
-#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BlitUIPass.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/BlitPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
@@ -13,12 +13,12 @@
 
 namespace SnowLeopardEngine
 {
-    BlitUIPass::BlitUIPass(RenderContext& rc) : m_RenderContext(rc)
+    BlitPass::BlitPass(RenderContext& rc) : m_RenderContext(rc)
     {
         auto vertResult = ShaderCompiler::Compile("Assets/Shaders/FullScreenTriangle.vert");
         SNOW_LEOPARD_CORE_ASSERT(vertResult.Success, "{0}", vertResult.Message);
 
-        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/BlitUIPass.frag");
+        auto fragResult = ShaderCompiler::Compile("Assets/Shaders/BlitPass.frag");
         SNOW_LEOPARD_CORE_ASSERT(fragResult.Success, "{0}", fragResult.Message);
 
         auto program = m_RenderContext.CreateGraphicsProgram(vertResult.ProgramCode, fragResult.ProgramCode);
@@ -37,12 +37,12 @@ namespace SnowLeopardEngine
                          .Build();
     }
 
-    BlitUIPass::~BlitUIPass() { m_RenderContext.Destroy(m_Pipeline); }
+    BlitPass::~BlitPass() { m_RenderContext.Destroy(m_Pipeline); }
 
-    FrameGraphResource BlitUIPass::AddToGraph(FrameGraph&           fg,
-                                              FrameGraphBlackboard& blackboard,
-                                              FrameGraphResource    target,
-                                              FrameGraphResource    source)
+    FrameGraphResource BlitPass::AddToGraph(FrameGraph&           fg,
+                                            FrameGraphBlackboard& blackboard,
+                                            FrameGraphResource    target,
+                                            FrameGraphResource    source)
     {
         assert(target != source);
 
@@ -54,19 +54,19 @@ namespace SnowLeopardEngine
             FrameGraphResource Output;
         };
         const auto& pass = fg.addCallbackPass<Data>(
-            "Blit UI Pass",
+            "Blit Pass",
             [&](FrameGraph::Builder& builder, Data& data) {
                 builder.read(source);
                 builder.read(target);
                 builder.read(gBuffer.Depth);
 
-                data.Output = builder.create<FrameGraphTexture>("Blitted (SceneColor + UI)",
-                                                                {.Extent = extent, .Format = PixelFormat::RGB8_UNorm});
+                data.Output =
+                    builder.create<FrameGraphTexture>("Blitted", {.Extent = extent, .Format = PixelFormat::RGB8_UNorm});
                 data.Output = builder.write(data.Output);
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
-                NAMED_DEBUG_MARKER("Blit UI Pass");
-                SNOW_LEOPARD_PROFILE_GL("Blit UI Pass");
+                NAMED_DEBUG_MARKER("Blit Pass");
+                SNOW_LEOPARD_PROFILE_GL("Blit Pass");
 
                 const RenderingInfo renderingInfo {.Area             = {.Extent = extent},
                                                    .ColorAttachments = {{.Image = getTexture(resources, data.Output)}},

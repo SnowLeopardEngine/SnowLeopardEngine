@@ -22,7 +22,7 @@ vec3 calDirectionalLight(DirectionalLight directionalLight, vec3 F0, vec3 N, vec
     kD *= 1.0 - material.metallic;
 
     vec3 nominator = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 1e-12;
     vec3 specular = nominator / denominator;
 
     // add to outgoing radiance Lo
@@ -47,7 +47,7 @@ vec3 calPointLight(PointLight pointLight, vec3 F0, vec3 N, vec3 V, PBRMaterial m
     kD *= 1.0 - material.metallic;
 
     vec3 nominator = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 1e-12;
     vec3 specular = nominator / denominator;
 
     // add to outgoing radiance Lo

@@ -77,4 +77,5 @@ namespace SnowLeopardEngine
 
     inline bool isDefault(const Renderable& renderable) { return renderable.Type == RenderableType::Default; }
     inline bool isUI(const Renderable& renderable) { return renderable.Type == RenderableType::UI; }
+    inline bool isGrass(const Renderable& renderable) { return renderable.Type == RenderableType::Grass; }
 } // namespace SnowLeopardEngine

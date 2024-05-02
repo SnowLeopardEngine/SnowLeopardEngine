@@ -14,7 +14,7 @@ namespace SnowLeopardEngine
         explicit GrassPass(RenderContext& renderContext);
         ~GrassPass() = default;
 
-        FrameGraphResource AddToGraph(FrameGraph&, FrameGraphBlackboard&, const RenderableGroups& group);
+        void AddToGraph(FrameGraph&, FrameGraphBlackboard&, const RenderableGroups& group);
 
     protected:
         GraphicsPipeline CreateBasePassPipeline(const VertexFormat&, const Material* material) override final;

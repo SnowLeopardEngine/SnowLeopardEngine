@@ -32,7 +32,9 @@ static Entity CreateQuad(const std::string& materialFilePath, const glm::vec3& p
     Entity quad            = scene->CreateEntity("GrassQuad");
     auto&  quadTransform   = quad.GetComponent<TransformComponent>();
     quadTransform.Position = position;
-    quadTransform.SetRotationEuler(glm::vec3(-90, 0, 0));
+    quadTransform.SetRotationEuler(glm::vec3(Random::GetRandomFloatRanged(-135, -90),
+                                             Random::GetRandomFloatRanged(0, 90),
+                                             Random::GetRandomFloatRanged(0, 10)));
     quadTransform.Scale               = {4, 8, 4};
     auto& quadMeshFilter              = quad.AddComponent<MeshFilterComponent>();
     quadMeshFilter.PrimitiveType      = MeshPrimitiveType::Quad;
@@ -74,7 +76,7 @@ public:
         for (size_t i = 0; i < 250; ++i)
         {
             glm::vec4 randomPosition(
-                Random::GetRandomFloatRanged(15, 25), 0, Random::GetRandomFloatRanged(-20, -10), 1);
+                Random::GetRandomFloatRanged(-12, 12), 0, Random::GetRandomFloatRanged(-12, 12), 1);
             CreateQuad(instancingMaterialPath, randomPosition, scene);
         }
 

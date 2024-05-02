@@ -6,11 +6,11 @@
 
 namespace SnowLeopardEngine
 {
-    class BlitUIPass
+    class BlitPass
     {
     public:
-        explicit BlitUIPass(RenderContext&);
-        ~BlitUIPass();
+        explicit BlitPass(RenderContext&);
+        ~BlitPass();
 
         FrameGraphResource
         AddToGraph(FrameGraph&, FrameGraphBlackboard&, FrameGraphResource target, FrameGraphResource source);

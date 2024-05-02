@@ -8,6 +8,7 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GlobalLightProbeData.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GrassData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/LightData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/SSAOData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/ShadowData.h"
@@ -47,8 +48,10 @@ namespace SnowLeopardEngine
         const auto [frameUniform] = blackboard.get<FrameData>();
         const auto [lightUniform] = blackboard.get<LightData>();
 
-        const auto& shadow           = blackboard.get<ShadowData>();
-        const auto& gBuffer          = blackboard.get<GBufferData>();
+        const auto& shadow  = blackboard.get<ShadowData>();
+        const auto& gBuffer = blackboard.get<GBufferData>();
+        // test
+        const auto& grass            = blackboard.get<GrassData>();
         const auto& brdf             = blackboard.get<BRDFData>();
         const auto& globalLightProbe = blackboard.get<GlobalLightProbeData>();
         const auto& ssao             = blackboard.get<SSAOData>();
@@ -71,6 +74,8 @@ namespace SnowLeopardEngine
                 builder.read(gBuffer.Albedo);
                 builder.read(gBuffer.Emissive);
                 builder.read(gBuffer.MetallicRoughnessAO);
+
+                builder.read(grass.GrassTarget);
 
                 builder.read(brdf.LUT);
                 builder.read(globalLightProbe.Diffuse);
