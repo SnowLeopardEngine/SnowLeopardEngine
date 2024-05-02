@@ -16,9 +16,10 @@ namespace SnowLeopardEngine
         bool IsSupportDSA() const { return m_SupportDSA; }
 
     private:
-        int LoadGL();
-        int GetMinMajor();
-        int GetMinMinor();
+        int  LoadGL();
+        int  GetMinMajor();
+        int  GetMinMinor();
+        bool LoadFreeType();
 
     protected:
         bool m_SupportDSA;

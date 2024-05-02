@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/InGameGUIPass.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
+#include "SnowLeopardEngine/Function/Rendering/Character.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphHelper.h"
 #include "SnowLeopardEngine/Function/Rendering/FrameGraph/FrameGraphTexture.h"
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
@@ -65,28 +66,75 @@ namespace SnowLeopardEngine
 
                     SetTransform(renderable.ModelMatrix);
 
-                    if (renderable.UISpecs.ButtonColorTintTexture)
+                    // Text
+                    if (renderable.UISpecs.Type == RenderableUISpecs::UISpecType::Text)
                     {
-                        rc.SetUniform1i("useImage", 1);
-                        rc.SetUniformVec4("baseColor", renderable.UISpecs.ButtonColorTintCurrentColor);
-                        rc.BindTexture(0, *renderable.UISpecs.ButtonColorTintTexture);
+                        assert(renderable.Mesh->Data.Vertices.size() == 4);
+
+                        const float     scale = renderable.UISpecs.FontSize * 1.0f / 12.0f;
+                        const glm::vec3 pos   = renderable.UISpecs.TextPos;
+                        float           x     = pos.x;
+                        float           y     = pos.y;
+
+                        for (const auto& c : renderable.UISpecs.Text)
+                        {
+                            const auto& ch = g_Characters[c];
+
+                            GLfloat xpos = x + ch.Bearing.x * scale;
+                            GLfloat ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+
+                            GLfloat w = ch.Size.x * scale;
+                            GLfloat h = ch.Size.y * scale;
+
+                            renderable.Mesh->Data.Vertices[0].Position = {xpos, ypos + h, 0};
+                            renderable.Mesh->Data.Vertices[1].Position = {xpos, ypos, 0};
+                            renderable.Mesh->Data.Vertices[2].Position = {xpos + w, ypos, 0};
+                            renderable.Mesh->Data.Vertices[3].Position = {xpos + w, ypos + h, 0};
+
+                            rc.Upload(*renderable.Mesh->Data.VertBuffer,
+                                      0,
+                                      renderable.Mesh->Data.Vertices.size() * sizeof(MeshVertexData),
+                                      renderable.Mesh->Data.Vertices.data());
+
+                            glBindTextureUnit(0, ch.TextureId);
+                            rc.SetUniformVec4("baseColor", renderable.UISpecs.TextColor);
+
+                            rc.Draw(*renderable.Mesh->Data.VertBuffer,
+                                    *renderable.Mesh->Data.IdxBuffer,
+                                    renderable.Mesh->Data.Indices.size(),
+                                    renderable.Mesh->Data.Vertices.size());
+
+                            x += (ch.Advance >> 6) * scale; // Move to next glyph
+                        }
                     }
-                    else if (renderable.UISpecs.ImageTexture)
-                    {
-                        rc.SetUniform1i("useImage", 1);
-                        rc.SetUniformVec4("baseColor", renderable.UISpecs.ImageColor);
-                        rc.BindTexture(0, *renderable.UISpecs.ImageTexture);
-                    }
+                    // Non-Text
                     else
                     {
-                        rc.SetUniform1i("useImage", 0);
-                        rc.SetUniformVec4("baseColor", glm::vec4(1.0f));
-                    }
+                        // Button
+                        if (renderable.UISpecs.Type == RenderableUISpecs::UISpecType::Button)
+                        {
+                            rc.SetUniform1i("useImage", 1);
+                            rc.SetUniformVec4("baseColor", renderable.UISpecs.ButtonColorTintCurrentColor);
+                            rc.BindTexture(0, *renderable.UISpecs.ButtonColorTintTexture);
+                        }
+                        // Image
+                        else if (renderable.UISpecs.Type == RenderableUISpecs::UISpecType::Image)
+                        {
+                            rc.SetUniform1i("useImage", 1);
+                            rc.SetUniformVec4("baseColor", renderable.UISpecs.ImageColor);
+                            rc.BindTexture(0, *renderable.UISpecs.ImageTexture);
+                        }
+                        else
+                        {
+                            rc.SetUniform1i("useImage", 0);
+                            rc.SetUniformVec4("baseColor", glm::vec4(1.0f));
+                        }
 
-                    rc.Draw(*renderable.Mesh->Data.VertBuffer,
-                            *renderable.Mesh->Data.IdxBuffer,
-                            renderable.Mesh->Data.Indices.size(),
-                            renderable.Mesh->Data.Vertices.size());
+                        rc.Draw(*renderable.Mesh->Data.VertBuffer,
+                                *renderable.Mesh->Data.IdxBuffer,
+                                renderable.Mesh->Data.Indices.size(),
+                                renderable.Mesh->Data.Vertices.size());
+                    }
                 }
 
                 rc.EndRendering(frameBuffer);
@@ -104,7 +152,7 @@ namespace SnowLeopardEngine
 
         auto fragResult =
             ShaderCompiler::Compile(!material->GetDefine().UserFragPath.empty() ? material->GetDefine().UserFragPath :
-                                                                                  "Assets/Shaders/UI.frag");
+                                                                                  "Assets/Shaders/UIImage.frag");
         SNOW_LEOPARD_CORE_ASSERT(fragResult.Success, "{0}", fragResult.Message);
 
         auto program = m_RenderContext.CreateGraphicsProgram(vertResult.ProgramCode, fragResult.ProgramCode);

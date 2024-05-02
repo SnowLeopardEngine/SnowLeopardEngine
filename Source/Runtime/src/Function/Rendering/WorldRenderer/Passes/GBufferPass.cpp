@@ -46,7 +46,7 @@ namespace SnowLeopardEngine
                 data.Emissive = builder.write(data.Emissive);
 
                 data.MetallicRoughnessAO = builder.create<FrameGraphTexture>(
-                    "Metallic Roughness AO", {.Extent = resolution, .Format = PixelFormat::RGBA8_UNorm});
+                    "Metallic Roughness AO", {.Extent = resolution, .Format = PixelFormat::RGB8_UNorm});
                 data.MetallicRoughnessAO = builder.write(data.MetallicRoughnessAO);
 
                 data.EntityID =

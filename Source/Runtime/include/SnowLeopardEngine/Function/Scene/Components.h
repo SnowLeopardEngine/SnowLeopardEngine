@@ -863,6 +863,11 @@ namespace SnowLeopardEngine
                 Right
             } TextAlignment = Center;
 
+            MeshItem Mesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
+
+            std::filesystem::path MaterialFilePath;
+            Material*             Mat = nullptr;
+
             // NOLINTBEGIN
             template<class Archive>
             void serialize(Archive& archive)

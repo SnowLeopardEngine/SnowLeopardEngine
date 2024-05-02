@@ -137,6 +137,7 @@ namespace SnowLeopardEngine
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
             WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
+            g_EngineContext->InputSys->SetMousePositionFlipY(glm::vec2(xPos, data.Height - yPos));
             g_EngineContext->InputSys->SetMousePosition(glm::vec2(xPos, yPos));
         });
 

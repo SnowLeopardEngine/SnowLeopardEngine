@@ -1,6 +1,6 @@
 {
     "DzMaterial": {
-        "Name": "UI",
+        "Name": "UIImage",
         "RenderQueue": "Opaque",
         "Properties": [
             {

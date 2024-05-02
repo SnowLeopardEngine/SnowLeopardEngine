@@ -43,12 +43,12 @@ namespace SnowLeopardEngine
             }
             else
             {
-                quadData.Vertices = {{{0, 1, 0}, {0, 0, 1}, {0, 1}},
-                                     {{0, 0, 0}, {0, 0, 1}, {0, 0}},
-                                     {{1, 0, 0}, {0, 0, 1}, {1, 0}},
-                                     {{1, 1, 0}, {0, 0, 1}, {1, 1}}};
+                quadData.Vertices = {{{0, 1, 0}, {0, 0, 1}, {0, 0}},
+                                     {{0, 0, 0}, {0, 0, 1}, {0, 1}},
+                                     {{1, 0, 0}, {0, 0, 1}, {1, 1}},
+                                     {{1, 1, 0}, {0, 0, 1}, {1, 0}}};
 
-                quadData.Indices = {0, 1, 2, 0, 3, 2};
+                quadData.Indices = {0, 1, 2, 0, 2, 3};
             }
 
             quadData.VertFormat = VertexFormat::Builder {}.BuildDefault();

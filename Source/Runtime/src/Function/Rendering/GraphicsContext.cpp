@@ -1,15 +1,26 @@
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Rendering/Character.h"
 #include "SnowLeopardEngine/Platform/Platform.h"
+
+
+#include <ft2build.h>
 
 // clang-format off
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 // clang-format on
 
+#include FT_FREETYPE_H
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 namespace SnowLeopardEngine
 {
+    std::map<GLchar, Character> g_Characters;
+
     static void GLMessageCallback(GLenum source,
                                   GLenum type,
                                   GLuint id,
@@ -125,6 +136,9 @@ namespace SnowLeopardEngine
         glDebugMessageCallback(GLMessageCallback, nullptr);
 #endif
 
+        bool loadFreeType = LoadFreeType();
+        SNOW_LEOPARD_CORE_ASSERT(loadFreeType, "[OpenGLContext] Failed to initialize FreeType!");
+
         SNOW_LEOPARD_PROFILE_GL_INIT_CONTEXT;
     }
 
@@ -139,4 +153,63 @@ namespace SnowLeopardEngine
     int GraphicsContext::GetMinMajor() { return SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MAJOR; }
 
     int GraphicsContext::GetMinMinor() { return SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MINOR; }
+
+    bool GraphicsContext::LoadFreeType()
+    {
+        FT_Library ft;
+        if (FT_Init_FreeType(&ft))
+        {
+            SNOW_LEOPARD_CORE_ERROR("[OpenGLContext] Could not init FreeType Library");
+            return false;
+        }
+
+        FT_Face face;
+        if (FT_New_Face(ft, "Assets/Fonts/Roboto-Medium.ttf", 0, &face))
+        {
+            SNOW_LEOPARD_CORE_ERROR("[OpenGLContext] Failed to load font Roboto-Medium");
+            return false;
+        }
+
+        FT_Set_Pixel_Sizes(face, 0, 48);
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Disable byte-alignment restriction
+
+        for (unsigned char c = 0; c < 128; ++c)
+        {
+            if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+            {
+                SNOW_LEOPARD_CORE_ERROR("[OpenGLContext] Failed to load Glyph");
+                continue;
+            }
+
+            GLuint texture;
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(GL_TEXTURE_2D,
+                         0,
+                         GL_RED,
+                         face->glyph->bitmap.width,
+                         face->glyph->bitmap.rows,
+                         0,
+                         GL_RED,
+                         GL_UNSIGNED_BYTE,
+                         face->glyph->bitmap.buffer);
+
+            glTextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            Character character = {texture,
+                                   glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+                                   glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+                                   static_cast<GLuint>(face->glyph->advance.x)};
+            g_Characters.insert(std::pair<GLchar, Character>(c, character));
+        }
+
+        FT_Done_Face(face);
+        FT_Done_FreeType(ft);
+
+        return true;
+    }
 } // namespace SnowLeopardEngine

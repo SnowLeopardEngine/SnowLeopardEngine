@@ -12,7 +12,8 @@ namespace SnowLeopardEngine
         explicit BlitUIPass(RenderContext&);
         ~BlitUIPass();
 
-        FrameGraphResource AddToGraph(FrameGraph&, FrameGraphResource target, FrameGraphResource source);
+        FrameGraphResource
+        AddToGraph(FrameGraph&, FrameGraphBlackboard&, FrameGraphResource target, FrameGraphResource source);
 
     private:
         RenderContext&   m_RenderContext;

@@ -6,6 +6,7 @@
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 #include "SnowLeopardEngine/Function/Rendering/ShaderCompiler.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
 
 #include <fg/Blackboard.hpp>
 #include <fg/FrameGraph.hpp>
@@ -25,7 +26,7 @@ namespace SnowLeopardEngine
         m_Pipeline = GraphicsPipeline::Builder {}
                          .SetShaderProgram(program)
                          .SetDepthStencil({
-                             .DepthTest  = false,
+                             .DepthTest  = true,
                              .DepthWrite = false,
                          })
                          .SetRasterizerState({
@@ -33,47 +34,54 @@ namespace SnowLeopardEngine
                              .CullMode    = CullMode::Back,
                              .ScissorTest = false,
                          })
-                         .SetBlendState(0,
-                                        {
-                                            .Enabled   = true,
-                                            .SrcColor  = BlendFactor::One,
-                                            .DestColor = BlendFactor::Zero,
-                                        })
                          .Build();
     }
 
     BlitUIPass::~BlitUIPass() { m_RenderContext.Destroy(m_Pipeline); }
 
-    FrameGraphResource BlitUIPass::AddToGraph(FrameGraph& fg, FrameGraphResource target, FrameGraphResource source)
+    FrameGraphResource BlitUIPass::AddToGraph(FrameGraph&           fg,
+                                              FrameGraphBlackboard& blackboard,
+                                              FrameGraphResource    target,
+                                              FrameGraphResource    source)
     {
         assert(target != source);
 
-        fg.addCallbackPass(
-            "Blit Pass",
-            [&](FrameGraph::Builder& builder, auto&) {
+        auto&       gBuffer = blackboard.get<GBufferData>();
+        const auto& extent  = fg.getDescriptor<FrameGraphTexture>(target).Extent;
+
+        struct Data
+        {
+            FrameGraphResource Output;
+        };
+        const auto& pass = fg.addCallbackPass<Data>(
+            "Blit UI Pass",
+            [&](FrameGraph::Builder& builder, Data& data) {
                 builder.read(source);
+                builder.read(target);
+                builder.read(gBuffer.Depth);
 
-                target = builder.write(target);
+                data.Output = builder.create<FrameGraphTexture>("Blitted (SceneColor + UI)",
+                                                                {.Extent = extent, .Format = PixelFormat::RGB8_UNorm});
+                data.Output = builder.write(data.Output);
             },
-            [=, this](const auto&, FrameGraphPassResources& resources, void* ctx) {
-                NAMED_DEBUG_MARKER("Blit Pass");
-                SNOW_LEOPARD_PROFILE_GL("Blit Pass");
+            [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
+                NAMED_DEBUG_MARKER("Blit UI Pass");
+                SNOW_LEOPARD_PROFILE_GL("Blit UI Pass");
 
-                const auto          extent = resources.getDescriptor<FrameGraphTexture>(target).Extent;
-                const RenderingInfo renderingInfo {
-                    .Area             = {.Extent = extent},
-                    .ColorAttachments = {{
-                        .Image = getTexture(resources, target),
-                    }},
-                };
+                const RenderingInfo renderingInfo {.Area             = {.Extent = extent},
+                                                   .ColorAttachments = {{.Image = getTexture(resources, data.Output)}},
+                                                   .DepthAttachment =
+                                                       AttachmentInfo {.Image = getTexture(resources, gBuffer.Depth)}};
+
                 auto&      rc          = *static_cast<RenderContext*>(ctx);
                 const auto framebuffer = rc.BeginRendering(renderingInfo);
                 rc.BindGraphicsPipeline(m_Pipeline)
                     .BindTexture(0, getTexture(resources, source))
+                    .BindTexture(1, getTexture(resources, target))
                     .DrawFullScreenTriangle()
                     .EndRendering(framebuffer);
             });
 
-        return target;
+        return pass.Output;
     }
 } // namespace SnowLeopardEngine

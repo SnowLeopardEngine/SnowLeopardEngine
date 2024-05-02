@@ -16,6 +16,15 @@ namespace SnowLeopardEngine
 
     struct RenderableUISpecs
     {
+        enum class UISpecType
+        {
+            Image,
+            Button,
+            Text
+        };
+
+        UISpecType Type;
+
         // Button Stuff
         Texture*  ButtonColorTintTexture = nullptr;
         glm::vec4 ButtonColorTintCurrentColor;
@@ -23,6 +32,12 @@ namespace SnowLeopardEngine
         // Image Stuff
         Texture*  ImageTexture = nullptr;
         glm::vec4 ImageColor;
+
+        // Text Stuff
+        std::string Text;
+        glm::vec4   TextColor;
+        uint32_t    FontSize;
+        glm::vec3   TextPos;
     };
 
     struct Renderable

@@ -1,0 +1,17 @@
+{
+    "DzMaterial": {
+        "Name": "UIText",
+        "RenderQueue": "Opaque",
+        "Properties": [
+            {
+                "Name": "baseColor",
+                "Type": "Color",
+                "Value": "(1, 1, 1, 1)"
+            }
+        ],
+        "UserVertPath": "",
+        "UserFragPath": "Assets/Shaders/UIText.frag",
+        "EnableInstancing": false,
+        "TextureFlipY": true
+    }
+}

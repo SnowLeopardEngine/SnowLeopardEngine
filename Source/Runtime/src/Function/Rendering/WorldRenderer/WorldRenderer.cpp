@@ -154,10 +154,10 @@ namespace SnowLeopardEngine
 
         // Blit UI pass
         auto& [uiTarget, _] = blackboard.get<InGameGUIData>();
-        sceneColor.LDR      = m_BlitUIPass->AddToGraph(fg, sceneColor.LDR, uiTarget);
+        auto blitted        = m_BlitUIPass->AddToGraph(fg, blackboard, sceneColor.LDR, uiTarget);
 
         // FXAA pass
-        sceneColor.LDR = m_FXAAPass->AddToGraph(fg, sceneColor.LDR);
+        sceneColor.LDR = m_FXAAPass->AddToGraph(fg, blitted);
 
         // Final composition
         m_FinalPass->Compose(fg, blackboard);
@@ -323,6 +323,7 @@ namespace SnowLeopardEngine
             renderable.ModelMatrix          = model;
             renderable.BoundingBox          = AABB::Build(image.ImageMesh.Data.Vertices).Transform(model);
             renderable.Type                 = RenderableType::UI;
+            renderable.UISpecs.Type         = RenderableUISpecs::UISpecType::Image;
             renderable.UISpecs.ImageTexture = image.TargetGraphic;
             renderable.UISpecs.ImageColor   = image.Color;
             m_Renderables.emplace_back(renderable);
@@ -363,10 +364,43 @@ namespace SnowLeopardEngine
             renderable.ModelMatrix                    = model;
             renderable.BoundingBox                    = AABB::Build(button.ImageMesh.Data.Vertices).Transform(model);
             renderable.Type                           = RenderableType::UI;
+            renderable.UISpecs.Type                   = RenderableUISpecs::UISpecType::Button;
             renderable.UISpecs.ButtonColorTintTexture = button.TintColor.TargetGraphic;
             renderable.UISpecs.ButtonColorTintCurrentColor = button.TintColor.Current;
             m_Renderables.emplace_back(renderable);
         });
+
+        // Text
+        registry.view<UI::RectTransformComponent, UI::TextComponent>().each(
+            [this](entt::entity e, UI::RectTransformComponent& rect, UI::TextComponent& text) {
+                if (!text.Mesh.RenderLoaded)
+                {
+                    // Load index buffer & vertex buffer
+                    auto indexBuffer = m_RenderContext->CreateIndexBuffer(
+                        IndexType::UInt32, text.Mesh.Data.Indices.size(), text.Mesh.Data.Indices.data());
+                    auto vertexBuffer = m_RenderContext->CreateVertexBuffer(text.Mesh.Data.VertFormat->GetStride(),
+                                                                            text.Mesh.Data.Vertices.size(),
+                                                                            text.Mesh.Data.Vertices.data());
+
+                    text.Mesh.Data.IdxBuffer  = Ref<IndexBuffer>(new IndexBuffer {std::move(indexBuffer)},
+                                                                RenderContext::ResourceDeleter {*m_RenderContext});
+                    text.Mesh.Data.VertBuffer = Ref<VertexBuffer>(new VertexBuffer {std::move(vertexBuffer)},
+                                                                  RenderContext::ResourceDeleter {*m_RenderContext});
+                    text.Mesh.RenderLoaded    = true;
+                }
+
+                Renderable renderable        = {};
+                renderable.Mesh              = &text.Mesh;
+                renderable.Mat               = text.Mat;
+                renderable.BoundingBox       = AABB::Build(text.Mesh.Data.Vertices);
+                renderable.Type              = RenderableType::UI;
+                renderable.UISpecs.Type      = RenderableUISpecs::UISpecType::Text;
+                renderable.UISpecs.Text      = text.TextContent;
+                renderable.UISpecs.TextColor = text.Color;
+                renderable.UISpecs.FontSize  = text.FontSize;
+                renderable.UISpecs.TextPos   = rect.Pos;
+                m_Renderables.emplace_back(renderable);
+            });
     }
 
     void WorldRenderer::UpdateFrameUniform()

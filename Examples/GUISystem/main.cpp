@@ -86,7 +86,8 @@ public:
 
         auto* tempRC = new RenderContext();
 
-        const std::string uiMaterialPath = "Assets/Materials/Next/UI.dzmaterial";
+        const std::string uiImageMaterialPath = "Assets/Materials/Next/UIImage.dzmaterial";
+        const std::string uiTextMaterialPath  = "Assets/Materials/Next/UIText.dzmaterial";
 
         Entity coolGayButton                      = scene->CreateEntity("CoolGayButton");
         auto&  coolGayButtonRect                  = coolGayButton.AddComponent<UI::RectTransformComponent>();
@@ -94,8 +95,8 @@ public:
         coolGayButtonRect.Pivot                   = {0, 0};
         coolGayButtonRect.Pos                     = {10, 10, 0};
         auto& coolGayButtonComp                   = coolGayButton.AddComponent<UI::ButtonComponent>();
-        coolGayButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/CoolGay.png", *tempRC, false);
-        coolGayButtonComp.MaterialFilePath        = uiMaterialPath;
+        coolGayButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/CoolGay.png", *tempRC);
+        coolGayButtonComp.MaterialFilePath        = uiImageMaterialPath;
 
         Entity awesomeFaceButton                      = scene->CreateEntity("AwesomeFaceButton");
         auto&  awesomeFaceButtonRect                  = awesomeFaceButton.AddComponent<UI::RectTransformComponent>();
@@ -103,8 +104,8 @@ public:
         awesomeFaceButtonRect.Pivot                   = {0, 0};
         awesomeFaceButtonRect.Pos                     = {10, 100, 0};
         auto& awesomeFaceButtonComp                   = awesomeFaceButton.AddComponent<UI::ButtonComponent>();
-        awesomeFaceButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/awesomeface.png", *tempRC, false);
-        awesomeFaceButtonComp.MaterialFilePath        = uiMaterialPath;
+        awesomeFaceButtonComp.TintColor.TargetGraphic = IO::Load("Assets/Textures/awesomeface.png", *tempRC);
+        awesomeFaceButtonComp.MaterialFilePath        = uiImageMaterialPath;
 
         Subscribe(m_ButtonClickedEventHandler);
 
@@ -116,8 +117,19 @@ public:
         sleepGayRect.Pivot                 = {0.5, 0.5};
         sleepGayRect.Pos                   = {512, 384, 0};
         auto& sleepGayImageComp            = sleepGayImage.AddComponent<UI::ImageComponent>();
-        sleepGayImageComp.TargetGraphic    = IO::Load("Assets/Textures/SleepGay.jpg", *tempRC, false);
-        sleepGayImageComp.MaterialFilePath = uiMaterialPath;
+        sleepGayImageComp.TargetGraphic    = IO::Load("Assets/Textures/SleepGay.jpg", *tempRC);
+        sleepGayImageComp.MaterialFilePath = uiImageMaterialPath;
+
+        // Create a text
+        Entity helloText = scene->CreateEntity("HelloText");
+        auto& helloTextRect = helloText.AddComponent<UI::RectTransformComponent>();
+
+        helloTextRect.Size = {100, 30};
+        helloTextRect.Pos = {300, 100, 0};
+        auto& helloTextComp = helloText.AddComponent<UI::TextComponent>();
+        helloTextComp.TextContent = "Hello World!";
+        helloTextComp.Color = glm::vec4(1.0f);
+        helloTextComp.MaterialFilePath = uiTextMaterialPath;
     }
 
     virtual void OnUnload() { Unsubscribe(m_ButtonClickedEventHandler); }
