@@ -2,6 +2,7 @@
 
 #include "Common/FrameUniform.glsl"
 #include "Common/LightUniform.glsl"
+#include "Lib/CSM.glsl"
 #include "Lib/PBRLighting.glsl"
 
 layout(location = 0) in vec2 varingTexCoords;
@@ -13,7 +14,7 @@ layout(location = 1, binding = 1) uniform sampler2D gNormal;
 layout(location = 2, binding = 2) uniform sampler2D gAlbedo;
 layout(location = 3, binding = 3) uniform sampler2D gEmissive;
 layout(location = 4, binding = 4) uniform sampler2D gMetallicRoughnessAO;
-layout(location = 5, binding = 5) uniform sampler2D shadowMap;
+layout(location = 5, binding = 5) uniform sampler2DArrayShadow cascadedShadowMaps;
 layout(location = 6, binding = 6) uniform sampler2D brdfLUT;
 layout(location = 7, binding = 7) uniform samplerCube irradianceMap;
 layout(location = 8, binding = 8) uniform samplerCube prefilteredEnvMap;
@@ -25,8 +26,7 @@ void main() {
     // Retrieve data from G-Buffer
     vec3 fragPos = texture(gPosition, varingTexCoords).rgb;
     vec3 worldNormal = texture(gNormal, varingTexCoords).rgb;
-    if (worldNormal == vec3(0))
-    {
+    if(worldNormal == vec3(0)) {
         discard;
     }
 
@@ -42,5 +42,5 @@ void main() {
     material.ao = metallicRoughnessAO.b * texture(ssao, varingTexCoords).r; // combine AO texture & SSAO
 
     vec3 viewDir = normalize(getViewPos() - fragPos);
-    FragColor = calPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, viewDir, material, fragPos, shadowMap, brdfLUT, irradianceMap, prefilteredEnvMap);
+    FragColor = calPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, viewDir, material, fragPos, cascadedShadowMaps, brdfLUT, irradianceMap, prefilteredEnvMap);
 }

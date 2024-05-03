@@ -2,9 +2,9 @@
 #define PBR_LIGHTING_GLSL
 
 #include "Common/Light.glsl"
-#include "Lib/Shadow.glsl"
 #include "Lib/PBR.glsl"
 #include "Lib/IBL.glsl"
+#include "Lib/CSM.glsl"
 
 vec3 calDirectionalLight(DirectionalLight directionalLight, vec3 F0, vec3 N, vec3 V, PBRMaterial material) {
     vec3 L = normalize(-directionalLight.direction);
@@ -62,7 +62,7 @@ vec3 calIBLAmbient(vec3 diffuseColor, vec3 F0, vec3 N, vec3 V, PBRMaterial mater
     return iblContribution.Diffuse * material.ao + iblContribution.Specular * material.ao;
 }
 
-vec3 calPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NUM_MAX_POINT_LIGHT], uint numPointLights, vec3 normal, vec3 viewDir, PBRMaterial material, vec3 fragPos, sampler2D shadowMap, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
+vec3 calPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NUM_MAX_POINT_LIGHT], uint numPointLights, vec3 normal, vec3 viewDir, PBRMaterial material, vec3 fragPos, sampler2DArrayShadow cascadedShadowMaps, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
     vec3 N = normalize(normal);
     vec3 V = normalize(viewDir);
 
@@ -80,8 +80,12 @@ vec3 calPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NU
 
     Lo += calIBLAmbient(diffuseColor, F0, N, V, material, brdfLUT, irradianceMap, prefilteredEnvMap);
 
-    vec4 fragPosLightSpace = directionalLight.lightSpaceMatrix * vec4(fragPos, 1.0);
-    float shadow = calShadow(fragPosLightSpace, normal, normalize(-directionalLight.direction), shadowMap);
+    // select cascade layer
+    vec4 fragPosViewSpace = getViewMatrix() * vec4(fragPos, 1.0);
+    uint cascadeIndex = selectCascadeIndex(fragPosViewSpace.xyz);
+
+    // calculate shadow
+    float shadow = calShadow(cascadeIndex, fragPos, cascadedShadowMaps);
 
     vec3 ambient = vec3(0.01) * material.albedo * material.ao;
     vec3 color = material.emissive + ambient + (1.0 - shadow) * Lo;

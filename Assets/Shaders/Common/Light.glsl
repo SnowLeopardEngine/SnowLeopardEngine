@@ -5,7 +5,6 @@
 
 struct DirectionalLight {
     float intensity;
-    mat4 lightSpaceMatrix;
     vec3 direction;
     vec3 color;
 };
@@ -15,7 +14,6 @@ struct PointLight {
     float linear;
     float quadratic;
     float intensity;
-    mat4 lightSpaceMatrix;
     vec3 position;
     vec3 color;
 };

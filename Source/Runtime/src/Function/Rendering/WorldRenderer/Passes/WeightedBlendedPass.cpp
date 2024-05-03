@@ -11,6 +11,7 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/FrameData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GBufferData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/GlobalLightProbeData.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/LightData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/ShadowData.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Resources/WeightedBlendedData.h"
 
@@ -25,6 +26,7 @@ namespace SnowLeopardEngine
     WeightedBlendedPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard, const RenderableGroups& groups)
     {
         const auto [frameUniform]    = blackboard.get<FrameData>();
+        const auto [lightUniform]    = blackboard.get<LightData>();
         const auto& shadow           = blackboard.get<ShadowData>();
         const auto& gBuffer          = blackboard.get<GBufferData>();
         const auto& brdf             = blackboard.get<BRDFData>();
@@ -37,7 +39,16 @@ namespace SnowLeopardEngine
                 builder.read(frameUniform);
                 builder.read(gBuffer.Depth);
 
-                builder.read(shadow.ShadowMap);
+                builder.read(lightUniform);
+
+                builder.read(shadow.CascadedUniformBuffer);
+                builder.read(shadow.CascadedShadowMaps);
+
+                builder.read(gBuffer.Position);
+                builder.read(gBuffer.Normal);
+                builder.read(gBuffer.Albedo);
+                builder.read(gBuffer.Emissive);
+                builder.read(gBuffer.MetallicRoughnessAO);
 
                 builder.read(brdf.LUT);
                 builder.read(globalLightProbe.Diffuse);
@@ -85,7 +96,18 @@ namespace SnowLeopardEngine
                             }
 
                             rc.BindGraphicsPipeline(GetPipeline(*renderable.Mesh->Data.VertFormat, renderable.Mat))
-                                .BindUniformBuffer(0, getBuffer(resources, frameUniform));
+                                .BindUniformBuffer(0, getBuffer(resources, frameUniform))
+                                .BindUniformBuffer(1, getBuffer(resources, lightUniform))
+                                .BindUniformBuffer(2, getBuffer(resources, shadow.CascadedUniformBuffer))
+                                .BindTexture(0, getTexture(resources, gBuffer.Position))
+                                .BindTexture(1, getTexture(resources, gBuffer.Normal))
+                                .BindTexture(2, getTexture(resources, gBuffer.Albedo))
+                                .BindTexture(3, getTexture(resources, gBuffer.Emissive))
+                                .BindTexture(4, getTexture(resources, gBuffer.MetallicRoughnessAO))
+                                .BindTexture(5, getTexture(resources, shadow.CascadedShadowMaps))
+                                .BindTexture(6, getTexture(resources, brdf.LUT))
+                                .BindTexture(7, getTexture(resources, globalLightProbe.Diffuse))
+                                .BindTexture(8, getTexture(resources, globalLightProbe.Specular));
 
                             SetTransform(renderable.ModelMatrix);
 
@@ -106,7 +128,18 @@ namespace SnowLeopardEngine
 
                         rc.BindGraphicsPipeline(
                               GetPipeline(*renderableTemplate.Mesh->Data.VertFormat, renderableTemplate.Mat))
-                            .BindUniformBuffer(0, getBuffer(resources, frameUniform));
+                            .BindUniformBuffer(0, getBuffer(resources, frameUniform))
+                            .BindUniformBuffer(1, getBuffer(resources, lightUniform))
+                            .BindUniformBuffer(2, getBuffer(resources, shadow.CascadedUniformBuffer))
+                            .BindTexture(0, getTexture(resources, gBuffer.Position))
+                            .BindTexture(1, getTexture(resources, gBuffer.Normal))
+                            .BindTexture(2, getTexture(resources, gBuffer.Albedo))
+                            .BindTexture(3, getTexture(resources, gBuffer.Emissive))
+                            .BindTexture(4, getTexture(resources, gBuffer.MetallicRoughnessAO))
+                            .BindTexture(5, getTexture(resources, shadow.CascadedShadowMaps))
+                            .BindTexture(6, getTexture(resources, brdf.LUT))
+                            .BindTexture(7, getTexture(resources, globalLightProbe.Diffuse))
+                            .BindTexture(8, getTexture(resources, globalLightProbe.Specular));
 
                         uint32_t instanceCount = group.Renderables.size();
                         for (uint32_t instanceId = 0; instanceId < instanceCount; ++instanceId)

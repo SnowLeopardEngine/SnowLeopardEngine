@@ -106,8 +106,8 @@ public:
         // auto& floorMeshRenderer                  = floor.AddComponent<MeshRendererComponent>();
 
         // Create a terrain
-        int    heightMapWidth                               = 100;
-        int    heightMapHeight                              = 100;
+        int    heightMapWidth                               = 1000;
+        int    heightMapHeight                              = 1000;
         float  xScale                                       = 1;
         float  yScale                                       = 1;
         float  zScale                                       = 1;
@@ -115,13 +115,13 @@ public:
         terrain.GetComponent<TransformComponent>().Position = {
             -heightMapWidth * 0.5f * xScale, 0, -heightMapHeight * 0.5f * zScale}; // fix center
         auto& terrainComponent            = terrain.AddComponent<TerrainComponent>();
-        terrainComponent.TerrainHeightMap = Utils::GenerateWaveHeightMap(heightMapWidth, heightMapHeight);
+        terrainComponent.TerrainHeightMap = Utils::GenerateRandomHeightMap(heightMapWidth, heightMapHeight);
         terrainComponent.XScale           = xScale;
         terrainComponent.YScale           = yScale;
         terrainComponent.ZScale           = zScale;
         terrain.AddComponent<TerrainColliderComponent>(normalMaterial);
         auto& terrainRenderer            = terrain.AddComponent<TerrainRendererComponent>();
-        terrainRenderer.MaterialFilePath = "Assets/Materials/Next/Green.dzmaterial";
+        terrainRenderer.MaterialFilePath = "Assets/Materials/Next/DefaultTerrain.dzmaterial";
     }
 
 private:

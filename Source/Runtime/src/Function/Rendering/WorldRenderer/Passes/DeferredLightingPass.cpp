@@ -67,7 +67,8 @@ namespace SnowLeopardEngine
                 builder.read(frameUniform);
                 builder.read(lightUniform);
 
-                builder.read(shadow.ShadowMap);
+                builder.read(shadow.CascadedUniformBuffer);
+                builder.read(shadow.CascadedShadowMaps);
 
                 builder.read(gBuffer.Position);
                 builder.read(gBuffer.Normal);
@@ -106,12 +107,13 @@ namespace SnowLeopardEngine
                 rc.BindGraphicsPipeline(m_Pipeline)
                     .BindUniformBuffer(0, getBuffer(resources, frameUniform))
                     .BindUniformBuffer(1, getBuffer(resources, lightUniform))
+                    .BindUniformBuffer(2, getBuffer(resources, shadow.CascadedUniformBuffer))
                     .BindTexture(0, getTexture(resources, gBuffer.Position))
                     .BindTexture(1, getTexture(resources, gBuffer.Normal))
                     .BindTexture(2, getTexture(resources, gBuffer.Albedo))
                     .BindTexture(3, getTexture(resources, gBuffer.Emissive))
                     .BindTexture(4, getTexture(resources, gBuffer.MetallicRoughnessAO))
-                    .BindTexture(5, getTexture(resources, shadow.ShadowMap))
+                    .BindTexture(5, getTexture(resources, shadow.CascadedShadowMaps))
                     .BindTexture(6, getTexture(resources, brdf.LUT))
                     .BindTexture(7, getTexture(resources, globalLightProbe.Diffuse))
                     .BindTexture(8, getTexture(resources, globalLightProbe.Specular))

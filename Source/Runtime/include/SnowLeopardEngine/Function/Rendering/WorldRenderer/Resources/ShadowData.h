@@ -6,6 +6,7 @@ namespace SnowLeopardEngine
 {
     struct ShadowData
     {
-        FrameGraphResource ShadowMap;
+        FrameGraphResource CascadedUniformBuffer;
+        FrameGraphResource CascadedShadowMaps;
     };
 } // namespace SnowLeopardEngine

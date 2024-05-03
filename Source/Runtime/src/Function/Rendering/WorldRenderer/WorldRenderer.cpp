@@ -137,12 +137,12 @@ namespace SnowLeopardEngine
         UpdateLightUniform(GetRenderablesAABB(defaultRenderables));
         uploadLightUniform(fg, blackboard, m_LightUniform);
 
+        // Build cascaded shadow map
+        m_ShadowPrePass->BuildCascadedShadowMaps(fg, blackboard, m_MainCamera, m_DirectionalLight, m_Renderables);
+
         // Filter visable renderables (CPU Frustum culling)
         auto visableRenderables =
             FilterVisableRenderables(m_Renderables, m_FrameUniform.ProjectionMatrix * m_FrameUniform.ViewMatrix);
-
-        // Shadow pre pass
-        m_ShadowPrePass->AddToGraph(fg, blackboard, {.Width = 2048, .Height = 2048}, defaultRenderables);
 
         // G-Buffer pass
         auto opaqueRenderables = FilterRenderables(visableRenderables, isOpaque);
@@ -498,22 +498,6 @@ namespace SnowLeopardEngine
         directionalLight.Direction = directionalLightComponent.Direction;
         directionalLight.Color     = directionalLightComponent.Color;
         directionalLight.Intensity = directionalLightComponent.Intensity;
-
-        // Get renderables AABB and set light space.
-        auto sceneAABBCenter = renderablesAABB.GetCenter();
-        auto sceneAABBSize   = renderablesAABB.GetExtent();
-
-        float     lightDistance = 2.0f * glm::length(sceneAABBSize);
-        glm::vec3 lightPos      = sceneAABBCenter - lightDistance * directionalLightComponent.Direction;
-
-        glm::mat4 lightProjection = glm::ortho(
-            -sceneAABBSize.x, sceneAABBSize.x, -sceneAABBSize.y, sceneAABBSize.y, 0.0f, 2.0f * lightDistance);
-        glm::mat4 lightView = glm::lookAt(lightPos, sceneAABBCenter, glm::vec3(0.0f, 1.0f, 0.0f));
-
-        glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-        directionalLight.LightSpaceMatrix = lightSpaceMatrix;
-
         m_LightUniform.DirectionalLight = directionalLight;
 
         uint32_t pointLightIndex = 0;
@@ -534,17 +518,6 @@ namespace SnowLeopardEngine
             gpuPointLight.Intensity = pointLightComponent.Intensity;
             gpuPointLight.Position  = pointLight.GetComponent<TransformComponent>().Position;
             gpuPointLight.Color     = pointLightComponent.Color;
-
-            float     nearPlane        = 0.1f;
-            float     farPlane         = 100.0f;
-            glm::mat4 lightProjection  = glm::perspective(glm::radians(90.0f), 1.0f, nearPlane, farPlane);
-            glm::mat4 lightView        = glm::lookAt(gpuPointLight.Position,
-                                              gpuPointLight.Position + glm::vec3(1.0f, 0.0f, 0.0f),
-                                              glm::vec3(0.0f, 1.0f, 0.0f));
-            glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-            gpuPointLight.LightSpaceMatrix = lightSpaceMatrix;
-
             m_LightUniform.PointLights[pointLightIndex] = gpuPointLight;
 
             pointLightIndex++;

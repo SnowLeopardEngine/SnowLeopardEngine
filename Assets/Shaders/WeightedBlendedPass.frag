@@ -2,6 +2,7 @@
 
 #include "Common/FrameUniform.glsl"
 #include "Common/LightUniform.glsl"
+#include "Lib/CSM.glsl"
 #include "Lib/PBRLighting.glsl"
 #include "Lib/Color.glsl"
 
@@ -17,7 +18,7 @@ layout(location = 1, binding = 1) uniform sampler2D emissiveMap;
 layout(location = 2, binding = 2) uniform sampler2D metallicMap;
 layout(location = 3, binding = 3) uniform sampler2D roughnessMap;
 layout(location = 4, binding = 4) uniform sampler2D aoMap;
-layout(location = 5, binding = 5) uniform sampler2D shadowMap;
+layout(location = 5, binding = 5) uniform sampler2DArrayShadow cascadedShadowMaps;
 layout(location = 6, binding = 6) uniform sampler2D brdfLUT;
 layout(location = 7, binding = 7) uniform samplerCube irradianceMap;
 layout(location = 8, binding = 8) uniform samplerCube prefilteredEnvMap;
@@ -44,7 +45,7 @@ void main() {
     material.opacity = opacity;
 
     vec3 viewDir = normalize(getViewPos() - fragPos);
-    vec3 color = calPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, viewDir, material, fragPos, shadowMap, brdfLUT, irradianceMap, prefilteredEnvMap);
+    vec3 color = calPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, viewDir, material, fragPos, cascadedShadowMaps, brdfLUT, irradianceMap, prefilteredEnvMap);
 
     const float a = clamp(material.opacity, 0.0, 1.0);
 
