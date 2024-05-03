@@ -22,3 +22,8 @@ target("GameDemo")
 
     -- set target directory
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/GameDemo")
+
+    -- copy assets
+    after_build(function(target)
+        os.cp("$(scriptdir)/assets", target:targetdir())
+    end)

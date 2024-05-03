@@ -30,4 +30,9 @@ namespace SnowLeopardEngine
         auto realPath = FileSystem::GetExecutableDirectory() / rawAudioFilePath;
         ma_engine_play_sound(m_AudioEngine, realPath.generic_string().c_str(), nullptr);
     }
+
+    void AudioSystem::Stop()
+    {
+        ma_engine_stop(m_AudioEngine);
+    }
 } // namespace SnowLeopardEngine

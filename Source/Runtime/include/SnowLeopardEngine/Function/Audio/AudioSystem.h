@@ -12,6 +12,7 @@ namespace SnowLeopardEngine
         DECLARE_SUBSYSTEM(AudioSystem)
 
         void Play(const std::string& rawAudioFilePath);
+        void Stop();
 
     private:
         ma_engine* m_AudioEngine;

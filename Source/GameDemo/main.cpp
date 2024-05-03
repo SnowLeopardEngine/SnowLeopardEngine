@@ -22,6 +22,8 @@ public:
         m_RenderContext = CreateScope<RenderContext>();
         CreateMainMenuScene();
         CreateGameScene();
+        LoadMainMenuScene();
+        PlayMainMenuBGM();
 
         Subscribe(m_ButtonClickedEventHandler);
     }
@@ -32,7 +34,7 @@ private:
     void CreateMainMenuScene()
     {
         // Create a Main Menu scene and set active
-        m_MainMenuScene = g_EngineContext->SceneMngr->CreateScene("MainMenu", true);
+        m_MainMenuScene = g_EngineContext->SceneMngr->CreateScene("MainMenu", false);
 
         // Create a camera
         Entity camera                                      = m_MainMenuScene->CreateEntity("MainCamera");
@@ -127,7 +129,10 @@ private:
     }
 
     void LoadMainMenuScene() { g_EngineContext->SceneMngr->SetActiveScene(m_MainMenuScene); }
+
     void LoadGameScene() { g_EngineContext->SceneMngr->SetActiveScene(m_GameScene); }
+
+    void PlayMainMenuBGM() { g_EngineContext->AudioSys->Play("assets/audios/MainMenu.mp3"); }
 
 private:
     Ref<LogicScene>      m_MainMenuScene = nullptr;
@@ -145,6 +150,8 @@ private:
         SNOW_LEOPARD_INFO("Button (Name: {0}, UUID: {1}) was clicked!",
                           buttonEntity.GetName(),
                           to_string(buttonEntity.GetCoreUUID()));
+
+        g_EngineContext->AudioSys->Play("assets/audios/ButtonClick.wav");
 
         auto buttonID = buttonEntity.GetCoreUUID();
 

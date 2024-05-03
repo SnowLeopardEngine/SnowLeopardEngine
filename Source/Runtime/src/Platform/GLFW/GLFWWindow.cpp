@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Platform/GLFW/GLFWWindow.h"
+#include "GLFW/glfw3.h"
 #include "SnowLeopardEngine/Core/Event/WindowEvents.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
@@ -17,6 +18,7 @@ namespace SnowLeopardEngine
         m_Data.Title     = initInfo.Title;
         m_Data.Width     = initInfo.Width;
         m_Data.Height    = initInfo.Height;
+        m_Data.Resizable = initInfo.Resizable;
         m_Data.WindowSys = this;
 
         SNOW_LEOPARD_CORE_INFO("[GLFWWindow] Creating window, name: {0}, resolution: {1} x {2}",
@@ -40,8 +42,8 @@ namespace SnowLeopardEngine
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MINOR);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-        // MSAA
-        glfwWindowHint(GLFW_SAMPLES, 4);
+        // Resizable?
+        glfwWindowHint(GLFW_RESIZABLE, initInfo.Resizable);
 
 #if SNOW_LEOPARD_PLATFORM_DARWIN
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
