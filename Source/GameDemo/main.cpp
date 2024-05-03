@@ -2,6 +2,7 @@
 #include "SnowLeopardEngine/Core/Event/UIEvents.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/Debug.h"
+#include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
@@ -126,6 +127,26 @@ private:
         menuButtonComp.TintColor.TargetGraphic =
             IO::Load("Assets/Textures/GUI/FantacyUI/Buttons/Menu.png", *m_RenderContext);
         menuButtonComp.MaterialFilePath = ImageMaterialPath;
+
+        // Create a terrain
+        auto     normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
+        uint32_t xSize = 100, ySize = 100;
+        int      heightMapWidth                             = xSize;
+        int      heightMapHeight                            = ySize;
+        float    xScale                                     = 1;
+        float    yScale                                     = 2;
+        float    zScale                                     = 1;
+        Entity   terrain                                    = m_GameScene->CreateEntity("Terrain");
+        terrain.GetComponent<TransformComponent>().Position = {
+            -heightMapWidth * 0.5f * xScale, 0, -heightMapHeight * 0.5f * zScale}; // fix center
+        auto& terrainComponent            = terrain.AddComponent<TerrainComponent>();
+        terrainComponent.TerrainHeightMap = Utils::GenerateRandomHeightMap(xSize, ySize);
+        terrainComponent.XScale           = xScale;
+        terrainComponent.YScale           = yScale;
+        terrainComponent.ZScale           = zScale;
+        terrain.AddComponent<TerrainColliderComponent>(normalMaterial);
+        auto& terrainRenderer            = terrain.AddComponent<TerrainRendererComponent>();
+        terrainRenderer.MaterialFilePath = "Assets/Materials/Next/DefaultTerrain.dzmaterial";
     }
 
     void LoadMainMenuScene() { g_EngineContext->SceneMngr->SetActiveScene(m_MainMenuScene); }

@@ -44,6 +44,7 @@ target("SnowLeopardEngine")
 
     -- add dependencies (inside project)
     add_deps("glad")
+    add_deps("FastNoiseLite")
 
     -- defines
     add_defines("PX_PHYSX_STATIC_LIB") -- force static lib https://github.com/NVIDIAGameWorks/PhysX/issues/260

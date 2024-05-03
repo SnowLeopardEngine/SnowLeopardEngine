@@ -5,6 +5,8 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Rendering/VertexFormat.h"
 
+#include <FastNoiseLite.h>
+
 namespace SnowLeopardEngine
 {
     enum class MeshPrimitiveType : uint8_t
@@ -337,6 +339,29 @@ namespace SnowLeopardEngine
                     map.Set(y, x, waveHeight * 10.0f);
                 }
             }
+            return map;
+        }
+
+        static HeightMap GenerateRandomHeightMap(int xSize, int ySize)
+        {
+            HeightMap map = GenerateBlankHeightMap(xSize, ySize);
+
+            // Create and configure FastNoise object
+            FastNoiseLite noise;
+            noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+
+            // Gather noise data
+            std::vector<float> noiseData(xSize * ySize);
+            int                index = 0;
+
+            for (int y = 0; y < ySize; y++)
+            {
+                for (int x = 0; x < xSize; x++)
+                {
+                    map.Set(x, y, 10.0f * noise.GetNoise(static_cast<float>(x), static_cast<float>(y)));
+                }
+            }
+
             return map;
         }
     } // namespace Utils

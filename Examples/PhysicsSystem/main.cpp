@@ -114,12 +114,11 @@ public:
         Entity terrain                                      = scene->CreateEntity("Terrain");
         terrain.GetComponent<TransformComponent>().Position = {
             -heightMapWidth * 0.5f * xScale, 0, -heightMapHeight * 0.5f * zScale}; // fix center
-        auto& terrainComponent = terrain.AddComponent<TerrainComponent>();
-        terrainComponent.TerrainHeightMap =
-            Utils::GenerateWaveHeightMap(heightMapWidth, heightMapHeight);
-        terrainComponent.XScale = xScale;
-        terrainComponent.YScale = yScale;
-        terrainComponent.ZScale = zScale;
+        auto& terrainComponent            = terrain.AddComponent<TerrainComponent>();
+        terrainComponent.TerrainHeightMap = Utils::GenerateWaveHeightMap(heightMapWidth, heightMapHeight);
+        terrainComponent.XScale           = xScale;
+        terrainComponent.YScale           = yScale;
+        terrainComponent.ZScale           = zScale;
         terrain.AddComponent<TerrainColliderComponent>(normalMaterial);
         auto& terrainRenderer            = terrain.AddComponent<TerrainRendererComponent>();
         terrainRenderer.MaterialFilePath = "Assets/Materials/Next/Green.dzmaterial";
