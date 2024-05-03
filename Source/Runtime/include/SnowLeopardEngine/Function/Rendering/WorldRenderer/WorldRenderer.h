@@ -41,6 +41,8 @@ namespace SnowLeopardEngine
 
         void RenderFrame(float deltaTime);
 
+        inline void UpdateViewport(const Rect2D& viewport) { m_Viewport = viewport; }
+
     private:
         void CreateTools();
         void CreatePasses();
@@ -85,7 +87,7 @@ namespace SnowLeopardEngine
         Scope<ToneMappingPass>         m_ToneMappingPass         = nullptr;
         Scope<FXAAPass>                m_FXAAPass                = nullptr;
         Scope<InGameGUIPass>           m_InGameGUIPass           = nullptr;
-        Scope<BlitPass>              m_BlitPass              = nullptr;
+        Scope<BlitPass>                m_BlitPass                = nullptr;
         Scope<FinalPass>               m_FinalPass               = nullptr;
 
         // -------- Renderables --------

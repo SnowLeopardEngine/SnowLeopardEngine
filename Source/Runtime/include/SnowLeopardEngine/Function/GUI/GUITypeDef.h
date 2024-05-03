@@ -22,7 +22,8 @@ namespace SnowLeopardEngine::UI
         RenderTarget          TargetGraphic = nullptr;
 
         glm::vec4 Normal  = {0.9, 0.9, 0.9, 1};
-        glm::vec4 Pressed = {0.7, 0.7, 0.7, 1};
+        glm::vec4 Hovered = {0.5, 0.9, 0.5, 1};
+        glm::vec4 Pressed = {0.6, 0.8, 0.6, 1};
 
         glm::vec4 Current = Normal;
 
@@ -30,7 +31,11 @@ namespace SnowLeopardEngine::UI
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(TargetGraphicPath), CEREAL_NVP(Normal), CEREAL_NVP(Pressed), CEREAL_NVP(Current));
+            archive(CEREAL_NVP(TargetGraphicPath),
+                    CEREAL_NVP(Normal),
+                    CEREAL_NVP(Hovered),
+                    CEREAL_NVP(Pressed),
+                    CEREAL_NVP(Current));
         }
         // NOLINTEND
     };

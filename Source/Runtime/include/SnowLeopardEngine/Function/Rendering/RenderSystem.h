@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Core/Event/EventHandler.h"
 #include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/WorldRenderer.h"
 
 namespace SnowLeopardEngine
@@ -19,6 +20,7 @@ namespace SnowLeopardEngine
         void Present();
 
         void SetRenderTarget(const Ref<FrameBuffer>& renderTarget) {}
+        inline void UpdateViewport(const Rect2D& viewport) { m_Renderer.UpdateViewport(viewport); }
 
         Ref<GraphicsContext> GetGraphicsContext() const { return m_Context; }
         Ref<RenderContext>   GetGlobalRenderContext() const { return m_GlobalRenderContext; }

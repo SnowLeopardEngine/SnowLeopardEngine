@@ -19,6 +19,9 @@ namespace SnowLeopardEngine
             const auto h = std::filesystem::hash_value(p);
             if (auto it = g_TextureCache.find(h); it != g_TextureCache.cend())
             {
+                auto extent = it->second->GetExtent();
+                assert(extent.Width > 0 && extent.Height > 0);
+
                 return it->second;
             }
 
@@ -82,6 +85,22 @@ namespace SnowLeopardEngine
             g_TextureCache[h] = newTexture;
 
             return newTexture;
+        }
+
+        void Release(const std::filesystem::path& texturePath, Texture& texture, RenderContext& rc)
+        {
+            if (texturePath.empty())
+            {
+                return;
+            }
+
+            auto       p = std::filesystem::absolute(texturePath);
+            const auto h = std::filesystem::hash_value(p);
+            if (auto it = g_TextureCache.find(h); it != g_TextureCache.cend())
+            {
+                rc.Destroy(texture);
+                g_TextureCache.erase(h);
+            }
         }
 
         std::unordered_map<size_t, Texture*> g_TextureCache;

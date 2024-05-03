@@ -44,6 +44,28 @@ namespace SnowLeopardEngine
         globalLightProbe.Specular = importTexture(fg, "SpecularIBL", &lightProbe.Specular);
     }
 
+    enum class SortOrder
+    {
+        FrontToBack,
+        BackToFront
+    };
+    struct SortByDistance
+    {
+        SortByDistance(const glm::vec3& viewPos, SortOrder order) : m_Origin(viewPos), m_Order(order) {}
+
+        bool operator()(const Renderable& a, const Renderable& b) const noexcept
+        {
+            const auto distanceA = glm::distance(m_Origin, glm::vec3 {a.ModelMatrix[3]});
+            const auto distanceB = glm::distance(m_Origin, glm::vec3 {b.ModelMatrix[3]});
+
+            return m_Order == SortOrder::FrontToBack ? distanceB > distanceA : distanceA > distanceB;
+        }
+
+    private:
+        const glm::vec3 m_Origin {0.0f};
+        const SortOrder m_Order;
+    };
+
     void WorldRenderer::Init()
     {
         m_RenderContext      = CreateScope<RenderContext>();
@@ -81,7 +103,7 @@ namespace SnowLeopardEngine
         assert(mainCameraComponent.IsEnvironmentMapHDR);
         auto* equirectangular = IO::Load(mainCameraComponent.EnvironmentMapFilePath, *m_RenderContext);
         m_Skybox              = m_CubemapConverter->EquirectangularToCubemap(*equirectangular);
-        m_RenderContext->Destroy(*equirectangular);
+        IO::Release(mainCameraComponent.EnvironmentMapFilePath, *equirectangular, *m_RenderContext);
 
         // Generate Glbal light probe for IBL
         m_GlobalLightProbe          = {};
@@ -123,7 +145,10 @@ namespace SnowLeopardEngine
         m_ShadowPrePass->AddToGraph(fg, blackboard, {.Width = 2048, .Height = 2048}, defaultRenderables);
 
         // G-Buffer pass
-        auto opaqueRenderables        = FilterRenderables(visableRenderables, isOpaque);
+        auto opaqueRenderables = FilterRenderables(visableRenderables, isOpaque);
+        std::sort(opaqueRenderables.begin(),
+                  opaqueRenderables.end(),
+                  SortByDistance {m_FrameUniform.ViewPos, SortOrder::FrontToBack});
         auto defaultOpaqueRenderables = FilterRenderables(opaqueRenderables, isDefault);
         auto groups                   = FilterRenderableGroups(defaultOpaqueRenderables);
         m_GBufferPass->AddToGraph(fg, blackboard, m_Viewport.Extent, groups);
@@ -166,6 +191,9 @@ namespace SnowLeopardEngine
 
         // In-Game GUI pass
         auto uiRenderables = FilterRenderables(m_Renderables, isUI);
+        std::sort(uiRenderables.begin(),
+                  uiRenderables.end(),
+                  SortByDistance {m_FrameUniform.ViewPos, SortOrder::FrontToBack});
         m_InGameGUIPass->AddToGraph(fg, blackboard, m_Viewport.Extent, uiRenderables);
 
         // Blit UI pass
@@ -219,7 +247,12 @@ namespace SnowLeopardEngine
 
     void WorldRenderer::CookRenderableScene()
     {
-        auto  scene    = g_EngineContext->SceneMngr->GetActiveScene();
+        auto scene = g_EngineContext->SceneMngr->GetActiveScene();
+        if (scene == nullptr)
+        {
+            return;
+        }
+
         auto& registry = scene->GetRegistry();
 
         // Camera

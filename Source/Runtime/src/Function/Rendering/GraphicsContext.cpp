@@ -4,7 +4,6 @@
 #include "SnowLeopardEngine/Function/Rendering/Character.h"
 #include "SnowLeopardEngine/Platform/Platform.h"
 
-
 #include <ft2build.h>
 
 // clang-format off
@@ -164,9 +163,9 @@ namespace SnowLeopardEngine
         }
 
         FT_Face face;
-        if (FT_New_Face(ft, "Assets/Fonts/Roboto-Medium.ttf", 0, &face))
+        if (FT_New_Face(ft, "Assets/Fonts/Jaro-Regular.ttf", 0, &face))
         {
-            SNOW_LEOPARD_CORE_ERROR("[OpenGLContext] Failed to load font Roboto-Medium");
+            SNOW_LEOPARD_CORE_ERROR("[OpenGLContext] Failed to load font Jaro-Regular");
             return false;
         }
 
@@ -174,6 +173,7 @@ namespace SnowLeopardEngine
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Disable byte-alignment restriction
 
+        g_Characters.clear();
         for (unsigned char c = 0; c < 128; ++c)
         {
             if (FT_Load_Char(face, c, FT_LOAD_RENDER))
