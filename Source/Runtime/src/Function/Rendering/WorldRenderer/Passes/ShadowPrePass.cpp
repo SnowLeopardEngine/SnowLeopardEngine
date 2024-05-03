@@ -53,7 +53,7 @@ namespace SnowLeopardEngine
         std::vector<Renderable> result;
         for (const auto& renderable : renderables)
         {
-            if (isOpaque(renderable) && isVisible(renderable.BoundingBox))
+            if (isOpaque(renderable) && !isGrass(renderable) && isVisible(renderable.BoundingBox))
             {
                 result.push_back(renderable);
             }

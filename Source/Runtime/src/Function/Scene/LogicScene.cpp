@@ -389,6 +389,31 @@ namespace SnowLeopardEngine
                 }
             });
 
+        // Built-in camera controllers
+        m_Registry.view<TransformComponent, CameraComponent, ThirdPersonFollowCameraControllerComponent>().each(
+            [this](entt::entity                                entity,
+                   TransformComponent&                         transform,
+                   CameraComponent&                            camera,
+                   ThirdPersonFollowCameraControllerComponent& thirdPersonController) {
+                auto& inputSystem   = g_EngineContext->InputSys;
+                auto  mousePosition = inputSystem->GetMousePosition();
+
+                auto targetTransform     = m_Registry.get<TransformComponent>(thirdPersonController.FollowEntity);
+                auto targetRotationEuler = targetTransform.GetRotationEuler();
+                // Calculate forward (Yaw - 90 to adjust)
+                glm::vec3 forward;
+                forward.x = cos(glm::radians(targetRotationEuler.y - 90)) * cos(glm::radians(targetRotationEuler.x));
+                forward.y = sin(glm::radians(targetRotationEuler.x));
+                forward.z = sin(glm::radians(targetRotationEuler.y - 90)) * cos(glm::radians(targetRotationEuler.x));
+                forward   = glm::normalize(forward);
+                auto up   = glm::vec3(0, 1, 0);
+
+                transform.Position = targetTransform.Position + forward * thirdPersonController.Offset.z +
+                                     up * thirdPersonController.Offset.y;
+                transform.SetRotationEuler(
+                    glm::vec3(targetRotationEuler.x, targetRotationEuler.y - 180, targetRotationEuler.z));
+            });
+
         // Animators
         m_Registry.view<AnimatorComponent>().each(
             [deltaTime](entt::entity entity, AnimatorComponent& animator) { animator.Controller.Update(deltaTime); });
@@ -570,6 +595,7 @@ namespace SnowLeopardEngine
 
     ON_COMPONENT_ADDED(CameraComponent) {}
     ON_COMPONENT_ADDED(FreeMoveCameraControllerComponent) {}
+    ON_COMPONENT_ADDED(ThirdPersonFollowCameraControllerComponent) {}
     ON_COMPONENT_ADDED(DirectionalLightComponent) {}
     ON_COMPONENT_ADDED(PointLightComponent) {}
     ON_COMPONENT_ADDED(MeshFilterComponent) {}

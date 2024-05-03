@@ -15,6 +15,7 @@
 
 #include "cereal/cereal.hpp"
 #include <PxPhysicsAPI.h>
+#include <entt/fwd.hpp>
 
 // CppAst.NET Macro
 #if !defined(__cppast)
@@ -450,8 +451,8 @@ namespace SnowLeopardEngine
         float     StepOffset  = 0.3;
         float     Height      = 1.0f;
         float     Radius      = 0.5f;
-        float     MinMoveDisp = 0;
-        glm::vec3 Offset      = {0, 0, 0};
+        float     MinMoveDisp = 0.2;
+        glm::vec3 Offset      = {0, 0.5, 0};
 
         Ref<PhysicsMaterial>       Material           = nullptr;
         physx::PxController*       InternalController = nullptr;
@@ -574,6 +575,30 @@ namespace SnowLeopardEngine
 
         FreeMoveCameraControllerComponent()                                         = default;
         FreeMoveCameraControllerComponent(const FreeMoveCameraControllerComponent&) = default;
+    };
+
+    struct ThirdPersonFollowCameraControllerComponent
+    {
+        float Sensitivity = 0.05f;
+        float Speed       = 0.1f;
+
+        glm::vec3 Offset = {0, 20, 45};
+
+        entt::entity FollowEntity;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(Sensitivity),
+                    CEREAL_NVP(Speed),
+                    CEREAL_NVP(Offset),
+                    CEREAL_NVP(FollowEntity));
+        }
+        // NOLINTEND
+
+        ThirdPersonFollowCameraControllerComponent()                                                  = default;
+        ThirdPersonFollowCameraControllerComponent(const ThirdPersonFollowCameraControllerComponent&) = default;
     };
 
     struct DirectionalLightComponent
@@ -894,9 +919,10 @@ namespace SnowLeopardEngine
     TagComponent, LayerComponent, TreeNodeComponent, TransformComponent, EntityStatusComponent, \
         NativeScriptingComponent, RigidBodyComponent, SphereColliderComponent, BoxColliderComponent, \
         CapsuleColliderComponent, TerrainColliderComponent, CharacterControllerComponent, MeshColliderComponent, \
-        CameraComponent, FreeMoveCameraControllerComponent, DirectionalLightComponent, PointLightComponent, \
-        BaseRendererComponent, MeshFilterComponent, MeshRendererComponent, TerrainComponent, TerrainRendererComponent, \
-        UI::CanvasComponent, UI::RectTransformComponent, UI::ButtonComponent, UI::ImageComponent, UI::TextComponent
+        CameraComponent, FreeMoveCameraControllerComponent, ThirdPersonFollowCameraControllerComponent, \
+        DirectionalLightComponent, PointLightComponent, BaseRendererComponent, MeshFilterComponent, \
+        MeshRendererComponent, TerrainComponent, TerrainRendererComponent, UI::CanvasComponent, \
+        UI::RectTransformComponent, UI::ButtonComponent, UI::ImageComponent, UI::TextComponent
 
 #define ALL_SERIALIZABLE_COMPONENT_TYPES COMMON_COMPONENT_TYPES, IDComponent, NameComponent
 

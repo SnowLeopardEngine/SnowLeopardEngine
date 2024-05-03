@@ -3,9 +3,12 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/IO/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
+#include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
+#include <SnowLeopardEngine/Core/Time/Time.h>
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Engine/EngineContext.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
@@ -15,11 +18,73 @@ const std::string TextMaterialPath  = "Assets/Materials/Next/UIText.dzmaterial";
 
 using namespace SnowLeopardEngine;
 
+class CharacterScript : public NativeScriptInstance
+{
+public:
+    virtual void OnLoad() override
+    {
+        m_Controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
+        m_Animator   = m_OwnerEntity->GetComponent<AnimatorComponent>();
+    }
+
+    virtual void OnTick(float deltaTime) override
+    {
+        if (g_EngineContext->InputSys->GetKey(KeyCode::W))
+        {
+            m_Speed.z = 0.1;
+        }
+
+        if (g_EngineContext->InputSys->GetKeyUp(KeyCode::W))
+        {
+            m_Speed.z = 0.0;
+        }
+
+        if (g_EngineContext->InputSys->GetKey(KeyCode::S))
+        {
+            m_Speed.z = -0.1;
+        }
+
+        if (g_EngineContext->InputSys->GetKeyUp(KeyCode::S))
+        {
+            m_Speed.z = 0;
+        }
+
+        if (g_EngineContext->InputSys->GetKey(KeyCode::A))
+        {
+            m_Speed.x = 0.1;
+        }
+
+        if (g_EngineContext->InputSys->GetKeyUp(KeyCode::A))
+        {
+            m_Speed.x = 0;
+        }
+
+        if (g_EngineContext->InputSys->GetKey(KeyCode::D))
+        {
+            m_Speed.x = -0.1;
+        }
+
+        if (g_EngineContext->InputSys->GetKeyUp(KeyCode::D))
+        {
+            m_Speed.x = 0;
+        }
+
+        g_EngineContext->PhysicsSys->Move(m_Controller, m_Speed, deltaTime);
+        m_OwnerEntity->AddOrReplaceComponent<AnimatorComponent>(m_Animator);
+    }
+
+private:
+    CharacterControllerComponent m_Controller;
+    AnimatorComponent            m_Animator;
+    glm::vec3                    m_Speed = {0, -9.8, 0};
+};
+
 class GameLoad final : public LifeTimeComponent
 {
 public:
     virtual void OnLoad() override final
     {
+        m_PlayerModel   = new Model();
         m_RenderContext = CreateScope<RenderContext>();
         CreateMainMenuScene();
         CreateGameScene();
@@ -29,7 +94,11 @@ public:
         Subscribe(m_ButtonClickedEventHandler);
     }
 
-    virtual void OnUnload() override final { Unsubscribe(m_ButtonClickedEventHandler); }
+    virtual void OnUnload() override final
+    {
+        Unsubscribe(m_ButtonClickedEventHandler);
+        delete m_PlayerModel;
+    }
 
 private:
     void CreateMainMenuScene()
@@ -130,11 +199,11 @@ private:
 
         // Create a terrain
         auto     normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
-        uint32_t xSize = 100, ySize = 100;
+        uint32_t xSize = 1000, ySize = 1000;
         int      heightMapWidth                             = xSize;
         int      heightMapHeight                            = ySize;
         float    xScale                                     = 1;
-        float    yScale                                     = 2;
+        float    yScale                                     = 1;
         float    zScale                                     = 1;
         Entity   terrain                                    = m_GameScene->CreateEntity("Terrain");
         terrain.GetComponent<TransformComponent>().Position = {
@@ -147,6 +216,38 @@ private:
         terrain.AddComponent<TerrainColliderComponent>(normalMaterial);
         auto& terrainRenderer            = terrain.AddComponent<TerrainRendererComponent>();
         terrainRenderer.MaterialFilePath = "Assets/Materials/Next/DefaultTerrain.dzmaterial";
+
+        // Create our player character
+        OzzModelLoadConfig config = {};
+        config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
+        config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
+        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Idle.ozz");
+        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Walking.ozz");
+        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Run.ozz");
+        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Jumping.ozz");
+        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Punching.ozz");
+        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Death.ozz");
+        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/ThrowObject.ozz");
+        bool ok = OzzModelLoader::Load(config, m_PlayerModel);
+
+        // Create a character
+        Entity character                       = m_GameScene->CreateEntity("Character");
+        auto&  characterTransform              = character.GetComponent<TransformComponent>();
+        characterTransform.Position.y          = 10;
+        characterTransform.Scale               = {10, 10, 10};
+        auto& characterMeshFilter              = character.AddComponent<MeshFilterComponent>();
+        characterMeshFilter.Meshes             = &m_PlayerModel->Meshes;
+        auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
+        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
+        auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
+        auto  animator                         = CreateRef<Animator>(m_PlayerModel->AnimationClips[0]);
+        animatorComponent.Controller.RegisterAnimator(animator);
+        animatorComponent.Controller.SetEntryAnimator(animator);
+        auto& controller = character.AddComponent<CharacterControllerComponent>();
+        character.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(CharacterScript));
+
+        auto& tpCamControl        = camera.AddComponent<ThirdPersonFollowCameraControllerComponent>();
+        tpCamControl.FollowEntity = character;
     }
 
     void LoadMainMenuScene() { g_EngineContext->SceneMngr->SetActiveScene(m_MainMenuScene); }
@@ -156,9 +257,13 @@ private:
     void PlayMainMenuBGM() { g_EngineContext->AudioSys->Play("assets/audios/MainMenu.mp3"); }
 
 private:
+    // Scenes
     Ref<LogicScene>      m_MainMenuScene = nullptr;
     Ref<LogicScene>      m_GameScene     = nullptr;
     Scope<RenderContext> m_RenderContext = nullptr;
+
+    // Player
+    Model* m_PlayerModel = nullptr;
 
     // Button UUIDs for event handling
     CoreUUID m_PlayButtonID;
@@ -198,6 +303,8 @@ private:
 
 int main(int argc, char** argv) TRY
 {
+    REGISTER_TYPE(CharacterScript);
+
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title  = "Final Game DEMO";
     initInfo.Engine.Window.Width  = 1280;
