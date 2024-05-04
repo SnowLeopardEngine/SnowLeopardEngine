@@ -235,13 +235,13 @@ private:
         int      heightMapWidth                             = xSize;
         int      heightMapHeight                            = ySize;
         float    xScale                                     = 10;
-        float    yScale                                     = 2;
+        float    yScale                                     = 1;
         float    zScale                                     = 10;
         Entity   terrain                                    = m_GameScene->CreateEntity("Terrain");
         terrain.GetComponent<TransformComponent>().Position = {
             -heightMapWidth * 0.5f * xScale, 0, -heightMapHeight * 0.5f * zScale}; // fix center
         auto& terrainComponent            = terrain.AddComponent<TerrainComponent>();
-        terrainComponent.TerrainHeightMap = Utils::GenerateRandomHeightMap(xSize, ySize);
+        terrainComponent.TerrainHeightMap = Utils::GenerateRandomHeightMap(xSize, ySize, 50);
         terrainComponent.XScale           = xScale;
         terrainComponent.YScale           = yScale;
         terrainComponent.ZScale           = zScale;
@@ -265,7 +265,7 @@ private:
         // Create a character
         Entity character              = m_GameScene->CreateEntity("Character");
         auto&  characterTransform     = character.GetComponent<TransformComponent>();
-        characterTransform.Position.y = 10;
+        characterTransform.Position.y = 50;
         characterTransform.Scale      = {10, 10, 10};
         characterTransform.SetRotationEuler(glm::vec3(0, 180, 0));
         auto& characterMeshFilter              = character.AddComponent<MeshFilterComponent>();

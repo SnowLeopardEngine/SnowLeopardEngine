@@ -62,7 +62,9 @@ vec3 calIBLAmbient(vec3 diffuseColor, vec3 F0, vec3 N, vec3 V, PBRMaterial mater
     return iblContribution.Diffuse * material.ao + iblContribution.Specular * material.ao;
 }
 
-vec3 calPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NUM_MAX_POINT_LIGHT], uint numPointLights, vec3 normal, vec3 viewDir, PBRMaterial material, vec3 fragPos, sampler2DArrayShadow cascadedShadowMaps, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
+vec3 calPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NUM_MAX_POINT_LIGHT], uint numPointLights, vec3 normal, PBRMaterial material, vec3 fragPos, vec3 viewPos, sampler2DArrayShadow cascadedShadowMaps, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
+    vec3 viewDir = normalize(viewPos - fragPos);
+
     vec3 N = normalize(normal);
     vec3 V = normalize(viewDir);
 
@@ -85,7 +87,7 @@ vec3 calPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NU
     uint cascadeIndex = selectCascadeIndex(fragPosViewSpace.xyz);
 
     // calculate shadow
-    float shadow = calShadow(cascadeIndex, fragPos, cascadedShadowMaps);
+    float shadow = calShadow(cascadeIndex, fragPos, normal, directionalLight.direction, cascadedShadowMaps);
 
     vec3 ambient = vec3(0.01) * material.albedo * material.ao;
     vec3 color = material.emissive + ambient + (1.0 - shadow) * Lo;

@@ -41,6 +41,6 @@ void main() {
     material.roughness = metallicRoughnessAO.g;
     material.ao = metallicRoughnessAO.b * texture(ssao, varingTexCoords).r; // combine AO texture & SSAO
 
-    vec3 viewDir = normalize(getViewPos() - fragPos);
-    FragColor = calPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, viewDir, material, fragPos, cascadedShadowMaps, brdfLUT, irradianceMap, prefilteredEnvMap);
+    vec3 viewPos = getViewPos();
+    FragColor = calPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, material, fragPos, viewPos, cascadedShadowMaps, brdfLUT, irradianceMap, prefilteredEnvMap);
 }

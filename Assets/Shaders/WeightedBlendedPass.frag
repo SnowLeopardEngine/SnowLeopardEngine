@@ -44,8 +44,8 @@ void main() {
     material.ao = (1 - useAoMap) * ao + useAoMap * texture(aoMap, varingTexCoords).r;
     material.opacity = opacity;
 
-    vec3 viewDir = normalize(getViewPos() - fragPos);
-    vec3 color = calPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, viewDir, material, fragPos, cascadedShadowMaps, brdfLUT, irradianceMap, prefilteredEnvMap);
+    vec3 viewPos = getViewPos();
+    vec3 color = calPBRLighting(getDirectionalLight(), getPointLights(), getNumPointLights(), worldNormal, material, fragPos, viewPos, cascadedShadowMaps, brdfLUT, irradianceMap, prefilteredEnvMap);
 
     const float a = clamp(material.opacity, 0.0, 1.0);
 

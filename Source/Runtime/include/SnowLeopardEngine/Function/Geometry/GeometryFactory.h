@@ -327,7 +327,7 @@ namespace SnowLeopardEngine
             return map;
         }
 
-        static HeightMap GenerateWaveHeightMap(int xSize, int ySize)
+        static HeightMap GenerateWaveHeightMap(int xSize, int ySize, int zSize)
         {
             auto map = GenerateBlankHeightMap(xSize, ySize);
             for (int x = 0; x < xSize; ++x)
@@ -336,13 +336,13 @@ namespace SnowLeopardEngine
                 {
                     float waveHeight = std::sin(x / static_cast<float>(ySize) * 2.0f * M_PI) *
                                        std::cos(y / static_cast<float>(xSize) * 2.0f * M_PI);
-                    map.Set(y, x, waveHeight * 10.0f);
+                    map.Set(y, x, waveHeight * zSize);
                 }
             }
             return map;
         }
 
-        static HeightMap GenerateRandomHeightMap(int xSize, int ySize)
+        static HeightMap GenerateRandomHeightMap(int xSize, int ySize, int zSize)
         {
             HeightMap map = GenerateBlankHeightMap(xSize, ySize);
 
@@ -358,7 +358,7 @@ namespace SnowLeopardEngine
             {
                 for (int x = 0; x < xSize; x++)
                 {
-                    map.Set(x, y, 10.0f * noise.GetNoise(static_cast<float>(x), static_cast<float>(y)));
+                    map.Set(x, y, zSize * noise.GetNoise(static_cast<float>(x), static_cast<float>(y)));
                 }
             }
 
