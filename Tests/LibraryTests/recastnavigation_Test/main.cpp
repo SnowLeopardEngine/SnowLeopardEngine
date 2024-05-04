@@ -14,9 +14,27 @@
 #include <DetourNavMesh.h>
 #include <DetourNavMeshQuery.h>
 #include <DetourNavMeshBuilder.h>
+//#include "SnowLeopardEngine\Source\Runtime\include\SnowLeopardEngine\Function\Rendering\RenderTypeDef.h"
+
+struct NavMeshConfig {
+    float cs; // 格子大小
+    float ch; // 格子高度
+    float walkableSlopeAngle; // 最大可行走坡度
+    int walkableHeight; // 最小高度
+    int walkableClimb; // 最大爬升高度
+    int walkableRadius; // 角色半径
+    int maxEdgeLen; // 最大边长
+    float maxSimplificationError; // 最大简化误差
+    int minRegionArea; // 最小区域面积
+    int mergeRegionArea; // 合并区域的最小面积
+    int maxVertsPerPoly; // 每个多边形的最大顶点数
+    float detailSampleDist; // 详细网格采样距离
+    float detailSampleMaxError; // 详细网格的最大采样误差
+};
+
 
 // Load OBJ model using tinyobjloader
-bool loadObj(const std::string& filename, std::vector<float>& vertices, std::vector<unsigned int>& indices) {
+bool loadObj(const std::string& filename, std::vector<float>& vertices, std::vector<unsigned int>& indices,const NavMeshConfig& config) {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -40,30 +58,39 @@ bool loadObj(const std::string& filename, std::vector<float>& vertices, std::vec
 }
 
 // Generate NavMesh using Recastnavigation
-void generateNavMesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices) {
+void generateNavMesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices,const NavMeshConfig& config,const std::string& exportPath) {
    
 
      // 创建上下文对象，用于记录日志和跟踪处理状态
     rcContext* ctx = new rcContext();
+    /*const std::vector<float>& vertices, const std::vector<unsigned int>& indices;
+    for (const auto& vertex : meshItem.Data.Vertices) {
+        vertices.push_back(vertex.Position.x);
+        vertices.push_back(vertex.Position.y);
+        vertices.push_back(vertex.Position.z);
+    }
 
+    for (const auto& index : meshItem.Data.Indices {
+        indices.push_back(index);
+    }*/
     // 初始化导航网格构建的配置结构
     rcConfig cfg;
     memset(&cfg, 0, sizeof(cfg));  // 清零配置，确保从干净的状态开始
 
     // 设置构建配置参数
-    cfg.cs = 0.3f;  // 格子大小
-    cfg.ch = 0.2f;  // 格子高度
-    cfg.walkableSlopeAngle = 45.0f;  // 最大可行走坡度
-    cfg.walkableHeight = static_cast<int>(ceil(2.0f / cfg.ch));  // 通过空间所需的最小高度
-    cfg.walkableClimb = static_cast<int>(floor(0.9f / cfg.ch));  // 最大爬升高度
-    cfg.walkableRadius = static_cast<int>(ceil(0.6f / cfg.cs));  // 角色半径
-    cfg.maxEdgeLen = static_cast<int>(40.0f / cfg.cs);  // 最大边长
-    cfg.maxSimplificationError = 1.3f;  // 最大简化误差
-    cfg.minRegionArea = static_cast<int>(rcSqr(50));  // 最小区域面积
-    cfg.mergeRegionArea = static_cast<int>(rcSqr(20));  // 合并区域的最小面积
-    cfg.maxVertsPerPoly = 6;  // 每个多边形的最大顶点数
-    cfg.detailSampleDist = cfg.cs * 24.0f;  // 详细网格采样距离
-    cfg.detailSampleMaxError = cfg.ch * 1.0f;  // 详细网格的最大采样误差
+    cfg.cs = config.cs;
+    cfg.ch = config.ch;
+    cfg.walkableSlopeAngle = config.walkableSlopeAngle;
+    cfg.walkableHeight = config.walkableHeight;
+    cfg.walkableClimb = config.walkableClimb;
+    cfg.walkableRadius = config.walkableRadius;
+    cfg.maxEdgeLen = config.maxEdgeLen;
+    cfg.maxSimplificationError = config.maxSimplificationError;
+    cfg.minRegionArea = config.minRegionArea;
+    cfg.mergeRegionArea = config.mergeRegionArea;
+    cfg.maxVertsPerPoly = config.maxVertsPerPoly;
+    cfg.detailSampleDist = config.detailSampleDist;
+    cfg.detailSampleMaxError = config.detailSampleMaxError;
 
     // 设置导航网格的边界
     cfg.bmin[0] = cfg.bmin[1] = cfg.bmin[2] = FLT_MAX;
@@ -171,10 +198,12 @@ void generateNavMesh(const std::vector<float>& vertices, const std::vector<unsig
     }
 
     // 保存二进制数据到文件
-    std::ofstream file("navmesh.bin", std::ios::out | std::ios::binary);
+     std::string navMeshFilePath = exportPath; 
+    std::ofstream file(navMeshFilePath, std::ios::out | std::ios::binary);
     file.write(reinterpret_cast<const char*>(navData), navDataSize);
     file.close();
 
+    
     // 清理
     dtFree(navData);
     rcFreePolyMeshDetail(dmesh);
@@ -194,11 +223,11 @@ bool loadNavMeshData(const char* filename, std::vector<unsigned char>& data) {
 
     std::streamsize size = file.tellg();
     file.seekg(0, std::ios::beg);
-
     data.resize(size);
     if (!file.read(reinterpret_cast<char*>(data.data()), size)) {
         std::cerr << "Failed to read file: " << filename << std::endl;
         return false;
+        std::cerr << "Failed to read file: " << filename << std::endl; 
     }
 
     file.close();
@@ -240,10 +269,24 @@ dtNavMeshQuery* createNavQuery(dtNavMesh* navMesh) {
     return navQuery;
 }
 
-void findPath(dtNavMeshQuery* navQuery, const float* startPos, const float* endPos) {
+std::vector<float>findPath(const char* navMeshFilename,const float* startPos, const float* endPos) {
+  std::vector<float> pathPoints; 
+  std::vector<unsigned char> navMeshData;
+    if (!loadNavMeshData(navMeshFilename, navMeshData)) {
+        std::cerr << "Failed to load nav mesh data." << std::endl;
+        return pathPoints;
+    }
+
+    dtNavMesh* navMesh = loadNavMesh(navMeshData);
+    if (!navMesh) {
+        std::cerr << "Failed to load nav mesh." << std::endl;
+        return pathPoints;
+    }
+    dtNavMeshQuery* navQuery= createNavQuery(navMesh);
+ 
     if (!navQuery) {
         std::cerr << "Invalid navigation query." << std::endl;
-        return;
+        return pathPoints;
     }
 
     dtQueryFilter filter;
@@ -264,7 +307,7 @@ void findPath(dtNavMeshQuery* navQuery, const float* startPos, const float* endP
     // 如果起点或终点不在有效的多边形内，返回
     if (!startRef || !endRef) {
         std::cerr << "Failed to find valid start or end polygon." << std::endl;
-        return;
+        return pathPoints;
     }
 
     // 查找路径
@@ -280,9 +323,18 @@ void findPath(dtNavMeshQuery* navQuery, const float* startPos, const float* endP
         for (int i = 0; i < pathCount; ++i) {
             std::cout << "Segment " << i + 1 << ": (" << straight[i * 3] << ", " << straight[i * 3 + 1] << ", " << straight[i * 3 + 2] << ")" << std::endl;
         }*/
+
+         for (int i = 0; i < pathCount; ++i) {
+            pathPoints.push_back(straight[i * 3]);     // x坐标
+            pathPoints.push_back(straight[i * 3 + 1]); // y坐标
+            pathPoints.push_back(straight[i * 3 + 2]); // z坐标
+        }
     } else {
         std::cerr << "Failed to find path." << std::endl;
     }
+
+    return pathPoints;
+
 }
 
 
@@ -292,7 +344,7 @@ int main() {
     std::string objFilename = "assets/nav_test.obj";
 
     // Load OBJ model
-    std::vector<float> vertices;
+   /* std::vector<float> vertices;
     std::vector<unsigned int> indices;
     try {
         loadObj(objFilename, vertices, indices);
@@ -302,9 +354,9 @@ int main() {
     }
 
     // Generate NavMesh
-    generateNavMesh(vertices, indices);
+    //generateNavMesh(vertices, indices);
 
-    std::cout << "NavMesh generated successfully!" << std::endl;
+    std::cout << "NavMesh generated successfully!" << std::endl;*/
 
     return 0;
 }
