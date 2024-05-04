@@ -8,6 +8,8 @@ namespace SnowLeopardEngine
     class AnimatorController
     {
     public:
+        AnimatorController();
+
         void Init();
         void Update(float deltaTime);
 
@@ -15,7 +17,8 @@ namespace SnowLeopardEngine
         void DeleteAnimator(const Ref<Animator>& animator);
         void SetEntryAnimator(const Ref<Animator>& animator);
 
-        void RegisterTransition(const Ref<Animator>& sourceAnimator, const Ref<Animator>& targetAnimator, int duration);
+        Ref<Transition>
+             RegisterTransition(const Ref<Animator>& sourceAnimator, const Ref<Animator>& targetAnimator, int duration);
         void DeleteTransition(const Ref<Animator>& sourceAnimator, const Ref<Animator>& targetAnimator);
 
         void RegisterParameters(const std::string& parameterName, const std::variant<float, bool>& defaultValue);
@@ -32,7 +35,7 @@ namespace SnowLeopardEngine
         void Blending(const Ref<Animator>& sourceAnimator, const Ref<Animator>& targetAnimator);
 
         void InitAnimators();
-        void UpdateAnimators(float deltaTime);
+        void UpdateCurrentAnimator(float deltaTime);
 
         void CheckParameters();
 

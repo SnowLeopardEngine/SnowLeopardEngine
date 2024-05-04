@@ -1,17 +1,21 @@
 #include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
+#include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Animation/Transition.h"
 
 namespace SnowLeopardEngine
 {
-    void AnimatorController::Init()
+    AnimatorController::AnimatorController()
     {
-        InitAnimators();
+        m_Parameters = CreateRef<std::map<std::string, std::variant<float, bool, std::monostate>>>();
     }
+
+    void AnimatorController::Init() { InitAnimators(); }
 
     void AnimatorController::Update(float deltaTime)
     {
         CheckParameters();
-        UpdateAnimators(deltaTime);
+        UpdateCurrentAnimator(deltaTime);
     }
 
     void AnimatorController::RegisterAnimator(const Ref<Animator>& animator) { m_Animators.push_back(animator); }
@@ -26,13 +30,14 @@ namespace SnowLeopardEngine
         }
     }
 
-    void AnimatorController::RegisterTransition(const Ref<Animator>& sourceAnimator,
-                                                const Ref<Animator>& targetAnimator,
-                                                int                  duration)
+    Ref<Transition> AnimatorController::RegisterTransition(const Ref<Animator>& sourceAnimator,
+                                                           const Ref<Animator>& targetAnimator,
+                                                           int                  duration)
     {
         auto transition = CreateRef<Transition>(sourceAnimator, targetAnimator, duration);
         transition->SetParameters(m_Parameters);
         m_TransitionsInfoMap[sourceAnimator].push_back(transition);
+        return transition;
     }
 
     void AnimatorController::DeleteTransition(const Ref<Animator>& sourceAnimator, const Ref<Animator>& targetAnimator)
@@ -160,12 +165,9 @@ namespace SnowLeopardEngine
         }
     }
 
-    void AnimatorController::UpdateAnimators(float deltaTime)
+    void AnimatorController::UpdateCurrentAnimator(float deltaTime)
     {
-        for (const auto& animator : m_Animators)
-        {
-            animator->Update(deltaTime);
-        }
+        m_CurrentAnimator->Update(deltaTime);
     }
 
     void AnimatorController::CheckParameters()
