@@ -89,6 +89,7 @@ public:
                 m_PreJump      = true;
                 m_PrejumpTimer = m_PrejumpTime;
                 animator.Controller.SetTrigger("IsJump");
+                m_IsJumping = true;
             }
         }
         else
@@ -100,11 +101,15 @@ public:
                 m_VerticalSpeed = m_JumpSpeed;
                 m_PrejumpTimer  = m_PrejumpTime;
                 m_PreJump       = false;
+
+                g_EngineContext->AudioSys->Play("Assets/Audios/Jumping.mp3");
             }
         }
 
-        if (m_IsGrounded && !m_LastFrameIsGrounded && !m_PreJump)
+        if (m_IsGrounded && !m_LastFrameIsGrounded && !m_PreJump && m_IsJumping)
         {
+            g_EngineContext->AudioSys->Play("Assets/Audios/JumpLand.wav");
+            m_IsJumping = false;
             animator.Controller.SetTrigger("IsFallToGround");
         }
 
@@ -159,6 +164,7 @@ private:
     float m_PrejumpTime  = 0.7f;
     float m_PrejumpTimer = 0.7f;
 
+    bool m_IsJumping           = false;
     bool m_IsGrounded          = false;
     bool m_LastFrameIsGrounded = false;
 };
@@ -171,7 +177,6 @@ public:
         m_PlayerModel   = new Model();
         m_RenderContext = CreateScope<RenderContext>();
         LoadMainMenuScene();
-        PlayMainMenuBGM();
 
         Subscribe(m_ButtonClickedEventHandler);
     }
@@ -195,6 +200,12 @@ private:
         cameraTransform.Position   = {0, 10, 30};
         auto& cameraComponent      = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags = CameraClearFlags::Skybox; // Enable skybox
+        camera.AddComponent<AudioListenerComponent>();
+        auto& bgm       = camera.AddComponent<AudioSourceComponent>();
+        bgm.AudioPath   = "Assets/Audios/MainMenu.mp3";
+        bgm.IsLoop      = true;
+        bgm.IsSpatial   = false;
+        bgm.PlayOnAwake = true;
 
         // Create a background panel image
         Entity bgImage               = m_MainMenuScene->CreateEntity("Bg");
@@ -268,6 +279,13 @@ private:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
+        camera.AddComponent<AudioListenerComponent>();
+        auto& bgm       = camera.AddComponent<AudioSourceComponent>();
+        bgm.AudioPath   = "Assets/Audios/OutDoor.mp3";
+        bgm.IsLoop      = true;
+        bgm.IsSpatial   = false;
+        bgm.PlayOnAwake = true;
+        bgm.Volume      = 0.1f;
 
         // Create a menu button
         Entity menuButton    = m_GameScene->CreateEntity("MenuButton");
@@ -371,6 +389,25 @@ private:
 
         auto& tpCamControl        = camera.AddComponent<ThirdPersonFollowCameraControllerComponent>();
         tpCamControl.FollowEntity = character;
+
+        // Create a speaker object to test 3D spatial sound
+        Entity speaker            = m_GameScene->CreateEntity("Speaker");
+        auto&  speakerTransform   = speaker.GetComponent<TransformComponent>();
+        speakerTransform.Position = {-10, 30, 10};
+        speakerTransform.Scale *= 5;
+        auto& speakerMeshFilter              = speaker.AddComponent<MeshFilterComponent>();
+        speakerMeshFilter.FilePath           = "Assets/Models/Speaker/Speaker.dae";
+        auto& speakerMeshRenderer            = speaker.AddComponent<MeshRendererComponent>();
+        speakerMeshRenderer.MaterialFilePath = "Assets/Models/Speaker/Speaker.dzmaterial";
+        auto& speakderAudioSource            = speaker.AddComponent<AudioSourceComponent>();
+        speakderAudioSource.AudioPath        = "Assets/Audios/SpeakerBGM.mp3";
+        speakderAudioSource.IsSpatial        = true;
+        speakderAudioSource.IsLoop           = true;
+        speakderAudioSource.PlayOnAwake      = true;
+
+        auto& speakerBoxCollider  = speaker.AddComponent<BoxColliderComponent>(normalMaterial);
+        speakerBoxCollider.Size   = {5, 3, 3};
+        auto& speakerBoxRigidbody = speaker.AddComponent<RigidBodyComponent>();
     }
 
     void LoadMainMenuScene()
@@ -390,8 +427,6 @@ private:
         }
         g_EngineContext->SceneMngr->SetActiveScene(m_GameScene);
     }
-
-    void PlayMainMenuBGM() { g_EngineContext->AudioSys->Play("assets/audios/MainMenu.mp3"); }
 
 private:
     // Scenes
@@ -414,7 +449,7 @@ private:
                           buttonEntity.GetName(),
                           to_string(buttonEntity.GetCoreUUID()));
 
-        g_EngineContext->AudioSys->Play("assets/audios/ButtonClick.wav");
+        g_EngineContext->AudioSys->Play("Assets/Audios/ButtonClick.wav");
 
         auto buttonID = buttonEntity.GetCoreUUID();
 

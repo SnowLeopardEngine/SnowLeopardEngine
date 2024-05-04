@@ -89,12 +89,12 @@ namespace SnowLeopardEngine
         std::vector<Entity> GetEntitiesSortedByName();
 
     private:
-        void CreateDefaultEntities();
+        void        CreateDefaultEntities();
         std::string GetNameFromEntity(Entity entity) const;
         int         ExtractEntityNumber(const std::string& name);
         std::string ExtractEntityName(const std::string& name);
 
-        void        InitAfterDeserializing();
+        void InitAfterDeserializing();
 
         template<typename T>
         void OnComponentAdded(Entity entity, T& component);

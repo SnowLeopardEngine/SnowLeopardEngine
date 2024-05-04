@@ -9,6 +9,7 @@
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 
+#include "glm/fwd.hpp"
 #include <PxPhysicsAPI.h>
 
 namespace SnowLeopardEngine
@@ -36,6 +37,7 @@ namespace SnowLeopardEngine
 
         /** Character Controller **/
         void Move(const CharacterControllerComponent& component, const glm::vec3& movement, float deltaTime) const;
+        glm::vec3 GetLinearVelocity(const CharacterControllerComponent& component) const;
 
         /** RigidBody **/
         void AddForce(const RigidBodyComponent& component, const glm::vec3& force) const;

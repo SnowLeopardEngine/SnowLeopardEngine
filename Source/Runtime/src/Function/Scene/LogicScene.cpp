@@ -5,7 +5,9 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
+#include "SnowLeopardEngine/Function/Asset/Model.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/IO/AssimpModelLoader.h"
 #include "SnowLeopardEngine/Function/IO/MaterialLoader.h"
 #include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
@@ -220,6 +222,16 @@ namespace SnowLeopardEngine
                         break;
                 }
             }
+            else
+            {
+                if (FileSystem::Exists(meshFilter.FilePath))
+                {
+                    meshFilter.Meshes = new MeshGroup;
+                    Model assimpModel;
+                    AssimpModelLoader::LoadModel(meshFilter.FilePath, assimpModel);
+                    *meshFilter.Meshes = assimpModel.Meshes;
+                }
+            }
 
             meshFilter.AssignEntityID(static_cast<int>(entity));
         });
@@ -263,6 +275,39 @@ namespace SnowLeopardEngine
             if (FileSystem::Exists(text.MaterialFilePath))
             {
                 text.Mat = IO::Load(text.MaterialFilePath);
+            }
+        });
+
+        // Load Audio
+        m_Registry.view<TransformComponent, AudioListenerComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, AudioListenerComponent& audioListener) {
+                g_EngineContext->AudioSys->SetListenerCone(audioListener.ConeInfo.ConeInnerAngleRadians,
+                                                           audioListener.ConeInfo.ConeOuterAngleRadians,
+                                                           audioListener.ConeInfo.ConeOuterGain);
+            });
+        m_Registry.view<AudioSourceComponent>().each([](entt::entity entity, AudioSourceComponent& audioSource) {
+            if (FileSystem::Exists(audioSource.AudioPath))
+            {
+                if (audioSource.Clip == nullptr)
+                {
+                    audioSource.Clip =
+                        g_EngineContext->AudioSys->CreateAudioClip(audioSource.AudioPath.generic_string());
+                }
+
+                audioSource.Clip->SetIsLoop(audioSource.IsLoop);
+                audioSource.Clip->SetIsSpatial(audioSource.IsSpatial);
+                audioSource.Clip->SetVolume(audioSource.Volume);
+                audioSource.Clip->SetDistanceModel(audioSource.DistanceModel);
+                audioSource.Clip->SetCone(audioSource.ConeInfo.ConeInnerAngleRadians,
+                                          audioSource.ConeInfo.ConeOuterAngleRadians,
+                                          audioSource.ConeInfo.ConeOuterGain);
+                audioSource.Clip->SetRollOff(audioSource.RollOff);
+                audioSource.Clip->SetGainMinMax(audioSource.MinMaxGain);
+
+                if (audioSource.PlayOnAwake)
+                {
+                    audioSource.Clip->Play();
+                }
             }
         });
 
@@ -398,7 +443,7 @@ namespace SnowLeopardEngine
                 auto& inputSystem   = g_EngineContext->InputSys;
                 auto  mousePosition = inputSystem->GetMousePosition();
 
-                auto targetTransform     = m_Registry.get<TransformComponent>(thirdPersonController.FollowEntity);
+                auto targetTransform = m_Registry.get<TransformComponent>(thirdPersonController.FollowEntity);
                 // auto targetRotationEuler = targetTransform.GetRotationEuler();
                 // // Calculate forward (Yaw - 90 to adjust)
                 // glm::vec3 forward;
@@ -412,6 +457,19 @@ namespace SnowLeopardEngine
 
                 // transform.SetRotationEuler(
                 //     glm::vec3(targetRotationEuler.x, targetRotationEuler.y - 180, targetRotationEuler.z));
+            });
+
+        // Audio
+        m_Registry.view<TransformComponent, AudioListenerComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, AudioListenerComponent& audioListener) {
+                g_EngineContext->AudioSys->SetListenerPosition(transform.Position);
+                g_EngineContext->AudioSys->SetListenerDirection(transform.GetRotationEuler());
+            });
+        m_Registry.view<TransformComponent, AudioSourceComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, AudioSourceComponent& audioSource) {
+                audioSource.Clip->SetPosition(transform.Position);
+                auto worldDirection = transform.GetRotation() * audioSource.LocalDirection;
+                audioSource.Clip->SetDirection(worldDirection);
             });
 
         // Animators
@@ -445,6 +503,16 @@ namespace SnowLeopardEngine
         m_Registry.view<NativeScriptingComponent>().each(
             [](entt::entity entity, NativeScriptingComponent& nativeScript) {
                 nativeScript.ScriptInstance->OnUnload();
+            });
+
+        m_Registry.view<TransformComponent, AudioListenerComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, AudioListenerComponent& audioListener) {
+                g_EngineContext->AudioSys->SetListenerPosition({0, 0, 0});
+                g_EngineContext->AudioSys->SetListenerDirection({0, 0, 0});
+            });
+        m_Registry.view<TransformComponent, AudioSourceComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, AudioSourceComponent& audioSource) {
+                audioSource.Clip->Stop();
             });
 
         LogicSceneUnloadedEvent unloadedEvent(this);
@@ -604,6 +672,9 @@ namespace SnowLeopardEngine
     ON_COMPONENT_ADDED(TerrainRendererComponent) {}
 
     ON_COMPONENT_ADDED(AnimatorComponent) {}
+
+    ON_COMPONENT_ADDED(AudioSourceComponent) {}
+    ON_COMPONENT_ADDED(AudioListenerComponent) {}
 
     ON_COMPONENT_ADDED(UI::CanvasComponent) {}
     ON_COMPONENT_ADDED(UI::RectTransformComponent) {}

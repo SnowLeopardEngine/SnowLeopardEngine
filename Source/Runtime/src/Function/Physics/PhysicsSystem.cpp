@@ -701,6 +701,16 @@ namespace SnowLeopardEngine
         }
     }
 
+    glm::vec3 PhysicsSystem::GetLinearVelocity(const CharacterControllerComponent& component) const
+    {
+        if (component.InternalController != nullptr)
+        {
+            return PhysXGLMHelpers::GetGLMVec3(component.InternalController->getActor()->getLinearVelocity());
+        }
+
+        return glm::vec3(0);
+    }
+
     /** RigidBody **/
     void PhysicsSystem::AddForce(const RigidBodyComponent& component, const glm::vec3& force) const
     {
