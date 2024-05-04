@@ -3,16 +3,26 @@
 
 namespace SnowLeopardEngine
 {
-    bool Transition::JudgeCondition(bool isTrigger) const
+    bool Transition::JudgeCondition() const
     {
+        if (!m_TriggerSet.empty() && m_Conditions.empty())
+        {
+            return false;
+        }
+
         for (const auto& condition : m_Conditions)
         {
-            if (!get<1>(condition).has_value() && !isTrigger)
+            if (!get<1>(condition).has_value())
                 return false;
 
-            const auto& name           = get<0>(condition);
-            auto        value          = m_Parameters->at(name);
-            auto        conditionValue = get<2>(condition);
+            const auto& name = get<0>(condition);
+
+            // Skip trigger
+            if (m_TriggerSet.count(name) > 0)
+                return false;
+
+            auto value          = m_Parameters->at(name);
+            auto conditionValue = get<2>(condition);
 
             if (std::holds_alternative<bool>(value))
             {
@@ -72,6 +82,10 @@ namespace SnowLeopardEngine
 
         return true;
     }
+
+    bool Transition::HasTrigger(const std::string& triggerName) const { return m_TriggerSet.count(triggerName) > 0; }
+
+    void Transition::AddTrigger(const std::string& triggerName) { m_TriggerSet.insert(triggerName); }
 
     void Transition::SetParameters(Ref<std::map<std::string, std::variant<float, bool, std::monostate>>> parameter)
     {

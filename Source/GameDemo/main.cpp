@@ -10,8 +10,6 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
-#include "glm/fwd.hpp"
-#include "glm/geometric.hpp"
 #include <SnowLeopardEngine/Core/Time/Time.h>
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Engine/EngineContext.h>
@@ -36,7 +34,16 @@ public:
             return;
         }
 
-        auto& transform = m_OwnerEntity->GetComponent<TransformComponent>();
+        m_LastFrameIsGrounded = m_IsGrounded;
+
+        auto& transform  = m_OwnerEntity->GetComponent<TransformComponent>();
+        auto& animator   = m_OwnerEntity->GetComponent<AnimatorComponent>();
+        auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
+
+        // Raycast to test if on the ground.
+        auto      origin = transform.Position - glm::vec3(0, controller.Height + 0.1f, 0); // under feet
+        glm::vec3 direction(0, -1, 0);
+        m_IsGrounded = g_EngineContext->PhysicsSys->SimpleRaycast(origin, direction, 0.15f);
 
         glm::vec3 forwardDirection(0, 0, -1);
         glm::vec3 rightDirection(-1, 0, 0);
@@ -49,66 +56,111 @@ public:
 
         float     factor = 1.0f;
         glm::vec3 movement(0.0f);
-        m_WorldVelocity = {0, -9.8, 0};
 
-        if (g_EngineContext->InputSys->GetKey(KeyCode::LeftShift))
+        if (!m_PreJump)
         {
-            factor = 2.0f;
+            if (g_EngineContext->InputSys->GetKey(KeyCode::LeftShift))
+            {
+                factor = 2.0f;
+            }
+
+            if (g_EngineContext->InputSys->GetKey(KeyCode::W))
+            {
+                movement += globalForward * factor;
+            }
+
+            if (g_EngineContext->InputSys->GetKey(KeyCode::S))
+            {
+                movement -= globalForward * factor;
+            }
+
+            if (g_EngineContext->InputSys->GetKey(KeyCode::A))
+            {
+                movement += globalRight * factor;
+            }
+
+            if (g_EngineContext->InputSys->GetKey(KeyCode::D))
+            {
+                movement -= globalRight * factor;
+            }
+
+            if (m_IsGrounded && g_EngineContext->InputSys->GetKeyDown(KeyCode::Space))
+            {
+                m_PreJump      = true;
+                m_PrejumpTimer = m_PrejumpTime;
+                animator.Controller.SetTrigger("IsJump");
+            }
+        }
+        else
+        {
+            m_PrejumpTimer -= deltaTime;
+            if (m_PrejumpTimer <= 0)
+            {
+                m_IsGrounded    = false;
+                m_VerticalSpeed = m_JumpSpeed;
+                m_PrejumpTimer  = m_PrejumpTime;
+                m_PreJump       = false;
+            }
         }
 
-        if (g_EngineContext->InputSys->GetKey(KeyCode::W))
+        if (m_IsGrounded && !m_LastFrameIsGrounded && !m_PreJump)
         {
-            movement += globalForward * factor;
+            animator.Controller.SetTrigger("IsFallToGround");
         }
 
-        if (g_EngineContext->InputSys->GetKey(KeyCode::S))
-        {
-            movement -= globalForward * factor;
-        }
+        float horizontalInput = glm::length(movement);
 
-        if (g_EngineContext->InputSys->GetKey(KeyCode::A))
+        if (horizontalInput > 0.0f)
         {
-            movement += globalRight * factor;
-        }
-
-        if (g_EngineContext->InputSys->GetKey(KeyCode::D))
-        {
-            movement -= globalRight * factor;
-        }
-
-        float inputValue = glm::length(movement);
-
-        if (inputValue > 0.0f)
-        {
-            m_WorldVelocity.x = movement.x;
-            m_WorldVelocity.z = movement.z;
+            m_HorizontalVelocity.x = movement.x;
+            m_HorizontalVelocity.y = movement.z;
 
             // Apply rotation
             glm::vec3 targetDirection = glm::normalize(glm::vec3(movement.x, 0.0f, movement.z));
             glm::quat targetRotation  = glm::quatLookAtLH(targetDirection, glm::vec3(0, 1, 0));
 
             // SLERP
-            float     lerpFactor      = 20.0f;
+            float     lerpFactor      = 15.0f;
             auto      currentRotation = transform.GetRotation();
             glm::quat newRotation     = glm::slerp(currentRotation, targetRotation, lerpFactor * deltaTime);
 
-            m_OwnerEntity->GetComponent<TransformComponent>().SetRotation(newRotation);
+            transform.SetRotation(newRotation);
         }
 
+        // Update
+        m_VerticalSpeed += m_VerticalAcc * deltaTime;
+        m_VerticalMovement   = m_VerticalSpeed * deltaTime * m_BaseFactor;
+        m_HorizontalMovement = m_HorizontalVelocity * deltaTime * m_BaseFactor;
+        m_HorizontalVelocity *= 0.8f; // damping
+
         // Set animator controller property
-        auto& animator = m_OwnerEntity->GetComponent<AnimatorComponent>();
-        animator.Controller.SetFloat("HorizontalSpeed", inputValue);
+        animator.Controller.SetFloat("HorizontalSpeed", horizontalInput);
     }
 
     void OnFixedTick() override
     {
         // Character controller moving
         auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
-        g_EngineContext->PhysicsSys->Move(controller, m_WorldVelocity, Time::FixedDeltaTime);
+        g_EngineContext->PhysicsSys->Move(controller,
+                                          glm::vec3(m_HorizontalMovement.x, m_VerticalMovement, m_HorizontalMovement.y),
+                                          Time::FixedDeltaTime);
     }
 
 private:
-    glm::vec3 m_WorldVelocity;
+    float     m_BaseFactor       = 30.0f;
+    float     m_VerticalAcc      = -9.8f;
+    float     m_VerticalSpeed    = 0;
+    float     m_VerticalMovement = 0;
+    float     m_JumpSpeed        = 5;
+    glm::vec2 m_HorizontalVelocity;
+    glm::vec2 m_HorizontalMovement;
+
+    bool  m_PreJump      = false;
+    float m_PrejumpTime  = 0.7f;
+    float m_PrejumpTimer = 0.7f;
+
+    bool m_IsGrounded          = false;
+    bool m_LastFrameIsGrounded = false;
 };
 
 class GameLoad final : public LifeTimeComponent
@@ -285,7 +337,8 @@ private:
 
         // Parameters
         animatorComponent.Controller.RegisterParameters("HorizontalSpeed", 0.0f);
-        animatorComponent.Controller.RegisterParameters("VerticalSpeed", 0.0f);
+        animatorComponent.Controller.RegisterParameters("IsJump");         // Trigger
+        animatorComponent.Controller.RegisterParameters("IsFallToGround"); // Trigger
 
         // Transitions between Idle and Walking
         auto idle2Walk = animatorComponent.Controller.RegisterTransition(animators[0], animators[1], 0);
@@ -299,11 +352,19 @@ private:
         auto run2Walk = animatorComponent.Controller.RegisterTransition(animators[2], animators[1], 0);
         run2Walk->SetConditions("HorizontalSpeed", ConditionOperator::Less, 2.0f);
 
-        // Transitions between Idle and Jump
+        // Transitions between * and Jump
         auto idle2Jump = animatorComponent.Controller.RegisterTransition(animators[0], animators[3], 0);
-        idle2Jump->SetConditions("VerticalSpeed", ConditionOperator::GreaterEqual, 1.0f);
+        idle2Jump->AddTrigger("IsJump");
         auto jump2Idle = animatorComponent.Controller.RegisterTransition(animators[3], animators[0], 0);
-        jump2Idle->SetConditions("VerticalSpeed", ConditionOperator::Less, 1.0f);
+        jump2Idle->AddTrigger("IsFallToGround");
+        auto walk2Jump = animatorComponent.Controller.RegisterTransition(animators[1], animators[3], 0);
+        walk2Jump->AddTrigger("IsJump");
+        auto jump2Walk = animatorComponent.Controller.RegisterTransition(animators[3], animators[1], 0);
+        jump2Walk->AddTrigger("IsFallToGround");
+        auto run2Jump = animatorComponent.Controller.RegisterTransition(animators[2], animators[3], 0);
+        run2Jump->AddTrigger("IsJump");
+        auto jump2Run = animatorComponent.Controller.RegisterTransition(animators[3], animators[2], 0);
+        jump2Run->AddTrigger("IsFallToGround");
 
         auto& controller = character.AddComponent<CharacterControllerComponent>();
         character.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(CharacterScript));

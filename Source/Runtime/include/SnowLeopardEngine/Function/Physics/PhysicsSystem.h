@@ -41,6 +41,9 @@ namespace SnowLeopardEngine
         void AddForce(const RigidBodyComponent& component, const glm::vec3& force) const;
         void AddTorque(const RigidBodyComponent& component, const glm::vec3& torque) const;
 
+        /** RayCast **/
+        bool SimpleRaycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance);
+
     private:
         void OnLogicSceneLoaded(const LogicSceneLoadedEvent& e);
         void ReleaseInternalResources();

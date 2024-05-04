@@ -30,7 +30,10 @@ namespace SnowLeopardEngine
 
         inline int GetDuration() const { return m_Duration; }
 
-        bool JudgeCondition(bool isTrigger) const;
+        bool JudgeCondition() const;
+
+        bool HasTrigger(const std::string& triggerName) const;
+        void AddTrigger(const std::string& triggerName);
 
         void SetParameters(Ref<std::map<std::string, std::variant<float, bool, std::monostate>>> parameter);
 
@@ -46,5 +49,6 @@ namespace SnowLeopardEngine
         Ref<Animator>                                                         m_SourceAnimator;
         Ref<Animator>                                                         m_TargetAnimator;
         int                                                                   m_Duration;
+        std::unordered_set<std::string>                                       m_TriggerSet;
     };
 } // namespace SnowLeopardEngine

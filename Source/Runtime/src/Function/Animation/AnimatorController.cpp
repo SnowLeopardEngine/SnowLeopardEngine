@@ -98,6 +98,8 @@ namespace SnowLeopardEngine
     {
         // targetAnimator->PlayAnimation();
         m_CurrentAnimator = targetAnimator;
+        m_CurrentAnimator->Reset();
+        m_CurrentAnimator->Update(0);
     }
 
     void AnimatorController::SetEntryAnimator(const Ref<Animator>& animator) { m_CurrentAnimator = animator; }
@@ -112,7 +114,7 @@ namespace SnowLeopardEngine
 
         for (const auto& transition : m_TransitionsInfoMap[m_CurrentAnimator])
         {
-            if (transition->JudgeCondition(true))
+            if (transition->HasTrigger(triggerName))
             {
                 Blending(transition->GetSourceAnimator(), transition->GetTargetAnimator());
                 break;
@@ -165,16 +167,13 @@ namespace SnowLeopardEngine
         }
     }
 
-    void AnimatorController::UpdateCurrentAnimator(float deltaTime)
-    {
-        m_CurrentAnimator->Update(deltaTime);
-    }
+    void AnimatorController::UpdateCurrentAnimator(float deltaTime) { m_CurrentAnimator->Update(deltaTime); }
 
     void AnimatorController::CheckParameters()
     {
         for (const auto& transition : m_TransitionsInfoMap[m_CurrentAnimator])
         {
-            if (transition->JudgeCondition(false))
+            if (transition->JudgeCondition())
             {
                 Blending(transition->GetSourceAnimator(), transition->GetTargetAnimator());
                 break;

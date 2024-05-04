@@ -720,6 +720,20 @@ namespace SnowLeopardEngine
         }
     }
 
+    bool PhysicsSystem::SimpleRaycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance)
+    {
+        PxRaycastBuffer hit;
+        bool            status = m_Scene->raycast(
+            PhysXGLMHelpers::GetPhysXVec3(origin), PhysXGLMHelpers::GetPhysXVec3(direction), maxDistance, hit);
+        // Because it's a simple API, so ignore most of hit info here.
+        if (!status)
+        {
+            return false;
+        }
+
+        return hit.hasAnyHits();
+    }
+
     void PhysicsSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
 
     void PhysicsSystem::ReleaseInternalResources()
