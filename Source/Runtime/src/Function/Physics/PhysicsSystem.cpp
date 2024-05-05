@@ -744,6 +744,26 @@ namespace SnowLeopardEngine
         return hit.hasAnyHits();
     }
 
+    bool PhysicsSystem::OverlapSphere(const glm::vec3& sphereOrigin, float sphereRadius, OverlapInfo& info)
+    {
+        PxSphereGeometry sphereGeom(sphereRadius);
+        PxTransform      spherePose(PhysXGLMHelpers::GetPhysXVec3(sphereOrigin));
+
+        PxOverlapBuffer hitBuffer;
+
+        bool overlapResult = m_Scene->overlap(sphereGeom, spherePose, hitBuffer);
+
+        for (PxU32 i = 0; i < hitBuffer.nbTouches; ++i)
+        {
+            const PxOverlapHit& hit = hitBuffer.touches[i];
+
+            PxRigidActor* actor = hit.actor;
+            info.OverlappedEntities.emplace_back(m_Actor2EntityMap[actor]);
+        }
+
+        return overlapResult;
+    }
+
     void PhysicsSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
 
     void PhysicsSystem::ReleaseInternalResources()

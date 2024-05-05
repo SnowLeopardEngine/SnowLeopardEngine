@@ -59,6 +59,62 @@ public:
 
         if (!m_PreJump)
         {
+            if (!m_PunchingTimerStart)
+            {
+                if (g_EngineContext->InputSys->GetKey(KeyCode::Q))
+                {
+                    m_PunchingTimerStart = true;
+                    m_PunchingAudioTimer = m_PunchingTime;
+                    animator.Controller.SetTrigger("Punching");
+                    g_EngineContext->AudioSys->Play("Assets/Audios/Punch.mp3");
+                }
+            }
+            else
+            {
+                if (g_EngineContext->InputSys->GetKey(KeyCode::Q))
+                {
+                    m_PunchingTimer = m_PunchingTime;
+                    m_PunchingAudioTimer -= deltaTime;
+                    if (m_PunchingAudioTimer <= 0)
+                    {
+                        g_EngineContext->AudioSys->Play("Assets/Audios/Punch.mp3");
+                        m_PunchingAudioTimer = m_PunchingTime;
+                    }
+                }
+
+                m_PunchingTimer -= deltaTime;
+                if (m_PunchingTimer <= 0)
+                {
+                    animator.Controller.SetTrigger("PunchingEnd");
+                    m_PunchingTimer      = m_PunchingTime;
+                    m_PunchingTimerStart = false;
+                }
+            }
+
+            if (m_IsGrounded && g_EngineContext->InputSys->GetKeyDown(KeyCode::Space))
+            {
+                m_PreJump      = true;
+                m_PrejumpTimer = m_PrejumpTime;
+                animator.Controller.SetTrigger("IsJump");
+                m_IsJumping = true;
+            }
+        }
+        else
+        {
+            m_PrejumpTimer -= deltaTime;
+            if (m_PrejumpTimer <= 0)
+            {
+                m_IsGrounded    = false;
+                m_VerticalSpeed = m_JumpSpeed;
+                m_PrejumpTimer  = m_PrejumpTime;
+                m_PreJump       = false;
+
+                g_EngineContext->AudioSys->Play("Assets/Audios/Jumping.mp3");
+            }
+        }
+
+        if (!m_PreJump && !m_PunchingTimerStart)
+        {
             if (g_EngineContext->InputSys->GetKey(KeyCode::LeftShift))
             {
                 factor = 2.0f;
@@ -82,27 +138,6 @@ public:
             if (g_EngineContext->InputSys->GetKey(KeyCode::D))
             {
                 movement -= globalRight * factor;
-            }
-
-            if (m_IsGrounded && g_EngineContext->InputSys->GetKeyDown(KeyCode::Space))
-            {
-                m_PreJump      = true;
-                m_PrejumpTimer = m_PrejumpTime;
-                animator.Controller.SetTrigger("IsJump");
-                m_IsJumping = true;
-            }
-        }
-        else
-        {
-            m_PrejumpTimer -= deltaTime;
-            if (m_PrejumpTimer <= 0)
-            {
-                m_IsGrounded    = false;
-                m_VerticalSpeed = m_JumpSpeed;
-                m_PrejumpTimer  = m_PrejumpTime;
-                m_PreJump       = false;
-
-                g_EngineContext->AudioSys->Play("Assets/Audios/Jumping.mp3");
             }
         }
 
@@ -162,7 +197,13 @@ private:
 
     bool  m_PreJump      = false;
     float m_PrejumpTime  = 0.7f;
-    float m_PrejumpTimer = 0.7f;
+    float m_PrejumpTimer = m_PrejumpTime;
+
+    bool  m_PunchingTimerStart = false;
+    float m_PunchingTime       = 1.0f;
+    float m_PunchingTimer      = m_PunchingTime;
+
+    float m_PunchingAudioTimer = m_PunchingTime;
 
     bool m_IsJumping           = false;
     bool m_IsGrounded          = false;
@@ -357,6 +398,8 @@ private:
         animatorComponent.Controller.RegisterParameters("HorizontalSpeed", 0.0f);
         animatorComponent.Controller.RegisterParameters("IsJump");         // Trigger
         animatorComponent.Controller.RegisterParameters("IsFallToGround"); // Trigger
+        animatorComponent.Controller.RegisterParameters("Punching");       // Trigger
+        animatorComponent.Controller.RegisterParameters("PunchingEnd");    // Trigger
 
         // Transitions between Idle and Walking
         auto idle2Walk = animatorComponent.Controller.RegisterTransition(animators[0], animators[1], 0);
@@ -384,6 +427,20 @@ private:
         auto jump2Run = animatorComponent.Controller.RegisterTransition(animators[3], animators[2], 0);
         jump2Run->AddTrigger("IsFallToGround");
 
+        // Transitions between * and Punching
+        auto idle2Punching = animatorComponent.Controller.RegisterTransition(animators[0], animators[4], 0);
+        idle2Punching->AddTrigger("Punching");
+        auto punching2Idle = animatorComponent.Controller.RegisterTransition(animators[4], animators[0], 0);
+        punching2Idle->AddTrigger("PunchingEnd");
+        auto walk2Punching = animatorComponent.Controller.RegisterTransition(animators[1], animators[4], 0);
+        walk2Punching->AddTrigger("Punching");
+        auto punching2Walk = animatorComponent.Controller.RegisterTransition(animators[4], animators[1], 0);
+        punching2Walk->AddTrigger("PunchingEnd");
+        auto run2Punching = animatorComponent.Controller.RegisterTransition(animators[2], animators[4], 0);
+        run2Punching->AddTrigger("Punching");
+        auto punching2Run = animatorComponent.Controller.RegisterTransition(animators[4], animators[2], 0);
+        punching2Run->AddTrigger("PunchingEnd");
+
         auto& controller = character.AddComponent<CharacterControllerComponent>();
         character.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(CharacterScript));
 
@@ -403,7 +460,7 @@ private:
         speakderAudioSource.AudioPath        = "Assets/Audios/SpeakerBGM.mp3";
         speakderAudioSource.IsSpatial        = true;
         speakderAudioSource.IsLoop           = true;
-        speakderAudioSource.PlayOnAwake      = true;
+        speakderAudioSource.PlayOnAwake      = false; // Use UI to turn on
 
         auto& speakerBoxCollider  = speaker.AddComponent<BoxColliderComponent>(normalMaterial);
         speakerBoxCollider.Size   = {5, 3, 3};
