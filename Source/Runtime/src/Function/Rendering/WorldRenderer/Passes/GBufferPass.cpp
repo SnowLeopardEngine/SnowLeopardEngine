@@ -102,6 +102,7 @@ namespace SnowLeopardEngine
                             SetTransform(renderable.ModelMatrix);
 
                             rc.BindMaterial(renderable.Mat)
+                                .SetUniform1i("tileSize", renderable.Mat->GetDefine().TileSize)
                                 .Draw(*renderable.Mesh->Data.VertBuffer,
                                       *renderable.Mesh->Data.IdxBuffer,
                                       renderable.Mesh->Data.Indices.size(),
@@ -127,6 +128,7 @@ namespace SnowLeopardEngine
                         }
 
                         rc.BindMaterial(renderableTemplate.Mat)
+                            .SetUniform1i("tileSize", renderableTemplate.Mat->GetDefine().TileSize)
                             .Draw(*renderableTemplate.Mesh->Data.VertBuffer,
                                   *renderableTemplate.Mesh->Data.IdxBuffer,
                                   renderableTemplate.Mesh->Data.Indices.size(),

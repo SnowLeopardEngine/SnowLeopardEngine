@@ -12,6 +12,7 @@
         "UserVertPath": "",
         "UserFragPath": "Assets/Shaders/UIText.frag",
         "EnableInstancing": false,
-        "TextureFlipY": true
+        "TextureFlipY": true,
+        "TileSize": 1
     }
 }

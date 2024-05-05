@@ -10,6 +10,8 @@ namespace SnowLeopardEngine
     public:
         explicit Animator(const Ref<AnimationClip>& clip);
 
+        void SetLoop(bool loop) { m_Loop = loop; }
+
     private:
         void Update(float dt);
         void Reset() { m_CurrentTime = 0; }
@@ -21,5 +23,6 @@ namespace SnowLeopardEngine
         Ref<AnimationClip> m_CurrentClip;
         float              m_CurrentTime;
         float              m_DeltaTime;
+        bool               m_Loop = true;
     };
 } // namespace SnowLeopardEngine

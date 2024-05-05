@@ -425,7 +425,7 @@ namespace SnowLeopardEngine
                    UI::ButtonComponent&        button) {
                 if (!status.IsEnabled)
                 {
-                    return false;
+                    return;
                 }
                 if (!button.ImageMesh.RenderLoaded)
                 {
