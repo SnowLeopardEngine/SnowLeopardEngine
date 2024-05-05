@@ -15,7 +15,7 @@ namespace SnowLeopardEngine::Editor
 {
     const uint32_t LabelWidth = 140;
 
-    void InspectorPanel::Init() {}
+    void InspectorPanel::Init(const PanelCommonInitInfo& initInfo) {}
 
     void InspectorPanel::OnTick(float deltaTime)
     {
@@ -159,7 +159,7 @@ namespace SnowLeopardEngine::Editor
                             }
                             if (meshFilterComponent.PrimitiveType != selectedEnumValue)
                             {
-                                meshFilterComponent.Meshes.Items.clear();
+                                meshFilterComponent.Meshes->Items.clear();
                                 // TODO: Load meshes
                                 meshFilterComponent.PrimitiveType = selectedEnumValue;
                             }

@@ -9,6 +9,7 @@
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 #include "SnowLeopardEngine/Function/Util/Util.h"
+#include "foundation/PxSimpleTypes.h"
 
 using namespace physx;
 
@@ -116,6 +117,8 @@ namespace SnowLeopardEngine
             m_Scene = nullptr;
         }
 
+        m_Actor2EntityMap.clear();
+
         // Create a scene
         PxSceneDesc sceneDesc(m_Physics->getTolerancesScale());
         sceneDesc.gravity                 = PxVec3(0.0f, -9.8f, 0.0f); // scene gravity
@@ -147,43 +150,51 @@ namespace SnowLeopardEngine
 
         // Case 1: RigidBody + SphereCollider
         registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, SphereColliderComponent>().each(
-            [this](entt::entity             entity,
-                   TransformComponent&      transform,
-                   EntityStatusComponent&   entityStatus,
-                   RigidBodyComponent&      rigidBody,
-                   SphereColliderComponent& sphereCollider) {
-                createSphere(transform, entityStatus, rigidBody, sphereCollider);
+            [this, logicScene](entt::entity             entity,
+                               TransformComponent&      transform,
+                               EntityStatusComponent&   entityStatus,
+                               RigidBodyComponent&      rigidBody,
+                               SphereColliderComponent& sphereCollider) {
+                auto* actor              = createSphere(transform, entityStatus, rigidBody, sphereCollider);
+                m_Actor2EntityMap[actor] = {entity, logicScene};
             });
 
         // Case 2: RigidBody + BoxCollider
         registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, BoxColliderComponent>().each(
-            [this](entt::entity           entity,
-                   TransformComponent&    transform,
-                   EntityStatusComponent& entityStatus,
-                   RigidBodyComponent&    rigidBody,
-                   BoxColliderComponent&  boxCollider) { createBox(transform, entityStatus, rigidBody, boxCollider); });
+            [this, logicScene](entt::entity           entity,
+                               TransformComponent&    transform,
+                               EntityStatusComponent& entityStatus,
+                               RigidBodyComponent&    rigidBody,
+                               BoxColliderComponent&  boxCollider) {
+                auto* actor              = createBox(transform, entityStatus, rigidBody, boxCollider);
+                m_Actor2EntityMap[actor] = {entity, logicScene};
+            });
 
         // case3: RigidBodyComponent + CapsuleColliderComponent
         registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent, CapsuleColliderComponent>().each(
-            [this](entt::entity              entity,
-                   TransformComponent&       transform,
-                   EntityStatusComponent&    entityStatus,
-                   RigidBodyComponent&       rigidBody,
-                   CapsuleColliderComponent& capsuleCollider) {
-                createCapsule(transform, entityStatus, rigidBody, capsuleCollider);
+            [this, logicScene](entt::entity              entity,
+                               TransformComponent&       transform,
+                               EntityStatusComponent&    entityStatus,
+                               RigidBodyComponent&       rigidBody,
+                               CapsuleColliderComponent& capsuleCollider) {
+                auto* actor              = createCapsule(transform, entityStatus, rigidBody, capsuleCollider);
+                m_Actor2EntityMap[actor] = {entity, logicScene};
             });
 
         // case4: TerrainComponent + TerrainColliderComponent
         registry.view<TransformComponent, EntityStatusComponent, TerrainComponent, TerrainColliderComponent>().each(
-            [this](entt::entity              entity,
-                   TransformComponent&       transform,
-                   EntityStatusComponent&    entityStatus,
-                   TerrainComponent&         terrain,
-                   TerrainColliderComponent& terrainCollider) { createTerrain(transform, terrain, terrainCollider); });
+            [this, logicScene](entt::entity              entity,
+                               TransformComponent&       transform,
+                               EntityStatusComponent&    entityStatus,
+                               TerrainComponent&         terrain,
+                               TerrainColliderComponent& terrainCollider) {
+                auto* actor              = createTerrain(transform, terrain, terrainCollider);
+                m_Actor2EntityMap[actor] = {entity, logicScene};
+            });
 
         // case5: CharacterController
         registry.view<TransformComponent, CharacterControllerComponent>().each(
-            [this](
+            [this, logicScene](
                 entt::entity entity, TransformComponent& transform, CharacterControllerComponent& characterController) {
                 createCharacter(transform, characterController);
             });
@@ -195,13 +206,14 @@ namespace SnowLeopardEngine
                   RigidBodyComponent,
                   MeshFilterComponent,
                   MeshColliderComponent>()
-            .each([this](entt::entity           entity,
-                         TransformComponent&    transform,
-                         EntityStatusComponent& entityStatus,
-                         RigidBodyComponent&    rigidBody,
-                         MeshFilterComponent&   meshFilter,
-                         MeshColliderComponent& meshCollider) {
-                createMesh(transform, entityStatus, rigidBody, meshFilter, meshCollider);
+            .each([this, logicScene](entt::entity           entity,
+                                     TransformComponent&    transform,
+                                     EntityStatusComponent& entityStatus,
+                                     RigidBodyComponent&    rigidBody,
+                                     MeshFilterComponent&   meshFilter,
+                                     MeshColliderComponent& meshCollider) {
+                auto* actor              = createMesh(transform, entityStatus, rigidBody, meshFilter, meshCollider);
+                m_Actor2EntityMap[actor] = {entity, logicScene};
             });
 
         // TODO: More cases
@@ -338,6 +350,16 @@ namespace SnowLeopardEngine
         }
     }
 
+    glm::vec3 PhysicsSystem::GetLinearVelocity(const CharacterControllerComponent& component) const
+    {
+        if (component.InternalController != nullptr)
+        {
+            return PhysXGLMHelpers::GetGLMVec3(component.InternalController->getActor()->getLinearVelocity());
+        }
+
+        return glm::vec3(0);
+    }
+
     /** RigidBody **/
     void PhysicsSystem::AddForce(const RigidBodyComponent& component, const glm::vec3& force) const
     {
@@ -355,6 +377,57 @@ namespace SnowLeopardEngine
             PxRigidBody* body = static_cast<PxRigidBody*>(component.InternalBody);
             body->addTorque(PhysXGLMHelpers::GetPhysXVec3(torque), PxForceMode::eFORCE, true);
         }
+    }
+
+    bool PhysicsSystem::SimpleRaycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance)
+    {
+        PxQueryFilterData fd;
+        fd.flags |= PxQueryFlag::eANY_HIT;
+
+        PxRaycastBuffer hit;
+        bool            status = m_Scene->raycast(PhysXGLMHelpers::GetPhysXVec3(origin),
+                                       PhysXGLMHelpers::GetPhysXVec3(direction),
+                                       maxDistance,
+                                       hit,
+                                       PxHitFlags(PxHitFlag::eDEFAULT),
+                                       fd);
+        // Because it's a simple API, so ignore most of hit info here.
+        if (!status)
+        {
+            return false;
+        }
+
+        return hit.hasAnyHits();
+    }
+
+    bool PhysicsSystem::OverlapSphere(const glm::vec3& sphereOrigin, float sphereRadius, OverlapInfo& info)
+    {
+        PxSphereGeometry sphereGeom(sphereRadius);
+        PxTransform      spherePose(PhysXGLMHelpers::GetPhysXVec3(sphereOrigin));
+
+        const PxU32     bufferSize = 256;
+        PxOverlapHit    hitBuffer[bufferSize];
+        PxOverlapBuffer buf(hitBuffer, bufferSize);
+
+        bool overlapResult = m_Scene->overlap(sphereGeom, spherePose, buf);
+        if (overlapResult)
+        {
+            if (buf.getNbAnyHits() > 0)
+            {
+                for (PxU32 i = 0; i < buf.getNbAnyHits(); ++i)
+                {
+                    auto anyHit = buf.getAnyHit(i);
+                    if (m_Actor2EntityMap.count(anyHit.actor) > 0)
+                    {
+                        info.OverlappedEntities.emplace_back(m_Actor2EntityMap[anyHit.actor]);
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        return overlapResult;
     }
 
     void PhysicsSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
@@ -404,25 +477,29 @@ namespace SnowLeopardEngine
         {
             RigidBodyComponent&      rigidBodyComp      = entity.GetComponent<RigidBodyComponent>();
             SphereColliderComponent& sphereColliderComp = entity.GetComponent<SphereColliderComponent>();
-            createSphere(transformComp, entityStatusComp, rigidBodyComp, sphereColliderComp);
+            auto* actor              = createSphere(transformComp, entityStatusComp, rigidBodyComp, sphereColliderComp);
+            m_Actor2EntityMap[actor] = entity;
         }
         if (entity.HasComponent<BoxColliderComponent>() && entity.HasComponent<RigidBodyComponent>())
         {
             BoxColliderComponent& boxColliderComp = entity.GetComponent<BoxColliderComponent>();
             RigidBodyComponent&   rigidBodyComp   = entity.GetComponent<RigidBodyComponent>();
-            createBox(transformComp, entityStatusComp, rigidBodyComp, boxColliderComp);
+            auto*                 actor = createBox(transformComp, entityStatusComp, rigidBodyComp, boxColliderComp);
+            m_Actor2EntityMap[actor]    = entity;
         }
         if (entity.HasComponent<CapsuleColliderComponent>() && entity.HasComponent<RigidBodyComponent>())
         {
             CapsuleColliderComponent& capsuleColliderComp = entity.GetComponent<CapsuleColliderComponent>();
             RigidBodyComponent&       rigidBodyComp       = entity.GetComponent<RigidBodyComponent>();
-            createCapsule(transformComp, entityStatusComp, rigidBodyComp, capsuleColliderComp);
+            auto* actor = createCapsule(transformComp, entityStatusComp, rigidBodyComp, capsuleColliderComp);
+            m_Actor2EntityMap[actor] = entity;
         }
         if (entity.HasComponent<TerrainComponent>() && entity.HasComponent<TerrainColliderComponent>())
         {
             TerrainComponent&         terrainComp         = entity.GetComponent<TerrainComponent>();
             TerrainColliderComponent& terrainColliderComp = entity.GetComponent<TerrainColliderComponent>();
-            createTerrain(transformComp, terrainComp, terrainColliderComp);
+            auto*                     actor = createTerrain(transformComp, terrainComp, terrainColliderComp);
+            m_Actor2EntityMap[actor]        = entity;
         }
         if (entity.HasComponent<CharacterControllerComponent>())
         {
@@ -434,7 +511,9 @@ namespace SnowLeopardEngine
             MeshFilterComponent&   meshFilterComponent   = entity.GetComponent<MeshFilterComponent>();
             MeshColliderComponent& meshColliderComponent = entity.GetComponent<MeshColliderComponent>();
             RigidBodyComponent&    rigidBodyComp         = entity.GetComponent<RigidBodyComponent>();
-            createMesh(transformComp, entityStatusComp, rigidBodyComp, meshFilterComponent, meshColliderComponent);
+            auto*                  actor =
+                createMesh(transformComp, entityStatusComp, rigidBodyComp, meshFilterComponent, meshColliderComponent);
+            m_Actor2EntityMap[actor] = entity;
         }
     }
 
@@ -446,6 +525,7 @@ namespace SnowLeopardEngine
             RigidBodyComponent& rigidBodyComp = entity.GetComponent<RigidBodyComponent>();
             if (rigidBodyComp.InternalBody != nullptr)
             {
+                m_Actor2EntityMap.erase(rigidBodyComp.InternalBody);
                 rigidBodyComp.InternalBody->release();
                 rigidBodyComp.InternalBody = nullptr;
             }
@@ -455,6 +535,7 @@ namespace SnowLeopardEngine
             TerrainColliderComponent& terrainColliderComp = entity.GetComponent<TerrainColliderComponent>();
             if (terrainColliderComp.InternalBody != nullptr)
             {
+                m_Actor2EntityMap.erase(terrainColliderComp.InternalBody);
                 terrainColliderComp.InternalBody->release();
                 terrainColliderComp.InternalBody = nullptr;
             }
@@ -470,10 +551,10 @@ namespace SnowLeopardEngine
         }
     }
 
-    void PhysicsSystem::createSphere(TransformComponent&      transform,
-                                     EntityStatusComponent&   entityStatus,
-                                     RigidBodyComponent&      rigidBody,
-                                     SphereColliderComponent& sphereCollider)
+    physx::PxActor* PhysicsSystem::createSphere(TransformComponent&      transform,
+                                                EntityStatusComponent&   entityStatus,
+                                                RigidBodyComponent&      rigidBody,
+                                                SphereColliderComponent& sphereCollider)
     {
         // create a rigidBody
         PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
@@ -547,12 +628,14 @@ namespace SnowLeopardEngine
         m_Scene->addActor(*body);
 
         rigidBody.InternalBody = body;
+
+        return body;
     }
 
-    void PhysicsSystem::createBox(TransformComponent&    transform,
-                                  EntityStatusComponent& entityStatus,
-                                  RigidBodyComponent&    rigidBody,
-                                  BoxColliderComponent&  boxCollider)
+    physx::PxActor* PhysicsSystem::createBox(TransformComponent&    transform,
+                                             EntityStatusComponent& entityStatus,
+                                             RigidBodyComponent&    rigidBody,
+                                             BoxColliderComponent&  boxCollider)
     {
         // create a rigidBody
         PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
@@ -627,12 +710,14 @@ namespace SnowLeopardEngine
         m_Scene->addActor(*body);
 
         rigidBody.InternalBody = body;
+
+        return body;
     }
 
-    void PhysicsSystem::createCapsule(TransformComponent&       transform,
-                                      EntityStatusComponent&    entityStatus,
-                                      RigidBodyComponent&       rigidBody,
-                                      CapsuleColliderComponent& capsuleCollider)
+    physx::PxActor* PhysicsSystem::createCapsule(TransformComponent&       transform,
+                                                 EntityStatusComponent&    entityStatus,
+                                                 RigidBodyComponent&       rigidBody,
+                                                 CapsuleColliderComponent& capsuleCollider)
     {
         // create a rigidBody
         PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
@@ -688,11 +773,13 @@ namespace SnowLeopardEngine
         m_Scene->addActor(*body);
 
         rigidBody.InternalBody = body;
+
+        return body;
     }
 
-    void PhysicsSystem::createTerrain(TransformComponent&       transform,
-                                      TerrainComponent&         terrain,
-                                      TerrainColliderComponent& terrainCollider)
+    physx::PxActor* PhysicsSystem::createTerrain(TransformComponent&       transform,
+                                                 TerrainComponent&         terrain,
+                                                 TerrainColliderComponent& terrainCollider)
     {
         uint32_t             heightMapWidth  = terrain.TerrainHeightMap.Width;
         uint32_t             heightMapHeight = terrain.TerrainHeightMap.Height;
@@ -747,6 +834,8 @@ namespace SnowLeopardEngine
         m_Scene->addActor(*body);
 
         terrainCollider.InternalBody = body;
+
+        return body;
     }
 
     void PhysicsSystem::createCharacter(TransformComponent&           transform,
@@ -782,11 +871,11 @@ namespace SnowLeopardEngine
         characterController.InternalController = controller;
     }
 
-    void PhysicsSystem::createMesh(TransformComponent&    transform,
-                                   EntityStatusComponent& entityStatus,
-                                   RigidBodyComponent&    rigidBody,
-                                   MeshFilterComponent&   meshFilter,
-                                   MeshColliderComponent& meshCollider)
+    physx::PxActor* PhysicsSystem::createMesh(TransformComponent&    transform,
+                                              EntityStatusComponent& entityStatus,
+                                              RigidBodyComponent&    rigidBody,
+                                              MeshFilterComponent&   meshFilter,
+                                              MeshColliderComponent& meshCollider)
     {
         PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
         pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(meshCollider.Offset);
@@ -841,27 +930,16 @@ namespace SnowLeopardEngine
         }
 
         size_t totalVertexCount = 0;
-        for (const auto& meshItem : meshFilter.Meshes.Items)
+        for (const auto& meshItem : meshFilter.Meshes->Items)
         {
-            if (meshItem.Data.HasAnimationInfo())
-            {
-                totalVertexCount += meshItem.Data.AnimatedVertices.size();
-            }
-            else
-            {
-                totalVertexCount += meshItem.Data.StaticVertices.size();
-            }
+            totalVertexCount += meshItem.Data.Vertices.size();
         }
 
         PxVec3* vertices     = new PxVec3[totalVertexCount];
         size_t  vertexOffset = 0;
-        for (const auto& meshItem : meshFilter.Meshes.Items)
+        for (const auto& meshItem : meshFilter.Meshes->Items)
         {
-            for (const auto& vertex : meshItem.Data.StaticVertices)
-            {
-                vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
-            }
-            for (const auto& vertex : meshItem.Data.AnimatedVertices)
+            for (const auto& vertex : meshItem.Data.Vertices)
             {
                 vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
             }
@@ -887,6 +965,8 @@ namespace SnowLeopardEngine
         rigidBody.InternalBody = body;
 
         delete[] vertices;
+
+        return body;
     }
 
 } // namespace SnowLeopardEngine

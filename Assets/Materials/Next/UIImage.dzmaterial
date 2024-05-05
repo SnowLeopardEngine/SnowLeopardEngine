@@ -1,0 +1,17 @@
+{
+    "DzMaterial": {
+        "Name": "UIImage",
+        "RenderQueue": "Opaque",
+        "Properties": [
+            {
+                "Name": "baseColor",
+                "Type": "Color",
+                "Value": "(1, 1, 1, 1)"
+            }
+        ],
+        "UserVertPath": "",
+        "UserFragPath": "",
+        "EnableInstancing": false,
+        "TextureFlipY": true
+    }
+}

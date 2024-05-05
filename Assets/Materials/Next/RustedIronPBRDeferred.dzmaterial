@@ -1,0 +1,47 @@
+{
+    "DzMaterial": {
+        "Name": "RustedIronPBRDeferred",
+        "RenderQueue": "Opaque",
+        "Properties": [
+            {
+                "Name": "albedoMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/RustedIron2/rustediron2_basecolor.png"
+            },
+            {
+                "Name": "useAlbedoMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "metallicMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/RustedIron2/rustediron2_metallic.png"
+            },
+            {
+                "Name": "useMetallicMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "roughnessMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/RustedIron2/rustediron2_roughness.png"
+            },
+            {
+                "Name": "useRoughnessMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "ao",
+                "Type": "Float",
+                "Value": "1"
+            }
+        ],
+        "UserVertPath": "",
+        "UserFragPath": "",
+        "EnableInstancing": true,
+        "TextureFlipY": true
+    }
+}

@@ -1,0 +1,47 @@
+{
+    "DzMaterial": {
+        "Name": "DefaultTerrain",
+        "RenderQueue": "Opaque",
+        "Properties": [
+            {
+                "Name": "albedoMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/Ground054/Ground054_1K-JPG_Color.jpg"
+            },
+            {
+                "Name": "useAlbedoMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "metallic",
+                "Type": "Float",
+                "Value": "0"
+            },
+            {
+                "Name": "roughnessMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/Ground054/Ground054_1K-JPG_Roughness.jpg"
+            },
+            {
+                "Name": "useRoughnessMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "aoMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/Ground054/Ground054_1K-JPG_AmbientOcclusion.jpg"
+            },
+            {
+                "Name": "useAOMap",
+                "Type": "Int",
+                "Value": "1"
+            }
+        ],
+        "UserVertPath": "",
+        "UserFragPath": "",
+        "EnableInstancing": false,
+        "TextureFlipY": true
+    }
+}

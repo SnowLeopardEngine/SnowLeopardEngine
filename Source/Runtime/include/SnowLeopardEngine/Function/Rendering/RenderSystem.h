@@ -3,9 +3,9 @@
 #include "SnowLeopardEngine/Core/Base/EngineSubSystem.h"
 #include "SnowLeopardEngine/Core/Event/EventHandler.h"
 #include "SnowLeopardEngine/Core/Event/SceneEvents.h"
-#include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
-#include "entt/entity/fwd.hpp"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
+#include "SnowLeopardEngine/Function/Rendering/WorldRenderer/WorldRenderer.h"
 
 namespace SnowLeopardEngine
 {
@@ -19,28 +19,19 @@ namespace SnowLeopardEngine
         void OnTick(float deltaTime);
         void Present();
 
-        void SetRenderTarget(const Ref<FrameBuffer>& renderTarget) { m_RenderTarget = renderTarget; }
+        void SetRenderTarget(const Ref<FrameBuffer>& renderTarget) {}
+        inline void UpdateViewport(const Rect2D& viewport) { m_Renderer.UpdateViewport(viewport); }
 
-        const Ref<GraphicsAPI>& GetAPI() const { return m_API; }
+        Ref<GraphicsContext> GetGraphicsContext() const { return m_Context; }
+        Ref<RenderContext>   GetGlobalRenderContext() const { return m_GlobalRenderContext; }
 
     private:
         void OnLogicSceneLoaded(const LogicSceneLoadedEvent& e);
 
     protected:
-        Ref<GraphicsContext> m_Context;
-        Ref<GraphicsAPI>     m_API;
-
-        // TODO: Clean code
-        std::vector<entt::entity> m_ShadowGroup;
-        std::vector<entt::entity> m_GeometryGroup;
-        std::vector<entt::entity> m_SkyGroup;
-
-        // TODO: Batch info
-        std::vector<std::vector<entt::entity>>  m_InstancingBatchGroups;
-        std::vector<std::string>                m_InstancingBatchShaderNames;
-        std::vector<std::optional<std::string>> m_InstancingBatchMeshItemNames;
-
-        Ref<FrameBuffer> m_RenderTarget;
+        Ref<GraphicsContext> m_Context             = nullptr;
+        Ref<RenderContext>   m_GlobalRenderContext = nullptr;
+        WorldRenderer        m_Renderer;
 
         EventHandler<LogicSceneLoadedEvent> m_LogicSceneLoadedHandler = [this](const LogicSceneLoadedEvent& e) {
             OnLogicSceneLoaded(e);

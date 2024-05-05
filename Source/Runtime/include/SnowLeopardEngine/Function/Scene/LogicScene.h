@@ -76,6 +76,7 @@ namespace SnowLeopardEngine
         Entity CreateEntityFromContent(CoreUUID uuid, const std::string& name = std::string());
         void   DestroyEntity(Entity entity);
         Entity GetEntityWithCoreUUID(CoreUUID uuid) const;
+        Entity GetEntityWithName(const std::string& name);
 
         void TriggerEntityDestroy(Entity entity);
         void TriggerEntityCreate(Entity entity);

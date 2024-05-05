@@ -5,7 +5,7 @@
 
 namespace SnowLeopardEngine::Editor
 {
-    void ConsolePanel::Init()
+    void ConsolePanel::Init(const PanelCommonInitInfo& initInfo)
     {
         m_LogMessagesBox.resize(2100);
         m_LogMessagesEnd    = 0;

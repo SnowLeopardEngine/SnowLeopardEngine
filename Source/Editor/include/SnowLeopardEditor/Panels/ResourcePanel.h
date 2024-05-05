@@ -152,7 +152,7 @@ namespace SnowLeopardEngine::Editor
     class ResourcePanel : public PanelBase
     {
     public:
-        virtual void Init() override final;
+        virtual void Init(const PanelCommonInitInfo& initInfo) override final;
         virtual void OnTick(float deltaTime) override final;
         virtual void Shutdown() override final;
 

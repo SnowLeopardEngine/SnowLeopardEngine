@@ -1,6 +1,5 @@
 #include "SnowLeopardEngine/Function/Camera/CameraSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "glm/matrix.hpp"
 
 namespace SnowLeopardEngine
 {
@@ -37,6 +36,14 @@ namespace SnowLeopardEngine
 
     glm::mat4 CameraSystem::GetProjectionMatrix(const CameraComponent& camera)
     {
-        return glm::perspective(glm::radians(camera.FOV), camera.AspectRatio, camera.Near, camera.Far);
+        if (camera.Projection == CameraProjection::Perspective)
+        {
+            return glm::perspective(
+                glm::radians(camera.FOV), camera.ViewportWidth / camera.ViewportHeight, camera.Near, camera.Far);
+        }
+        else
+        {
+            return glm::ortho(0.0f, camera.ViewportWidth, 0.0f, camera.ViewportHeight, -1.0f, 1.0f);
+        }
     }
 } // namespace SnowLeopardEngine

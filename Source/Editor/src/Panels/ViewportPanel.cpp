@@ -3,111 +3,21 @@
 #include "SnowLeopardEditor/Selector.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/Model.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
-#include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "IconsMaterialDesignIcons.h"
 #include "entt/entt.hpp"
 #include <imgui.h>
-#include <memory>
 
 namespace SnowLeopardEngine::Editor
 {
-    void ViewportPanel::Init()
+    void ViewportPanel::Init(const PanelCommonInitInfo& initInfo)
     {
         REGISTER_TYPE(EditorCameraScript);
 
-        // Create RT
-
-        // Color Attachment 0 - main target color
-        FrameBufferTextureDesc rtColorAttachment0Desc = {};
-        rtColorAttachment0Desc.TextureFormat          = FrameBufferTextureFormat::RGBA8;
-
-        // Color Attachment 1 - picking objects, back buffer hack
-        FrameBufferTextureDesc rtColorAttachment1Desc = {};
-        rtColorAttachment1Desc.TextureFormat          = FrameBufferTextureFormat::RED_INTEGER;
-
-        // Depth Attachment
-        FrameBufferTextureDesc rtDepthAttachmentDesc;
-        rtDepthAttachmentDesc.TextureFormat = FrameBufferTextureFormat::DEPTH24_STENCIL8;
-
-        FrameBufferAttachmentDesc rtAttachmentDesc = {};
-        rtAttachmentDesc.Attachments.emplace_back(rtColorAttachment0Desc);
-        rtAttachmentDesc.Attachments.emplace_back(rtColorAttachment1Desc);
-        rtAttachmentDesc.Attachments.emplace_back(rtDepthAttachmentDesc);
-
-        FrameBufferDesc rtDesc = {};
-        rtDesc.Width           = m_ViewportSize.x;
-        rtDesc.Height          = m_ViewportSize.y;
-        rtDesc.AttachmentDesc  = rtAttachmentDesc;
-
-        m_RenderTarget = FrameBuffer::Create(rtDesc);
-
-        // Set RT
-        g_EngineContext->RenderSys->SetRenderTarget(m_RenderTarget);
-
-        // TODO: remove , test only code
-        // Create a scene and set active, set simulation mode: editor
-        auto scene = g_EngineContext->SceneMngr->CreateScene("RenderingSystem", true);
-        scene->SetSimulationMode(LogicSceneSimulationMode::Editor);
-        m_EditingScene = scene;
-
-        // Create a camera
-        m_EditorCamera                                             = scene->CreateEntity("EditorCamera");
-        m_EditorCamera.GetComponent<TransformComponent>().Position = {0, 10, 30};
-        auto& cameraComponent                                      = m_EditorCamera.AddComponent<CameraComponent>();
-        cameraComponent.ClearFlags                                 = CameraClearFlags::Skybox; // Enable skybox
-        cameraComponent.SkyboxMaterialFilePath                     = "Assets/Materials/Skybox001.dzmaterial";
-
-        // Attach a editor camera script
-        m_EditorCamera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EditorCameraScript));
-
-        // Create a character
-        Entity character                       = scene->CreateEntity("Character");
-        auto&  characterTransform              = character.GetComponent<TransformComponent>();
-        characterTransform.Position.y          = 0.6;
-        characterTransform.Scale               = {10, 10, 10};
-        auto& characterMeshFilter              = character.AddComponent<MeshFilterComponent>();
-        characterMeshFilter.FilePath           = "Assets/Models/Vampire/Vampire_Dancing.fbx";
-        auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
-        characterMeshRenderer.MaterialFilePath = "Assets/Materials/Vampire.dzmaterial";
-        character.AddComponent<AnimatorComponent>();
-
-        auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
-
-        // Create a sphere with RigidBodyComponent & SphereColliderComponent
-        Entity sphere = scene->CreateEntity("Sphere");
-
-        auto& sphereTransform    = sphere.GetComponent<TransformComponent>();
-        sphereTransform.Position = {5, 15, 0};
-        sphereTransform.Scale *= 3;
-
-        sphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
-        sphere.AddComponent<SphereColliderComponent>(normalMaterial);
-        auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
-        sphereMeshFilter.UsePrimitive       = true;
-        sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
-        auto& sphereMeshRenderer            = sphere.AddComponent<MeshRendererComponent>();
-        sphereMeshRenderer.MaterialFilePath = "Assets/Materials/Blue.dzmaterial";
-
-        // Create a floor
-        Entity floor = scene->CreateEntity("Floor");
-
-        auto& floorTransform = floor.GetComponent<TransformComponent>();
-        floorTransform.Scale = {200, 1, 200};
-        // set it to static, so that rigidBody will be static.
-        floor.GetComponent<EntityStatusComponent>().IsStatic = true;
-        floor.AddComponent<RigidBodyComponent>();
-        floor.AddComponent<BoxColliderComponent>(normalMaterial);
-        auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
-        floorMeshFilter.UsePrimitive       = true;
-        floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
-        auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
-        floorMeshRenderer.MaterialFilePath = "Assets/Materials/White.dzmaterial";
-
-        // Treat the floor as terrain for NavMesh baking test
-        floor.GetComponent<TagComponent>().TagValue = Tag::Terrain;
+        // TODO: Set RT
     }
 
     void ViewportPanel::OnFixedTick()
@@ -129,9 +39,9 @@ namespace SnowLeopardEngine::Editor
         // Tick logic
         g_EngineContext->SceneMngr->OnTick(deltaTime);
 
-        m_RenderTarget->Bind();
-        m_RenderTarget->ClearColorAttachment(1, -1); // Clear RED buffer (picking buffer)
-        m_RenderTarget->Unbind();
+        // m_RenderTarget->Bind();
+        // m_RenderTarget->ClearColorAttachment(1, -1); // Clear RED buffer (picking buffer)
+        // m_RenderTarget->Unbind();
 
         if (!g_EngineContext->WindowSys->IsMinimized())
         {
@@ -148,22 +58,22 @@ namespace SnowLeopardEngine::Editor
         ImGui::EndChild();
 
         ImGui::BeginChild("ViewportMain", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar);
-        uint32_t colorAttachment0 = m_RenderTarget->GetColorAttachmentID(0);
-        if (colorAttachment0)
-        {
-            // update viewport size & frame buffer size
-            auto      size         = ImGui::GetContentRegionAvail();
-            glm::vec2 viewportSize = {size.x, size.y};
+        // uint32_t colorAttachment0 = m_RenderTarget->GetColorAttachmentID(0);
+        // if (colorAttachment0)
+        // {
+        //     // update viewport size & frame buffer size
+        //     auto      size         = ImGui::GetContentRegionAvail();
+        //     glm::vec2 viewportSize = {size.x, size.y};
 
-            if (m_ViewportSize != viewportSize)
-            {
-                m_RenderTarget->Resize(viewportSize.x, viewportSize.y);
-                m_ViewportSize = viewportSize;
-            }
+        //     if (m_ViewportSize != viewportSize)
+        //     {
+        //         m_RenderTarget->Resize(viewportSize.x, viewportSize.y);
+        //         m_ViewportSize = viewportSize;
+        //     }
 
-            // Render Framebuffer to an image.
-            ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<intptr_t>(colorAttachment0)), size, {0, 1}, {1, 0});
-        }
+        //     // Render Framebuffer to an image.
+        //     ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<intptr_t>(colorAttachment0)), size, {0, 1}, {1, 0});
+        // }
 
         if (m_ViewportMode == ViewportMode::Edit)
         {
@@ -182,26 +92,29 @@ namespace SnowLeopardEngine::Editor
             if (mousePos.x >= 0 && mousePos.x < viewportTotalSize.x && mousePos.y >= 0 &&
                 mousePos.y < viewportTotalSize.y)
             {
-                // Get picking buffer pixel value (entity ID)
-                m_RenderTarget->Bind();
-                int entityID = m_RenderTarget->ReadPixelRedOnly(1, mousePos.x, mousePos.y);
-                m_HoveredEntity =
-                    (entityID == -1 || m_GuizmoOperation == -1) ?
-                        Entity() :
-                        Entity(static_cast<entt::entity>(entityID), g_EngineContext->SceneMngr->GetActiveScene().get());
-                m_RenderTarget->Unbind();
+                // // Get picking buffer pixel value (entity ID)
+                // m_RenderTarget->Bind();
+                // int entityID = m_RenderTarget->ReadPixelRedOnly(1, mousePos.x, mousePos.y);
+                // m_HoveredEntity =
+                //     (entityID == -1 || m_GuizmoOperation == -1) ?
+                //         Entity() :
+                //         Entity(static_cast<entt::entity>(entityID), g_EngineContext->SceneMngr->GetActiveScene().get());
+                // m_RenderTarget->Unbind();
             }
 
             m_IsWindowHovered = ImGui::IsWindowHovered();
 
             // Set EditorCamera states
-            if (m_EditorCameraScript == nullptr)
+            if (m_EditorCamera)
             {
-                m_EditorCameraScript = std::dynamic_pointer_cast<EditorCameraScript>(
-                    m_EditorCamera.GetComponent<NativeScriptingComponent>().ScriptInstance);
+                if (m_EditorCameraScript == nullptr)
+                {
+                    m_EditorCameraScript = std::dynamic_pointer_cast<EditorCameraScript>(
+                        m_EditorCamera.GetComponent<NativeScriptingComponent>().ScriptInstance);
+                }
+                m_EditorCameraScript->SetWindowHovered(m_IsWindowHovered);
+                m_EditorCameraScript->SetGrabMoveEnabled(m_GuizmoOperation == -1);
             }
-            m_EditorCameraScript->SetWindowHovered(m_IsWindowHovered);
-            m_EditorCameraScript->SetGrabMoveEnabled(m_GuizmoOperation == -1);
 
             // Gizmos
             auto selectedEntityUUID = Selector::GetLastSelection(SelectionCategory::Viewport);
@@ -274,7 +187,7 @@ namespace SnowLeopardEngine::Editor
         // Select hovered entity
 
         // Workaround for https://github.com/CedricGuillemet/ImGuizmo/issues/310
-#if NDEBUG
+#if defined(NDEBUG)
         static bool isFirstTime = true;
         if (g_EngineContext->InputSys->GetMouseButtonDown(MouseCode::ButtonLeft) && m_IsWindowHovered &&
             (!ImGuizmo::IsOver() || isFirstTime))

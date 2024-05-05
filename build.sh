@@ -8,5 +8,6 @@ bash "$buildBindingsScriptPath"
 if [ $? -ne 0 ]; then
     echo "Failed to build C# Bindings!"
 else
+    xmake repo -u
     xmake -v -y
 fi

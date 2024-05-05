@@ -5,12 +5,12 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
-#include "SnowLeopardEngine/Function/Asset/Loaders/ModelLoader.h"
+#include "SnowLeopardEngine/Function/Asset/Model.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/IO/AssimpModelLoader.h"
+#include "SnowLeopardEngine/Function/IO/MaterialLoader.h"
 #include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
-#include "SnowLeopardEngine/Function/Rendering/DzMaterial/DzMaterial.h"
-#include "SnowLeopardEngine/Function/Rendering/RHI/IndexBuffer.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
@@ -191,6 +191,21 @@ namespace SnowLeopardEngine
 
     Entity LogicScene::GetEntityWithCoreUUID(CoreUUID id) const { return m_EntityMap->at(id); }
 
+    Entity LogicScene::GetEntityWithName(const std::string& name)
+    {
+        auto view = m_Registry.view<NameComponent>();
+        for (auto entity : view)
+        {
+            auto& nameComponent = view.get<NameComponent>(entity);
+            if (nameComponent.Name == name)
+            {
+                return {entity, this};
+            }
+        }
+
+        return {};
+    }
+
     void LogicScene::OnLoad()
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
@@ -201,64 +216,53 @@ namespace SnowLeopardEngine
         // Mesh Loading (dirty code for now)
         m_Registry.view<MeshFilterComponent>().each([this](entt::entity entity, MeshFilterComponent& meshFilter) {
             // TODO: Move to AssetManager
-            if (FileSystem::Exists(meshFilter.FilePath))
-            {
-                Model model;
-                if (!ModelLoader::LoadModel(meshFilter.FilePath, model))
-                {
-                    SNOW_LEOPARD_CORE_ERROR("Failed to load {0}!", meshFilter.FilePath.generic_string());
-                }
-                meshFilter.Meshes = model.Meshes;
-
-                // load animation if possible
-                if (m_Registry.any_of<AnimatorComponent>(entity))
-                {
-                    auto& animatorComponent = m_Registry.get<AnimatorComponent>(entity);
-
-                    for (const auto& animation : model.Animations)
-                    {
-                        auto animator = CreateRef<Animator>(animation);
-                        animatorComponent.Controller.RegisterAnimator(animator);
-                        animatorComponent.Controller.SetEntryAnimator(animator);
-                    }
-                }
-            }
-
             if (meshFilter.PrimitiveType != MeshPrimitiveType::Invalid)
             {
+                meshFilter.Meshes = new MeshGroup();
+
                 switch (meshFilter.PrimitiveType)
                 {
                     case MeshPrimitiveType::Quad: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<QuadMesh>();
-                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        meshFilter.Meshes->Items.emplace_back(meshItem);
                         break;
                     }
 
                     case MeshPrimitiveType::Cube: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
-                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        meshFilter.Meshes->Items.emplace_back(meshItem);
                         break;
                     }
 
                     case MeshPrimitiveType::Sphere: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<SphereMesh>();
-                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        meshFilter.Meshes->Items.emplace_back(meshItem);
                         break;
                     }
                     case MeshPrimitiveType::Capsule: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<CapsuleMesh>();
-                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        meshFilter.Meshes->Items.emplace_back(meshItem);
                         break;
                     }
                     break;
                     case MeshPrimitiveType::Heightfield: {
                         auto meshItem = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
                             Utils::GenerateBlankHeightMap(50, 50));
-                        meshFilter.Meshes.Items.emplace_back(meshItem);
+                        meshFilter.Meshes->Items.emplace_back(meshItem);
                         break;
                     }
                     case MeshPrimitiveType::Invalid:
                         break;
+                }
+            }
+            else
+            {
+                if (FileSystem::Exists(meshFilter.FilePath))
+                {
+                    meshFilter.Meshes = new MeshGroup;
+                    Model assimpModel;
+                    AssimpModelLoader::LoadModel(meshFilter.FilePath, assimpModel);
+                    *meshFilter.Meshes = assimpModel.Meshes;
                 }
             }
 
@@ -275,27 +279,74 @@ namespace SnowLeopardEngine
             // TODO: Move to AssetManager
             if (FileSystem::Exists(renderer.MaterialFilePath))
             {
-                renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
+                renderer.Mat = IO::Load(renderer.MaterialFilePath);
             }
         });
         m_Registry.view<TerrainRendererComponent>().each([](entt::entity entity, TerrainRendererComponent& renderer) {
             // TODO: Move to AssetManager
             if (FileSystem::Exists(renderer.MaterialFilePath))
             {
-                renderer.Material = DzMaterial::LoadFromPath(renderer.MaterialFilePath);
+                renderer.Mat = IO::Load(renderer.MaterialFilePath);
             }
         });
-        m_Registry.view<CameraComponent>().each([](entt::entity entity, CameraComponent& camera) {
+        m_Registry.view<UI::ImageComponent>().each([](entt::entity e, UI::ImageComponent& image) {
             // TODO: Move to AssetManager
-            if (FileSystem::Exists(camera.SkyboxMaterialFilePath))
+            if (FileSystem::Exists(image.MaterialFilePath))
             {
-                camera.SkyboxMaterial = DzMaterial::LoadFromPath(camera.SkyboxMaterialFilePath);
+                image.Mat = IO::Load(image.MaterialFilePath);
+            }
+        });
+        m_Registry.view<UI::ButtonComponent>().each([](entt::entity e, UI::ButtonComponent& button) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(button.MaterialFilePath))
+            {
+                button.Mat = IO::Load(button.MaterialFilePath);
+            }
+        });
+        m_Registry.view<UI::TextComponent>().each([](entt::entity e, UI::TextComponent& text) {
+            // TODO: Move to AssetManager
+            if (FileSystem::Exists(text.MaterialFilePath))
+            {
+                text.Mat = IO::Load(text.MaterialFilePath);
+            }
+        });
+
+        // Load Audio
+        m_Registry.view<TransformComponent, AudioListenerComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, AudioListenerComponent& audioListener) {
+                g_EngineContext->AudioSys->SetListenerCone(audioListener.ConeInfo.ConeInnerAngleRadians,
+                                                           audioListener.ConeInfo.ConeOuterAngleRadians,
+                                                           audioListener.ConeInfo.ConeOuterGain);
+            });
+        m_Registry.view<AudioSourceComponent>().each([](entt::entity entity, AudioSourceComponent& audioSource) {
+            if (FileSystem::Exists(audioSource.AudioPath))
+            {
+                if (audioSource.Clip == nullptr)
+                {
+                    audioSource.Clip =
+                        g_EngineContext->AudioSys->CreateAudioClip(audioSource.AudioPath.generic_string());
+                }
+
+                audioSource.Clip->SetIsLoop(audioSource.IsLoop);
+                audioSource.Clip->SetIsSpatial(audioSource.IsSpatial);
+                audioSource.Clip->SetVolume(audioSource.Volume);
+                audioSource.Clip->SetDistanceModel(audioSource.DistanceModel);
+                audioSource.Clip->SetCone(audioSource.ConeInfo.ConeInnerAngleRadians,
+                                          audioSource.ConeInfo.ConeOuterAngleRadians,
+                                          audioSource.ConeInfo.ConeOuterGain);
+                audioSource.Clip->SetRollOff(audioSource.RollOff);
+                audioSource.Clip->SetGainMinMax(audioSource.MinMaxGain);
+
+                if (audioSource.PlayOnAwake)
+                {
+                    audioSource.Clip->Play();
+                }
             }
         });
 
         // Init Animators
         m_Registry.view<AnimatorComponent>().each(
-            [](entt::entity entity, AnimatorComponent& animator) { animator.Controller.InitAnimators(); });
+            [](entt::entity entity, AnimatorComponent& animator) { animator.Controller.Init(); });
 
         // Scripting Callback
         m_Registry.view<NativeScriptingComponent>().each([this](entt::entity              entity,
@@ -418,10 +469,47 @@ namespace SnowLeopardEngine
                 }
             });
 
+        // Built-in camera controllers
+        m_Registry.view<TransformComponent, CameraComponent, ThirdPersonFollowCameraControllerComponent>().each(
+            [this](entt::entity                                entity,
+                   TransformComponent&                         transform,
+                   CameraComponent&                            camera,
+                   ThirdPersonFollowCameraControllerComponent& thirdPersonController) {
+                auto& inputSystem   = g_EngineContext->InputSys;
+                auto  mousePosition = inputSystem->GetMousePosition();
+
+                auto targetTransform = m_Registry.get<TransformComponent>(thirdPersonController.FollowEntity);
+                // auto targetRotationEuler = targetTransform.GetRotationEuler();
+                // // Calculate forward (Yaw - 90 to adjust)
+                // glm::vec3 forward;
+                // forward.x = cos(glm::radians(targetRotationEuler.y - 90)) * cos(glm::radians(targetRotationEuler.x));
+                // forward.y = sin(glm::radians(targetRotationEuler.x));
+                // forward.z = sin(glm::radians(targetRotationEuler.y - 90)) * cos(glm::radians(targetRotationEuler.x));
+                // forward   = glm::normalize(forward);
+                // auto up   = glm::vec3(0, 1, 0);
+
+                transform.Position = targetTransform.Position + thirdPersonController.Offset;
+
+                // transform.SetRotationEuler(
+                //     glm::vec3(targetRotationEuler.x, targetRotationEuler.y - 180, targetRotationEuler.z));
+            });
+
+        // Audio
+        m_Registry.view<TransformComponent, AudioListenerComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, AudioListenerComponent& audioListener) {
+                g_EngineContext->AudioSys->SetListenerPosition(transform.Position);
+                g_EngineContext->AudioSys->SetListenerDirection(transform.GetRotationEuler());
+            });
+        m_Registry.view<TransformComponent, AudioSourceComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, AudioSourceComponent& audioSource) {
+                audioSource.Clip->SetPosition(transform.Position);
+                auto worldDirection = transform.GetRotation() * audioSource.LocalDirection;
+                audioSource.Clip->SetDirection(worldDirection);
+            });
+
         // Animators
-        m_Registry.view<AnimatorComponent>().each([deltaTime](entt::entity entity, AnimatorComponent& animator) {
-            animator.Controller.UpdateAnimators(deltaTime);
-        });
+        m_Registry.view<AnimatorComponent>().each(
+            [deltaTime](entt::entity entity, AnimatorComponent& animator) { animator.Controller.Update(deltaTime); });
     }
 
     void LogicScene::OnFixedTick()
@@ -450,6 +538,16 @@ namespace SnowLeopardEngine
         m_Registry.view<NativeScriptingComponent>().each(
             [](entt::entity entity, NativeScriptingComponent& nativeScript) {
                 nativeScript.ScriptInstance->OnUnload();
+            });
+
+        m_Registry.view<TransformComponent, AudioListenerComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, AudioListenerComponent& audioListener) {
+                g_EngineContext->AudioSys->SetListenerPosition({0, 0, 0});
+                g_EngineContext->AudioSys->SetListenerDirection({0, 0, 0});
+            });
+        m_Registry.view<TransformComponent, AudioSourceComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, AudioSourceComponent& audioSource) {
+                audioSource.Clip->Stop();
             });
 
         LogicSceneUnloadedEvent unloadedEvent(this);
@@ -513,8 +611,9 @@ namespace SnowLeopardEngine
     {
         Entity directionalLight          = CreateEntity("Directional Light");
         auto&  directionalLightComponent = directionalLight.AddComponent<DirectionalLightComponent>();
-        directionalLightComponent.ShadowMaterial =
-            DzMaterial::LoadFromPath("Assets/Materials/Legacy/ShadowMapping.dzmaterial");
+        // FIXME:
+        // directionalLightComponent.ShadowMaterial =
+        //     DzMaterial::LoadFromPath("Assets/Materials/Legacy/ShadowMapping.dzmaterial");
     }
 
     std::string LogicScene::GetNameFromEntity(Entity entity) const
@@ -599,11 +698,22 @@ namespace SnowLeopardEngine
 
     ON_COMPONENT_ADDED(CameraComponent) {}
     ON_COMPONENT_ADDED(FreeMoveCameraControllerComponent) {}
+    ON_COMPONENT_ADDED(ThirdPersonFollowCameraControllerComponent) {}
     ON_COMPONENT_ADDED(DirectionalLightComponent) {}
+    ON_COMPONENT_ADDED(PointLightComponent) {}
     ON_COMPONENT_ADDED(MeshFilterComponent) {}
     ON_COMPONENT_ADDED(MeshRendererComponent) {}
     ON_COMPONENT_ADDED(TerrainComponent) {}
     ON_COMPONENT_ADDED(TerrainRendererComponent) {}
 
     ON_COMPONENT_ADDED(AnimatorComponent) {}
+
+    ON_COMPONENT_ADDED(AudioSourceComponent) {}
+    ON_COMPONENT_ADDED(AudioListenerComponent) {}
+
+    ON_COMPONENT_ADDED(UI::CanvasComponent) {}
+    ON_COMPONENT_ADDED(UI::RectTransformComponent) {}
+    ON_COMPONENT_ADDED(UI::ButtonComponent) {}
+    ON_COMPONENT_ADDED(UI::ImageComponent) {}
+    ON_COMPONENT_ADDED(UI::TextComponent) {}
 } // namespace SnowLeopardEngine

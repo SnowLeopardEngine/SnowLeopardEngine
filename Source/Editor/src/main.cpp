@@ -3,6 +3,7 @@
 using namespace SnowLeopardEngine::Editor;
 
 int main(int argc, char** argv)
+try
 {
     EditorAppInitInfo initInfo    = {};
     initInfo.Engine.Window.Title  = "SnowLeopardEditor";
@@ -26,4 +27,9 @@ int main(int argc, char** argv)
     app.Run();
 
     return 0;
+}
+catch (std::exception& err)
+{
+    std::cerr << err.what() << std::endl;
+    std::exit(1);
 }
