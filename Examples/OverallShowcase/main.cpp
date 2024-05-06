@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
+#include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
@@ -47,6 +48,33 @@ static Entity CreateQuad(const std::string& materialFilePath, const glm::vec3& p
     return quad;
 }
 
+static Entity CreateCharacter(const Ref<LogicScene>& scene, Model* model, const glm::vec3& position)
+{
+    OzzModelLoadConfig config = {};
+    config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
+    config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
+    config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/animation_Dancing.ozz");
+    bool ok = OzzModelLoader::Load(config, model);
+
+    // Create a character
+    Entity character            = scene->CreateEntity("Character");
+    auto&  characterTransform   = character.GetComponent<TransformComponent>();
+    characterTransform.Position = position;
+    characterTransform.Scale    = {5, 5, 5};
+    auto& characterMeshFilter   = character.AddComponent<MeshFilterComponent>();
+    // characterMeshFilter.FilePath           = "Assets/Models/Walking.fbx";
+    characterMeshFilter.Meshes             = &model->Meshes;
+    auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
+    characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
+    auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
+
+    auto animator = CreateRef<Animator>(model->AnimationClips[0]);
+    animatorComponent.Controller.RegisterAnimator(animator);
+    animatorComponent.Controller.SetEntryAnimator(animator);
+
+    return character;
+}
+
 class CustomLifeTime final : public LifeTimeComponent
 {
 public:
@@ -58,7 +86,7 @@ public:
         m_EngineContext->WindowSys->SetHideCursor(true);
 
         // Create a scene and set active
-        auto scene = m_EngineContext->SceneMngr->CreateScene("RenderingSystem-Instancing", true);
+        auto scene = m_EngineContext->SceneMngr->CreateScene("OverallShowcase", true);
 
         // Create a camera
         Entity camera                                      = scene->CreateEntity("MainCamera");
@@ -72,20 +100,50 @@ public:
         // Load materials
         const std::string instancingMaterialPath = "Assets/Materials/Next/Grass.dzmaterial";
 
-        // Create grass quad instances
-        for (size_t i = 0; i < 4000; ++i)
+        // // Create grass quad instances
+        // for (size_t i = 0; i < 10000; ++i)
+        // {
+        //     glm::vec4 randomPosition(
+        //         Random::GetRandomFloatRanged(-60, 60), 0, Random::GetRandomFloatRanged(-60, 60), 1);
+        //     CreateQuad(instancingMaterialPath, randomPosition, scene);
+        // }
+
+        // Create a floor
+        Entity floor = scene->CreateEntity("Floor");
+
+        auto& floorTransform               = floor.GetComponent<TransformComponent>();
+        floorTransform.Scale               = {150, 1, 150};
+        auto& floorMeshFilter              = floor.AddComponent<MeshFilterComponent>();
+        floorMeshFilter.PrimitiveType      = MeshPrimitiveType::Cube;
+        auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
+        floorMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Red.dzmaterial";
+
+        for (int x = -60; x < 60; x += 30)
         {
-            glm::vec4 randomPosition(
-                Random::GetRandomFloatRanged(-200, 200), 0, Random::GetRandomFloatRanged(-200, 200), 1);
-            CreateQuad(instancingMaterialPath, randomPosition, scene);
+            for (int y = -60; y < 60; y += 30)
+            {
+                Model* model = new Model();
+                m_Models.emplace_back(model);
+                CreateCharacter(scene, model, {x, 0, y});
+            }
         }
 
         // scene->SaveTo("Test.dzscene");
         // scene->LoadFrom("Test.dzscene");
     }
 
+    void OnUnload() override
+    {
+        for (Model* model : m_Models)
+        {
+            delete model;
+            model = nullptr;
+        }
+    }
+
 private:
-    EngineContext* m_EngineContext;
+    std::vector<Model*> m_Models;
+    EngineContext*      m_EngineContext;
 };
 
 int main(int argc, char** argv) TRY
@@ -93,7 +151,7 @@ int main(int argc, char** argv) TRY
     REGISTER_TYPE(EscScript);
 
     DesktopAppInitInfo initInfo {};
-    initInfo.Engine.Window.Title = "Example - RenderingSystem-Instancing";
+    initInfo.Engine.Window.Title = "Example - OverallShowcase";
     DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))
