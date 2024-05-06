@@ -270,12 +270,8 @@ namespace SnowLeopardEngine
         }
 
         m_PointLights.clear();
-        registry.view<TransformComponent, EntityStatusComponent, PointLightComponent>().each(
-            [this, &scene](entt::entity e, TransformComponent&, EntityStatusComponent& status, PointLightComponent&) {
-                if (!status.IsEnabled)
-                {
-                    return;
-                }
+        registry.view<TransformComponent, PointLightComponent>().each(
+            [this, &scene](entt::entity e, TransformComponent&, PointLightComponent&) {
                 Entity pointLight = {e, scene.get()};
                 m_PointLights.emplace_back(pointLight);
             });
@@ -284,16 +280,11 @@ namespace SnowLeopardEngine
         m_Renderables.clear();
 
         // Basic shapes (MeshFilter + MeshRenderer)
-        registry.view<TransformComponent, EntityStatusComponent, MeshFilterComponent, MeshRendererComponent>().each(
+        registry.view<TransformComponent, MeshFilterComponent, MeshRendererComponent>().each(
             [this](entt::entity           e,
                    TransformComponent&    transform,
-                   EntityStatusComponent& status,
                    MeshFilterComponent&   meshFilter,
                    MeshRendererComponent& meshRenderer) {
-                if (!status.IsEnabled)
-                {
-                    return;
-                }
                 for (auto& mesh : meshFilter.Meshes->Items)
                 {
                     if (!mesh.RenderLoaded)
@@ -330,16 +321,11 @@ namespace SnowLeopardEngine
             });
 
         // Terrains
-        registry.view<TransformComponent, EntityStatusComponent, TerrainComponent, TerrainRendererComponent>().each(
+        registry.view<TransformComponent, TerrainComponent, TerrainRendererComponent>().each(
             [this](entt::entity              e,
                    TransformComponent&       transform,
-                   EntityStatusComponent&    status,
                    TerrainComponent&         terrain,
                    TerrainRendererComponent& terrainRenderer) {
-                if (!status.IsEnabled)
-                {
-                    return;
-                }
                 if (!terrain.Mesh.RenderLoaded)
                 {
                     // Load index buffer & vertex buffer
@@ -368,115 +354,90 @@ namespace SnowLeopardEngine
 
         // UI
         // Image
-        registry.view<UI::RectTransformComponent, EntityStatusComponent, UI::ImageComponent>().each(
-            [this](entt::entity                e,
-                   UI::RectTransformComponent& rect,
-                   EntityStatusComponent&      status,
-                   UI::ImageComponent&         image) {
-                if (!status.IsEnabled)
-                {
-                    return;
-                }
-                if (!image.ImageMesh.RenderLoaded)
-                {
-                    // Load index buffer & vertex buffer
-                    auto indexBuffer = m_RenderContext->CreateIndexBuffer(
-                        IndexType::UInt32, image.ImageMesh.Data.Indices.size(), image.ImageMesh.Data.Indices.data());
-                    auto vertexBuffer =
-                        m_RenderContext->CreateVertexBuffer(image.ImageMesh.Data.VertFormat->GetStride(),
-                                                            image.ImageMesh.Data.Vertices.size(),
-                                                            image.ImageMesh.Data.Vertices.data());
+        registry.view<UI::RectTransformComponent, UI::ImageComponent>().each([this](entt::entity                e,
+                                                                                    UI::RectTransformComponent& rect,
+                                                                                    UI::ImageComponent&         image) {
+            if (!image.ImageMesh.RenderLoaded)
+            {
+                // Load index buffer & vertex buffer
+                auto indexBuffer = m_RenderContext->CreateIndexBuffer(
+                    IndexType::UInt32, image.ImageMesh.Data.Indices.size(), image.ImageMesh.Data.Indices.data());
+                auto vertexBuffer = m_RenderContext->CreateVertexBuffer(image.ImageMesh.Data.VertFormat->GetStride(),
+                                                                        image.ImageMesh.Data.Vertices.size(),
+                                                                        image.ImageMesh.Data.Vertices.data());
 
-                    image.ImageMesh.Data.IdxBuffer = Ref<IndexBuffer>(
-                        new IndexBuffer {std::move(indexBuffer)}, RenderContext::ResourceDeleter {*m_RenderContext});
-                    image.ImageMesh.Data.VertBuffer = Ref<VertexBuffer>(
-                        new VertexBuffer {std::move(vertexBuffer)}, RenderContext::ResourceDeleter {*m_RenderContext});
-                    image.ImageMesh.RenderLoaded = true;
-                }
+                image.ImageMesh.Data.IdxBuffer  = Ref<IndexBuffer>(new IndexBuffer {std::move(indexBuffer)},
+                                                                  RenderContext::ResourceDeleter {*m_RenderContext});
+                image.ImageMesh.Data.VertBuffer = Ref<VertexBuffer>(new VertexBuffer {std::move(vertexBuffer)},
+                                                                    RenderContext::ResourceDeleter {*m_RenderContext});
+                image.ImageMesh.RenderLoaded    = true;
+            }
 
-                // set model matrix
-                glm::mat4 model = glm::mat4(1.0f);
-                model           = glm::translate(model, rect.Pos);
-                model =
-                    glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
-                model = glm::rotate(model, rect.RotationAngle, glm::vec3(0.0f, 0.0f, 1.0f));
-                model = glm::translate(model, glm::vec3(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y, 0.0f));
-                model =
-                    glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
-                model = glm::scale(model, glm::vec3(rect.Size, 1.0f));
+            // set model matrix
+            glm::mat4 model = glm::mat4(1.0f);
+            model           = glm::translate(model, rect.Pos);
+            model = glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
+            model = glm::rotate(model, rect.RotationAngle, glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::translate(model, glm::vec3(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y, 0.0f));
+            model = glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
+            model = glm::scale(model, glm::vec3(rect.Size, 1.0f));
 
-                Renderable renderable           = {};
-                renderable.Mesh                 = &image.ImageMesh;
-                renderable.Mat                  = image.Mat;
-                renderable.ModelMatrix          = model;
-                renderable.BoundingBox          = AABB::Build(image.ImageMesh.Data.Vertices).Transform(model);
-                renderable.Type                 = RenderableType::UI;
-                renderable.UISpecs.Type         = RenderableUISpecs::UISpecType::Image;
-                renderable.UISpecs.ImageTexture = image.TargetGraphic;
-                renderable.UISpecs.ImageColor   = image.Color;
-                m_Renderables.emplace_back(renderable);
-            });
+            Renderable renderable           = {};
+            renderable.Mesh                 = &image.ImageMesh;
+            renderable.Mat                  = image.Mat;
+            renderable.ModelMatrix          = model;
+            renderable.BoundingBox          = AABB::Build(image.ImageMesh.Data.Vertices).Transform(model);
+            renderable.Type                 = RenderableType::UI;
+            renderable.UISpecs.Type         = RenderableUISpecs::UISpecType::Image;
+            renderable.UISpecs.ImageTexture = image.TargetGraphic;
+            renderable.UISpecs.ImageColor   = image.Color;
+            m_Renderables.emplace_back(renderable);
+        });
 
         // Button
-        registry.view<UI::RectTransformComponent, EntityStatusComponent, UI::ButtonComponent>().each(
-            [this](entt::entity                e,
-                   UI::RectTransformComponent& rect,
-                   EntityStatusComponent&      status,
-                   UI::ButtonComponent&        button) {
-                if (!status.IsEnabled)
-                {
-                    return;
-                }
-                if (!button.ImageMesh.RenderLoaded)
-                {
-                    // Load index buffer & vertex buffer
-                    auto indexBuffer = m_RenderContext->CreateIndexBuffer(
-                        IndexType::UInt32, button.ImageMesh.Data.Indices.size(), button.ImageMesh.Data.Indices.data());
-                    auto vertexBuffer =
-                        m_RenderContext->CreateVertexBuffer(button.ImageMesh.Data.VertFormat->GetStride(),
-                                                            button.ImageMesh.Data.Vertices.size(),
-                                                            button.ImageMesh.Data.Vertices.data());
+        registry.view<UI::RectTransformComponent, UI::ButtonComponent>().each([this](entt::entity                e,
+                                                                                     UI::RectTransformComponent& rect,
+                                                                                     UI::ButtonComponent& button) {
+            if (!button.ImageMesh.RenderLoaded)
+            {
+                // Load index buffer & vertex buffer
+                auto indexBuffer = m_RenderContext->CreateIndexBuffer(
+                    IndexType::UInt32, button.ImageMesh.Data.Indices.size(), button.ImageMesh.Data.Indices.data());
+                auto vertexBuffer = m_RenderContext->CreateVertexBuffer(button.ImageMesh.Data.VertFormat->GetStride(),
+                                                                        button.ImageMesh.Data.Vertices.size(),
+                                                                        button.ImageMesh.Data.Vertices.data());
 
-                    button.ImageMesh.Data.IdxBuffer = Ref<IndexBuffer>(
-                        new IndexBuffer {std::move(indexBuffer)}, RenderContext::ResourceDeleter {*m_RenderContext});
-                    button.ImageMesh.Data.VertBuffer = Ref<VertexBuffer>(
-                        new VertexBuffer {std::move(vertexBuffer)}, RenderContext::ResourceDeleter {*m_RenderContext});
-                    button.ImageMesh.RenderLoaded = true;
-                }
+                button.ImageMesh.Data.IdxBuffer  = Ref<IndexBuffer>(new IndexBuffer {std::move(indexBuffer)},
+                                                                   RenderContext::ResourceDeleter {*m_RenderContext});
+                button.ImageMesh.Data.VertBuffer = Ref<VertexBuffer>(new VertexBuffer {std::move(vertexBuffer)},
+                                                                     RenderContext::ResourceDeleter {*m_RenderContext});
+                button.ImageMesh.RenderLoaded    = true;
+            }
 
-                // set model matrix
-                glm::mat4 model = glm::mat4(1.0f);
-                model           = glm::translate(model, rect.Pos);
-                model =
-                    glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
-                model = glm::rotate(model, rect.RotationAngle, glm::vec3(0.0f, 0.0f, 1.0f));
-                model = glm::translate(model, glm::vec3(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y, 0.0f));
-                model =
-                    glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
-                model = glm::scale(model, glm::vec3(rect.Size, 1.0f));
+            // set model matrix
+            glm::mat4 model = glm::mat4(1.0f);
+            model           = glm::translate(model, rect.Pos);
+            model = glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
+            model = glm::rotate(model, rect.RotationAngle, glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::translate(model, glm::vec3(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y, 0.0f));
+            model = glm::translate(model, glm::vec3(-rect.Pivot.x * rect.Size.x, -rect.Pivot.y * rect.Size.y, 0.0f));
+            model = glm::scale(model, glm::vec3(rect.Size, 1.0f));
 
-                Renderable renderable   = {};
-                renderable.Mesh         = &button.ImageMesh;
-                renderable.Mat          = button.Mat;
-                renderable.ModelMatrix  = model;
-                renderable.BoundingBox  = AABB::Build(button.ImageMesh.Data.Vertices).Transform(model);
-                renderable.Type         = RenderableType::UI;
-                renderable.UISpecs.Type = RenderableUISpecs::UISpecType::Button;
-                renderable.UISpecs.ButtonColorTintTexture      = button.TintColor.TargetGraphic;
-                renderable.UISpecs.ButtonColorTintCurrentColor = button.TintColor.Current;
-                m_Renderables.emplace_back(renderable);
-            });
+            Renderable renderable                     = {};
+            renderable.Mesh                           = &button.ImageMesh;
+            renderable.Mat                            = button.Mat;
+            renderable.ModelMatrix                    = model;
+            renderable.BoundingBox                    = AABB::Build(button.ImageMesh.Data.Vertices).Transform(model);
+            renderable.Type                           = RenderableType::UI;
+            renderable.UISpecs.Type                   = RenderableUISpecs::UISpecType::Button;
+            renderable.UISpecs.ButtonColorTintTexture = button.TintColor.TargetGraphic;
+            renderable.UISpecs.ButtonColorTintCurrentColor = button.TintColor.Current;
+            m_Renderables.emplace_back(renderable);
+        });
 
         // Text
-        registry.view<UI::RectTransformComponent, EntityStatusComponent, UI::TextComponent>().each(
-            [this](entt::entity                e,
-                   UI::RectTransformComponent& rect,
-                   EntityStatusComponent&      status,
-                   UI::TextComponent&          text) {
-                if (!status.IsEnabled)
-                {
-                    return;
-                }
+        registry.view<UI::RectTransformComponent, UI::TextComponent>().each(
+            [this](entt::entity e, UI::RectTransformComponent& rect, UI::TextComponent& text) {
                 if (!text.Mesh.RenderLoaded)
                 {
                     // Load index buffer & vertex buffer
@@ -534,9 +495,9 @@ namespace SnowLeopardEngine
         auto& directionalLightComponent = m_DirectionalLight.GetComponent<DirectionalLightComponent>();
 
         GPUDirectionalLight directionalLight {};
-        directionalLight.Direction      = directionalLightComponent.Direction;
-        directionalLight.Color          = directionalLightComponent.Color;
-        directionalLight.Intensity      = directionalLightComponent.Intensity;
+        directionalLight.Direction = directionalLightComponent.Direction;
+        directionalLight.Color     = directionalLightComponent.Color;
+        directionalLight.Intensity = directionalLightComponent.Intensity;
         m_LightUniform.DirectionalLight = directionalLight;
 
         uint32_t pointLightIndex = 0;
@@ -551,12 +512,12 @@ namespace SnowLeopardEngine
 
             GPUPointLight gpuPointLight {};
 
-            gpuPointLight.Constant                      = pointLightComponent.Constant;
-            gpuPointLight.Linear                        = pointLightComponent.Linear;
-            gpuPointLight.Quadratic                     = pointLightComponent.Quadratic;
-            gpuPointLight.Intensity                     = pointLightComponent.Intensity;
-            gpuPointLight.Position                      = pointLight.GetComponent<TransformComponent>().Position;
-            gpuPointLight.Color                         = pointLightComponent.Color;
+            gpuPointLight.Constant  = pointLightComponent.Constant;
+            gpuPointLight.Linear    = pointLightComponent.Linear;
+            gpuPointLight.Quadratic = pointLightComponent.Quadratic;
+            gpuPointLight.Intensity = pointLightComponent.Intensity;
+            gpuPointLight.Position  = pointLight.GetComponent<TransformComponent>().Position;
+            gpuPointLight.Color     = pointLightComponent.Color;
             m_LightUniform.PointLights[pointLightIndex] = gpuPointLight;
 
             pointLightIndex++;

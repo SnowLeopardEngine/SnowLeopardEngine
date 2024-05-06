@@ -34,15 +34,14 @@ layout(location = 16) uniform int useRoughnessMap;
 layout(location = 17) uniform float ao;
 layout(location = 18) uniform int useAoMap;
 layout(location = 19) uniform float opacity;
-layout(location = 20) uniform int tileSize;
 
 void main() {
     PBRMaterial material;
-    material.albedo = (1 - useAlbedoMap) * albedo.rgb + useAlbedoMap * gammaToLinear(texture(albedoMap, varingTexCoords * tileSize).rgb);
-    material.emissive = (1 - useEmissiveMap) * emissive.rgb + useEmissiveMap * gammaToLinear(texture(emissiveMap, varingTexCoords * tileSize).rgb);
-    material.metallic = (1 - useMetallicMap) * metallic + useMetallicMap * texture(metallicMap, varingTexCoords * tileSize).r;
-    material.roughness = (1 - useRoughnessMap) * roughness + useRoughnessMap * texture(roughnessMap, varingTexCoords * tileSize).r;
-    material.ao = (1 - useAoMap) * ao + useAoMap * texture(aoMap, varingTexCoords * tileSize).r;
+    material.albedo = (1 - useAlbedoMap) * albedo.rgb + useAlbedoMap * gammaToLinear(texture(albedoMap, varingTexCoords).rgb);
+    material.emissive = (1 - useEmissiveMap) * emissive.rgb + useEmissiveMap * gammaToLinear(texture(emissiveMap, varingTexCoords).rgb);
+    material.metallic = (1 - useMetallicMap) * metallic + useMetallicMap * texture(metallicMap, varingTexCoords).r;
+    material.roughness = (1 - useRoughnessMap) * roughness + useRoughnessMap * texture(roughnessMap, varingTexCoords).r;
+    material.ao = (1 - useAoMap) * ao + useAoMap * texture(aoMap, varingTexCoords).r;
     material.opacity = opacity;
 
     vec3 viewPos = getViewPos();

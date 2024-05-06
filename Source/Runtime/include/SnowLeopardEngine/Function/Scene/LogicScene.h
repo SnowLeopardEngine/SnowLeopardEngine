@@ -76,10 +76,6 @@ namespace SnowLeopardEngine
         Entity CreateEntityFromContent(CoreUUID uuid, const std::string& name = std::string());
         void   DestroyEntity(Entity entity);
         Entity GetEntityWithCoreUUID(CoreUUID uuid) const;
-        Entity GetEntityWithName(const std::string& name);
-
-        void TriggerEntityDestroy(Entity entity);
-        void TriggerEntityCreate(Entity entity);
 
         void OnLoad();
         void OnTick(float deltaTime);
@@ -93,12 +89,12 @@ namespace SnowLeopardEngine
         std::vector<Entity> GetEntitiesSortedByName();
 
     private:
-        void        CreateDefaultEntities();
+        void CreateDefaultEntities();
         std::string GetNameFromEntity(Entity entity) const;
         int         ExtractEntityNumber(const std::string& name);
         std::string ExtractEntityName(const std::string& name);
 
-        void InitAfterDeserializing();
+        void        InitAfterDeserializing();
 
         template<typename T>
         void OnComponentAdded(Entity entity, T& component);
@@ -109,7 +105,6 @@ namespace SnowLeopardEngine
         Ref<std::map<CoreUUID, Entity>>           m_EntityMap;
         std::unordered_map<std::string, uint32_t> m_Name2CountMap;
         std::filesystem::path                     m_Path;
-        bool                                      m_IsLoaded = false;
 
         LogicSceneSimulationStatus m_SimulationStatus = LogicSceneSimulationStatus::Simulating;
         LogicSceneSimulationMode   m_SimulationMode   = LogicSceneSimulationMode::Game;

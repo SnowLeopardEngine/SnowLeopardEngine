@@ -54,11 +54,7 @@ void Animator::Update(float dt)
 
             // Calculate ratio
             float duration = m_CurrentClip->Animation.duration();
-            if (m_CurrentTime >= duration && !m_Loop)
-            {
-                return;
-            }
-            float ratio = fmodf(m_CurrentTime / duration, 1.0f);
+            float ratio    = fmodf(m_CurrentTime / duration, 1.0f);
 
             // Sampling
             ozz::animation::SamplingJob samplingJob;

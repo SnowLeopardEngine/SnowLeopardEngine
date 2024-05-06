@@ -24,6 +24,6 @@ target("GameDemo")
     set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/GameDemo")
 
     -- copy assets
-    on_config(function(target)
-        os.cp("$(scriptdir)/DemoAssets", target:targetdir())
+    after_build(function(target)
+        os.cp("$(scriptdir)/assets", target:targetdir())
     end)

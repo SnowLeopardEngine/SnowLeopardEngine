@@ -36,8 +36,7 @@
         ],
         "UserVertPath": "",
         "UserFragPath": "",
-        "EnableInstancing": true,
-        "TextureFlipY": false,
-        "TileSize": 1
+        "EnableInstancing": false,
+        "TextureFlipY": false
     }
 }

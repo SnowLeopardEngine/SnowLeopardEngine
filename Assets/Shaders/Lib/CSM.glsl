@@ -27,7 +27,7 @@ float calShadow(uint cascadeIndex, vec3 fragPos, vec3 normal, vec3 lightDir, sam
         }
     }
 
-    return clamp(shadow / 9.0, 0.0, 1.0);
+    return shadow / 9.0;
 }
 
 #endif
