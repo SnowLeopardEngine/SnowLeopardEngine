@@ -1,6 +1,8 @@
 #pragma once
 
-#include "SnowLeopardEngine/Function/Animation/Animator.h"
+#include "SnowLeopardEngine/Function/Animation/AnimationClip.h"
+#include "SnowLeopardEngine/Core/Math/Math.h"
+#include <vector>
 
 namespace SnowLeopardEngine
 {
@@ -20,17 +22,20 @@ namespace SnowLeopardEngine
     class Transition
     {
     public:
-        Transition(Ref<Animator> sourceAnimator, Ref<Animator> targetAnimator, int duration) :
-            m_SourceAnimator(sourceAnimator), m_TargetAnimator(targetAnimator), m_Duration(duration)
+        Transition(Ref<AnimationClip> sourceAnimationClip, Ref<AnimationClip> targetAnimationClip, int duration) :
+            m_SourceAnimationClip(sourceAnimationClip), m_TargetAnimationClip(targetAnimationClip), m_Duration(duration)
         {}
 
-        inline Ref<Animator> GetSourceAnimator() const { return m_SourceAnimator; }
+        Transition() = default;
 
-        inline Ref<Animator> GetTargetAnimator() const { return m_TargetAnimator; }
+        inline Ref<AnimationClip> GetSourceAnimationClip() const { return m_SourceAnimationClip; }
+
+        inline Ref<AnimationClip> GetTargetAnimationClip() const { return m_TargetAnimationClip; }
 
         inline int GetDuration() const { return m_Duration; }
 
-        bool JudgeCondition() const;
+        bool JudgeCondition(bool isTrigger) const;
+        bool JudgeCondition(bool isTrigger, const std::string & triggerName) const;
 
         bool HasTrigger(const std::string& triggerName) const;
         void AddTrigger(const std::string& triggerName);
@@ -46,8 +51,8 @@ namespace SnowLeopardEngine
     private:
         Ref<std::map<std::string, std::variant<float, bool, std::monostate>>> m_Parameters;
         std::vector<TupleType>                                                m_Conditions;
-        Ref<Animator>                                                         m_SourceAnimator;
-        Ref<Animator>                                                         m_TargetAnimator;
+        Ref<AnimationClip>                                                    m_SourceAnimationClip;
+        Ref<AnimationClip>                                                    m_TargetAnimationClip;
         int                                                                   m_Duration;
         std::unordered_set<std::string>                                       m_TriggerSet;
     };

@@ -2,6 +2,9 @@
 #include "SnowLeopardEngine/Core/Event/UIEvents.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/Debug.h"
+#include "SnowLeopardEngine/Function/Animation/AnimationClip.h"
+#include "SnowLeopardEngine/Function/Animation/Animator.h"
+#include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "SnowLeopardEngine/Function/Animation/Transition.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
@@ -88,7 +91,8 @@ public:
             {
                 m_PreJump      = true;
                 m_PrejumpTimer = m_PrejumpTime;
-                animator.Controller.SetTrigger("IsJump");
+                animator.Manager.m_Animators[0]->SetTrigger("IsJump");
+                std::cout << "IsJump" << std::endl;
             }
         }
         else
@@ -105,7 +109,8 @@ public:
 
         if (m_IsGrounded && !m_LastFrameIsGrounded && !m_PreJump)
         {
-            animator.Controller.SetTrigger("IsFallToGround");
+            animator.Manager.m_Animators[0]->SetTrigger("IsFallToGround");
+            std::cout << "IsFallToGround" << std::endl;
         }
 
         float horizontalInput = glm::length(movement);
@@ -134,7 +139,7 @@ public:
         m_HorizontalVelocity *= 0.8f; // damping
 
         // Set animator controller property
-        animator.Controller.SetFloat("HorizontalSpeed", horizontalInput);
+        animator.Manager.m_Animators[0]->SetFloat("HorizontalSpeed", horizontalInput);
     }
 
     void OnFixedTick() override
@@ -326,45 +331,48 @@ private:
         characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
-        std::vector<Ref<Animator>> animators;
+        Ref<Animator> animator = CreateRef<Animator>();
+        std::vector<Ref<AnimationClip>> animationClips;
+        Ref<AnimatorController> animatorController = CreateRef<AnimatorController>();
         for (const auto& clip : m_PlayerModel->AnimationClips)
         {
-            auto animator = CreateRef<Animator>(clip);
-            animatorComponent.Controller.RegisterAnimator(animator);
-            animators.emplace_back(animator);
+            animatorController->RegisterAnimationClip(clip);
+            animationClips.emplace_back(clip);
         }
-        animatorComponent.Controller.SetEntryAnimator(animators[0]); // Idle as default
+        animatorComponent.Manager.RegisterAnimator(animator);
+        animatorController->SetEntryAnimationClip(animationClips[0]); // Idle as default
+        animator->SetController(animatorController);
 
         // Parameters
-        animatorComponent.Controller.RegisterParameters("HorizontalSpeed", 0.0f);
-        animatorComponent.Controller.RegisterParameters("IsJump");         // Trigger
-        animatorComponent.Controller.RegisterParameters("IsFallToGround"); // Trigger
+        animatorController->RegisterParameters("HorizontalSpeed", 0.0f);
+        animatorController->RegisterParameters("IsJump");         // Trigger
+        animatorController->RegisterParameters("IsFallToGround"); // Trigger
 
         // Transitions between Idle and Walking
-        auto idle2Walk = animatorComponent.Controller.RegisterTransition(animators[0], animators[1], 0);
+        auto idle2Walk = animatorController->RegisterTransition(animationClips[0], animationClips[1], 0);
         idle2Walk->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 1.0f);
-        auto walk2Idle = animatorComponent.Controller.RegisterTransition(animators[1], animators[0], 0);
+        auto walk2Idle = animatorController->RegisterTransition(animationClips[1], animationClips[0], 0);
         walk2Idle->SetConditions("HorizontalSpeed", ConditionOperator::Less, 1.0f);
 
         // Transitions between Walking and Run
-        auto walk2Run = animatorComponent.Controller.RegisterTransition(animators[1], animators[2], 0);
+        auto walk2Run = animatorController->RegisterTransition(animationClips[1], animationClips[2], 0);
         walk2Run->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 2.0f);
-        auto run2Walk = animatorComponent.Controller.RegisterTransition(animators[2], animators[1], 0);
+        auto run2Walk = animatorController->RegisterTransition(animationClips[2], animationClips[1], 0);
         run2Walk->SetConditions("HorizontalSpeed", ConditionOperator::Less, 2.0f);
 
         // Transitions between * and Jump
-        auto idle2Jump = animatorComponent.Controller.RegisterTransition(animators[0], animators[3], 0);
-        idle2Jump->AddTrigger("IsJump");
-        auto jump2Idle = animatorComponent.Controller.RegisterTransition(animators[3], animators[0], 0);
-        jump2Idle->AddTrigger("IsFallToGround");
-        auto walk2Jump = animatorComponent.Controller.RegisterTransition(animators[1], animators[3], 0);
-        walk2Jump->AddTrigger("IsJump");
-        auto jump2Walk = animatorComponent.Controller.RegisterTransition(animators[3], animators[1], 0);
-        jump2Walk->AddTrigger("IsFallToGround");
-        auto run2Jump = animatorComponent.Controller.RegisterTransition(animators[2], animators[3], 0);
-        run2Jump->AddTrigger("IsJump");
-        auto jump2Run = animatorComponent.Controller.RegisterTransition(animators[3], animators[2], 0);
-        jump2Run->AddTrigger("IsFallToGround");
+        auto idle2Jump = animatorController->RegisterTransition(animationClips[0], animationClips[3], 0);
+        idle2Jump->SetConditions("IsJump");
+        auto jump2Idle = animatorController->RegisterTransition(animationClips[3], animationClips[0], 0);
+        jump2Idle->SetConditions("IsFallToGround");
+        auto walk2Jump = animatorController->RegisterTransition(animationClips[1], animationClips[3], 0);
+        walk2Jump->SetConditions("IsJump");
+        auto jump2Walk = animatorController->RegisterTransition(animationClips[3], animationClips[1], 0);
+        jump2Walk->SetConditions("IsFallToGround");
+        auto run2Jump = animatorController->RegisterTransition(animationClips[2], animationClips[3], 0);
+        run2Jump->SetConditions("IsJump");
+        auto jump2Run = animatorController->RegisterTransition(animationClips[3], animationClips[2], 0);
+        jump2Run->SetConditions("IsFallToGround");
 
         auto& controller = character.AddComponent<CharacterControllerComponent>();
         character.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(CharacterScript));

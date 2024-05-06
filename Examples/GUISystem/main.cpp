@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Event/UIEvents.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/IO/TextureLoader.h"
@@ -80,9 +81,13 @@ public:
         characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
-        auto animator = CreateRef<Animator>(g_Model->AnimationClips[0]);
-        animatorComponent.Controller.RegisterAnimator(animator);
-        animatorComponent.Controller.SetEntryAnimator(animator);
+        Ref<AnimationClip> animation = g_Model->AnimationClips[0];
+        Ref<Animator> animator = CreateRef<Animator>();
+        Ref<AnimatorController> controller = CreateRef<AnimatorController>();
+        controller->RegisterAnimationClip(animation);
+        controller->SetEntryAnimationClip(animation);
+        animator->SetController(controller);
+        animatorComponent.Manager.RegisterAnimator(animator);
 
         auto* tempRC = new RenderContext();
 

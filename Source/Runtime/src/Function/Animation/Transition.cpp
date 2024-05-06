@@ -1,9 +1,10 @@
 #include "SnowLeopardEngine/Function/Animation/Transition.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include <string>
 
 namespace SnowLeopardEngine
 {
-    bool Transition::JudgeCondition() const
+    bool Transition::JudgeCondition(bool isTrigger) const
     {
         if (!m_TriggerSet.empty() && m_Conditions.empty())
         {
@@ -12,7 +13,7 @@ namespace SnowLeopardEngine
 
         for (const auto& condition : m_Conditions)
         {
-            if (!get<1>(condition).has_value())
+            if (!get<1>(condition).has_value() && !isTrigger)
                 return false;
 
             const auto& name = get<0>(condition);
@@ -77,6 +78,91 @@ namespace SnowLeopardEngine
                         break;
                     }
                 }
+            }
+        }
+
+        return true;
+    }
+
+    bool Transition::JudgeCondition(bool isTrigger, const std::string& triggerName) const
+    {
+        if (!m_TriggerSet.empty() && m_Conditions.empty())
+        {
+            return false;
+        }
+
+        for (const auto& condition : m_Conditions)
+        {
+            if (!get<1>(condition).has_value() && !isTrigger)
+                return false;
+
+            const auto& name = get<0>(condition);
+
+            // Skip trigger
+            if (m_TriggerSet.count(name) > 0)
+                return false;
+
+            auto value          = m_Parameters->at(name);
+            auto conditionValue = get<2>(condition);
+
+            if (std::holds_alternative<bool>(value))
+            {
+                switch (get<1>(condition).value())
+                {
+                    case Equal: {
+                        if (std::get<bool>(conditionValue) != std::get<bool>(value))
+                            return false;
+                        break;
+                    }
+                    case NotEqual: {
+                        if (std::get<bool>(conditionValue) == std::get<bool>(value))
+                            return false;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+            else if (std::holds_alternative<float>(value))
+            {
+                switch (get<1>(condition).value())
+                {
+                    case Equal: {
+                        if (std::abs(std::get<float>(conditionValue) - std::get<float>(value)) > 1e-6)
+                            return false;
+                        break;
+                    }
+                    case NotEqual: {
+                        if (std::abs(std::get<float>(conditionValue) - std::get<float>(value)) < 1e-6)
+                            return false;
+                        break;
+                    }
+                    case Greater: {
+                        if (std::get<float>(conditionValue) >= std::get<float>(value))
+                            return false;
+                        break;
+                    }
+                    case GreaterEqual: {
+                        if (std::get<float>(conditionValue) > std::get<float>(value))
+                            return false;
+                        break;
+                    }
+                    case Less: {
+                        if (std::get<float>(conditionValue) <= std::get<float>(value))
+                            return false;
+                        break;
+                    }
+                    case LessEqual: {
+                        if (std::get<float>(conditionValue) < std::get<float>(value))
+                            return false;
+                        break;
+                    }
+                }
+            }
+            else 
+            {
+                if(name != triggerName)
+                    return false;
             }
         }
 
