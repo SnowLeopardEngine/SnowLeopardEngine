@@ -73,10 +73,10 @@ public:
         const std::string instancingMaterialPath = "Assets/Materials/Next/Grass.dzmaterial";
 
         // Create grass quad instances
-        for (size_t i = 0; i < 4000; ++i)
+        for (size_t i = 0; i < 10000; ++i)
         {
             glm::vec4 randomPosition(
-                Random::GetRandomFloatRanged(-200, 200), 0, Random::GetRandomFloatRanged(-200, 200), 1);
+                Random::GetRandomFloatRanged(-60, 60), 0, Random::GetRandomFloatRanged(-60, 60), 1);
             CreateQuad(instancingMaterialPath, randomPosition, scene);
         }
 
