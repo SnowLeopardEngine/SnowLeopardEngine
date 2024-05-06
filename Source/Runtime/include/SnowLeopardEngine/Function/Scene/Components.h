@@ -14,6 +14,7 @@
 #include "SnowLeopardEngine/Function/Scene/TagManager.h"
 
 #include "cereal/cereal.hpp"
+#include "glm/ext/scalar_constants.hpp"
 #include <PxPhysicsAPI.h>
 #include <entt/fwd.hpp>
 
@@ -590,10 +591,7 @@ namespace SnowLeopardEngine
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(Sensitivity),
-                    CEREAL_NVP(Speed),
-                    CEREAL_NVP(Offset),
-                    CEREAL_NVP(FollowEntity));
+            archive(CEREAL_NVP(Sensitivity), CEREAL_NVP(Speed), CEREAL_NVP(Offset), CEREAL_NVP(FollowEntity));
         }
         // NOLINTEND
 
@@ -657,7 +655,7 @@ namespace SnowLeopardEngine
         bool              UsePrimitive  = false;
         MeshPrimitiveType PrimitiveType = MeshPrimitiveType::Invalid;
 
-        MeshGroup* Meshes;
+        MeshGroup* Meshes = nullptr;
 
         // NOLINTBEGIN
         template<class Archive>
@@ -672,7 +670,7 @@ namespace SnowLeopardEngine
 
         ~MeshFilterComponent()
         {
-            if (UsePrimitive)
+            if (UsePrimitive || (!FilePath.empty() && Meshes != nullptr))
             {
                 delete Meshes;
                 Meshes = nullptr;
@@ -784,6 +782,79 @@ namespace SnowLeopardEngine
         AnimatorComponent(const AnimatorComponent&) = default;
     };
     // -------- Animation Components DEFINITION END --------
+
+    // -------- Audio Components DEFINITION START --------
+
+    struct AudioConeInfo
+    {
+        float ConeInnerAngleRadians = glm::pi<float>();
+        float ConeOuterAngleRadians = 2 * glm::pi<float>();
+        float ConeOuterGain         = 3.0f;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(ConeInnerAngleRadians), CEREAL_NVP(ConeOuterAngleRadians), CEREAL_NVP(ConeOuterGain));
+        }
+        // NOLINTEND
+    };
+
+    struct AudioSourceComponent
+    {
+        std::filesystem::path AudioPath;
+
+        Ref<AudioClip> Clip = nullptr;
+
+        float Volume    = 1.0f;
+        bool  IsLoop    = false;
+        bool  IsSpatial = true;
+
+        bool PlayOnAwake = true;
+
+        AudioConeInfo ConeInfo = {};
+
+        float RollOff = 0.3f;
+
+        glm::vec2 MinMaxGain = {0.001, 1.0};
+
+        glm::vec3                LocalDirection;
+        AttenuationDistanceModel DistanceModel = AttenuationDistanceModel::Exponential;
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(AudioPath),
+                    CEREAL_NVP(Volume),
+                    CEREAL_NVP(IsLoop),
+                    CEREAL_NVP(IsSpatial),
+                    CEREAL_NVP(PlayOnAwake),
+                    CEREAL_NVP(ConeInfo));
+        }
+        // NOLINTEND
+
+        AudioSourceComponent()                            = default;
+        AudioSourceComponent(const AudioSourceComponent&) = default;
+    };
+
+    struct AudioListenerComponent
+    {
+        AudioConeInfo ConeInfo = {};
+
+        // NOLINTBEGIN
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(ConeInfo));
+        }
+        // NOLINTEND
+
+        AudioListenerComponent()                              = default;
+        AudioListenerComponent(const AudioListenerComponent&) = default;
+    };
+
+    // -------- Audio Components DEFINITION END --------
 
     // -------- In-Game GUI Components DEFINITION START --------
     namespace UI
@@ -908,8 +979,9 @@ namespace SnowLeopardEngine
             TextComponent()                     = default;
             TextComponent(const TextComponent&) = default;
         };
+        // -------- In-Game GUI Components DEFINITION END --------
+
     }; // namespace UI
-    // -------- In-Game GUI Components DEFINITION END --------
 
     template<typename... Component>
     struct ComponentGroup
@@ -922,7 +994,8 @@ namespace SnowLeopardEngine
         CameraComponent, FreeMoveCameraControllerComponent, ThirdPersonFollowCameraControllerComponent, \
         DirectionalLightComponent, PointLightComponent, BaseRendererComponent, MeshFilterComponent, \
         MeshRendererComponent, TerrainComponent, TerrainRendererComponent, UI::CanvasComponent, \
-        UI::RectTransformComponent, UI::ButtonComponent, UI::ImageComponent, UI::TextComponent
+        UI::RectTransformComponent, UI::ButtonComponent, UI::ImageComponent, UI::TextComponent, AudioSourceComponent, \
+        AudioListenerComponent
 
 #define ALL_SERIALIZABLE_COMPONENT_TYPES COMMON_COMPONENT_TYPES, IDComponent, NameComponent
 

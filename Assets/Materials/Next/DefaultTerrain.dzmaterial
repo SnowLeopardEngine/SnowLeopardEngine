@@ -6,7 +6,7 @@
             {
                 "Name": "albedoMap",
                 "Type": "Texture2D",
-                "Value": "Assets/Textures/PBR/Ground054/Ground054_1K-JPG_Color.jpg"
+                "Value": "Assets/Textures/DefaultTerrain.png"
             },
             {
                 "Name": "useAlbedoMap",
@@ -14,34 +14,20 @@
                 "Value": "1"
             },
             {
-                "Name": "metallic",
+                "Name": "roughness",
                 "Type": "Float",
-                "Value": "0"
+                "Value": "0.5"
             },
             {
-                "Name": "roughnessMap",
-                "Type": "Texture2D",
-                "Value": "Assets/Textures/PBR/Ground054/Ground054_1K-JPG_Roughness.jpg"
-            },
-            {
-                "Name": "useRoughnessMap",
-                "Type": "Int",
-                "Value": "1"
-            },
-            {
-                "Name": "aoMap",
-                "Type": "Texture2D",
-                "Value": "Assets/Textures/PBR/Ground054/Ground054_1K-JPG_AmbientOcclusion.jpg"
-            },
-            {
-                "Name": "useAOMap",
-                "Type": "Int",
+                "Name": "ao",
+                "Type": "Float",
                 "Value": "1"
             }
         ],
         "UserVertPath": "",
         "UserFragPath": "",
         "EnableInstancing": false,
-        "TextureFlipY": true
+        "TextureFlipY": true,
+        "TileSize": 20
     }
 }

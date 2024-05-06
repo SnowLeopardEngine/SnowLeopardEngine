@@ -112,6 +112,7 @@ namespace SnowLeopardEngine
                             SetTransform(renderable.ModelMatrix);
 
                             rc.BindMaterial(renderable.Mat)
+                                .SetUniform1i("tileSize", renderable.Mat->GetDefine().TileSize)
                                 .Draw(*renderable.Mesh->Data.VertBuffer,
                                       *renderable.Mesh->Data.IdxBuffer,
                                       renderable.Mesh->Data.Indices.size(),
@@ -141,18 +142,27 @@ namespace SnowLeopardEngine
                             .BindTexture(7, getTexture(resources, globalLightProbe.Diffuse))
                             .BindTexture(8, getTexture(resources, globalLightProbe.Specular));
 
-                        uint32_t instanceCount = group.Renderables.size();
-                        for (uint32_t instanceId = 0; instanceId < instanceCount; ++instanceId)
-                        {
-                            SetTransform(group.Renderables[instanceId].ModelMatrix, instanceId);
-                        }
+                        const uint32_t totalRenderables = group.Renderables.size();
+                        const uint32_t batchSize        = 250;
 
-                        rc.BindMaterial(renderableTemplate.Mat)
-                            .Draw(*renderableTemplate.Mesh->Data.VertBuffer,
-                                  *renderableTemplate.Mesh->Data.IdxBuffer,
-                                  renderableTemplate.Mesh->Data.Indices.size(),
-                                  renderableTemplate.Mesh->Data.Vertices.size(),
-                                  instanceCount);
+                        for (uint32_t startIdx = 0; startIdx < totalRenderables; startIdx += batchSize)
+                        {
+                            const uint32_t endIdx        = std::min(startIdx + batchSize, totalRenderables);
+                            const uint32_t instanceCount = endIdx - startIdx;
+
+                            for (uint32_t instanceId = startIdx; instanceId < endIdx; ++instanceId)
+                            {
+                                SetTransform(group.Renderables[instanceId].ModelMatrix, instanceId - startIdx);
+                            }
+
+                            rc.BindMaterial(renderableTemplate.Mat)
+                                .SetUniform1i("tileSize", renderableTemplate.Mat->GetDefine().TileSize)
+                                .Draw(*renderableTemplate.Mesh->Data.VertBuffer,
+                                      *renderableTemplate.Mesh->Data.IdxBuffer,
+                                      renderableTemplate.Mesh->Data.Indices.size(),
+                                      renderableTemplate.Mesh->Data.Vertices.size(),
+                                      instanceCount);
+                        }
                     }
                 }
 

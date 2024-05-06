@@ -10,9 +10,11 @@
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/IO/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
+#include "SnowLeopardEngine/Function/Physics/OverlapInfo.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
+#include <SnowLeopardEngine/Core/Base/Random.h>
 #include <SnowLeopardEngine/Core/Time/Time.h>
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Engine/EngineContext.h>
@@ -24,6 +26,32 @@ const std::string TextMaterialPath  = "Assets/Materials/Next/UIText.dzmaterial";
 using namespace SnowLeopardEngine;
 
 Entity g_Cam;
+bool   g_GameOver = false;
+
+glm::vec3 GetTerrainHeightAtWorldPosition(const glm::vec3&        worldPosition,
+                                          const TerrainComponent& terrainComponent,
+                                          const glm::vec3&        terrainPos)
+{
+    glm::vec3 localPosition = worldPosition - terrainPos;
+
+    int xIndex = static_cast<int>((localPosition.x / terrainComponent.XScale) +
+                                  (terrainComponent.TerrainHeightMap.Data.size() / 2));
+    int zIndex = static_cast<int>((localPosition.z / terrainComponent.ZScale) +
+                                  (terrainComponent.TerrainHeightMap.Data[0].size() / 2));
+
+    if (xIndex < 0 || xIndex >= terrainComponent.TerrainHeightMap.Data.size() || zIndex < 0 ||
+        zIndex >= terrainComponent.TerrainHeightMap.Data[0].size())
+    {
+        return glm::vec3(localPosition.x, 0.0f, localPosition.z);
+    }
+
+    float terrainHeight = terrainComponent.TerrainHeightMap.Data[xIndex][zIndex];
+
+    glm::vec3 worldPositionOnTerrain = localPosition;
+    worldPositionOnTerrain.y         = terrainHeight * terrainComponent.YScale;
+
+    return worldPositionOnTerrain;
+}
 
 class CharacterScript : public NativeScriptInstance
 {
@@ -43,10 +71,41 @@ public:
         auto& animator   = m_OwnerEntity->GetComponent<AnimatorComponent>();
         auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
 
+        Entity playButton = g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithName("PlayButton");
+        Entity playText   = g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithName("PlayText");
+
         // Raycast to test if on the ground.
         auto      origin = transform.Position - glm::vec3(0, controller.Height + 0.1f, 0); // under feet
         glm::vec3 direction(0, -1, 0);
         m_IsGrounded = g_EngineContext->PhysicsSys->SimpleRaycast(origin, direction, 0.15f);
+
+        // Overlap to test if hit something
+        bool        nearSpeaker = false;
+        OverlapInfo overlapInfo = {};
+        if (g_EngineContext->PhysicsSys->OverlapSphere(origin, 15.0f, overlapInfo))
+        {
+            for (auto& entity : overlapInfo.OverlappedEntities)
+            {
+                // SNOW_LEOPARD_INFO("[CharacterScript] Overlap with {0}", entity.GetName());
+
+                if (entity.GetName() == "Speaker")
+                {
+                    nearSpeaker = true;
+                }
+            }
+        }
+
+        // Show UI
+        if (nearSpeaker)
+        {
+            playButton.GetComponent<EntityStatusComponent>().IsEnabled = true;
+            playText.GetComponent<EntityStatusComponent>().IsEnabled   = true;
+        }
+        else
+        {
+            playButton.GetComponent<EntityStatusComponent>().IsEnabled = false;
+            playText.GetComponent<EntityStatusComponent>().IsEnabled   = false;
+        }
 
         glm::vec3 forwardDirection(0, 0, -1);
         glm::vec3 rightDirection(-1, 0, 0);
@@ -62,9 +121,65 @@ public:
 
         if (!m_PreJump)
         {
+            if (!m_PunchingTimerStart)
+            {
+                if (g_EngineContext->InputSys->GetKey(KeyCode::Q) && !g_GameOver)
+                {
+                    m_PunchingTimerStart = true;
+                    m_PunchingAudioTimer = m_PunchingTime;
+                    animator.Controller.SetTrigger("Punching");
+                    g_EngineContext->AudioSys->Play("DemoAssets/Audios/Punch.mp3");
+                }
+            }
+            else
+            {
+                if (g_EngineContext->InputSys->GetKey(KeyCode::Q) && !g_GameOver)
+                {
+                    m_PunchingTimer = m_PunchingTime;
+                    m_PunchingAudioTimer -= deltaTime;
+                    if (m_PunchingAudioTimer <= 0)
+                    {
+                        g_EngineContext->AudioSys->Play("DemoAssets/Audios/Punch.mp3");
+                        m_PunchingAudioTimer = m_PunchingTime;
+                    }
+                }
+
+                m_PunchingTimer -= deltaTime;
+                if (m_PunchingTimer <= 0)
+                {
+                    animator.Controller.SetTrigger("PunchingEnd");
+                    m_PunchingTimer      = m_PunchingTime;
+                    m_PunchingTimerStart = false;
+                }
+            }
+
+            if (m_IsGrounded && g_EngineContext->InputSys->GetKeyDown(KeyCode::Space) && !g_GameOver)
+            {
+                m_PreJump      = true;
+                m_PrejumpTimer = m_PrejumpTime;
+                animator.Controller.SetTrigger("IsJump");
+                m_IsJumping = true;
+            }
+        }
+        else
+        {
+            m_PrejumpTimer -= deltaTime;
+            if (m_PrejumpTimer <= 0)
+            {
+                m_IsGrounded    = false;
+                m_VerticalSpeed = m_JumpSpeed;
+                m_PrejumpTimer  = m_PrejumpTime;
+                m_PreJump       = false;
+
+                g_EngineContext->AudioSys->Play("DemoAssets/Audios/Jumping.mp3");
+            }
+        }
+
+        if (!m_PreJump && !m_PunchingTimerStart && !g_GameOver)
+        {
             if (g_EngineContext->InputSys->GetKey(KeyCode::LeftShift))
             {
-                factor = 2.0f;
+                factor = 1.5f;
             }
 
             if (g_EngineContext->InputSys->GetKey(KeyCode::W))
@@ -107,7 +222,7 @@ public:
             }
         }
 
-        if (m_IsGrounded && !m_LastFrameIsGrounded && !m_PreJump)
+        if (m_IsGrounded && !m_LastFrameIsGrounded && !m_PreJump && m_IsJumping)
         {
             animator.Manager.m_Animators[0]->SetTrigger("IsFallToGround");
             std::cout << "IsFallToGround" << std::endl;
@@ -130,6 +245,12 @@ public:
             glm::quat newRotation     = glm::slerp(currentRotation, targetRotation, lerpFactor * deltaTime);
 
             transform.SetRotation(newRotation);
+        }
+
+        if (g_GameOver && !m_SetDeath)
+        {
+            animator.Controller.SetTrigger("Death");
+            m_SetDeath = true;
         }
 
         // Update
@@ -156,16 +277,146 @@ private:
     float     m_VerticalAcc      = -9.8f;
     float     m_VerticalSpeed    = 0;
     float     m_VerticalMovement = 0;
-    float     m_JumpSpeed        = 5;
+    float     m_JumpSpeed        = 4;
     glm::vec2 m_HorizontalVelocity;
     glm::vec2 m_HorizontalMovement;
 
     bool  m_PreJump      = false;
     float m_PrejumpTime  = 0.7f;
-    float m_PrejumpTimer = 0.7f;
+    float m_PrejumpTimer = m_PrejumpTime;
 
+    bool  m_PunchingTimerStart = false;
+    float m_PunchingTime       = 1.0f;
+    float m_PunchingTimer      = m_PunchingTime;
+
+    float m_PunchingAudioTimer = m_PunchingTime;
+
+    bool m_IsJumping           = false;
     bool m_IsGrounded          = false;
     bool m_LastFrameIsGrounded = false;
+
+    bool m_SetDeath = false;
+};
+
+class EnemyScript : public NativeScriptInstance
+{
+public:
+    virtual void OnLoad() override {}
+
+    virtual void OnTick(float deltaTime) override
+    {
+        auto& transform  = m_OwnerEntity->GetComponent<TransformComponent>();
+        auto& animator   = m_OwnerEntity->GetComponent<AnimatorComponent>();
+        auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
+
+        Entity    player         = g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithName("Character");
+        Entity    healthBarFront = g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithName("HealthBarFront");
+        Entity    gameOverText   = g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithName("GameOverText");
+        glm::vec3 movement(0.0f);
+
+        if (player)
+        {
+            auto& playerTransform = player.GetComponent<TransformComponent>();
+            auto  offset          = playerTransform.Position - transform.Position;
+
+            float distance = glm::distance(playerTransform.Position, transform.Position);
+
+            if (distance < 15.0f && !g_GameOver)
+            {
+                if (!m_PunchingTimerStart)
+                {
+                    if (healthBarFront)
+                    {
+                        auto& rect = healthBarFront.GetComponent<UI::RectTransformComponent>();
+                        rect.Size.x -= 20;
+                        if (rect.Size.x < 0)
+                        {
+                            // Player die
+                            g_GameOver                                                   = true;
+                            rect.Size.x                                                  = 0;
+                            gameOverText.GetComponent<EntityStatusComponent>().IsEnabled = true;
+                            g_EngineContext->AudioSys->Play("DemoAssets/Audios/Death.mp3");
+                        }
+                    }
+
+                    m_PunchingAudioTimer = m_PunchingTime;
+                    animator.Controller.SetTrigger("Punching");
+                    g_EngineContext->AudioSys->Play("DemoAssets/Audios/Punch.mp3");
+                    player.GetComponent<AnimatorComponent>().Controller.SetTrigger("RibHit");
+                    m_PunchingTimerStart = true;
+                }
+            }
+            else if (distance < 50.0f)
+            {
+                movement.x = offset.x;
+                movement.z = offset.z;
+                movement   = glm::normalize(movement) * 0.6f;
+            }
+            else if (distance < 200.0f)
+            {
+                movement.x = offset.x;
+                movement.z = offset.z;
+                movement   = glm::normalize(movement) * 1.1f;
+            }
+        }
+
+        if (m_PunchingTimerStart)
+        {
+            m_PunchingTimer -= deltaTime;
+            if (m_PunchingTimer <= 0)
+            {
+                player.GetComponent<AnimatorComponent>().Controller.SetTrigger("RibHitEnd");
+                animator.Controller.SetTrigger("PunchingEnd");
+                m_PunchingTimer      = m_PunchingTime;
+                m_PunchingTimerStart = false;
+            }
+        }
+
+        float horizontalInput = glm::length(movement);
+
+        if (horizontalInput > 0.0f)
+        {
+            m_HorizontalVelocity.x = movement.x;
+            m_HorizontalVelocity.y = movement.z;
+
+            // Apply rotation
+            glm::vec3 targetDirection = glm::normalize(glm::vec3(movement.x, 0.0f, movement.z));
+            glm::quat targetRotation  = glm::quatLookAtLH(targetDirection, glm::vec3(0, 1, 0));
+
+            // SLERP
+            float     lerpFactor      = 15.0f;
+            auto      currentRotation = transform.GetRotation();
+            glm::quat newRotation     = glm::slerp(currentRotation, targetRotation, lerpFactor * deltaTime);
+
+            transform.SetRotation(newRotation);
+        }
+
+        // Update
+        m_HorizontalMovement = m_HorizontalVelocity * deltaTime * m_BaseFactor;
+        m_HorizontalVelocity *= 0.8f; // damping
+
+        // Set animator controller property
+        animator.Controller.SetFloat("HorizontalSpeed", horizontalInput);
+    }
+
+    void OnFixedTick() override
+    {
+        // Character controller moving
+        auto& controller = m_OwnerEntity->GetComponent<CharacterControllerComponent>();
+        g_EngineContext->PhysicsSys->Move(
+            controller, glm::vec3(m_HorizontalMovement.x, -9.8, m_HorizontalMovement.y), Time::FixedDeltaTime);
+    }
+
+private:
+    float     m_BaseFactor = 30.0f;
+    glm::vec2 m_HorizontalVelocity;
+    glm::vec2 m_HorizontalMovement;
+
+    bool  m_PunchingTimerStart = false;
+    float m_PunchingTime       = 1.0f;
+    float m_PunchingTimer      = m_PunchingTime;
+
+    float m_PunchingAudioTimer = m_PunchingTime;
 };
 
 class GameLoad final : public LifeTimeComponent
@@ -174,9 +425,9 @@ public:
     virtual void OnLoad() override final
     {
         m_PlayerModel   = new Model();
+        m_EnemyModel    = new Model();
         m_RenderContext = CreateScope<RenderContext>();
         LoadMainMenuScene();
-        PlayMainMenuBGM();
 
         Subscribe(m_ButtonClickedEventHandler);
     }
@@ -184,6 +435,7 @@ public:
     virtual void OnUnload() override final
     {
         Unsubscribe(m_ButtonClickedEventHandler);
+        delete m_EnemyModel;
         delete m_PlayerModel;
     }
 
@@ -200,6 +452,12 @@ private:
         cameraTransform.Position   = {0, 10, 30};
         auto& cameraComponent      = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags = CameraClearFlags::Skybox; // Enable skybox
+        camera.AddComponent<AudioListenerComponent>();
+        auto& bgm       = camera.AddComponent<AudioSourceComponent>();
+        bgm.AudioPath   = "DemoAssets/Audios/MainMenu.mp3";
+        bgm.IsLoop      = true;
+        bgm.IsSpatial   = false;
+        bgm.PlayOnAwake = true;
 
         // Create a background panel image
         Entity bgImage               = m_MainMenuScene->CreateEntity("Bg");
@@ -273,6 +531,13 @@ private:
         camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
+        camera.AddComponent<AudioListenerComponent>();
+        auto& bgm       = camera.AddComponent<AudioSourceComponent>();
+        bgm.AudioPath   = "DemoAssets/Audios/OutDoor.mp3";
+        bgm.IsLoop      = true;
+        bgm.IsSpatial   = false;
+        bgm.PlayOnAwake = true;
+        bgm.Volume      = 0.1f;
 
         // Create a menu button
         Entity menuButton    = m_GameScene->CreateEntity("MenuButton");
@@ -285,6 +550,37 @@ private:
         menuButtonComp.TintColor.TargetGraphic =
             IO::Load("Assets/Textures/GUI/FantacyUI/Buttons/Menu.png", *m_RenderContext);
         menuButtonComp.MaterialFilePath = ImageMaterialPath;
+
+        // Create a healthbar
+        Entity healthBarBack                = m_GameScene->CreateEntity("HealthBarBack");
+        auto&  healthBarBackRect            = healthBarBack.AddComponent<UI::RectTransformComponent>();
+        healthBarBackRect.Size              = {200, 50};
+        healthBarBackRect.Pivot             = {0.5, 0.5};
+        healthBarBackRect.Pos               = {200, 680, -0.1};
+        auto& healthBarBackImage            = healthBarBack.AddComponent<UI::ImageComponent>();
+        healthBarBackImage.TargetGraphic    = IO::Load("DemoAssets/GUI/HealthBarBack.png", *m_RenderContext);
+        healthBarBackImage.MaterialFilePath = ImageMaterialPath;
+
+        Entity healthBarFront                = m_GameScene->CreateEntity("HealthBarFront");
+        auto&  healthBarFrontRect            = healthBarFront.AddComponent<UI::RectTransformComponent>();
+        healthBarFrontRect.Size              = {196, 46};
+        healthBarFrontRect.Pivot             = {0, 0.5};
+        healthBarFrontRect.Pos               = {102, 680, -0.05};
+        auto& healthBarFrontImage            = healthBarFront.AddComponent<UI::ImageComponent>();
+        healthBarFrontImage.TargetGraphic    = IO::Load("DemoAssets/GUI/HealthBarFront.png", *m_RenderContext);
+        healthBarFrontImage.MaterialFilePath = ImageMaterialPath;
+
+        // Create a GAME-OVER text
+        Entity gameOverText               = m_GameScene->CreateEntity("GameOverText");
+        auto&  gameOverTextRect           = gameOverText.AddComponent<UI::RectTransformComponent>();
+        gameOverTextRect.Size             = {500, 200};
+        gameOverTextRect.Pos              = {400, 600, 0};
+        auto& gameOverTextComp            = gameOverText.AddComponent<UI::TextComponent>();
+        gameOverTextComp.TextContent      = "GAME OVER";
+        gameOverTextComp.FontSize         = 24;
+        gameOverTextComp.Color            = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+        gameOverTextComp.MaterialFilePath = TextMaterialPath;
+        gameOverText.GetComponent<EntityStatusComponent>().IsEnabled = false;
 
         // Create a terrain
         auto     normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
@@ -374,11 +670,107 @@ private:
         auto jump2Run = animatorController->RegisterTransition(animationClips[3], animationClips[2], 0);
         jump2Run->SetConditions("IsFallToGround");
 
-        auto& controller = character.AddComponent<CharacterControllerComponent>();
-        character.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(CharacterScript));
+            // Transitions between Idle and Walking
+            auto idle2Walk = animatorComponent.Controller.RegisterTransition(animators[0], animators[1], 0);
+            idle2Walk->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 0.5f);
+            auto walk2Idle = animatorComponent.Controller.RegisterTransition(animators[1], animators[0], 0);
+            walk2Idle->SetConditions("HorizontalSpeed", ConditionOperator::Less, 0.5f);
 
-        auto& tpCamControl        = camera.AddComponent<ThirdPersonFollowCameraControllerComponent>();
-        tpCamControl.FollowEntity = character;
+            // Transitions between Walking and Run
+            auto walk2Run = animatorComponent.Controller.RegisterTransition(animators[1], animators[2], 0);
+            walk2Run->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 1.0f);
+            auto run2Walk = animatorComponent.Controller.RegisterTransition(animators[2], animators[1], 0);
+            run2Walk->SetConditions("HorizontalSpeed", ConditionOperator::Less, 1.0f);
+
+            // Transitions between * and Punching
+            auto idle2Punching = animatorComponent.Controller.RegisterTransition(animators[0], animators[3], 0);
+            idle2Punching->AddTrigger("Punching");
+            auto punching2Idle = animatorComponent.Controller.RegisterTransition(animators[3], animators[0], 0);
+            punching2Idle->AddTrigger("PunchingEnd");
+            auto walk2Punching = animatorComponent.Controller.RegisterTransition(animators[1], animators[3], 0);
+            walk2Punching->AddTrigger("Punching");
+            auto punching2Walk = animatorComponent.Controller.RegisterTransition(animators[3], animators[1], 0);
+            punching2Walk->AddTrigger("PunchingEnd");
+            auto run2Punching = animatorComponent.Controller.RegisterTransition(animators[2], animators[3], 0);
+            run2Punching->AddTrigger("Punching");
+            auto punching2Run = animatorComponent.Controller.RegisterTransition(animators[3], animators[2], 0);
+            punching2Run->AddTrigger("PunchingEnd");
+
+            auto& controller = character.AddComponent<CharacterControllerComponent>();
+            character.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EnemyScript));
+        }
+
+        // Create a speaker object to test 3D spatial sound
+        Entity speaker            = m_GameScene->CreateEntity("Speaker");
+        m_Speaker                 = speaker;
+        auto& speakerTransform    = speaker.GetComponent<TransformComponent>();
+        speakerTransform.Position = {-10, 30, 10};
+        speakerTransform.Scale *= 5;
+        auto& speakerMeshFilter              = speaker.AddComponent<MeshFilterComponent>();
+        speakerMeshFilter.FilePath           = "DemoAssets/Models/Speaker/Speaker.dae";
+        auto& speakerMeshRenderer            = speaker.AddComponent<MeshRendererComponent>();
+        speakerMeshRenderer.MaterialFilePath = "DemoAssets/Models/Speaker/Speaker.dzmaterial";
+        auto& speakderAudioSource            = speaker.AddComponent<AudioSourceComponent>();
+        speakderAudioSource.AudioPath        = "DemoAssets/Audios/SpeakerBGM.mp3";
+        speakderAudioSource.IsSpatial        = true;
+        speakderAudioSource.IsLoop           = true;
+        speakderAudioSource.PlayOnAwake      = false; // Use UI to turn on
+
+        auto& speakerBoxCollider  = speaker.AddComponent<BoxColliderComponent>(normalMaterial);
+        speakerBoxCollider.Size   = {5, 3, 3};
+        auto& speakerBoxRigidbody = speaker.AddComponent<RigidBodyComponent>();
+
+        // Create a play music button
+        Entity playButton    = m_GameScene->CreateEntity("PlayButton");
+        m_PlayMusicButtonID  = playButton.GetCoreUUID();
+        auto& playButtonRect = playButton.AddComponent<UI::RectTransformComponent>();
+        playButtonRect.Size  = {229, 44};
+        playButtonRect.Pivot = {0.5, 0.5};
+        playButtonRect.Pos   = {800, 360, 0};
+        auto& playButtonComp = playButton.AddComponent<UI::ButtonComponent>();
+        playButtonComp.TintColor.TargetGraphic =
+            IO::Load("Assets/Textures/GUI/FantacyUI/Buttons/ButtonNormal.png", *m_RenderContext);
+        playButtonComp.MaterialFilePath = ImageMaterialPath;
+        // embedded text
+        Entity playText               = m_GameScene->CreateEntity("PlayText");
+        m_PlayMusicText               = playText;
+        auto& playTextRect            = playText.AddComponent<UI::RectTransformComponent>();
+        playTextRect.Size             = {229, 44};
+        playTextRect.Pos              = {740, 350, 0};
+        auto& playTextComp            = playText.AddComponent<UI::TextComponent>();
+        playTextComp.TextContent      = "Play Music";
+        playTextComp.FontSize         = 8;
+        playTextComp.Color            = glm::vec4(1.0f, 0.8f, 0.0f, 1.0f);
+        playTextComp.MaterialFilePath = TextMaterialPath;
+
+        // Set disabled by default
+        playButton.GetComponent<EntityStatusComponent>().IsEnabled = false;
+        playText.GetComponent<EntityStatusComponent>().IsEnabled   = false;
+
+        const std::string instancingMaterialPath = "Assets/Materials/Next/Grass.dzmaterial";
+
+        // Create grass
+        for (uint32_t i = 0; i < 250; ++i)
+        {
+            Entity quad          = m_GameScene->CreateEntity("GrassQuad");
+            auto&  quadTransform = quad.GetComponent<TransformComponent>();
+            quadTransform.Position =
+                glm::vec3(Random::GetRandomFloatRanged(-200, 200), 0, Random::GetRandomFloatRanged(-200, 200));
+
+            int terrainX = (quadTransform.Position.x + heightMapWidth * 0.5f * xScale) / xScale;
+            int terrainZ = (quadTransform.Position.z + heightMapHeight * 0.5f * zScale) / zScale;
+
+            quadTransform.Position.y = terrainComponent.TerrainHeightMap.Get(terrainZ, terrainX) * yScale + 5.0f;
+
+            quadTransform.SetRotationEuler(glm::vec3(Random::GetRandomFloatRanged(-135, -90),
+                                                     Random::GetRandomFloatRanged(0, 90),
+                                                     Random::GetRandomFloatRanged(0, 10)));
+            quadTransform.Scale               = {12, 24, 12};
+            auto& quadMeshFilter              = quad.AddComponent<MeshFilterComponent>();
+            quadMeshFilter.PrimitiveType      = MeshPrimitiveType::Quad;
+            auto& quadMeshRenderer            = quad.AddComponent<MeshRendererComponent>();
+            quadMeshRenderer.MaterialFilePath = instancingMaterialPath;
+        }
     }
 
     void LoadMainMenuScene()
@@ -386,6 +778,10 @@ private:
         if (m_MainMenuScene == nullptr)
         {
             CreateMainMenuScene();
+        }
+        else
+        {
+            m_PlayMusicText.GetComponent<UI::TextComponent>().TextContent = "Play Music";
         }
         g_EngineContext->SceneMngr->SetActiveScene(m_MainMenuScene);
     }
@@ -399,7 +795,19 @@ private:
         g_EngineContext->SceneMngr->SetActiveScene(m_GameScene);
     }
 
-    void PlayMainMenuBGM() { g_EngineContext->AudioSys->Play("assets/audios/MainMenu.mp3"); }
+    void PlayOrStopMusic()
+    {
+        if (m_Speaker.GetComponent<AudioSourceComponent>().Clip->IsPlaying())
+        {
+            m_PlayMusicText.GetComponent<UI::TextComponent>().TextContent = "Play Music";
+            m_Speaker.GetComponent<AudioSourceComponent>().Clip->Stop();
+        }
+        else
+        {
+            m_PlayMusicText.GetComponent<UI::TextComponent>().TextContent = "Stop Music";
+            m_Speaker.GetComponent<AudioSourceComponent>().Clip->Play();
+        }
+    }
 
 private:
     // Scenes
@@ -410,10 +818,19 @@ private:
     // Player
     Model* m_PlayerModel = nullptr;
 
+    // Enemy
+    Model* m_EnemyModel = nullptr;
+
+    // Speaker
+    Entity m_Speaker;
+    Entity m_PlayMusicText;
+
     // Button UUIDs for event handling
     CoreUUID m_PlayButtonID;
     CoreUUID m_ExitButtonID;
     CoreUUID m_MenuButtonID;
+
+    CoreUUID m_PlayMusicButtonID;
 
     EventHandler<UIButtonClickedEvent> m_ButtonClickedEventHandler = [this](const UIButtonClickedEvent& e) {
         auto   button       = e.GetButtonEntity();
@@ -422,7 +839,7 @@ private:
                           buttonEntity.GetName(),
                           to_string(buttonEntity.GetCoreUUID()));
 
-        g_EngineContext->AudioSys->Play("assets/audios/ButtonClick.wav");
+        g_EngineContext->AudioSys->Play("DemoAssets/Audios/ButtonClick.wav");
 
         auto buttonID = buttonEntity.GetCoreUUID();
 
@@ -443,12 +860,18 @@ private:
             // Show Menu
             LoadMainMenuScene();
         }
+
+        if (buttonID == m_PlayMusicButtonID)
+        {
+            PlayOrStopMusic();
+        }
     };
 };
 
 int main(int argc, char** argv) TRY
 {
     REGISTER_TYPE(CharacterScript);
+    REGISTER_TYPE(EnemyScript);
 
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title  = "Final Game DEMO";

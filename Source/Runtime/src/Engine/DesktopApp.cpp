@@ -4,6 +4,7 @@
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 
 namespace SnowLeopardEngine
 {
@@ -27,7 +28,7 @@ namespace SnowLeopardEngine
 
         // subscribe events
         Subscribe(m_WindowCloseHandler);
-        Subscribe(m_WindowResizeHandler);
+        Subscribe(m_WindowResizeHandler);      
 
         m_IsRunning = true;
 

@@ -39,6 +39,8 @@ namespace SnowLeopardEngine
         bool EnableInstancing = false;
         bool TextureFlipY     = false;
 
+        int TileSize = 1;
+
         // NOLINTBEGIN
         template<class Archive>
         void serialize(Archive& archive)
@@ -49,7 +51,8 @@ namespace SnowLeopardEngine
                     CEREAL_NVP(UserVertPath),
                     CEREAL_NVP(UserFragPath),
                     CEREAL_NVP(EnableInstancing),
-                    CEREAL_NVP(TextureFlipY));
+                    CEREAL_NVP(TextureFlipY),
+                    CEREAL_NVP(TileSize));
         }
         // NOLINTEND
     };

@@ -47,9 +47,15 @@ namespace SnowLeopardEngine
             leftMouseButtonUp = true;
         }
 
-        registry.view<UI::RectTransformComponent, UI::ButtonComponent>().each(
-            [&registry, mousePos, leftMouseButton, leftMouseButtonUp](
-                entt::entity entity, UI::RectTransformComponent& rect, UI::ButtonComponent& button) {
+        registry.view<UI::RectTransformComponent, EntityStatusComponent, UI::ButtonComponent>().each(
+            [&registry, mousePos, leftMouseButton, leftMouseButtonUp](entt::entity                entity,
+                                                                      UI::RectTransformComponent& rect,
+                                                                      EntityStatusComponent&      status,
+                                                                      UI::ButtonComponent&        button) {
+                if (!status.IsEnabled)
+                {
+                    return;
+                }
                 glm::vec2 bl = glm::vec2(rect.Pos) - glm::vec2(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y);
 
                 if (mousePos.x >= bl.x && mousePos.x < bl.x + rect.Size.x && mousePos.y >= bl.y &&
