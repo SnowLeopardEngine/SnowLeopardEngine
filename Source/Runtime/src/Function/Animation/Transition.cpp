@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/Animation/Transition.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include <string>
 
 namespace SnowLeopardEngine
 {

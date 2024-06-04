@@ -1,6 +1,9 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/Debug.h"
+#include "SnowLeopardEngine/Function/Animation/AnimationClip.h"
+#include "SnowLeopardEngine/Function/Animation/Animator.h"
+#include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
@@ -61,6 +64,7 @@ public:
         config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
         config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
         config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/animation_Dancing.ozz");
+        config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Walking.ozz");
         bool ok = OzzModelLoader::Load(config, g_Model);
 
         // Create a character
@@ -75,9 +79,21 @@ public:
         characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
-        auto animator = CreateRef<Animator>(g_Model->AnimationClips[0]);
-        animatorComponent.Controller.RegisterAnimator(animator);
-        animatorComponent.Controller.SetEntryAnimator(animator);
+        Ref<AnimationClip> danceAnimation = g_Model->AnimationClips[0];
+        Ref<AnimationClip> walkingAnimation = g_Model->AnimationClips[1];
+
+        Ref<Animator> animator = CreateRef<Animator>();
+        Ref<AnimatorController> controller = CreateRef<AnimatorController>();
+
+        controller->RegisterAnimationClip(danceAnimation);
+        controller->RegisterAnimationClip(walkingAnimation);
+        controller->SetEntryAnimationClip(danceAnimation);
+
+        animator->SetController(controller);
+        animatorComponent.Manager.RegisterAnimator(animator);
+        controller->RegisterParameters("Walking");
+        auto idle2Walk = controller->RegisterTransition(danceAnimation, walkingAnimation, 1);
+        idle2Walk->SetConditions("Walking");
     }
 
 private:

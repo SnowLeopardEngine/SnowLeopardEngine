@@ -69,8 +69,9 @@ static Entity CreateCharacter(const Ref<LogicScene>& scene, Model* model, const 
     auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
     auto animator = CreateRef<Animator>(model->AnimationClips[0]);
-    animatorComponent.Controller.RegisterAnimator(animator);
-    animatorComponent.Controller.SetEntryAnimator(animator);
+    // FIXME
+    // animatorComponent.Controller.RegisterAnimator(animator);
+    // animatorComponent.Controller.SetEntryAnimator(animator);
 
     return character;
 }

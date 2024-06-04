@@ -2,6 +2,9 @@
 #include "SnowLeopardEngine/Core/Event/UIEvents.h"
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/Debug.h"
+#include "SnowLeopardEngine/Function/Animation/AnimationClip.h"
+#include "SnowLeopardEngine/Function/Animation/Animator.h"
+#include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "SnowLeopardEngine/Function/Animation/Transition.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
@@ -124,7 +127,7 @@ public:
                 {
                     m_PunchingTimerStart = true;
                     m_PunchingAudioTimer = m_PunchingTime;
-                    animator.Controller.SetTrigger("Punching");
+                    animator.Manager.m_Animators[0]->SetTrigger("Punching");
                     g_EngineContext->AudioSys->Play("DemoAssets/Audios/Punch.mp3");
                 }
             }
@@ -144,7 +147,7 @@ public:
                 m_PunchingTimer -= deltaTime;
                 if (m_PunchingTimer <= 0)
                 {
-                    animator.Controller.SetTrigger("PunchingEnd");
+                    animator.Manager.m_Animators[0]->SetTrigger("PunchingEnd");
                     m_PunchingTimer      = m_PunchingTime;
                     m_PunchingTimerStart = false;
                 }
@@ -154,7 +157,7 @@ public:
             {
                 m_PreJump      = true;
                 m_PrejumpTimer = m_PrejumpTime;
-                animator.Controller.SetTrigger("IsJump");
+                animator.Manager.m_Animators[0]->SetTrigger("IsJump");
                 m_IsJumping = true;
             }
         }
@@ -204,7 +207,7 @@ public:
         {
             g_EngineContext->AudioSys->Play("DemoAssets/Audios/JumpLand.wav");
             m_IsJumping = false;
-            animator.Controller.SetTrigger("IsFallToGround");
+            animator.Manager.m_Animators[0]->SetTrigger("IsFallToGround");
         }
 
         float horizontalInput = glm::length(movement);
@@ -228,7 +231,7 @@ public:
 
         if (g_GameOver && !m_SetDeath)
         {
-            animator.Controller.SetTrigger("Death");
+            animator.Manager.m_Animators[0]->SetTrigger("Death");
             m_SetDeath = true;
         }
 
@@ -239,7 +242,7 @@ public:
         m_HorizontalVelocity *= 0.8f; // damping
 
         // Set animator controller property
-        animator.Controller.SetFloat("HorizontalSpeed", horizontalInput);
+        animator.Manager.m_Animators[0]->SetFloat("HorizontalSpeed", horizontalInput);
     }
 
     void OnFixedTick() override
@@ -319,9 +322,9 @@ public:
                     }
 
                     m_PunchingAudioTimer = m_PunchingTime;
-                    animator.Controller.SetTrigger("Punching");
+                    animator.Manager.m_Animators[0]->SetTrigger("Punching");
                     g_EngineContext->AudioSys->Play("DemoAssets/Audios/Punch.mp3");
-                    player.GetComponent<AnimatorComponent>().Controller.SetTrigger("RibHit");
+                    player.GetComponent<AnimatorComponent>().Manager.m_Animators[0]->SetTrigger("RibHit");
                     m_PunchingTimerStart = true;
                 }
             }
@@ -344,8 +347,8 @@ public:
             m_PunchingTimer -= deltaTime;
             if (m_PunchingTimer <= 0)
             {
-                player.GetComponent<AnimatorComponent>().Controller.SetTrigger("RibHitEnd");
-                animator.Controller.SetTrigger("PunchingEnd");
+                player.GetComponent<AnimatorComponent>().Manager.m_Animators[0]->SetTrigger("RibHitEnd");
+                animator.Manager.m_Animators[0]->SetTrigger("PunchingEnd");
                 m_PunchingTimer      = m_PunchingTime;
                 m_PunchingTimerStart = false;
             }
@@ -375,7 +378,7 @@ public:
         m_HorizontalVelocity *= 0.8f; // damping
 
         // Set animator controller property
-        animator.Controller.SetFloat("HorizontalSpeed", horizontalInput);
+        animator.Manager.m_Animators[0]->SetFloat("HorizontalSpeed", horizontalInput);
     }
 
     void OnFixedTick() override
@@ -607,96 +610,99 @@ private:
             characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
             auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
-            std::vector<Ref<Animator>> animators;
+            Ref<Animator>                   animator = CreateRef<Animator>();
+            std::vector<Ref<AnimationClip>> animationClips;
+            Ref<AnimatorController>         animatorController = CreateRef<AnimatorController>();
             for (const auto& clip : m_PlayerModel->AnimationClips)
             {
-                auto animator = CreateRef<Animator>(clip);
-                animatorComponent.Controller.RegisterAnimator(animator);
-                animators.emplace_back(animator);
+                animatorController->RegisterAnimationClip(clip);
+                animationClips.emplace_back(clip);
             }
-            animatorComponent.Controller.SetEntryAnimator(animators[0]); // Idle as default
-            animators[5]->SetLoop(false);                                // Death not loop
+            animatorComponent.Manager.RegisterAnimator(animator);
+            animatorController->SetEntryAnimationClip(animationClips[0]); // Idle as default
+            animator->SetController(animatorController);
+            animationClips[5]->IsLoop = false; // Death not loop
 
             // Parameters
-            animatorComponent.Controller.RegisterParameters("HorizontalSpeed", 0.0f);
-            animatorComponent.Controller.RegisterParameters("IsJump");         // Trigger
-            animatorComponent.Controller.RegisterParameters("IsFallToGround"); // Trigger
-            animatorComponent.Controller.RegisterParameters("Punching");       // Trigger
-            animatorComponent.Controller.RegisterParameters("PunchingEnd");    // Trigger
-            animatorComponent.Controller.RegisterParameters("Death");          // Trigger
-            animatorComponent.Controller.RegisterParameters("RibHit");         // Trigger
-            animatorComponent.Controller.RegisterParameters("RibHitEnd");      // Trigger
+            animatorController->RegisterParameters("HorizontalSpeed", 0.0f);
+            animatorController->RegisterParameters("IsJump");         // Trigger
+            animatorController->RegisterParameters("IsFallToGround"); // Trigger
+            animatorController->RegisterParameters("Punching");       // Trigger
+            animatorController->RegisterParameters("PunchingEnd");    // Trigger
+            animatorController->RegisterParameters("Death");          // Trigger
+            animatorController->RegisterParameters("RibHit");         // Trigger
+            animatorController->RegisterParameters("RibHitEnd");      // Trigger
 
             // Transitions between Idle and Walking
-            auto idle2Walk = animatorComponent.Controller.RegisterTransition(animators[0], animators[1], 0);
+            auto idle2Walk = animatorController->RegisterTransition(animationClips[0], animationClips[1], 0);
             idle2Walk->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 1.0f);
-            auto walk2Idle = animatorComponent.Controller.RegisterTransition(animators[1], animators[0], 0);
+            auto walk2Idle = animatorController->RegisterTransition(animationClips[1], animationClips[0], 0);
             walk2Idle->SetConditions("HorizontalSpeed", ConditionOperator::Less, 1.0f);
 
             // Transitions between Walking and Run
-            auto walk2Run = animatorComponent.Controller.RegisterTransition(animators[1], animators[2], 0);
+            auto walk2Run = animatorController->RegisterTransition(animationClips[1], animationClips[2], 0);
             walk2Run->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 1.5f);
-            auto run2Walk = animatorComponent.Controller.RegisterTransition(animators[2], animators[1], 0);
+            auto run2Walk = animatorController->RegisterTransition(animationClips[2], animationClips[1], 0);
             run2Walk->SetConditions("HorizontalSpeed", ConditionOperator::Less, 1.5f);
 
             // Transitions between * and Jump
-            auto idle2Jump = animatorComponent.Controller.RegisterTransition(animators[0], animators[3], 0);
+            auto idle2Jump = animatorController->RegisterTransition(animationClips[0], animationClips[3], 0);
             idle2Jump->AddTrigger("IsJump");
-            auto jump2Idle = animatorComponent.Controller.RegisterTransition(animators[3], animators[0], 0);
+            auto jump2Idle = animatorController->RegisterTransition(animationClips[3], animationClips[0], 0);
             jump2Idle->AddTrigger("IsFallToGround");
-            auto walk2Jump = animatorComponent.Controller.RegisterTransition(animators[1], animators[3], 0);
+            auto walk2Jump = animatorController->RegisterTransition(animationClips[1], animationClips[3], 0);
             walk2Jump->AddTrigger("IsJump");
-            auto jump2Walk = animatorComponent.Controller.RegisterTransition(animators[3], animators[1], 0);
+            auto jump2Walk = animatorController->RegisterTransition(animationClips[3], animationClips[1], 0);
             jump2Walk->AddTrigger("IsFallToGround");
-            auto run2Jump = animatorComponent.Controller.RegisterTransition(animators[2], animators[3], 0);
+            auto run2Jump = animatorController->RegisterTransition(animationClips[2], animationClips[3], 0);
             run2Jump->AddTrigger("IsJump");
-            auto jump2Run = animatorComponent.Controller.RegisterTransition(animators[3], animators[2], 0);
+            auto jump2Run = animatorController->RegisterTransition(animationClips[3], animationClips[2], 0);
             jump2Run->AddTrigger("IsFallToGround");
 
             // Transitions between * and Punching
-            auto idle2Punching = animatorComponent.Controller.RegisterTransition(animators[0], animators[4], 0);
+            auto idle2Punching = animatorController->RegisterTransition(animationClips[0], animationClips[4], 0);
             idle2Punching->AddTrigger("Punching");
-            auto punching2Idle = animatorComponent.Controller.RegisterTransition(animators[4], animators[0], 0);
+            auto punching2Idle = animatorController->RegisterTransition(animationClips[4], animationClips[0], 0);
             punching2Idle->AddTrigger("PunchingEnd");
-            auto walk2Punching = animatorComponent.Controller.RegisterTransition(animators[1], animators[4], 0);
+            auto walk2Punching = animatorController->RegisterTransition(animationClips[1], animationClips[4], 0);
             walk2Punching->AddTrigger("Punching");
-            auto punching2Walk = animatorComponent.Controller.RegisterTransition(animators[4], animators[1], 0);
+            auto punching2Walk = animatorController->RegisterTransition(animationClips[4], animationClips[1], 0);
             punching2Walk->AddTrigger("PunchingEnd");
-            auto run2Punching = animatorComponent.Controller.RegisterTransition(animators[2], animators[4], 0);
+            auto run2Punching = animatorController->RegisterTransition(animationClips[2], animationClips[4], 0);
             run2Punching->AddTrigger("Punching");
-            auto punching2Run = animatorComponent.Controller.RegisterTransition(animators[4], animators[2], 0);
+            auto punching2Run = animatorController->RegisterTransition(animationClips[4], animationClips[2], 0);
             punching2Run->AddTrigger("PunchingEnd");
 
             // Transitions between * and Death
-            auto idle2Death = animatorComponent.Controller.RegisterTransition(animators[0], animators[5], 0);
+            auto idle2Death = animatorController->RegisterTransition(animationClips[0], animationClips[5], 0);
             idle2Death->AddTrigger("Death");
-            auto walk2Death = animatorComponent.Controller.RegisterTransition(animators[1], animators[5], 0);
+            auto walk2Death = animatorController->RegisterTransition(animationClips[1], animationClips[5], 0);
             walk2Death->AddTrigger("Death");
-            auto run2Death = animatorComponent.Controller.RegisterTransition(animators[2], animators[5], 0);
+            auto run2Death = animatorController->RegisterTransition(animationClips[2], animationClips[5], 0);
             run2Death->AddTrigger("Death");
-            auto jump2Death = animatorComponent.Controller.RegisterTransition(animators[3], animators[5], 0);
+            auto jump2Death = animatorController->RegisterTransition(animationClips[3], animationClips[5], 0);
             jump2Death->AddTrigger("Death");
-            auto punching2Death = animatorComponent.Controller.RegisterTransition(animators[4], animators[5], 0);
+            auto punching2Death = animatorController->RegisterTransition(animationClips[4], animationClips[5], 0);
             punching2Death->AddTrigger("Death");
-            auto ribHit2Death = animatorComponent.Controller.RegisterTransition(animators[7], animators[5], 0);
+            auto ribHit2Death = animatorController->RegisterTransition(animationClips[7], animationClips[5], 0);
             ribHit2Death->AddTrigger("Death");
 
             // Transitions between * and RibHit
-            auto idle2RibHit = animatorComponent.Controller.RegisterTransition(animators[0], animators[7], 0);
+            auto idle2RibHit = animatorController->RegisterTransition(animationClips[0], animationClips[7], 0);
             idle2RibHit->AddTrigger("RibHit");
-            auto ribHit2Idle = animatorComponent.Controller.RegisterTransition(animators[7], animators[0], 0);
+            auto ribHit2Idle = animatorController->RegisterTransition(animationClips[7], animationClips[0], 0);
             ribHit2Idle->AddTrigger("RibHitEnd");
-            auto walk2RibHit = animatorComponent.Controller.RegisterTransition(animators[1], animators[7], 0);
+            auto walk2RibHit = animatorController->RegisterTransition(animationClips[1], animationClips[7], 0);
             walk2RibHit->AddTrigger("RibHit");
-            auto ribHit2Walk = animatorComponent.Controller.RegisterTransition(animators[7], animators[1], 0);
+            auto ribHit2Walk = animatorController->RegisterTransition(animationClips[7], animationClips[1], 0);
             ribHit2Walk->AddTrigger("RibHitEnd");
-            auto run2RibHit = animatorComponent.Controller.RegisterTransition(animators[2], animators[7], 0);
+            auto run2RibHit = animatorController->RegisterTransition(animationClips[2], animationClips[7], 0);
             run2RibHit->AddTrigger("RibHit");
-            auto ribHit2Run = animatorComponent.Controller.RegisterTransition(animators[7], animators[2], 0);
+            auto ribHit2Run = animatorController->RegisterTransition(animationClips[7], animationClips[2], 0);
             ribHit2Run->AddTrigger("RibHitEnd");
-            auto punching2RibHit = animatorComponent.Controller.RegisterTransition(animators[4], animators[7], 0);
+            auto punching2RibHit = animatorController->RegisterTransition(animationClips[4], animationClips[7], 0);
             punching2RibHit->AddTrigger("RibHit");
-            auto ribHit2Punching = animatorComponent.Controller.RegisterTransition(animators[7], animators[4], 0);
+            auto ribHit2Punching = animatorController->RegisterTransition(animationClips[7], animationClips[4], 0);
             ribHit2Punching->AddTrigger("RibHitEnd");
 
             auto& controller = character.AddComponent<CharacterControllerComponent>();
@@ -728,44 +734,47 @@ private:
             characterMeshRenderer.MaterialFilePath = "DemoAssets/Models/Enemy/Enemy.dzmaterial";
             auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
-            std::vector<Ref<Animator>> animators;
+            Ref<Animator>                   animator = CreateRef<Animator>();
+            std::vector<Ref<AnimationClip>> animationClips;
+            Ref<AnimatorController>         animatorController = CreateRef<AnimatorController>();
             for (const auto& clip : m_EnemyModel->AnimationClips)
             {
-                auto animator = CreateRef<Animator>(clip);
-                animatorComponent.Controller.RegisterAnimator(animator);
-                animators.emplace_back(animator);
+                animatorController->RegisterAnimationClip(clip);
+                animationClips.emplace_back(clip);
             }
-            animatorComponent.Controller.SetEntryAnimator(animators[0]); // Idle as default
+            animatorComponent.Manager.RegisterAnimator(animator);
+            animatorController->SetEntryAnimationClip(animationClips[0]); // Idle as default
+            animator->SetController(animatorController);
 
             // Parameters
-            animatorComponent.Controller.RegisterParameters("HorizontalSpeed", 0.0f);
-            animatorComponent.Controller.RegisterParameters("Punching");    // Trigger
-            animatorComponent.Controller.RegisterParameters("PunchingEnd"); // Trigger
+            animatorController->RegisterParameters("HorizontalSpeed", 0.0f);
+            animatorController->RegisterParameters("Punching");    // Trigger
+            animatorController->RegisterParameters("PunchingEnd"); // Trigger
 
             // Transitions between Idle and Walking
-            auto idle2Walk = animatorComponent.Controller.RegisterTransition(animators[0], animators[1], 0);
+            auto idle2Walk = animatorController->RegisterTransition(animationClips[0], animationClips[1], 0);
             idle2Walk->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 0.5f);
-            auto walk2Idle = animatorComponent.Controller.RegisterTransition(animators[1], animators[0], 0);
+            auto walk2Idle = animatorController->RegisterTransition(animationClips[1], animationClips[0], 0);
             walk2Idle->SetConditions("HorizontalSpeed", ConditionOperator::Less, 0.5f);
 
             // Transitions between Walking and Run
-            auto walk2Run = animatorComponent.Controller.RegisterTransition(animators[1], animators[2], 0);
+            auto walk2Run = animatorController->RegisterTransition(animationClips[1], animationClips[2], 0);
             walk2Run->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 1.0f);
-            auto run2Walk = animatorComponent.Controller.RegisterTransition(animators[2], animators[1], 0);
+            auto run2Walk = animatorController->RegisterTransition(animationClips[2], animationClips[1], 0);
             run2Walk->SetConditions("HorizontalSpeed", ConditionOperator::Less, 1.0f);
 
             // Transitions between * and Punching
-            auto idle2Punching = animatorComponent.Controller.RegisterTransition(animators[0], animators[3], 0);
+            auto idle2Punching = animatorController->RegisterTransition(animationClips[0], animationClips[3], 0);
             idle2Punching->AddTrigger("Punching");
-            auto punching2Idle = animatorComponent.Controller.RegisterTransition(animators[3], animators[0], 0);
+            auto punching2Idle = animatorController->RegisterTransition(animationClips[3], animationClips[0], 0);
             punching2Idle->AddTrigger("PunchingEnd");
-            auto walk2Punching = animatorComponent.Controller.RegisterTransition(animators[1], animators[3], 0);
+            auto walk2Punching = animatorController->RegisterTransition(animationClips[1], animationClips[3], 0);
             walk2Punching->AddTrigger("Punching");
-            auto punching2Walk = animatorComponent.Controller.RegisterTransition(animators[3], animators[1], 0);
+            auto punching2Walk = animatorController->RegisterTransition(animationClips[3], animationClips[1], 0);
             punching2Walk->AddTrigger("PunchingEnd");
-            auto run2Punching = animatorComponent.Controller.RegisterTransition(animators[2], animators[3], 0);
+            auto run2Punching = animatorController->RegisterTransition(animationClips[2], animationClips[3], 0);
             run2Punching->AddTrigger("Punching");
-            auto punching2Run = animatorComponent.Controller.RegisterTransition(animators[3], animators[2], 0);
+            auto punching2Run = animatorController->RegisterTransition(animationClips[3], animationClips[2], 0);
             punching2Run->AddTrigger("PunchingEnd");
 
             auto& controller = character.AddComponent<CharacterControllerComponent>();
