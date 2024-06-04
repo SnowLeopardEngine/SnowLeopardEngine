@@ -27,7 +27,7 @@ namespace SnowLeopardEngine
         void CheckParameters();
         void Blending(const Ref<AnimationClip>& sourceAnimationClip,
                       const Ref<AnimationClip>& targetAnimationClip,
-                      int                       duration,
+                      float                       duration,
                       float                     dt);
 
         friend class AnimatorManager;
@@ -41,6 +41,6 @@ namespace SnowLeopardEngine
         bool               m_NeedBlending;
         Ref<AnimationClip> m_SourceAnimationClip;
         Ref<AnimationClip> m_TargetAnimationClip;
-        int                m_Duration;
+        float                m_Duration;
     };
 } // namespace SnowLeopardEngine

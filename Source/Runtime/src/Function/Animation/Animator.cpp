@@ -163,7 +163,7 @@ void Animator::Update(float dt)
 
     void Animator::Blending(const Ref<AnimationClip>& sourceAnimationClip,
                             const Ref<AnimationClip>& targetAnimationClip,
-                            int                       duration,
+                            float                       duration,
                             float                     dt)
     {
         if (!sourceAnimationClip || !targetAnimationClip)
