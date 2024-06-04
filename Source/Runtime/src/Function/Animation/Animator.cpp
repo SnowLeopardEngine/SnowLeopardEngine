@@ -344,12 +344,13 @@ namespace SnowLeopardEngine
         {
             if (transition->JudgeCondition(true, triggerName))
             {
-                m_NeedBlending        = true;
+                m_NeedBlending = true;
 
                 m_SourceAnimationClip = transition->GetSourceAnimationClip();
                 m_TargetAnimationClip = transition->GetTargetAnimationClip();
+                m_CurrentClip         = m_SourceAnimationClip;
                 m_Controller->SetAnimationClip(m_TargetAnimationClip);
-                m_Duration            = transition->GetDuration();
+                m_Duration = transition->GetDuration();
                 break;
             }
         }
@@ -415,6 +416,7 @@ namespace SnowLeopardEngine
                 m_SourceAnimationClip = transition->GetSourceAnimationClip();
                 m_TargetAnimationClip = transition->GetTargetAnimationClip();
                 m_Duration            = transition->GetDuration();
+                m_CurrentClip         = m_SourceAnimationClip;
                 break;
             }
         }
