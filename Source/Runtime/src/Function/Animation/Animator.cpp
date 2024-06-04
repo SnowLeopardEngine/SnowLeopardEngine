@@ -11,14 +11,15 @@ namespace SnowLeopardEngine
 {
     Animator::Animator(const Ref<AnimationClip>& clip)
     {
-        m_CurrentTime = 0.0;
-        m_CurrentClip = clip;
+        m_CurrentTime  = 0.0;
+        m_CurrentClip  = clip;
         m_NeedBlending = false;
+        m_IsBlending   = false;
     }
 
     Animator::Animator()
     {
-        m_CurrentTime = 0.0;
+        m_CurrentTime  = 0.0;
         m_NeedBlending = false;
     }
 
@@ -28,7 +29,7 @@ namespace SnowLeopardEngine
         m_CurrentClip = controller->GetAnimationClip();
     }
 
-void Animator::Update(float dt)
+    void Animator::Update(float dt)
     {
         if (m_Controller == nullptr)
         {
@@ -41,10 +42,12 @@ void Animator::Update(float dt)
 
         if (m_NeedBlending)
         {
+            if (!m_IsBlending)
+            {
+                m_CurrentTime = 0.0f;
+                m_IsBlending  = true;
+            }
             Blending(m_SourceAnimationClip, m_TargetAnimationClip, m_Duration, dt);
-            // m_NeedBlending = false;
-            // m_CurrentTime  = 0.0;
-            // m_CurrentClip  = m_TargetAnimationClip;
         }
         else if (m_CurrentClip)
         {
@@ -150,55 +153,41 @@ void Animator::Update(float dt)
                 vertexIndex += part.vertex_count();
             }
         }
-
-        if (m_NeedBlending && abs(m_CurrentTime - m_Duration) < 1e-1)
-        {
-            m_NeedBlending = false;
-            m_CurrentTime  = 0.0;
-            m_CurrentClip  = m_TargetAnimationClip;
-            m_Controller->SetAnimationClip(m_TargetAnimationClip);
-            std::cout << "Change" << std::endl;
-        }
     }
 
     void Animator::Blending(const Ref<AnimationClip>& sourceAnimationClip,
                             const Ref<AnimationClip>& targetAnimationClip,
-                            float                       duration,
+                            float                     duration,
                             float                     dt)
     {
         if (!sourceAnimationClip || !targetAnimationClip)
             return;
-        
+
         Ref<AnimationClip> animationClip[2];
         animationClip[0] = sourceAnimationClip;
         animationClip[1] = targetAnimationClip;
-
 
         float ratio[2];
         ratio[0] = fmodf(m_CurrentTime / sourceAnimationClip->Animation.duration(), 1.0f);
         ratio[1] = fmodf(m_CurrentTime / targetAnimationClip->Animation.duration(), 1.0f);
 
         float weight[2];
-        if(duration > 0)
+
+        if (duration > 0)
         {
             float blendFactor = m_CurrentTime / duration;
-            if (m_CurrentTime > duration) {
-                m_CurrentTime = duration;
-            }
-            weight[0] = 1.0f - blendFactor; 
-            weight[1] = blendFactor;
+            weight[0]         = 1.0f - blendFactor;
+            weight[1]         = blendFactor;
         }
-        else {
+        else
+        {
             weight[0] = 0.0f;
             weight[1] = 1.0f;
-            if (m_CurrentTime > duration) {
-                m_CurrentTime = duration;
-            }
         }
 
-        for(int i = 0; i < 2; ++i) 
+        for (int i = 0; i < 2; ++i)
         {
-            if(weight[i] <= 0.f)
+            if (weight[i] <= 0.f)
             {
                 continue;
             }
@@ -206,27 +195,29 @@ void Animator::Update(float dt)
             samplingJob.animation = &animationClip[i]->Animation;
             samplingJob.context   = &animationClip[i]->SamplingJobContext;
             samplingJob.ratio     = ratio[i];
-            samplingJob.output = make_span(animationClip[i]->LocalTransforms);
+            samplingJob.output    = make_span(animationClip[i]->LocalTransforms);
 
-            if (!samplingJob.Run()) {
+            if (!samplingJob.Run())
+            {
                 SNOW_LEOPARD_CORE_ERROR("[Animator] Sampling job failed!");
             }
         }
 
         ozz::animation::BlendingJob::Layer blendingLayers[2];
-        for(int i = 0; i < 2; ++i) 
+        for (int i = 0; i < 2; ++i)
         {
             blendingLayers[i].transform = make_span(animationClip[i]->LocalTransforms);
-            blendingLayers[i].weight = weight[i];
+            blendingLayers[i].weight    = weight[i];
         }
 
         ozz::vector<ozz::math::SoaTransform> blendedTransforms(animationClip[0]->LocalTransforms.size());
-        ozz::animation::BlendingJob blendJob;
+        ozz::animation::BlendingJob          blendJob;
         blendJob.threshold = ozz::animation::BlendingJob().threshold;
-        blendJob.layers = blendingLayers;
+        blendJob.layers    = blendingLayers;
         blendJob.rest_pose = sourceAnimationClip->Skeleton.joint_rest_poses();
-        blendJob.output = make_span(blendedTransforms);
-        if (!blendJob.Run()) {
+        blendJob.output    = make_span(blendedTransforms);
+        if (!blendJob.Run())
+        {
             SNOW_LEOPARD_CORE_ERROR("[Animator] Blending job failed!");
         }
 
@@ -234,13 +225,14 @@ void Animator::Update(float dt)
         localToModelJob.skeleton = &sourceAnimationClip->Skeleton;
         localToModelJob.input    = make_span(blendedTransforms);
         localToModelJob.output   = make_span(sourceAnimationClip->ModelMatrices);
-        if (!localToModelJob.Run()) {
+        if (!localToModelJob.Run())
+        {
             SNOW_LEOPARD_CORE_ERROR("[Animator] Local to model job failed!");
         }
 
         auto* meshItem = m_CurrentClip->MeshPtr;
         auto  ozzMesh  = meshItem->OzzMesh;
-        m_CurrentTime += dt;
+
         for (uint32_t i = 0; i < ozzMesh.joint_remaps.size(); ++i)
         {
             m_CurrentClip->SkinningMatrices[i] =
@@ -317,6 +309,17 @@ void Animator::Update(float dt)
 
             vertexIndex += part.vertex_count();
         }
+
+        m_CurrentTime += dt;
+        if (m_CurrentTime > duration)
+        {
+            m_CurrentTime = duration;
+
+            m_NeedBlending = false;
+            m_IsBlending   = false;
+            m_CurrentClip  = m_TargetAnimationClip;
+            m_Controller->SetAnimationClip(m_TargetAnimationClip);
+        }
     }
 
     void Animator::Play(const Ref<AnimationClip>& clip)
@@ -342,8 +345,10 @@ void Animator::Update(float dt)
             if (transition->JudgeCondition(true, triggerName))
             {
                 m_NeedBlending        = true;
+
                 m_SourceAnimationClip = transition->GetSourceAnimationClip();
                 m_TargetAnimationClip = transition->GetTargetAnimationClip();
+                m_Controller->SetAnimationClip(m_TargetAnimationClip);
                 m_Duration            = transition->GetDuration();
                 break;
             }
@@ -388,6 +393,14 @@ void Animator::Update(float dt)
             SNOW_LEOPARD_CORE_ERROR("[AnimatorController] Failed to modify the value, parameter is not bool.");
         }
     }
+
+    void Animator::InitAnimators()
+    {
+        Reset();
+        Update(0);
+    }
+
+    void Animator::UpdateAnimator(float deltaTime) { Update(deltaTime); }
 
     void Animator::CheckParameters()
     {

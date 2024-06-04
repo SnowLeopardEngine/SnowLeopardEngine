@@ -1,11 +1,12 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Math/Math.h"
-#include "ozz/base/maths/soa_float4x4.h"
-#include "ozz/base/maths/math_ex.h"
 #include "SnowLeopardEngine/Function/Animation/AnimationClip.h"
 #include "SnowLeopardEngine/Function/Animation/AnimatorController.h"
 #include "ozz/animation/runtime/blending_job.h"
+#include "ozz/base/maths/math_ex.h"
+#include "ozz/base/maths/soa_float4x4.h"
+
 
 namespace SnowLeopardEngine
 {
@@ -14,12 +15,15 @@ namespace SnowLeopardEngine
     public:
         explicit Animator(const Ref<AnimationClip>& clip);
         explicit Animator();
+        void InitAnimators();
+        void UpdateAnimator(float deltaTime);
 
         void                    SetTrigger(const std::string& triggerName);
         void                    SetFloat(const std::string& floatName, float value);
         void                    SetBoolean(const std::string& booleanName, bool value);
         void                    SetController(const Ref<AnimatorController>& controller);
         Ref<AnimatorController> GetController() const { return m_Controller; }
+
     private:
         void Update(float dt);
         void Reset() { m_CurrentTime = 0; }
@@ -27,7 +31,7 @@ namespace SnowLeopardEngine
         void CheckParameters();
         void Blending(const Ref<AnimationClip>& sourceAnimationClip,
                       const Ref<AnimationClip>& targetAnimationClip,
-                      float                       duration,
+                      float                     duration,
                       float                     dt);
 
         friend class AnimatorManager;
@@ -39,8 +43,9 @@ namespace SnowLeopardEngine
         float                   m_DeltaTime;
 
         bool               m_NeedBlending;
+        bool               m_IsBlending;
         Ref<AnimationClip> m_SourceAnimationClip;
         Ref<AnimationClip> m_TargetAnimationClip;
-        float                m_Duration;
+        float              m_Duration;
     };
 } // namespace SnowLeopardEngine

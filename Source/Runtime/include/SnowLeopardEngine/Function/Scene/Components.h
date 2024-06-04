@@ -2,7 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
-#include "SnowLeopardEngine/Function/Animation/AnimatorManager.h"
+#include "SnowLeopardEngine/Function/Animation/Animator.h"
 #include "SnowLeopardEngine/Function/GUI/GUITypeDef.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
@@ -778,7 +778,7 @@ namespace SnowLeopardEngine
     {
         COMPONENT_NAME(Animator)
 
-        AnimatorManager Manager;
+        Animator Animator;
 
         AnimatorComponent()                         = default;
         AnimatorComponent(const AnimatorComponent&) = default;
