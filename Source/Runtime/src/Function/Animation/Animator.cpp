@@ -171,7 +171,7 @@ namespace SnowLeopardEngine
         animationClip[1] = targetAnimationClip;
 
         float ratio[2];
-        ratio[0] = fmodf(m_CurrentTime / sourceAnimationClip->Animation.duration(), 1.0f);
+        ratio[0] = fmodf(1 - m_CurrentTime / sourceAnimationClip->Animation.duration(), 1.0f);
         ratio[1] = fmodf(m_CurrentTime / targetAnimationClip->Animation.duration(), 1.0f);
 
         float weight[2];
