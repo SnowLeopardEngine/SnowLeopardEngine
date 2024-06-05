@@ -89,8 +89,7 @@ public:
         controller->RegisterAnimationClip(walkingAnimation);
         controller->SetEntryAnimationClip(danceAnimation);
 
-        animator->SetController(controller);
-        animatorComponent.Manager.RegisterAnimator(animator);
+        animatorComponent.CurrentAnimator.SetController(controller);
         controller->RegisterParameters("Walking");
         auto idle2Walk = controller->RegisterTransition(danceAnimation, walkingAnimation, 1);
         idle2Walk->SetConditions("Walking");

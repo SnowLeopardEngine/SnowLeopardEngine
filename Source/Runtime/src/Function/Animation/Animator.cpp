@@ -2,7 +2,6 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/AnimationClip.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
-#include "SnowLeopardEngine/Function/Util/Util.h"
 
 #include "ozz/animation/runtime/blending_job.h"
 #include "ozz/geometry/runtime/skinning_job.h"
@@ -14,6 +13,7 @@ namespace SnowLeopardEngine
         m_CurrentTime  = 0.0;
         m_CurrentClip  = clip;
         m_NeedBlending = false;
+        m_IsBlending   = false;
     }
 
     Animator::Animator()
@@ -41,10 +41,12 @@ namespace SnowLeopardEngine
 
         if (m_NeedBlending)
         {
+            if (!m_IsBlending)
+            {
+                m_CurrentTime = 0.0f;
+                m_IsBlending  = true;
+            }
             Blending(m_SourceAnimationClip, m_TargetAnimationClip, m_Duration, dt);
-            // m_NeedBlending = false;
-            // m_CurrentTime  = 0.0;
-            // m_CurrentClip  = m_TargetAnimationClip;
         }
         else if (m_CurrentClip)
         {
@@ -166,7 +168,7 @@ namespace SnowLeopardEngine
 
     void Animator::Blending(const Ref<AnimationClip>& sourceAnimationClip,
                             const Ref<AnimationClip>& targetAnimationClip,
-                            int                       duration,
+                            float                     duration,
                             float                     dt)
     {
         if (!sourceAnimationClip || !targetAnimationClip)
@@ -181,24 +183,17 @@ namespace SnowLeopardEngine
         ratio[1] = fmodf(m_CurrentTime / targetAnimationClip->Animation.duration(), 1.0f);
 
         float weight[2];
+
         if (duration > 0)
         {
             float blendFactor = m_CurrentTime / duration;
-            if (m_CurrentTime > duration)
-            {
-                m_CurrentTime = duration;
-            }
-            weight[0] = 1.0f - blendFactor;
-            weight[1] = blendFactor;
+            weight[0]         = 1.0f - blendFactor;
+            weight[1]         = blendFactor;
         }
         else
         {
             weight[0] = 0.0f;
             weight[1] = 1.0f;
-            if (m_CurrentTime > duration)
-            {
-                m_CurrentTime = duration;
-            }
         }
 
         for (int i = 0; i < 2; ++i)
@@ -248,7 +243,7 @@ namespace SnowLeopardEngine
 
         auto* meshItem = m_CurrentClip->MeshPtr;
         auto  ozzMesh  = meshItem->OzzMesh;
-        m_CurrentTime += dt;
+
         for (uint32_t i = 0; i < ozzMesh.joint_remaps.size(); ++i)
         {
             m_CurrentClip->SkinningMatrices[i] =
@@ -325,6 +320,17 @@ namespace SnowLeopardEngine
 
             vertexIndex += part.vertex_count();
         }
+
+        m_CurrentTime += dt;
+        if (m_CurrentTime > duration)
+        {
+            m_CurrentTime = duration;
+
+            m_NeedBlending = false;
+            m_IsBlending   = false;
+            m_CurrentClip  = m_TargetAnimationClip;
+            m_Controller->SetAnimationClip(m_TargetAnimationClip);
+        }
     }
 
     void Animator::Play(const Ref<AnimationClip>& clip)
@@ -349,10 +355,13 @@ namespace SnowLeopardEngine
         {
             if (transition->HasTrigger(triggerName))
             {
-                m_NeedBlending        = true;
+                m_NeedBlending = true;
+
                 m_SourceAnimationClip = transition->GetSourceAnimationClip();
                 m_TargetAnimationClip = transition->GetTargetAnimationClip();
-                m_Duration            = transition->GetDuration();
+                m_CurrentClip         = m_SourceAnimationClip;
+                m_Controller->SetAnimationClip(m_TargetAnimationClip);
+                m_Duration = transition->GetDuration();
                 break;
             }
         }
@@ -397,6 +406,14 @@ namespace SnowLeopardEngine
         }
     }
 
+    void Animator::InitAnimators()
+    {
+        Reset();
+        Update(0);
+    }
+
+    void Animator::UpdateAnimator(float deltaTime) { Update(deltaTime); }
+
     void Animator::CheckParameters()
     {
         std::map<Ref<AnimationClip>, std::vector<Ref<Transition>>> transitionMap = m_Controller->GetTransitions();
@@ -410,6 +427,7 @@ namespace SnowLeopardEngine
                 m_SourceAnimationClip = transition->GetSourceAnimationClip();
                 m_TargetAnimationClip = transition->GetTargetAnimationClip();
                 m_Duration            = transition->GetDuration();
+                m_CurrentClip         = m_SourceAnimationClip;
                 break;
             }
         }

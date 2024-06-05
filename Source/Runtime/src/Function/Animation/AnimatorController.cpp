@@ -30,7 +30,7 @@ namespace SnowLeopardEngine
 
     Ref<Transition> AnimatorController::RegisterTransition(const Ref<AnimationClip>& sourceAnimationClip,
                                                 const Ref<AnimationClip>& targetAnimationClip,
-                                                int                  duration)
+                                                float                  duration)
     {
         auto transition = CreateRef<Transition>(sourceAnimationClip, targetAnimationClip, duration);
         transition->SetParameters(m_Parameters);

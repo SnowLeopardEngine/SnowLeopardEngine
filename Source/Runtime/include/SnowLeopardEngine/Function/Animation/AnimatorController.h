@@ -16,7 +16,7 @@ namespace SnowLeopardEngine
         void DeleteAnimationClip(const Ref<AnimationClip>& animationClip);
         void SetEntryAnimationClip(const Ref<AnimationClip>& animationClip);
 
-        Ref<Transition> RegisterTransition(const Ref<AnimationClip>& sourceAnimationClip, const Ref<AnimationClip>& targetAnimationClip, int duration);
+        Ref<Transition> RegisterTransition(const Ref<AnimationClip>& sourceAnimationClip, const Ref<AnimationClip>& targetAnimationClip, float duration);
         void DeleteTransition(const Ref<AnimationClip>& sourceAnimationClip, const Ref<AnimationClip>& targetAnimationClip);
 
         void RegisterParameters(const std::string& parameterName, const std::variant<float, bool>& defaultValue);

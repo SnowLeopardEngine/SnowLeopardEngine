@@ -67,11 +67,10 @@ static Entity CreateCharacter(const Ref<LogicScene>& scene, Model* model, const 
     auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
     characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
     auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
-
-    auto animator = CreateRef<Animator>(model->AnimationClips[0]);
-    // FIXME
-    // animatorComponent.Controller.RegisterAnimator(animator);
-    // animatorComponent.Controller.SetEntryAnimator(animator);
+    auto  controller                       = CreateRef<AnimatorController>();
+    controller->RegisterAnimationClip(model->AnimationClips[0]);
+    controller->SetEntryAnimationClip(model->AnimationClips[0]);
+    animatorComponent.CurrentAnimator.SetController(controller);
 
     return character;
 }

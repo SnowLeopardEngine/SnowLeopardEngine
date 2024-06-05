@@ -86,8 +86,7 @@ public:
         Ref<AnimatorController> controller = CreateRef<AnimatorController>();
         controller->RegisterAnimationClip(animation);
         controller->SetEntryAnimationClip(animation);
-        animator->SetController(controller);
-        animatorComponent.Manager.RegisterAnimator(animator);
+        animatorComponent.CurrentAnimator.SetController(controller);
 
         auto* tempRC = new RenderContext();
 

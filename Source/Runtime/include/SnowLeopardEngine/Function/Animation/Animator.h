@@ -14,6 +14,8 @@ namespace SnowLeopardEngine
     public:
         explicit Animator(const Ref<AnimationClip>& clip);
         explicit Animator();
+        void InitAnimators();
+        void UpdateAnimator(float deltaTime);
 
         void                    SetTrigger(const std::string& triggerName);
         void                    SetFloat(const std::string& floatName, float value);
@@ -28,18 +30,21 @@ namespace SnowLeopardEngine
         void CheckParameters();
         void Blending(const Ref<AnimationClip>& sourceAnimationClip,
                       const Ref<AnimationClip>& targetAnimationClip,
-                      int                       duration,
+                      float                     duration,
                       float                     dt);
 
         friend class AnimatorManager;
 
     private:
         Ref<AnimationClip>      m_CurrentClip = nullptr;
-        float                   m_CurrentTime;
-        float                   m_DeltaTime;
-        Ref<AnimatorController> m_Controller = nullptr;
+        Ref<AnimatorController> m_Controller  = nullptr;
 
-        bool               m_NeedBlending;
+        float m_CurrentTime = 0;
+        float m_DeltaTime = 0;
+
+        bool m_NeedBlending = false;
+        bool m_IsBlending = false;
+
         Ref<AnimationClip> m_SourceAnimationClip = nullptr;
         Ref<AnimationClip> m_TargetAnimationClip = nullptr;
         int                m_Duration;
