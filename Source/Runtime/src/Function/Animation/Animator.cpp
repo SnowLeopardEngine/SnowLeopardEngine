@@ -156,14 +156,6 @@ namespace SnowLeopardEngine
                 vertexIndex += part.vertex_count();
             }
         }
-
-        if (m_NeedBlending && abs(m_CurrentTime - m_Duration) < 1e-1)
-        {
-            m_NeedBlending = false;
-            m_CurrentTime  = 0.0;
-            m_CurrentClip  = m_TargetAnimationClip;
-            m_Controller->SetAnimationClip(m_TargetAnimationClip);
-        }
     }
 
     void Animator::Blending(const Ref<AnimationClip>& sourceAnimationClip,

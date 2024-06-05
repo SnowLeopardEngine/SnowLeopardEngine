@@ -40,13 +40,13 @@ namespace SnowLeopardEngine
         Ref<AnimatorController> m_Controller  = nullptr;
 
         float m_CurrentTime = 0;
-        float m_DeltaTime = 0;
+        float m_DeltaTime   = 0;
 
         bool m_NeedBlending = false;
-        bool m_IsBlending = false;
+        bool m_IsBlending   = false;
 
         Ref<AnimationClip> m_SourceAnimationClip = nullptr;
         Ref<AnimationClip> m_TargetAnimationClip = nullptr;
-        int                m_Duration;
+        float              m_Duration;
     };
 } // namespace SnowLeopardEngine
