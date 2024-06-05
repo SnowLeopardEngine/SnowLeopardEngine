@@ -20,7 +20,7 @@ vec3 CalculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir
     vec3 diffuse = light.intensity * light.color * diff * diffuseColor;
     vec3 specular = light.intensity * light.color * spec * vec3(0.1, 0.1, 0.1);
 
-    float shadow = ShadowCalculation(fragPosLightSpace, shadowMap);
+    float shadow = calShadow(fragPosLightSpace, shadowMap);
 
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 }

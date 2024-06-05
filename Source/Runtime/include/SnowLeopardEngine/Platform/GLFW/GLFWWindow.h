@@ -58,6 +58,7 @@ namespace SnowLeopardEngine
         {
             std::string  Title;
             unsigned int Width, Height;
+            bool         Resizable;
             GLFWWindow*  WindowSys;
             bool         IsMinimized;
         };

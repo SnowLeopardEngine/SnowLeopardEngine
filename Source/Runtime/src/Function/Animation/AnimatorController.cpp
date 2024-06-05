@@ -4,16 +4,11 @@
 
 namespace SnowLeopardEngine
 {
-    void AnimatorController::Init()
+    AnimatorController::AnimatorController()
     {
-        //InitAnimators();
+        m_CurrentAnimationClip = nullptr;
+        m_Parameters = CreateRef<std::map<std::string, std::variant<float, bool, std::monostate>>>();
     }
-
-    // void AnimatorController::Update(float deltaTime)
-    // {
-    //     CheckParameters();
-    //     UpdateAnimators(deltaTime);
-    // }
 
     void AnimatorController::RegisterAnimationClip(const Ref<AnimationClip>& animationClip) { m_AnimationClips.push_back(animationClip); }
 
@@ -33,13 +28,14 @@ namespace SnowLeopardEngine
 
     void AnimatorController::SetEntryAnimationClip(const Ref<AnimationClip>& animationClip) { m_CurrentAnimationClip = animationClip; }
 
-    void AnimatorController::RegisterTransition(const Ref<AnimationClip>& sourceAnimationClip,
+    Ref<Transition> AnimatorController::RegisterTransition(const Ref<AnimationClip>& sourceAnimationClip,
                                                 const Ref<AnimationClip>& targetAnimationClip,
-                                                int                  duration)
+                                                float                  duration)
     {
         auto transition = CreateRef<Transition>(sourceAnimationClip, targetAnimationClip, duration);
         transition->SetParameters(m_Parameters);
         m_TransitionsInfoMap[sourceAnimationClip].push_back(transition);
+        return transition;
     }
 
     void AnimatorController::DeleteTransition(const Ref<AnimationClip>& sourceAnimationClip, const Ref<AnimationClip>& targetAnimationClip)
@@ -81,7 +77,6 @@ namespace SnowLeopardEngine
                 "[AnimatorController] Failed to register parameter, this parameter has been registered.");
             return;
         }
-
         (*m_Parameters)[parameterName] = std::monostate {};
     }
 
@@ -95,21 +90,4 @@ namespace SnowLeopardEngine
 
         m_Parameters->erase(parameterName);
     }
-
-    // void AnimatorController::InitAnimators()
-    // {
-    //     for (const auto& animator : m_Animators)
-    //     {
-    //         animator->Reset();
-    //         animator->Update(0);
-    //     }
-    // }
-
-    // void AnimatorController::UpdateAnimators(float deltaTime)
-    // {
-    //     for (const auto& animator : m_Animators)
-    //     {
-    //         animator->Update(deltaTime);
-    //     }
-    // }
 } // namespace SnowLeopardEngine

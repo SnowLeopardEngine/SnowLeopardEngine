@@ -1,0 +1,70 @@
+{
+    "DzMaterial": {
+        "Name": "Refactor",
+        "RenderQueue": "Opaque",
+        "Properties": [
+            {
+                "Name": "albedo",
+                "Type": "Color",
+                "Value": "(1, 1, 1, 1)"
+            },
+            {
+                "Name": "albedoMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/RustedIron2/rustediron2_basecolor.png"
+            },
+            {
+                "Name": "useAlbedoMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "metallic",
+                "Type": "Float",
+                "Value": "0.0"
+            },
+            {
+                "Name": "metallicMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/RustedIron2/rustediron2_metallic.png"
+            },
+            {
+                "Name": "useMetallicMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "roughness",
+                "Type": "Float",
+                "Value": "1.0"
+            },
+            {
+                "Name": "roughnessMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/RustedIron2/rustediron2_roughness.png"
+            },
+            {
+                "Name": "useRoughnessMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "ao",
+                "Type": "Float",
+                "Value": "1"
+            },
+            {
+                "Name": "aoMap",
+                "Type": "Texture2D",
+                "Value": ""
+            },
+            {
+                "Name": "useAoMap",
+                "Type": "Int",
+                "Value": "0"
+            }
+        ],
+        "UserVertPath": "",
+        "UserFragPath": ""
+    }
+}

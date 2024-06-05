@@ -11,14 +11,12 @@ namespace SnowLeopardEngine
     class AnimatorController
     {
     public:
-        void Init();
-        // void Update(float deltaTime);
-
+        explicit AnimatorController();
         void RegisterAnimationClip(const Ref<AnimationClip>& animationClip);
         void DeleteAnimationClip(const Ref<AnimationClip>& animationClip);
         void SetEntryAnimationClip(const Ref<AnimationClip>& animationClip);
 
-        void RegisterTransition(const Ref<AnimationClip>& sourceAnimationClip, const Ref<AnimationClip>& targetAnimationClip, int duration);
+        Ref<Transition> RegisterTransition(const Ref<AnimationClip>& sourceAnimationClip, const Ref<AnimationClip>& targetAnimationClip, float duration);
         void DeleteTransition(const Ref<AnimationClip>& sourceAnimationClip, const Ref<AnimationClip>& targetAnimationClip);
 
         void RegisterParameters(const std::string& parameterName, const std::variant<float, bool>& defaultValue);
@@ -28,11 +26,9 @@ namespace SnowLeopardEngine
         inline Ref<std::map<std::string, std::variant<float, bool, std::monostate>>> GetParameters() { return m_Parameters;}
         inline std::map<Ref<AnimationClip>, std::vector<Ref<Transition>>> GetTransitions() { return m_TransitionsInfoMap;}
         inline Ref<AnimationClip> GetAnimationClip() { return m_CurrentAnimationClip;}
+        inline void SetAnimationClip(const Ref<AnimationClip>& animatioClip) { m_CurrentAnimationClip = animatioClip;}
 
     private:
-
-        // void InitAnimators();
-        // void UpdateAnimators(float deltaTime);
 
     private: 
         Ref<AnimationClip>                                                         m_CurrentAnimationClip;

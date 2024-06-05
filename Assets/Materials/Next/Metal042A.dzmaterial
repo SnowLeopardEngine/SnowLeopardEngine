@@ -1,0 +1,48 @@
+{
+    "DzMaterial": {
+        "Name": "Metal042A",
+        "RenderQueue": "Opaque",
+        "Properties": [
+            {
+                "Name": "albedoMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/Metal042A/Metal042A_1K-JPG_Color.jpg"
+            },
+            {
+                "Name": "useAlbedoMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "metallicMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/Metal042A/Metal042A_1K-JPG_Metalness.jpg"
+            },
+            {
+                "Name": "useMetallicMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "roughnessMap",
+                "Type": "Texture2D",
+                "Value": "Assets/Textures/PBR/Metal042A/Metal042A_1K-JPG_Roughness.jpg"
+            },
+            {
+                "Name": "useRoughnessMap",
+                "Type": "Int",
+                "Value": "1"
+            },
+            {
+                "Name": "ao",
+                "Type": "Float",
+                "Value": "1"
+            }
+        ],
+        "UserVertPath": "",
+        "UserFragPath": "",
+        "EnableInstancing": true,
+        "TextureFlipY": true,
+        "TileSize": 1
+    }
+}

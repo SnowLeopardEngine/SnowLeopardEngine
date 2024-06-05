@@ -1,0 +1,33 @@
+{
+    "DzMaterial": {
+        "Name": "Blue",
+        "RenderQueue": "Opaque",
+        "Properties": [
+            {
+                "Name": "albedo",
+                "Type": "Color",
+                "Value": "(0, 0, 1, 1)"
+            },
+            {
+                "Name": "metallic",
+                "Type": "Float",
+                "Value": "0"
+            },
+            {
+                "Name": "roughness",
+                "Type": "Float",
+                "Value": "0.5"
+            },
+            {
+                "Name": "ao",
+                "Type": "Float",
+                "Value": "1"
+            }
+        ],
+        "UserVertPath": "",
+        "UserFragPath": "",
+        "EnableInstancing": false,
+        "TextureFlipY": true,
+        "TileSize": 1
+    }
+}

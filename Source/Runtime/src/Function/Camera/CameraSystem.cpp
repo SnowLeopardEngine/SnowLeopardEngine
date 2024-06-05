@@ -1,6 +1,5 @@
 #include "SnowLeopardEngine/Function/Camera/CameraSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "glm/matrix.hpp"
 
 namespace SnowLeopardEngine
 {
@@ -44,9 +43,7 @@ namespace SnowLeopardEngine
         }
         else
         {
-            auto hw = camera.ViewportWidth / 2;
-            auto hh = camera.ViewportHeight / 2;
-            return glm::ortho(-hw, hw, -hh, hh, camera.Near, camera.Far);
+            return glm::ortho(0.0f, camera.ViewportWidth, 0.0f, camera.ViewportHeight, -1.0f, 1.0f);
         }
     }
 } // namespace SnowLeopardEngine

@@ -3,6 +3,9 @@
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
+#include "SnowLeopardEngine/Function/Rendering/VertexFormat.h"
+
+#include <FastNoiseLite.h>
 
 namespace SnowLeopardEngine
 {
@@ -20,7 +23,7 @@ namespace SnowLeopardEngine
     {
         static const MeshPrimitiveType Type = MeshPrimitiveType::Quad;
 
-        static MeshItem Create(float w = 1.0f)
+        static MeshItem Create(bool isUI = false, float w = 1.0f)
         {
             MeshItem quadMesh;
             quadMesh.Name = "Quad";
@@ -29,14 +32,28 @@ namespace SnowLeopardEngine
 
             const float side = w / 2.0f;
 
-            quadData.Vertices = {
-                {{-side, 0, -side}, {0, 1, 0}, {0, 0}},
-                {{-side, 0, side}, {0, 1, 0}, {0, 1}},
-                {{side, 0, side}, {0, 1, 0}, {1, 1}},
-                {{side, 0, -side}, {0, 1, 0}, {1, 0}},
-            };
+            if (!isUI)
+            {
+                quadData.Vertices = {
+                    {{-side, 0, -side}, {0, 1, 0}, {0, 0}},
+                    {{-side, 0, side}, {0, 1, 0}, {0, 1}},
+                    {{side, 0, side}, {0, 1, 0}, {1, 1}},
+                    {{side, 0, -side}, {0, 1, 0}, {1, 0}},
+                };
 
-            quadData.Indices = {0, 1, 2, 0, 2, 3};
+                quadData.Indices = {0, 1, 2, 0, 2, 3};
+            }
+            else
+            {
+                quadData.Vertices = {{{0, 1, 0}, {0, 0, 1}, {0, 0}},
+                                     {{0, 0, 0}, {0, 0, 1}, {0, 1}},
+                                     {{1, 0, 0}, {0, 0, 1}, {1, 1}},
+                                     {{1, 1, 0}, {0, 0, 1}, {1, 0}}};
+
+                quadData.Indices = {0, 1, 2, 0, 2, 3};
+            }
+
+            quadData.VertFormat = VertexFormat::Builder {}.BuildDefault();
 
             quadMesh.Data = quadData;
             return quadMesh;
@@ -86,6 +103,8 @@ namespace SnowLeopardEngine
                 16, 17, 18, 16, 18, 19, // Left
                 20, 22, 21, 22, 20, 23  // Right
             };
+
+            cubeData.VertFormat = VertexFormat::Builder {}.BuildDefault();
 
             cubeMesh.Data = cubeData;
             return cubeMesh;
@@ -138,6 +157,8 @@ namespace SnowLeopardEngine
                     sphereData.Indices.push_back(next + 1);
                 }
             }
+
+            sphereData.VertFormat = VertexFormat::Builder {}.BuildDefault();
 
             sphereMesh.Data = sphereData;
             return sphereMesh;
@@ -288,6 +309,8 @@ namespace SnowLeopardEngine
                 }
             }
 
+            capsuleData.VertFormat = VertexFormat::Builder {}.BuildDefault();
+
             capsuleMesh.Data = capsuleData;
             return capsuleMesh;
         }
@@ -304,7 +327,7 @@ namespace SnowLeopardEngine
             return map;
         }
 
-        static HeightMap GenerateWaveHeightMap(int xSize, int ySize)
+        static HeightMap GenerateWaveHeightMap(int xSize, int ySize, int zSize)
         {
             auto map = GenerateBlankHeightMap(xSize, ySize);
             for (int x = 0; x < xSize; ++x)
@@ -313,9 +336,32 @@ namespace SnowLeopardEngine
                 {
                     float waveHeight = std::sin(x / static_cast<float>(ySize) * 2.0f * M_PI) *
                                        std::cos(y / static_cast<float>(xSize) * 2.0f * M_PI);
-                    map.Set(y, x, waveHeight * 10.0f);
+                    map.Set(y, x, waveHeight * zSize);
                 }
             }
+            return map;
+        }
+
+        static HeightMap GenerateRandomHeightMap(int xSize, int ySize, int zSize)
+        {
+            HeightMap map = GenerateBlankHeightMap(xSize, ySize);
+
+            // Create and configure FastNoise object
+            FastNoiseLite noise;
+            noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+
+            // Gather noise data
+            std::vector<float> noiseData(xSize * ySize);
+            int                index = 0;
+
+            for (int y = 0; y < ySize; y++)
+            {
+                for (int x = 0; x < xSize; x++)
+                {
+                    map.Set(x, y, zSize * noise.GetNoise(static_cast<float>(x), static_cast<float>(y)));
+                }
+            }
+
             return map;
         }
     } // namespace Utils
@@ -365,6 +411,8 @@ namespace SnowLeopardEngine
                     heightfieldData.Indices.push_back(next + 1);
                 }
             }
+
+            heightfieldData.VertFormat = VertexFormat::Builder {}.BuildDefault();
 
             heightfieldMesh.Data = heightfieldData;
             return heightfieldMesh;

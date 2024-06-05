@@ -1,6 +1,8 @@
 #pragma once
 
 #include "SnowLeopardEngine/Function/Animation/AnimationClip.h"
+#include "SnowLeopardEngine/Core/Math/Math.h"
+#include <vector>
 
 namespace SnowLeopardEngine
 {
@@ -20,7 +22,7 @@ namespace SnowLeopardEngine
     class Transition
     {
     public:
-        Transition(Ref<AnimationClip> sourceAnimationClip, Ref<AnimationClip> targetAnimationClip, int duration) :
+        Transition(Ref<AnimationClip> sourceAnimationClip, Ref<AnimationClip> targetAnimationClip, float duration) :
             m_SourceAnimationClip(sourceAnimationClip), m_TargetAnimationClip(targetAnimationClip), m_Duration(duration)
         {}
 
@@ -30,9 +32,12 @@ namespace SnowLeopardEngine
 
         inline Ref<AnimationClip> GetTargetAnimationClip() const { return m_TargetAnimationClip; }
 
-        inline int GetDuration() const { return m_Duration; }
+        inline float GetDuration() const { return m_Duration; }
 
-        bool JudgeCondition(bool isTrigger) const;
+        bool JudgeCondition() const;
+
+        bool HasTrigger(const std::string& triggerName) const;
+        void AddTrigger(const std::string& triggerName);
 
         void SetParameters(Ref<std::map<std::string, std::variant<float, bool, std::monostate>>> parameter);
 
@@ -47,6 +52,7 @@ namespace SnowLeopardEngine
         std::vector<TupleType>                                                m_Conditions;
         Ref<AnimationClip>                                                    m_SourceAnimationClip;
         Ref<AnimationClip>                                                    m_TargetAnimationClip;
-        int                                                                   m_Duration;
+        float                                                                 m_Duration;
+        std::unordered_set<std::string>                                       m_TriggerSet;
     };
 } // namespace SnowLeopardEngine

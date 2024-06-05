@@ -1,3 +1,4 @@
+#include "SnowLeopardEngine/Engine/Debug.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 
 using namespace SnowLeopardEngine;
@@ -21,7 +22,7 @@ public:
     virtual void OnUnload() override final { SNOW_LEOPARD_INFO("[CustomLifeTime] OnUnload"); }
 };
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) TRY
 {
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - AudioSystem";
@@ -46,3 +47,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+CATCH

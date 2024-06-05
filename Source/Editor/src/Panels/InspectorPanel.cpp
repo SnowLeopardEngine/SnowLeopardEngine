@@ -15,7 +15,7 @@ namespace SnowLeopardEngine::Editor
 {
     const uint32_t LabelWidth = 140;
 
-    void InspectorPanel::Init() {}
+    void InspectorPanel::Init(const PanelCommonInitInfo& initInfo) {}
 
     void InspectorPanel::OnTick(float deltaTime)
     {

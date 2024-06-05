@@ -1,8 +1,9 @@
+#include "SnowLeopardEngine/Engine/Debug.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 
 using namespace SnowLeopardEngine;
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) TRY
 {
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - Application";
@@ -18,3 +19,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+CATCH

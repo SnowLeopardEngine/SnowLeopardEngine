@@ -2,20 +2,22 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
+#include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 
 namespace SnowLeopardEngine
 {
     RenderSystem::RenderSystem()
     {
-        m_Context = GraphicsContext::Create();
+        m_Context = CreateRef<GraphicsContext>();
         m_Context->Init();
 
         // TODO: Configurable vsync
         // Disable VSync
         m_Context->SetVSync(false);
 
-        m_API = GraphicsAPI::Create(GraphicsBackend::OpenGL);
+        m_GlobalRenderContext = CreateRef<RenderContext>();
+        m_Renderer.Init();
 
         Subscribe(m_LogicSceneLoadedHandler);
 
@@ -29,6 +31,7 @@ namespace SnowLeopardEngine
 
         Unsubscribe(m_LogicSceneLoadedHandler);
 
+        m_Renderer.Shutdown();
         m_Context->Shutdown();
         m_Context.reset();
 
@@ -39,13 +42,15 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
 
-        m_Pipeline.RenderScene();
+        // Render
+        m_Renderer.RenderFrame(deltaTime);
     }
 
     void RenderSystem::Present() { m_Context->SwapBuffers(); }
 
     void RenderSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e)
     {
-        m_Pipeline.SetupPipeline(e.GetLogicScene());
+        // Filter renderables
+        m_Renderer.OnLogicSceneLoaded(e.GetLogicScene());
     }
 } // namespace SnowLeopardEngine

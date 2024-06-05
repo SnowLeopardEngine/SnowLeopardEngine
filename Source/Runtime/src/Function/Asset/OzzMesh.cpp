@@ -13,7 +13,6 @@ namespace ozz
 {
     namespace io
     {
-
         void Extern<sample::Mesh::Part>::Save(OArchive& _archive, const sample::Mesh::Part* _parts, size_t _count)
         {
             for (size_t i = 0; i < _count; ++i)
