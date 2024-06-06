@@ -255,7 +255,7 @@ public:
     }
 
 private:
-    float     m_BaseFactor       = 30.0f;
+    float     m_BaseFactor       = 130.0f;
     float     m_VerticalAcc      = -9.8f;
     float     m_VerticalSpeed    = 0;
     float     m_VerticalMovement = 0;
@@ -307,25 +307,37 @@ public:
             {
                 if (!m_PunchingTimerStart)
                 {
-                    if (healthBarFront)
+                    auto rand = Random::GetRandomFloat();
+
+                    if (rand > 0.5f)
                     {
-                        auto& rect = healthBarFront.GetComponent<UI::RectTransformComponent>();
-                        rect.Size.x -= 20;
-                        if (rect.Size.x < 0)
-                        {
-                            // Player die
-                            g_GameOver                                                   = true;
-                            rect.Size.x                                                  = 0;
-                            gameOverText.GetComponent<EntityStatusComponent>().IsEnabled = true;
-                            g_EngineContext->AudioSys->Play("DemoAssets/Audios/Death.mp3");
-                        }
+                        m_PunchingActionValue++;
                     }
 
-                    m_PunchingAudioTimer = m_PunchingTime;
-                    animator.CurrentAnimator.SetTrigger("Punching");
-                    g_EngineContext->AudioSys->Play("DemoAssets/Audios/Punch.mp3");
-                    player.GetComponent<AnimatorComponent>().CurrentAnimator.SetTrigger("RibHit");
-                    m_PunchingTimerStart = true;
+                    if (m_PunchingActionValue >= Random::GetRandomFloatRanged(150, 300))
+                    {
+                        if (healthBarFront)
+                        {
+                            auto& rect = healthBarFront.GetComponent<UI::RectTransformComponent>();
+                            rect.Size.x -= 20;
+                            if (rect.Size.x < 0)
+                            {
+                                // Player die
+                                g_GameOver                                                   = true;
+                                rect.Size.x                                                  = 0;
+                                gameOverText.GetComponent<EntityStatusComponent>().IsEnabled = true;
+                                g_EngineContext->AudioSys->Play("DemoAssets/Audios/Death.mp3");
+                            }
+                        }
+
+                        m_PunchingAudioTimer = m_PunchingTime;
+                        animator.CurrentAnimator.SetTrigger("Punching");
+                        g_EngineContext->AudioSys->Play("DemoAssets/Audios/Punch.mp3");
+                        player.GetComponent<AnimatorComponent>().CurrentAnimator.SetTrigger("RibHit");
+                        m_PunchingTimerStart = true;
+
+                        m_PunchingActionValue = 0;
+                    }
                 }
             }
             else if (distance < 50.0f)
@@ -390,7 +402,7 @@ public:
     }
 
 private:
-    float     m_BaseFactor = 30.0f;
+    float     m_BaseFactor = 130.0f;
     glm::vec2 m_HorizontalVelocity;
     glm::vec2 m_HorizontalMovement;
 
@@ -399,6 +411,8 @@ private:
     float m_PunchingTimer      = m_PunchingTime;
 
     float m_PunchingAudioTimer = m_PunchingTime;
+
+    int m_PunchingActionValue = 0;
 };
 
 class GameLoad final : public LifeTimeComponent
@@ -441,12 +455,16 @@ private:
         bgm.IsSpatial   = false;
         bgm.PlayOnAwake = true;
 
+        // Get window width and height
+        auto width  = g_EngineContext->WindowSys->GetWidth();
+        auto height = g_EngineContext->WindowSys->GetHeight();
+
         // Create a background panel image
         Entity bgImage               = m_MainMenuScene->CreateEntity("Bg");
         auto&  bgRect                = bgImage.AddComponent<UI::RectTransformComponent>();
-        bgRect.Size                  = {1280, 720};
+        bgRect.Size                  = {width, height};
         bgRect.Pivot                 = {0.5, 0.5};
-        bgRect.Pos                   = {640, 360, -0.1};
+        bgRect.Pos                   = {width / 2.0f, height / 2.0f, -0.1};
         auto& bgImageComp            = bgImage.AddComponent<UI::ImageComponent>();
         bgImageComp.TargetGraphic    = IO::Load("Assets/Textures/GUI/Panel/Window/Big.png", *m_RenderContext);
         bgImageComp.MaterialFilePath = ImageMaterialPath;
@@ -454,9 +472,10 @@ private:
         // Create a game name text
         Entity gameNameText               = m_MainMenuScene->CreateEntity("GameNameText");
         auto&  gameNameTextRect           = gameNameText.AddComponent<UI::RectTransformComponent>();
-        gameNameTextRect.Pos              = {400, 500, 0};
+        gameNameTextRect.Pos              = {width / 2.0f - 500, height / 2.0f + 300, 0};
         auto& gameNameTextComp            = gameNameText.AddComponent<UI::TextComponent>();
         gameNameTextComp.TextContent      = "Untitled 3D RPG Game DEMO";
+        gameNameTextComp.FontSize         = 24.0f;
         gameNameTextComp.Color            = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f);
         gameNameTextComp.MaterialFilePath = TextMaterialPath;
 
@@ -466,7 +485,7 @@ private:
         auto& playButtonRect = playButton.AddComponent<UI::RectTransformComponent>();
         playButtonRect.Size  = {229, 44};
         playButtonRect.Pivot = {0.5, 0.5};
-        playButtonRect.Pos   = {640, 360, 0};
+        playButtonRect.Pos   = {width / 2.0f, height / 2.0f, 0};
         auto& playButtonComp = playButton.AddComponent<UI::ButtonComponent>();
         playButtonComp.TintColor.TargetGraphic =
             IO::Load("Assets/Textures/GUI/FantacyUI/Buttons/ButtonNormal.png", *m_RenderContext);
@@ -474,7 +493,7 @@ private:
         // embedded text
         Entity playText               = m_MainMenuScene->CreateEntity("PlayText");
         auto&  playTextRect           = playText.AddComponent<UI::RectTransformComponent>();
-        playTextRect.Pos              = {610, 350, 0};
+        playTextRect.Pos              = {width / 2.0f - 30, height / 2.0f - 10, 0};
         auto& playTextComp            = playText.AddComponent<UI::TextComponent>();
         playTextComp.TextContent      = "Play";
         playTextComp.FontSize         = 8;
@@ -487,7 +506,7 @@ private:
         auto& exitButtonRect = exitButton.AddComponent<UI::RectTransformComponent>();
         exitButtonRect.Size  = {229, 44};
         exitButtonRect.Pivot = {0.5, 0.5};
-        exitButtonRect.Pos   = {640, 290, 0};
+        exitButtonRect.Pos   = {width / 2.0f, height / 2.0f - 100, 0};
         auto& exitButtonComp = exitButton.AddComponent<UI::ButtonComponent>();
         exitButtonComp.TintColor.TargetGraphic =
             IO::Load("Assets/Textures/GUI/FantacyUI/Buttons/ButtonNormal.png", *m_RenderContext);
@@ -495,7 +514,7 @@ private:
         // embedded text
         Entity exitText               = m_MainMenuScene->CreateEntity("ExitText");
         auto&  exitTextRect           = exitText.AddComponent<UI::RectTransformComponent>();
-        exitTextRect.Pos              = {610, 280, 0};
+        exitTextRect.Pos              = {width / 2.0f - 30, height / 2.0f - 110, 0};
         auto& exitTextComp            = exitText.AddComponent<UI::TextComponent>();
         exitTextComp.TextContent      = "Exit";
         exitTextComp.FontSize         = 8;
@@ -521,13 +540,17 @@ private:
         bgm.PlayOnAwake = true;
         bgm.Volume      = 0.1f;
 
+        // Get window width and height
+        auto width  = g_EngineContext->WindowSys->GetWidth();
+        auto height = g_EngineContext->WindowSys->GetHeight();
+
         // Create a menu button
         Entity menuButton    = m_GameScene->CreateEntity("MenuButton");
         m_MenuButtonID       = menuButton.GetCoreUUID();
         auto& menuButtonRect = menuButton.AddComponent<UI::RectTransformComponent>();
         menuButtonRect.Size  = {40, 40};
         menuButtonRect.Pivot = {0.5, 0.5};
-        menuButtonRect.Pos   = {50, 680, 0};
+        menuButtonRect.Pos   = {50, height - 50, 0};
         auto& menuButtonComp = menuButton.AddComponent<UI::ButtonComponent>();
         menuButtonComp.TintColor.TargetGraphic =
             IO::Load("Assets/Textures/GUI/FantacyUI/Buttons/Menu.png", *m_RenderContext);
@@ -538,7 +561,7 @@ private:
         auto&  healthBarBackRect            = healthBarBack.AddComponent<UI::RectTransformComponent>();
         healthBarBackRect.Size              = {200, 50};
         healthBarBackRect.Pivot             = {0.5, 0.5};
-        healthBarBackRect.Pos               = {200, 680, -0.1};
+        healthBarBackRect.Pos               = {200, height - 50, -0.1};
         auto& healthBarBackImage            = healthBarBack.AddComponent<UI::ImageComponent>();
         healthBarBackImage.TargetGraphic    = IO::Load("DemoAssets/GUI/HealthBarBack.png", *m_RenderContext);
         healthBarBackImage.MaterialFilePath = ImageMaterialPath;
@@ -547,7 +570,7 @@ private:
         auto&  healthBarFrontRect            = healthBarFront.AddComponent<UI::RectTransformComponent>();
         healthBarFrontRect.Size              = {196, 46};
         healthBarFrontRect.Pivot             = {0, 0.5};
-        healthBarFrontRect.Pos               = {102, 680, -0.05};
+        healthBarFrontRect.Pos               = {102, height - 50, -0.05};
         auto& healthBarFrontImage            = healthBarFront.AddComponent<UI::ImageComponent>();
         healthBarFrontImage.TargetGraphic    = IO::Load("DemoAssets/GUI/HealthBarFront.png", *m_RenderContext);
         healthBarFrontImage.MaterialFilePath = ImageMaterialPath;
@@ -556,7 +579,7 @@ private:
         Entity gameOverText               = m_GameScene->CreateEntity("GameOverText");
         auto&  gameOverTextRect           = gameOverText.AddComponent<UI::RectTransformComponent>();
         gameOverTextRect.Size             = {500, 200};
-        gameOverTextRect.Pos              = {400, 600, 0};
+        gameOverTextRect.Pos              = {width / 2 - 300, height - 100, 0};
         auto& gameOverTextComp            = gameOverText.AddComponent<UI::TextComponent>();
         gameOverTextComp.TextContent      = "GAME OVER";
         gameOverTextComp.FontSize         = 24;
@@ -585,19 +608,22 @@ private:
         terrainRenderer.MaterialFilePath = "Assets/Materials/Next/DefaultTerrain.dzmaterial";
 
         {
-            // Create our player character
-            OzzModelLoadConfig config = {};
-            config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
-            config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
-            config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Idle.ozz");        // 0
-            config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Walking.ozz");     // 1
-            config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Run.ozz");         // 2
-            config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Jumping.ozz");     // 3
-            config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Punching.ozz");    // 4
-            config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Death.ozz");       // 5
-            config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/ThrowObject.ozz"); // 6
-            config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/RibHit.ozz");      // 7
-            bool ok = OzzModelLoader::Load(config, m_PlayerModel);
+            if (m_PlayerModel->AnimationClips.empty())
+            {
+                // Create our player character
+                OzzModelLoadConfig config = {};
+                config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
+                config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
+                config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Idle.ozz");        // 0
+                config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Walking.ozz");     // 1
+                config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Run.ozz");         // 2
+                config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Jumping.ozz");     // 3
+                config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Punching.ozz");    // 4
+                config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Death.ozz");       // 5
+                config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/ThrowObject.ozz"); // 6
+                config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/RibHit.ozz");      // 7
+                bool ok = OzzModelLoader::Load(config, m_PlayerModel);
+            }
 
             Entity character              = m_GameScene->CreateEntity("Character");
             auto&  characterTransform     = character.GetComponent<TransformComponent>();
@@ -632,75 +658,75 @@ private:
             animatorController->RegisterParameters("RibHitEnd");      // Trigger
 
             // Transitions between Idle and Walking
-            auto idle2Walk = animatorController->RegisterTransition(animationClips[0], animationClips[1], 0.5);
+            auto idle2Walk = animatorController->RegisterTransition(animationClips[0], animationClips[1], 0.2);
             idle2Walk->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 1.0f);
-            auto walk2Idle = animatorController->RegisterTransition(animationClips[1], animationClips[0], 0.5);
+            auto walk2Idle = animatorController->RegisterTransition(animationClips[1], animationClips[0], 0.2);
             walk2Idle->SetConditions("HorizontalSpeed", ConditionOperator::Less, 1.0f);
 
             // Transitions between Walking and Run
-            auto walk2Run = animatorController->RegisterTransition(animationClips[1], animationClips[2], 0.5);
+            auto walk2Run = animatorController->RegisterTransition(animationClips[1], animationClips[2], 0.2);
             walk2Run->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 1.5f);
-            auto run2Walk = animatorController->RegisterTransition(animationClips[2], animationClips[1], 0.5);
+            auto run2Walk = animatorController->RegisterTransition(animationClips[2], animationClips[1], 0.2);
             run2Walk->SetConditions("HorizontalSpeed", ConditionOperator::Less, 1.5f);
 
             // Transitions between * and Jump
-            auto idle2Jump = animatorController->RegisterTransition(animationClips[0], animationClips[3], 0.5);
+            auto idle2Jump = animatorController->RegisterTransition(animationClips[0], animationClips[3], 0.2);
             idle2Jump->AddTrigger("IsJump");
-            auto jump2Idle = animatorController->RegisterTransition(animationClips[3], animationClips[0], 0.5);
+            auto jump2Idle = animatorController->RegisterTransition(animationClips[3], animationClips[0], 0.2);
             jump2Idle->AddTrigger("IsFallToGround");
-            auto walk2Jump = animatorController->RegisterTransition(animationClips[1], animationClips[3], 0.5);
+            auto walk2Jump = animatorController->RegisterTransition(animationClips[1], animationClips[3], 0.2);
             walk2Jump->AddTrigger("IsJump");
-            auto jump2Walk = animatorController->RegisterTransition(animationClips[3], animationClips[1], 0.5);
+            auto jump2Walk = animatorController->RegisterTransition(animationClips[3], animationClips[1], 0.2);
             jump2Walk->AddTrigger("IsFallToGround");
-            auto run2Jump = animatorController->RegisterTransition(animationClips[2], animationClips[3], 0.5);
+            auto run2Jump = animatorController->RegisterTransition(animationClips[2], animationClips[3], 0.2);
             run2Jump->AddTrigger("IsJump");
-            auto jump2Run = animatorController->RegisterTransition(animationClips[3], animationClips[2], 0.5);
+            auto jump2Run = animatorController->RegisterTransition(animationClips[3], animationClips[2], 0.2);
             jump2Run->AddTrigger("IsFallToGround");
 
             // Transitions between * and Punching
-            auto idle2Punching = animatorController->RegisterTransition(animationClips[0], animationClips[4], 0.5);
+            auto idle2Punching = animatorController->RegisterTransition(animationClips[0], animationClips[4], 0.2);
             idle2Punching->AddTrigger("Punching");
-            auto punching2Idle = animatorController->RegisterTransition(animationClips[4], animationClips[0], 0.5);
+            auto punching2Idle = animatorController->RegisterTransition(animationClips[4], animationClips[0], 0.2);
             punching2Idle->AddTrigger("PunchingEnd");
-            auto walk2Punching = animatorController->RegisterTransition(animationClips[1], animationClips[4], 0.5);
+            auto walk2Punching = animatorController->RegisterTransition(animationClips[1], animationClips[4], 0.2);
             walk2Punching->AddTrigger("Punching");
-            auto punching2Walk = animatorController->RegisterTransition(animationClips[4], animationClips[1], 0.5);
+            auto punching2Walk = animatorController->RegisterTransition(animationClips[4], animationClips[1], 0.2);
             punching2Walk->AddTrigger("PunchingEnd");
-            auto run2Punching = animatorController->RegisterTransition(animationClips[2], animationClips[4], 0.5);
+            auto run2Punching = animatorController->RegisterTransition(animationClips[2], animationClips[4], 0.2);
             run2Punching->AddTrigger("Punching");
-            auto punching2Run = animatorController->RegisterTransition(animationClips[4], animationClips[2], 0.5);
+            auto punching2Run = animatorController->RegisterTransition(animationClips[4], animationClips[2], 0.2);
             punching2Run->AddTrigger("PunchingEnd");
 
             // Transitions between * and Death
-            auto idle2Death = animatorController->RegisterTransition(animationClips[0], animationClips[5], 0.5);
+            auto idle2Death = animatorController->RegisterTransition(animationClips[0], animationClips[5], 0.2);
             idle2Death->AddTrigger("Death");
-            auto walk2Death = animatorController->RegisterTransition(animationClips[1], animationClips[5], 0.5);
+            auto walk2Death = animatorController->RegisterTransition(animationClips[1], animationClips[5], 0.2);
             walk2Death->AddTrigger("Death");
-            auto run2Death = animatorController->RegisterTransition(animationClips[2], animationClips[5], 0.5);
+            auto run2Death = animatorController->RegisterTransition(animationClips[2], animationClips[5], 0.2);
             run2Death->AddTrigger("Death");
-            auto jump2Death = animatorController->RegisterTransition(animationClips[3], animationClips[5], 0.5);
+            auto jump2Death = animatorController->RegisterTransition(animationClips[3], animationClips[5], 0.2);
             jump2Death->AddTrigger("Death");
-            auto punching2Death = animatorController->RegisterTransition(animationClips[4], animationClips[5], 0.5);
+            auto punching2Death = animatorController->RegisterTransition(animationClips[4], animationClips[5], 0.2);
             punching2Death->AddTrigger("Death");
-            auto ribHit2Death = animatorController->RegisterTransition(animationClips[7], animationClips[5], 0.5);
+            auto ribHit2Death = animatorController->RegisterTransition(animationClips[7], animationClips[5], 0.2);
             ribHit2Death->AddTrigger("Death");
 
             // Transitions between * and RibHit
-            auto idle2RibHit = animatorController->RegisterTransition(animationClips[0], animationClips[7], 0.5);
+            auto idle2RibHit = animatorController->RegisterTransition(animationClips[0], animationClips[7], 0.2);
             idle2RibHit->AddTrigger("RibHit");
-            auto ribHit2Idle = animatorController->RegisterTransition(animationClips[7], animationClips[0], 0.5);
+            auto ribHit2Idle = animatorController->RegisterTransition(animationClips[7], animationClips[0], 0.2);
             ribHit2Idle->AddTrigger("RibHitEnd");
-            auto walk2RibHit = animatorController->RegisterTransition(animationClips[1], animationClips[7], 0.5);
+            auto walk2RibHit = animatorController->RegisterTransition(animationClips[1], animationClips[7], 0.2);
             walk2RibHit->AddTrigger("RibHit");
-            auto ribHit2Walk = animatorController->RegisterTransition(animationClips[7], animationClips[1], 0.5);
+            auto ribHit2Walk = animatorController->RegisterTransition(animationClips[7], animationClips[1], 0.2);
             ribHit2Walk->AddTrigger("RibHitEnd");
-            auto run2RibHit = animatorController->RegisterTransition(animationClips[2], animationClips[7], 0.5);
+            auto run2RibHit = animatorController->RegisterTransition(animationClips[2], animationClips[7], 0.2);
             run2RibHit->AddTrigger("RibHit");
-            auto ribHit2Run = animatorController->RegisterTransition(animationClips[7], animationClips[2], 0.5);
+            auto ribHit2Run = animatorController->RegisterTransition(animationClips[7], animationClips[2], 0.2);
             ribHit2Run->AddTrigger("RibHitEnd");
-            auto punching2RibHit = animatorController->RegisterTransition(animationClips[4], animationClips[7], 0.5);
+            auto punching2RibHit = animatorController->RegisterTransition(animationClips[4], animationClips[7], 0.2);
             punching2RibHit->AddTrigger("RibHit");
-            auto ribHit2Punching = animatorController->RegisterTransition(animationClips[7], animationClips[4], 0.5);
+            auto ribHit2Punching = animatorController->RegisterTransition(animationClips[7], animationClips[4], 0.2);
             ribHit2Punching->AddTrigger("RibHitEnd");
 
             auto& controller = character.AddComponent<CharacterControllerComponent>();
@@ -711,16 +737,19 @@ private:
         }
 
         {
-            // Create the enemy character
-            OzzModelLoadConfig config = {};
-            config.OzzMeshPath        = "DemoAssets/Models/Enemy/Enemy.ozzmesh";
-            config.OzzSkeletonPath    = "DemoAssets/Models/Enemy/Enemy.ozzskeleton";
-            config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyIdle.ozz");
-            config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyWalking.ozz");
-            config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyRunning.ozz");
-            config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyPunching.ozz");
-            config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyDeath.ozz");
-            bool ok = OzzModelLoader::Load(config, m_EnemyModel);
+            if (m_EnemyModel->AnimationClips.empty())
+            {
+                // Create the enemy character
+                OzzModelLoadConfig config = {};
+                config.OzzMeshPath        = "DemoAssets/Models/Enemy/Enemy.ozzmesh";
+                config.OzzSkeletonPath    = "DemoAssets/Models/Enemy/Enemy.ozzskeleton";
+                config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyIdle.ozz");
+                config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyWalking.ozz");
+                config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyRunning.ozz");
+                config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyPunching.ozz");
+                config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyDeath.ozz");
+                bool ok = OzzModelLoader::Load(config, m_EnemyModel);
+            }
 
             Entity character                       = m_GameScene->CreateEntity("Enemy");
             auto&  characterTransform              = character.GetComponent<TransformComponent>();
@@ -748,29 +777,29 @@ private:
             animatorController->RegisterParameters("PunchingEnd"); // Trigger
 
             // Transitions between Idle and Walking
-            auto idle2Walk = animatorController->RegisterTransition(animationClips[0], animationClips[1], 0.5);
+            auto idle2Walk = animatorController->RegisterTransition(animationClips[0], animationClips[1], 0.2);
             idle2Walk->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 0.5f);
-            auto walk2Idle = animatorController->RegisterTransition(animationClips[1], animationClips[0], 0.5);
+            auto walk2Idle = animatorController->RegisterTransition(animationClips[1], animationClips[0], 0.2);
             walk2Idle->SetConditions("HorizontalSpeed", ConditionOperator::Less, 0.5f);
 
             // Transitions between Walking and Run
-            auto walk2Run = animatorController->RegisterTransition(animationClips[1], animationClips[2], 0.5);
+            auto walk2Run = animatorController->RegisterTransition(animationClips[1], animationClips[2], 0.2);
             walk2Run->SetConditions("HorizontalSpeed", ConditionOperator::GreaterEqual, 1.0f);
-            auto run2Walk = animatorController->RegisterTransition(animationClips[2], animationClips[1], 0.5);
+            auto run2Walk = animatorController->RegisterTransition(animationClips[2], animationClips[1], 0.2);
             run2Walk->SetConditions("HorizontalSpeed", ConditionOperator::Less, 1.0f);
 
             // Transitions between * and Punching
-            auto idle2Punching = animatorController->RegisterTransition(animationClips[0], animationClips[3], 0.5);
+            auto idle2Punching = animatorController->RegisterTransition(animationClips[0], animationClips[3], 0.2);
             idle2Punching->AddTrigger("Punching");
-            auto punching2Idle = animatorController->RegisterTransition(animationClips[3], animationClips[0], 0.5);
+            auto punching2Idle = animatorController->RegisterTransition(animationClips[3], animationClips[0], 0.2);
             punching2Idle->AddTrigger("PunchingEnd");
-            auto walk2Punching = animatorController->RegisterTransition(animationClips[1], animationClips[3], 0.5);
+            auto walk2Punching = animatorController->RegisterTransition(animationClips[1], animationClips[3], 0.2);
             walk2Punching->AddTrigger("Punching");
-            auto punching2Walk = animatorController->RegisterTransition(animationClips[3], animationClips[1], 0.5);
+            auto punching2Walk = animatorController->RegisterTransition(animationClips[3], animationClips[1], 0.2);
             punching2Walk->AddTrigger("PunchingEnd");
-            auto run2Punching = animatorController->RegisterTransition(animationClips[2], animationClips[3], 0.5);
+            auto run2Punching = animatorController->RegisterTransition(animationClips[2], animationClips[3], 0.2);
             run2Punching->AddTrigger("Punching");
-            auto punching2Run = animatorController->RegisterTransition(animationClips[3], animationClips[2], 0.5);
+            auto punching2Run = animatorController->RegisterTransition(animationClips[3], animationClips[2], 0.2);
             punching2Run->AddTrigger("PunchingEnd");
 
             auto& controller = character.AddComponent<CharacterControllerComponent>();
@@ -865,10 +894,8 @@ private:
 
     void LoadGameScene()
     {
-        if (m_GameScene == nullptr)
-        {
-            CreateGameScene();
-        }
+        g_GameOver = false;
+        CreateGameScene();
         g_EngineContext->SceneMngr->SetActiveScene(m_GameScene);
     }
 
@@ -951,9 +978,9 @@ int main(int argc, char** argv) TRY
     REGISTER_TYPE(EnemyScript);
 
     DesktopAppInitInfo initInfo {};
-    initInfo.Engine.Window.Title  = "Final Game DEMO";
-    initInfo.Engine.Window.Width  = 1280;
-    initInfo.Engine.Window.Height = 720;
+    initInfo.Engine.Window.Title      = "Final Game DEMO";
+    initInfo.Engine.Window.Fullscreen = true;
+
     DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))

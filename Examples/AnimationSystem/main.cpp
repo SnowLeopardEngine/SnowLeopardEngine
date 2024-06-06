@@ -80,19 +80,12 @@ public:
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
         Ref<AnimationClip> danceAnimation = g_Model->AnimationClips[0];
-        Ref<AnimationClip> walkingAnimation = g_Model->AnimationClips[1];
 
-        Ref<Animator> animator = CreateRef<Animator>();
+        Ref<Animator>           animator   = CreateRef<Animator>();
         Ref<AnimatorController> controller = CreateRef<AnimatorController>();
 
         controller->RegisterAnimationClip(danceAnimation);
-        controller->RegisterAnimationClip(walkingAnimation);
-        controller->SetEntryAnimationClip(danceAnimation);
-
         animatorComponent.CurrentAnimator.SetController(controller);
-        controller->RegisterParameters("Walking");
-        auto idle2Walk = controller->RegisterTransition(danceAnimation, walkingAnimation, 1);
-        idle2Walk->SetConditions("Walking");
     }
 
 private:
@@ -106,7 +99,8 @@ int main(int argc, char** argv) TRY
     g_Model = new Model();
 
     DesktopAppInitInfo initInfo {};
-    initInfo.Engine.Window.Title = "Example - AnimationSystem";
+    initInfo.Engine.Window.Title      = "Example - AnimationSystem";
+    initInfo.Engine.Window.Fullscreen = true;
     DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))

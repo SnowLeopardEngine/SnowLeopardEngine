@@ -93,7 +93,8 @@ int main(int argc, char** argv) TRY
     REGISTER_TYPE(EscScript);
 
     DesktopAppInitInfo initInfo {};
-    initInfo.Engine.Window.Title = "Example - RenderingSystem-Instancing";
+    initInfo.Engine.Window.Title      = "Example - RenderingSystem-Instancing";
+    initInfo.Engine.Window.Fullscreen = true;
     DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))

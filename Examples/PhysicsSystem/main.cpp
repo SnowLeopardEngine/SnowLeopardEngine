@@ -37,10 +37,10 @@ public:
     {
         if (m_EngineContext->InputSys->GetKeyDown(KeyCode::Space))
         {
-            auto   scene                 = m_EngineContext->SceneMngr->GetActiveScene();
+            auto scene = m_EngineContext->SceneMngr->GetActiveScene();
 
             // Create a sphere with RigidBodyComponent & SphereColliderComponent
-            auto   normalMaterial    = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
+            auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
 
             Entity sphere            = scene->CreateEntity("Sphere");
             auto&  sphereTransform   = sphere.GetComponent<TransformComponent>();
@@ -155,7 +155,8 @@ int main(int argc, char** argv) TRY
     REGISTER_TYPE(SphereScript);
 
     DesktopAppInitInfo initInfo {};
-    initInfo.Engine.Window.Title = "Example - PhysicsSystem";
+    initInfo.Engine.Window.Title      = "Example - PhysicsSystem";
+    initInfo.Engine.Window.Fullscreen = true;
     DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))

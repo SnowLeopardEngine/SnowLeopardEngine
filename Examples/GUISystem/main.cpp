@@ -81,8 +81,8 @@ public:
         characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
-        Ref<AnimationClip> animation = g_Model->AnimationClips[0];
-        Ref<Animator> animator = CreateRef<Animator>();
+        Ref<AnimationClip>      animation  = g_Model->AnimationClips[0];
+        Ref<Animator>           animator   = CreateRef<Animator>();
         Ref<AnimatorController> controller = CreateRef<AnimatorController>();
         controller->RegisterAnimationClip(animation);
         controller->SetEntryAnimationClip(animation);
@@ -150,7 +150,8 @@ int main(int argc, char** argv)
     g_Model = new Model();
 
     DesktopAppInitInfo initInfo {};
-    initInfo.Engine.Window.Title = "Example - GUISystem";
+    initInfo.Engine.Window.Title      = "Example - GUISystem";
+    initInfo.Engine.Window.Fullscreen = true;
     DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))

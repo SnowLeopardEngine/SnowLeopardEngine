@@ -5,9 +5,10 @@
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
+#include <SnowLeopardEngine/Core/Base/Random.h>
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
-#include <SnowLeopardEngine/Core/Base/Random.h>
+
 
 using namespace SnowLeopardEngine;
 
@@ -159,7 +160,8 @@ int main(int argc, char** argv) TRY
     REGISTER_TYPE(EscScript);
 
     DesktopAppInitInfo initInfo {};
-    initInfo.Engine.Window.Title = "Example - RenderingSystem-Overview";
+    initInfo.Engine.Window.Title      = "Example - RenderingSystem-Overview";
+    initInfo.Engine.Window.Fullscreen = true;
     DesktopApp app(argc, argv);
 
     if (!app.Init(initInfo))
