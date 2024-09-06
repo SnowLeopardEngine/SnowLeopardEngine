@@ -1,18 +1,32 @@
 #include "SnowLeopardEditor/EditorApp.h"
 #include "SnowLeopardEditor/EditorGUISystem.h"
-#include "SnowLeopardEditor/PanelManager.h"
-#include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/IO/Resources.h"
 
 namespace SnowLeopardEngine::Editor
 {
     EditorApp* EditorApp::s_Instance = nullptr;
 
-    EditorApp::EditorApp(int argc, char** argv) : DesktopApp(argc, argv) { s_Instance = this; }
+    EditorApp::EditorApp(int argc, char** argv) : DesktopApp(argc, argv)
+    {
+        m_Program.add_argument("--project").help("the .dzproj file").required();
+        m_Program.parse_args(argc, argv);
+        s_Instance = this;
+    }
 
     bool EditorApp::Init(const EditorAppInitInfo& initInfo)
     {
+        // handle CLI arguments
+        auto project = m_Program.get("--project");
+        std::cout << "Handling CLI argument: --project = " << project << std::endl;
+        if (!std::filesystem::exists(project))
+        {
+            std::cerr << "Project file doesn't exist: " << project << std::endl;
+            return false;
+        }
+
         // create the engine
         m_Engine = CreateRef<Engine>();
         if (!m_Engine->Init(initInfo.Engine))
@@ -21,8 +35,21 @@ namespace SnowLeopardEngine::Editor
             return false;
         }
 
+        // load the project
+        auto loadingProject = g_EngineContext->ProjectMngr->CreateProject();
+        if (!IO::Deserialize(loadingProject.get(), project))
+        {
+            std::cerr << "Failed to deserialize the project from: " << project << std::endl;
+            return false;
+        }
+        loadingProject->SetPath(project);
+        loadingProject->LoadAssets();
+        g_EngineContext->ProjectMngr->SetActiveProject(loadingProject);
+
         // init GUI system
-        m_GUISystem.Init();
+        EditorGUISystemInitInfo guiInitInfo = {};
+        guiInitInfo.ProjectFilePath         = project;
+        m_GUISystem.Init(guiInitInfo);
 
         // subscribe events
         Subscribe(m_WindowCloseHandler);
@@ -53,6 +80,7 @@ namespace SnowLeopardEngine::Editor
             m_Timer.Start();
             float dt        = m_Timer.GetDeltaTime();
             Time::DeltaTime = dt;
+            Time::ElapsedTime += dt;
 
             // Fixed Tick
             fixedTimer += dt;
@@ -91,6 +119,13 @@ namespace SnowLeopardEngine::Editor
     void EditorApp::Shutdown()
     {
         SNOW_LEOPARD_INFO("[Editor] Shutting Down...");
+
+        // Save active project
+        auto activeProject = g_EngineContext->ProjectMngr->GetActiveProject();
+        if (activeProject != nullptr)
+        {
+            activeProject->Save();
+        }
 
         // GUI Shutdown
         m_GUISystem.Shutdown();

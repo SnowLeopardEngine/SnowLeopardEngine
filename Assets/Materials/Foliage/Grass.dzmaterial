@@ -1,0 +1,40 @@
+{
+    "DzMaterial": {
+        "m_ShaderName": "Foliage/Grass",
+        "m_PropertyBlock": {
+            "ShaderProperties": [
+                {
+                    "Name": "instanceColor",
+                    "Type": "Color",
+                    "Value": "(1, 1, 1, 1)"
+                },
+                {
+                    "Name": "instancePosition",
+                    "Type": "Vector",
+                    "Value": "(0, 0, 0, 1)"
+                },
+                {
+                    "Name": "instanceQuaternion",
+                    "Type": "Vector",
+                    "Value": "(0, 0, 0, 1)"
+                },
+                {
+                    "Name": "instanceScale",
+                    "Type": "Vector",
+                    "Value": "(1, 1, 1, 1)"
+                },
+                {
+                    "Name": "grassMap",
+                    "Type": "Texture2D",
+                    "Value": "Assets/Textures/Grass.png"
+                },
+                {
+                    "Name": "noiseMap",
+                    "Type": "Texture2D",
+                    "Value": "Assets/Textures/Perlin.png"
+                }
+            ],
+            "ReadOnly": true
+        }
+    }
+}

@@ -1,3 +1,5 @@
+#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEngine/Engine/Debug.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
 #include <SnowLeopardEngine/Function/Scene/Entity.h>
 
@@ -39,17 +41,18 @@ public:
         auto scene = m_EngineContext->SceneMngr->CreateScene("NativeScripting", true);
 
         // Create an entity with NativeScriptingComponent
-        Entity entity         = scene->CreateEntity("Entity1");
-        auto   scriptInstance = CreateRef<MyScriptInstance>();
-        entity.AddComponent<NativeScriptingComponent>(scriptInstance);
+        Entity entity = scene->CreateEntity("Entity1");
+        entity.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(MyScriptInstance));
     }
 
 private:
     EngineContext* m_EngineContext;
 };
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) TRY
 {
+    REGISTER_TYPE(MyScriptInstance);
+
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title = "Example - NativeScripting";
     DesktopApp app(argc, argv);
@@ -73,3 +76,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+CATCH

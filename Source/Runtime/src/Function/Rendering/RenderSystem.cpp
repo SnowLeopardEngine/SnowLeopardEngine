@@ -1,23 +1,25 @@
 #include "SnowLeopardEngine/Function/Rendering/RenderSystem.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "SnowLeopardEngine/Function/Rendering/Forward/ForwardPipeline.h"
-#include "SnowLeopardEngine/Function/Rendering/GraphicsAPI.h"
-#include "SnowLeopardEngine/Function/Rendering/Pipeline/Pipeline.h"
+#include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 
 namespace SnowLeopardEngine
 {
     RenderSystem::RenderSystem()
     {
-        m_Context = GraphicsContext::Create();
+        m_Context = CreateRef<GraphicsContext>();
         m_Context->Init();
 
-        m_API = GraphicsAPI::Create(GraphicsBackend::OpenGL);
+        // TODO: Configurable vsync
+        // Disable VSync
+        m_Context->SetVSync(false);
 
-        PipelineInitInfo pipelineInitInfo = {};
-        pipelineInitInfo.API              = m_API;
-        m_Pipeline                        = CreateRef<ForwardPipeline>();
-        m_Pipeline->Init(pipelineInitInfo);
+        m_GlobalRenderContext = CreateRef<RenderContext>();
+        m_Renderer.Init();
+
+        Subscribe(m_LogicSceneLoadedHandler);
 
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Initialized");
         m_State = SystemState::InitOk;
@@ -27,8 +29,9 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_CORE_INFO("[RenderSystem] Shutting Down...");
 
-        m_Pipeline->Shutdown();
+        Unsubscribe(m_LogicSceneLoadedHandler);
 
+        m_Renderer.Shutdown();
         m_Context->Shutdown();
         m_Context.reset();
 
@@ -37,10 +40,17 @@ namespace SnowLeopardEngine
 
     void RenderSystem::OnTick(float deltaTime)
     {
-        // Draw Built-in Deferred Pipeline
-        // Now, draw forward instead for testing
-        m_Pipeline->Tick(deltaTime);
+        SNOW_LEOPARD_PROFILE_FUNCTION
+
+        // Render
+        m_Renderer.RenderFrame(deltaTime);
     }
 
     void RenderSystem::Present() { m_Context->SwapBuffers(); }
+
+    void RenderSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e)
+    {
+        // Filter renderables
+        m_Renderer.OnLogicSceneLoaded(e.GetLogicScene());
+    }
 } // namespace SnowLeopardEngine

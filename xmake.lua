@@ -4,8 +4,8 @@ set_project("SnowLeopardEngine")
 -- set project version
 set_version("0.1.0")
 
--- set language version: C++ 17
-set_languages("cxx17")
+-- set language version: C++ 20
+set_languages("cxx20")
 
 -- global options
 option("examples") -- build examples?
@@ -13,22 +13,31 @@ option("examples") -- build examples?
 option_end()
 
 -- if build on windows
-if is_host("windows") then
+if is_plat("windows") then
     add_cxxflags("/Zc:__cplusplus", {tools = {"msvc", "cl"}}) -- fix __cplusplus == 199711L error
     add_cxxflags("/bigobj") -- avoid big obj
     add_cxxflags("-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING")
+    add_cxxflags("/EHsc")
     if is_mode("debug") then
         set_runtimes("MDd")
         add_links("ucrtd")
     else
         set_runtimes("MD")
     end
+else
+    add_cxxflags("-fexceptions")
 end
 
 -- global rules
 rule("copy_assets")
+    after_build(function(target)
+        print("Install C# bindings for target: " .. target:name())
+        os.cp("$(buildir)/assembly/SnowLeopardEngine/*", target:targetdir())
+    end)
     on_load(function(target)
-        os.cp("$(projectdir)/Assets", target:targetdir())
+        -- https://xmake.io/#/zh-cn/manual/builtin_modules?id=oscp
+        os.cp("$(projectdir)/Assets/*", target:targetdir() .. "/Assets", {rootdir = "Assets"})
+        os.cp("$(projectdir)/Tools/$(plat)/$(arch)/Coral/Coral**", target:targetdir())
     end)
 rule_end()
 

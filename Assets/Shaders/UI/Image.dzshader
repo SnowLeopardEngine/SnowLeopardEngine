@@ -1,0 +1,44 @@
+{
+    "DzShader": {
+        "Name": "UI/Image",
+        "Properties": [
+            {
+                "Name": "color",
+                "Type": "Color",
+                "Value": "(1, 1, 1, 1)"
+            }
+        ],
+        "InstancedPropertyNames": [],
+        "Resources": [],
+        "PipelineStates": {},
+        "Tags": {
+            "RenderQueue": "UI"
+        },
+        "Keywords": [
+            "FORWARD_LIGHTING"
+        ],
+        "Passes": [
+            {
+                "Name": "UI_GeometryPass",
+                "PipelineStates": {},
+                "Tags": {},
+                "ResourcesToBind": [],
+                "ResourcesToUse": [],
+                "Stages": [
+                    {
+                        "Name": "vertex",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "#version 450\n\n#include \"LegacySceneUniform.glsl\"\n\nlayout(location = 0) in vec3 aPos;\nlayout(location = 2) in vec2 aTexCoords;\nlayout(location = 3) in int aEntityID;\n\nlayout(location = 0) out vec2 varingTexCoords;\nlayout(location = 1) flat out int varingEntityID;\n\nvoid main() {\n    varingTexCoords = aTexCoords;\n    varingEntityID = aEntityID;\n    gl_Position = projection * model * vec4(aPos.xy, 0.0, 1.0);\n}"
+                    },
+                    {
+                        "Name": "fragment",
+                        "LanguageType": "GLSL",
+                        "EntryPoint": "main",
+                        "ShaderSource": "#version 450\n\nlayout(location = 0) in vec2 varingTexCoords;\nlayout(location = 1) flat in int varingEntityID;\n\nlayout(location = 0) out vec4 color0;\nlayout(location = 1) out int color1;\n\nlayout(location = 0) uniform sampler2D image;\nlayout(location = 1) uniform int useImage;\nlayout(location = 2) uniform vec4 imageColor;\n\nvoid main() {\n    color0 = (1 - useImage) * imageColor + useImage * texture(image, varingTexCoords) * imageColor;\n    color1 = varingEntityID;\n}"
+                    }
+                ]
+            }
+        ]
+    }
+}

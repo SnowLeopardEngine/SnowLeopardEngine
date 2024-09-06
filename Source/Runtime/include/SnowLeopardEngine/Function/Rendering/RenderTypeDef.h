@@ -2,69 +2,55 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
+#include "SnowLeopardEngine/Function/Asset/OzzMesh.h"
+
+#include <glad/glad.h>
 
 namespace SnowLeopardEngine
 {
-    const uint32_t MaxBoneInfluence = 4;
+    class IndexBuffer;
+    class VertexBuffer;
+    class VertexFormat;
 
-    struct ViewportDesc
+    // clang-format off
+    struct Offset2D
     {
-        float X;
-        float Y;
-        float Width;
-        float Height;
+        int32_t X {0}, Y {0};
+
+        auto operator<=> (const Offset2D&) const = default;
     };
 
-    enum class PixelColorFormat : uint8_t
+    struct Extent2D
     {
-        Invalid = 0,
-        RGB8,
-        RGBA8,
-        RGB32,
-        RGBA32
+        uint32_t Width {0}, Height {0};
+
+        auto operator<=> (const Extent2D&) const = default;
     };
 
-    enum class TextureType : uint8_t
+    struct Rect2D
     {
-        Invalid = 0,
-        Texture2D,
-        Texture3D // Cubemap
+        Offset2D Offset;
+        Extent2D Extent;
+
+        auto operator<=> (const Rect2D&) const = default;
+    };
+    // clang-format on
+
+    enum class CompareOp : GLenum
+    {
+        Never          = GL_NEVER,
+        Less           = GL_LESS,
+        Equal          = GL_EQUAL,
+        LessOrEqual    = GL_LEQUAL,
+        Greater        = GL_GREATER,
+        NotEqual       = GL_NOTEQUAL,
+        GreaterOrEqual = GL_GEQUAL,
+        Always         = GL_ALWAYS
     };
 
-    enum class TextureWrapMode : uint8_t
-    {
-        Invalid = 0,
-        Clamp,
-        Repeat,
-        Mirror
-    };
+    using ViewportDesc = Rect2D;
 
-    enum class TextureFilterMode : uint8_t
-    {
-        Invalid = 0,
-        Point,
-        Linear,
-        Nearest
-    };
-
-    struct TextureConfig
-    {
-        TextureWrapMode   WrapMode     = TextureWrapMode::Repeat;
-        TextureFilterMode FilterMode   = TextureFilterMode::Linear;
-        bool              IsFlip       = true;
-        bool              IsGenMipMaps = true;
-    };
-
-    struct TextureDesc
-    {
-        uint32_t         Width  = 1;
-        uint32_t         Height = 1;
-        PixelColorFormat Format = PixelColorFormat::RGBA8;
-
-        TextureConfig Config;
-    };
-
-    struct StaticMeshVertexData
+    struct MeshVertexData
     {
         glm::vec3 Position;
         glm::vec3 Normal;
@@ -72,43 +58,27 @@ namespace SnowLeopardEngine
 
         // for picking object using back buffer hack
         int EntityID = -1;
-    };
-
-    struct PerVertexAnimationAttributes
-    {
-        // bone indexes which will influence this vertex
-        int BoneIDs[MaxBoneInfluence];
-
-        // weights from each bone
-        float Weights[MaxBoneInfluence];
-    };
-
-    struct AnimatedMeshVertexData
-    {
-        glm::vec3 Position;
-        glm::vec3 Normal;
-        glm::vec2 TexCoord;
-
-        // for picking object using back buffer hack
-        int EntityID = -1;
-
-        // attributes for animation
-        PerVertexAnimationAttributes AnimationAttributes;
     };
 
     struct MeshData
     {
-        std::vector<StaticMeshVertexData>   StaticVertices;
-        std::vector<AnimatedMeshVertexData> AnimatedVertices;
-        std::vector<uint32_t>               Indices;
+        std::vector<MeshVertexData> Vertices;
+        std::vector<uint32_t>       Indices;
 
-        bool HasAnimationInfo() const { return !AnimatedVertices.empty(); }
+        Ref<IndexBuffer>  IdxBuffer  = nullptr;
+        Ref<VertexBuffer> VertBuffer = nullptr;
+        Ref<VertexFormat> VertFormat = nullptr;
     };
 
     struct MeshItem
     {
-        std::string Name;
+        std::string Name = "Untitled Mesh";
         MeshData    Data;
+        bool        RenderLoaded = false;
+
+        ozz::sample::Mesh OzzMesh;
+
+        bool Skinned() const { return OzzMesh.skinned(); }
     };
 
     struct MeshGroup

@@ -1,4 +1,7 @@
 #include "SnowLeopardEngine/Core/Log/LogSystem.h"
+#include "SnowLeopardEngine/Core/Event/LogEvents.h"
+#include "SnowLeopardEngine/Core/Log/LogTypeDef.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -9,8 +12,8 @@ namespace SnowLeopardEngine
     {
         std::vector<spdlog::sink_ptr> logSinks;
 
-        logSinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("SnowLeopardEngine.log", true));
         logSinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+        logSinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("SnowLeopardEngine.log", true));
 
         logSinks[0]->set_pattern("%^[%T] %n: %v%$");
         logSinks[1]->set_pattern("[%T] [%l] %n: %v");
@@ -35,5 +38,15 @@ namespace SnowLeopardEngine
         m_CoreLogger->info("[LogSystem] Shutting Down...");
         spdlog::shutdown();
         m_State = SystemState::ShutdownOk;
+    }
+
+    void LogSystem::TriggerLogEvent(LogRegion region, LogLevel level, std::string_view msg)
+    {
+        LogEvent event(region, level, msg.data());
+        if (g_EngineContext->EventSys.GetInstance() != nullptr &&
+            g_EngineContext->EventSys->GetState() == SystemState::InitOk)
+        {
+            TriggerEvent(event);
+        }
     }
 } // namespace SnowLeopardEngine

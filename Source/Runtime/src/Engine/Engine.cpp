@@ -1,4 +1,5 @@
 #include "SnowLeopardEngine/Engine/Engine.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
@@ -17,9 +18,6 @@ namespace SnowLeopardEngine
         // Init audio system
         g_EngineContext->AudioSys.Init();
 
-        // Init physics system
-        g_EngineContext->PhysicsSys.Init();
-
         // Init window system
         WindowSystemInitInfo windowSysInitInfo {};
         windowSysInitInfo.Window = initInfo.Window;
@@ -31,11 +29,23 @@ namespace SnowLeopardEngine
         // Init scene manager
         g_EngineContext->SceneMngr.Init();
 
+        // Init project manager
+        g_EngineContext->ProjectMngr.Init();
+
+        // Init physics system
+        g_EngineContext->PhysicsSys.Init();
+
         // Init render system
         g_EngineContext->RenderSys.Init();
 
+        // Init gui system
+        g_EngineContext->GUISys.Init();
+
         // Init camera system
         g_EngineContext->CameraSys.Init();
+
+        // Init c# scripting system
+        g_EngineContext->CSharpScriptingSys.Init();
 
         SNOW_LEOPARD_CORE_INFO("[Engine] Initialized");
 
@@ -82,9 +92,14 @@ namespace SnowLeopardEngine
             // Tick Rendering
             g_EngineContext->RenderSys->OnTick(deltaTime);
 
+            // Tick GUI
+            g_EngineContext->GUISys->OnTick(deltaTime);
+
             // Present
             g_EngineContext->RenderSys->Present();
         }
+
+        SNOW_LEOPARD_PROFILE_END_OF_FRAME
     }
 
     void Engine::FixedTickOneFrame()
@@ -112,13 +127,16 @@ namespace SnowLeopardEngine
             lifeTime->OnUnload();
         }
 
+        g_EngineContext->CSharpScriptingSys.Shutdown();
         g_EngineContext->CameraSys.Shutdown();
+        g_EngineContext->GUISys.Shutdown();
         g_EngineContext->RenderSys.Shutdown();
+        g_EngineContext->PhysicsSys.Shutdown();
+        g_EngineContext->ProjectMngr.Shutdown();
         g_EngineContext->SceneMngr->OnUnload();
         g_EngineContext->SceneMngr.Shutdown();
         g_EngineContext->InputSys.Shutdown();
         g_EngineContext->WindowSys.Shutdown();
-        g_EngineContext->PhysicsSys.Shutdown();
         g_EngineContext->AudioSys.Shutdown();
         g_EngineContext->EventSys.Shutdown();
         g_EngineContext->LogSys.Shutdown();

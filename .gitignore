@@ -2,6 +2,9 @@
 .xmake/
 build/
 
+# configs
+.config/
+
 # VS Code
 .vscode/
 
@@ -17,3 +20,6 @@ CMakeLists.txt
 
 # Useless Deps
 Deps/SPhysX-Cross/
+
+# Solutions
+*.sln

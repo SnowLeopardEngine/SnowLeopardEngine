@@ -5,12 +5,18 @@
 
 namespace SnowLeopardEngine::Editor
 {
+    struct PanelManagerInitInfo
+    {
+        std::string ProjectFilePath;
+    };
+
     class PanelManager
     {
     public:
-        static void Init();
+        static void Init(const PanelManagerInitInfo& initInfo);
         static void OnFixedTick();
         static void OnTick(float deltaTime);
+        static void Shutdown();
 
     private:
         static std::vector<Ref<PanelBase>> s_Panels;

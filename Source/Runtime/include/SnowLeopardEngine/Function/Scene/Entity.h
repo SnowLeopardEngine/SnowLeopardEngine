@@ -54,11 +54,24 @@ namespace SnowLeopardEngine
 
         operator entt::entity() const { return m_EntityHandle; }
 
-        operator uint32_t() const { return (uint32_t)m_EntityHandle; }
+        operator uint32_t() const { return static_cast<uint32_t>(m_EntityHandle); }
 
-        CoreUUID GetCoreUUID() { return GetComponent<IDComponent>().Id; }
+        // helper functions (getters)
 
+        CoreUUID           GetCoreUUID() { return GetComponent<IDComponent>().Id; }
         const std::string& GetName() { return GetComponent<NameComponent>().Name; }
+        const std::string& GetTag() { return GetComponent<TagComponent>().TagValue; }
+        Layer              GetLayer() { return GetComponent<LayerComponent>().LayerValue; }
+        bool               IsEnabled() { return GetComponent<EntityStatusComponent>().IsEnabled; }
+        bool               IsStatic() { return GetComponent<EntityStatusComponent>().IsStatic; }
+
+        // helper functions (setters)
+
+        void SetName(const std::string& name) { GetComponent<NameComponent>().Name = name; } // TODO: Validate
+        void SetTag(const std::string& tag) { GetComponent<TagComponent>().TagValue = tag; } // TODO: Validate
+        void SetLayer(Layer layer) { GetComponent<LayerComponent>().LayerValue = layer; }    // TODO: Validate
+        void SetIsEnabled(bool isEnabled) { GetComponent<EntityStatusComponent>().IsEnabled = isEnabled; }
+        void SetIsStatic(bool isStatic) { GetComponent<EntityStatusComponent>().IsStatic = isStatic; }
 
         void SetParent(Entity& parent)
         {
@@ -92,7 +105,7 @@ namespace SnowLeopardEngine
         bool operator!=(const Entity& other) const { return !(*this == other); }
 
     private:
-        entt::entity m_EntityHandle {entt::null};
-        LogicScene*  m_Scene = nullptr;
+        entt::entity m_EntityHandle = entt::null;
+        LogicScene*  m_Scene        = nullptr;
     };
 } // namespace SnowLeopardEngine

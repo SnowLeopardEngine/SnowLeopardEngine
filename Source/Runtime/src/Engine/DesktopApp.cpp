@@ -1,10 +1,10 @@
 #include "SnowLeopardEngine/Engine/DesktopApp.h"
 #include "SnowLeopardEngine/Core/Base/Macro.h"
-#include "SnowLeopardEngine/Core/Event/EventUtil.h"
 #include "SnowLeopardEngine/Core/Event/WindowEvents.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 
 namespace SnowLeopardEngine
 {
@@ -28,7 +28,7 @@ namespace SnowLeopardEngine
 
         // subscribe events
         Subscribe(m_WindowCloseHandler);
-        Subscribe(m_WindowResizeHandler);
+        Subscribe(m_WindowResizeHandler);      
 
         m_IsRunning = true;
 
@@ -54,6 +54,7 @@ namespace SnowLeopardEngine
             m_Timer.Start();
             float dt        = m_Timer.GetDeltaTime();
             Time::DeltaTime = dt;
+            Time::ElapsedTime += dt;
 
             // Fixed Tick
             fixedTimer += dt;
@@ -98,6 +99,9 @@ namespace SnowLeopardEngine
         auto h = e.GetHeight();
 
         SNOW_LEOPARD_CORE_ASSERT(w != 0 && h != 0, "[App] Window size must be greater than (0, 0)");
-        g_EngineContext->RenderSys->GetAPI()->UpdateViewport(0, 0, w, h);
+        g_EngineContext->RenderSys->UpdateViewport({
+            .Offset = {.X = 0, .Y = 0},
+            .Extent = {.Width = static_cast<uint32_t>(w), .Height = static_cast<uint32_t>(h)},
+        });
     }
 } // namespace SnowLeopardEngine
