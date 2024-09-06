@@ -43,7 +43,7 @@ namespace SnowLeopardEngine
         }
         else
         {
-            return glm::ortho(0.0f, camera.ViewportWidth, camera.ViewportHeight, 0.0f, -1.0f, 1.0f);
+            return glm::ortho(0.0f, camera.ViewportWidth, 0.0f, camera.ViewportHeight, -1.0f, 1.0f);
         }
     }
 } // namespace SnowLeopardEngine

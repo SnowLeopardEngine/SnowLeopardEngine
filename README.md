@@ -23,15 +23,15 @@ This project is a group project of COMP5530M(23/24 Group Project, 37449), Univer
 
 Group Members:
 
-| Name         | Responsibility                                                           |
-| ------------ | ------------------------------------------------------------------------ |
-| Kexuan Zhang | Leader. Architecture, Core Systems, Rendering, Gameplay Foundations, GUI |
-| Ziyu Min     | Associate Leader. TODO                                                   |
-| Jubiao Lin   | TODO                                                                     |
-| Simiao Wang  | TODO                                                                     |
-| Ruofan He    | TODO                                                                     |
-| Haodong Lin  | TODO                                                                     |
-| Yanni Ma     | TODO                                                                     |
+| Name         | Responsibility                                                       |
+| ------------ | -------------------------------------------------------------------- |
+| Kexuan Zhang | Leader. Architecture, Core Systems, Rendering, Editor, Audio, Report |
+| Ziyu Min     | Associate Leader. Rendering, Shaders, Report                         |
+| Jubiao Lin   | Physics, In-Game GUI, Poster                                         |
+| Simiao Wang  | Physics, Poster, Showcase Video                                      |
+| Ruofan He    | GamePlay (Path-Finding)                                              |
+| Haodong Lin  | Animation                                                            |
+| Yanni Ma     | Editor                                                               |
 
 ## Features
 TODO

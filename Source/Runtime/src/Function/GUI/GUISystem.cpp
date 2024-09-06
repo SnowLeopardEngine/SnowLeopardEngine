@@ -29,38 +29,50 @@ namespace SnowLeopardEngine
             return;
         }
 
-        glm::vec2 mousePos;
-        bool      leftMouseButtonDown = false;
-        bool      leftMouseButtonUp   = false;
+        auto mousePos = g_EngineContext->InputSys->GetMousePositionFlipY();
+
+        bool leftMouseButton   = false;
+        bool leftMouseButtonUp = false;
 
         auto& registry = m_Scene->GetRegistry();
 
         // Tick Buttons
-        if (g_EngineContext->InputSys->GetMouseButtonDown(MouseCode::ButtonLeft))
+        if (g_EngineContext->InputSys->GetMouseButton(MouseCode::ButtonLeft))
         {
-            leftMouseButtonDown = true;
-            mousePos            = g_EngineContext->InputSys->GetMousePosition();
+            leftMouseButton = true;
         }
 
         if (g_EngineContext->InputSys->GetMouseButtonUp(MouseCode::ButtonLeft))
         {
             leftMouseButtonUp = true;
-            mousePos          = g_EngineContext->InputSys->GetMousePosition();
         }
 
-        registry.view<UI::RectTransformComponent, UI::ButtonComponent>().each(
-            [&registry, mousePos, leftMouseButtonDown, leftMouseButtonUp](
-                entt::entity entity, UI::RectTransformComponent& rect, UI::ButtonComponent& button) {
-                glm::vec2 tl = glm::vec2(rect.Pos) - glm::vec2(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y);
-
-                if (mousePos.x >= tl.x && mousePos.x < tl.x + rect.Size.x && mousePos.y >= tl.y &&
-                    mousePos.y < tl.y + rect.Size.y)
+        registry.view<UI::RectTransformComponent, EntityStatusComponent, UI::ButtonComponent>().each(
+            [&registry, mousePos, leftMouseButton, leftMouseButtonUp](entt::entity                entity,
+                                                                      UI::RectTransformComponent& rect,
+                                                                      EntityStatusComponent&      status,
+                                                                      UI::ButtonComponent&        button) {
+                if (!status.IsEnabled)
                 {
-                    if (leftMouseButtonDown)
+                    return;
+                }
+                glm::vec2 bl = glm::vec2(rect.Pos) - glm::vec2(rect.Pivot.x * rect.Size.x, rect.Pivot.y * rect.Size.y);
+
+                if (mousePos.x >= bl.x && mousePos.x < bl.x + rect.Size.x && mousePos.y >= bl.y &&
+                    mousePos.y < bl.y + rect.Size.y)
+                {
+                    if (leftMouseButton)
                     {
                         if (button.TintType == UI::ButtonTintType::Color)
                         {
                             button.TintColor.Current = button.TintColor.Pressed;
+                        }
+                    }
+                    else
+                    {
+                        if (button.TintType == UI::ButtonTintType::Color)
+                        {
+                            button.TintColor.Current = button.TintColor.Hovered;
                         }
                     }
 
@@ -69,6 +81,13 @@ namespace SnowLeopardEngine
                         // Trigger button clicked event
                         UIButtonClickedEvent buttonClickedEvent(entity);
                         TriggerEvent(buttonClickedEvent);
+                    }
+                }
+                else
+                {
+                    if (button.TintType == UI::ButtonTintType::Color)
+                    {
+                        button.TintColor.Current = button.TintColor.Normal;
                     }
                 }
 

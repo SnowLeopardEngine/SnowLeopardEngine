@@ -17,7 +17,8 @@
         "Resources": [],
         "PipelineStates": {},
         "Tags": {
-            "RenderQueue": "Geometry"
+            "RenderQueue": "Geometry",
+            "LightingMode": "Forward"
         },
         "Keywords": [
             "FORWARD_LIGHTING"

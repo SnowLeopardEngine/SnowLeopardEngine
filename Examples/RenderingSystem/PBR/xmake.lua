@@ -1,4 +1,4 @@
--- target defination, name: RenderingSystemPBRIBL
+-- target defination, name: RenderingSystem-PBR
 target("RenderingSystem-PBR")
     -- set target kind: executable
     set_kind("binary")

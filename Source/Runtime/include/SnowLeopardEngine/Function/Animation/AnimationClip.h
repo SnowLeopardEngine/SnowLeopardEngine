@@ -23,6 +23,7 @@ namespace SnowLeopardEngine
         ozz::vector<ozz::math::SoaTransform> LocalTransforms;
         ozz::vector<ozz::math::Float4x4>     ModelMatrices;
         ozz::vector<ozz::math::Float4x4>     SkinningMatrices;
+        bool                                 IsLoop = true;
 
         bool LoadFromOzzFiles(const std::string& skeletonPath, const std::string& animationPath);
 

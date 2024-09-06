@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Project/Project.h"
+#include "SnowLeopardEngine/Function/Rendering/Material.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 
@@ -78,6 +79,44 @@ namespace SnowLeopardEngine
             input(dzProject);
 
             project->SetInfo(dzProject);
+
+            return true;
+        }
+
+        bool Serialize(Material* material, const std::filesystem::path& dstPath)
+        {
+            std::ofstream os(dstPath.generic_string());
+            if (!os.is_open())
+            {
+                SNOW_LEOPARD_CORE_ERROR("[MaterialSerializer] Failed to open output stream at {0}!",
+                                        dstPath.generic_string());
+                return false;
+            }
+
+            cereal::JSONOutputArchive output(os);
+
+            output(material->GetDefine());
+
+            return true;
+        }
+
+        bool Deserialize(Material* project, const std::filesystem::path& srcPath)
+        {
+            std::ifstream is(srcPath.generic_string());
+
+            if (!is.is_open())
+            {
+                SNOW_LEOPARD_CORE_ERROR("[MaterialSerializer] Failed to open input stream at {0}!",
+                                        srcPath.generic_string());
+                return false;
+            }
+
+            cereal::JSONInputArchive input(is);
+
+            DzMaterial dzMaterial;
+            input(dzMaterial);
+
+            project->SetDefine(dzMaterial);
 
             return true;
         }

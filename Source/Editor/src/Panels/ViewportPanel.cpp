@@ -16,35 +16,8 @@ namespace SnowLeopardEngine::Editor
     void ViewportPanel::Init(const PanelCommonInitInfo& initInfo)
     {
         REGISTER_TYPE(EditorCameraScript);
-        
-        // Create RT
 
-        // Color Attachment 0 - main target color
-        FrameBufferTextureDesc rtColorAttachment0Desc = {};
-        rtColorAttachment0Desc.TextureFormat          = FrameBufferTextureFormat::RGBA8;
-
-        // Color Attachment 1 - picking objects, back buffer hack
-        FrameBufferTextureDesc rtColorAttachment1Desc = {};
-        rtColorAttachment1Desc.TextureFormat          = FrameBufferTextureFormat::RED_INTEGER;
-
-        // Depth Attachment
-        FrameBufferTextureDesc rtDepthAttachmentDesc;
-        rtDepthAttachmentDesc.TextureFormat = FrameBufferTextureFormat::DEPTH24_STENCIL8;
-
-        FrameBufferAttachmentDesc rtAttachmentDesc = {};
-        rtAttachmentDesc.Attachments.emplace_back(rtColorAttachment0Desc);
-        rtAttachmentDesc.Attachments.emplace_back(rtColorAttachment1Desc);
-        rtAttachmentDesc.Attachments.emplace_back(rtDepthAttachmentDesc);
-
-        FrameBufferDesc rtDesc = {};
-        rtDesc.Width           = m_ViewportSize.x;
-        rtDesc.Height          = m_ViewportSize.y;
-        rtDesc.AttachmentDesc  = rtAttachmentDesc;
-
-        m_RenderTarget = FrameBuffer::Create(rtDesc);
-
-        // Set RT
-        g_EngineContext->RenderSys->SetRenderTarget(m_RenderTarget);
+        // TODO: Set RT
     }
 
     void ViewportPanel::OnFixedTick()
@@ -66,9 +39,9 @@ namespace SnowLeopardEngine::Editor
         // Tick logic
         g_EngineContext->SceneMngr->OnTick(deltaTime);
 
-        m_RenderTarget->Bind();
-        m_RenderTarget->ClearColorAttachment(1, -1); // Clear RED buffer (picking buffer)
-        m_RenderTarget->Unbind();
+        // m_RenderTarget->Bind();
+        // m_RenderTarget->ClearColorAttachment(1, -1); // Clear RED buffer (picking buffer)
+        // m_RenderTarget->Unbind();
 
         if (!g_EngineContext->WindowSys->IsMinimized())
         {
@@ -85,22 +58,22 @@ namespace SnowLeopardEngine::Editor
         ImGui::EndChild();
 
         ImGui::BeginChild("ViewportMain", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar);
-        uint32_t colorAttachment0 = m_RenderTarget->GetColorAttachmentID(0);
-        if (colorAttachment0)
-        {
-            // update viewport size & frame buffer size
-            auto      size         = ImGui::GetContentRegionAvail();
-            glm::vec2 viewportSize = {size.x, size.y};
+        // uint32_t colorAttachment0 = m_RenderTarget->GetColorAttachmentID(0);
+        // if (colorAttachment0)
+        // {
+        //     // update viewport size & frame buffer size
+        //     auto      size         = ImGui::GetContentRegionAvail();
+        //     glm::vec2 viewportSize = {size.x, size.y};
 
-            if (m_ViewportSize != viewportSize)
-            {
-                m_RenderTarget->Resize(viewportSize.x, viewportSize.y);
-                m_ViewportSize = viewportSize;
-            }
+        //     if (m_ViewportSize != viewportSize)
+        //     {
+        //         m_RenderTarget->Resize(viewportSize.x, viewportSize.y);
+        //         m_ViewportSize = viewportSize;
+        //     }
 
-            // Render Framebuffer to an image.
-            ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<intptr_t>(colorAttachment0)), size, {0, 1}, {1, 0});
-        }
+        //     // Render Framebuffer to an image.
+        //     ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<intptr_t>(colorAttachment0)), size, {0, 1}, {1, 0});
+        // }
 
         if (m_ViewportMode == ViewportMode::Edit)
         {
@@ -119,14 +92,14 @@ namespace SnowLeopardEngine::Editor
             if (mousePos.x >= 0 && mousePos.x < viewportTotalSize.x && mousePos.y >= 0 &&
                 mousePos.y < viewportTotalSize.y)
             {
-                // Get picking buffer pixel value (entity ID)
-                m_RenderTarget->Bind();
-                int entityID = m_RenderTarget->ReadPixelRedOnly(1, mousePos.x, mousePos.y);
-                m_HoveredEntity =
-                    (entityID == -1 || m_GuizmoOperation == -1) ?
-                        Entity() :
-                        Entity(static_cast<entt::entity>(entityID), g_EngineContext->SceneMngr->GetActiveScene().get());
-                m_RenderTarget->Unbind();
+                // // Get picking buffer pixel value (entity ID)
+                // m_RenderTarget->Bind();
+                // int entityID = m_RenderTarget->ReadPixelRedOnly(1, mousePos.x, mousePos.y);
+                // m_HoveredEntity =
+                //     (entityID == -1 || m_GuizmoOperation == -1) ?
+                //         Entity() :
+                //         Entity(static_cast<entt::entity>(entityID), g_EngineContext->SceneMngr->GetActiveScene().get());
+                // m_RenderTarget->Unbind();
             }
 
             m_IsWindowHovered = ImGui::IsWindowHovered();

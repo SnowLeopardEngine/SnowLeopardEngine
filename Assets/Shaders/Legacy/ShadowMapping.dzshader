@@ -14,7 +14,8 @@
             "CullFaceMode": "Front"
         },
         "Tags": {
-            "RenderQueue": "Shadow"
+            "RenderQueue": "Shadow",
+            "LightingMode": "Forward"
         },
         "Keywords": [],
         "Passes": [

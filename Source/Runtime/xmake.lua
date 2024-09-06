@@ -1,6 +1,6 @@
 -- add requirements
-add_requires("spdlog", "fmt 9.1.0", "glfw", "glm", "stduuid", "entt v3.10.3")
-add_requires("miniaudio", "stb", "tracy", "magic_enum", "cereal", "shaderc", "spirv-cross", "scoral", "cryptopp")
+add_requires("spdlog", "fmt 9.1.0", "glfw", "glm", "stduuid", "entt v3.10.3", "assimp")
+add_requires("miniaudio", "stb", "tracy", "magic_enum", "cereal", "shaderc", "spirv-cross", "scoral", "cryptopp", "fg", "freetype")
 add_requires("sphysx-cross", { configs = { debug = is_mode("debug") }})
 add_requires("ozz-animation 0.14.2", { configs = { debug = is_mode("debug") }})
 
@@ -28,6 +28,7 @@ target("SnowLeopardEngine")
     add_packages("glm", { public = true })
     add_packages("stduuid", { public = true })
     add_packages("entt", { public = true })
+    add_packages("assimp", { public = true })
     add_packages("miniaudio", { public = true })
     add_packages("stb", { public = true })
     add_packages("tracy", { public = true })
@@ -37,11 +38,14 @@ target("SnowLeopardEngine")
     add_packages("spirv-cross", { public = true })
     add_packages("scoral", { public = true })
     add_packages("cryptopp", { public = true })
+    add_packages("fg", { public = true })
+    add_packages("freetype", { public = true })
     add_packages("ozz-animation", { public = true })
     add_packages("sphysx-cross", { public = true })
 
     -- add dependencies (inside project)
     add_deps("glad")
+    add_deps("FastNoiseLite")
 
     -- defines
     add_defines("PX_PHYSX_STATIC_LIB") -- force static lib https://github.com/NVIDIAGameWorks/PhysX/issues/260

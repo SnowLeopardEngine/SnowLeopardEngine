@@ -1,5 +1,7 @@
 #include "SnowLeopardEngine/Platform/GLFW/GLFWWindow.h"
+#include "GLFW/glfw3.h"
 #include "SnowLeopardEngine/Core/Event/WindowEvents.h"
+#include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 namespace SnowLeopardEngine
@@ -13,10 +15,12 @@ namespace SnowLeopardEngine
 
     void GLFWWindow::Init(const WindowInitInfo& initInfo)
     {
-        m_Data.Title     = initInfo.Title;
-        m_Data.Width     = initInfo.Width;
-        m_Data.Height    = initInfo.Height;
-        m_Data.WindowSys = this;
+        m_Data.Title      = initInfo.Title;
+        m_Data.Width      = initInfo.Width;
+        m_Data.Height     = initInfo.Height;
+        m_Data.Resizable  = initInfo.Resizable;
+        m_Data.Fullscreen = initInfo.Fullscreen;
+        m_Data.WindowSys  = this;
 
         SNOW_LEOPARD_CORE_INFO("[GLFWWindow] Creating window, name: {0}, resolution: {1} x {2}",
                                initInfo.Title,
@@ -39,8 +43,8 @@ namespace SnowLeopardEngine
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MINOR);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-        // MSAA
-        glfwWindowHint(GLFW_SAMPLES, 4);
+        // Resizable?
+        glfwWindowHint(GLFW_RESIZABLE, initInfo.Resizable);
 
 #if SNOW_LEOPARD_PLATFORM_DARWIN
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
@@ -49,11 +53,27 @@ namespace SnowLeopardEngine
         // High DPI
         glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 #endif
-        m_Window = glfwCreateWindow(static_cast<int>(initInfo.Width),
-                                    static_cast<int>(initInfo.Height),
-                                    m_Data.Title.c_str(),
-                                    nullptr,
-                                    nullptr);
+
+        // Get monitor
+        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+
+        // Get vid mode
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+        // Fullscreen?
+        if (initInfo.Fullscreen)
+        {
+            m_Window = glfwCreateWindow(mode->width, mode->height, m_Data.Title.c_str(), monitor, nullptr);
+        }
+        else
+        {
+            m_Window = glfwCreateWindow(static_cast<int>(initInfo.Width),
+                                        static_cast<int>(initInfo.Height),
+                                        m_Data.Title.c_str(),
+                                        nullptr,
+                                        nullptr);
+        }
+
         ++s_glfwWindowCount;
 
 #if !SNOW_LEOPARD_PLATFORM_DARWIN
@@ -62,9 +82,6 @@ namespace SnowLeopardEngine
         glfwGetFramebufferSize(m_Window, &frameBufferWidth, &frameBufferHeight);
         m_Data.Width  = frameBufferWidth;
         m_Data.Height = frameBufferHeight;
-        
-        // Get vid mode
-        const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
         int xPos = (mode->width - m_Data.Width) / 2;
         int yPos = (mode->height - m_Data.Height) / 2;
@@ -136,6 +153,7 @@ namespace SnowLeopardEngine
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
             WindowData& data = *static_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
+            g_EngineContext->InputSys->SetMousePositionFlipY(glm::vec2(xPos, data.Height - yPos));
             g_EngineContext->InputSys->SetMousePosition(glm::vec2(xPos, yPos));
         });
 
@@ -171,7 +189,11 @@ namespace SnowLeopardEngine
 
     void GLFWWindow::MakeCurrentContext() { glfwMakeContextCurrent(m_Window); }
 
-    void GLFWWindow::SwapBuffers() { glfwSwapBuffers(m_Window); }
+    void GLFWWindow::SwapBuffers()
+    {
+        glfwSwapBuffers(m_Window);
+        SNOW_LEOPARD_PROFILE_GL_COLLECT;
+    }
 
     void GLFWWindow::SetHideCursor(bool hide)
     {
