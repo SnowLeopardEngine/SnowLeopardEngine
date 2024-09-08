@@ -46,7 +46,7 @@ namespace SnowLeopardEngine
     {
         assert(cubemap && *cubemap);
 
-        const auto [frameUniform] = blackboard.get<FrameData>();
+        const auto frameUniform = blackboard.get<FrameData>().FrameUniform;
 
         const auto& gBuffer = blackboard.get<GBufferData>();
         const auto  extent  = fg.getDescriptor<FrameGraphTexture>(target).Extent;

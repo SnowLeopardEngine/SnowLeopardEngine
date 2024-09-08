@@ -21,9 +21,9 @@ namespace SnowLeopardEngine
 
     void GrassPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard, const RenderableGroups& groups)
     {
-        const auto [frameUniform] = blackboard.get<FrameData>();
-        const auto& gBuffer       = blackboard.get<GBufferData>();
-        const auto& extent        = fg.getDescriptor<FrameGraphTexture>(gBuffer.Depth).Extent;
+        const auto  frameUniform = blackboard.get<FrameData>().FrameUniform;
+        const auto& gBuffer      = blackboard.get<GBufferData>();
+        const auto& extent       = fg.getDescriptor<FrameGraphTexture>(gBuffer.Depth).Extent;
 
         blackboard.add<GrassData>() = fg.addCallbackPass<GrassData>(
             "Grass Pass",

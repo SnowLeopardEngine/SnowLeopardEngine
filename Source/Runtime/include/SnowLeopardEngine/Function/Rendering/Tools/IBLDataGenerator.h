@@ -5,6 +5,8 @@
 
 namespace SnowLeopardEngine
 {
+    class RenderContext;
+
     class IBLDataGenerator
     {
     public:

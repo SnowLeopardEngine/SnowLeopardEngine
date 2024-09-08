@@ -24,7 +24,7 @@ namespace SnowLeopardEngine
                                    const Extent2D&       resolution,
                                    std::span<Renderable> uiRenderables)
     {
-        const auto [frameUniform] = blackboard.get<FrameData>();
+        const auto frameUniform = blackboard.get<FrameData>().FrameUniform;
 
         blackboard.add<InGameGUIData>() = fg.addCallbackPass<InGameGUIData>(
             "In-Game GUI Pass",

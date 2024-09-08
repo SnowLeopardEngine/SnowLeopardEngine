@@ -45,8 +45,8 @@ namespace SnowLeopardEngine
 
     FrameGraphResource DeferredLightingPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard)
     {
-        const auto [frameUniform] = blackboard.get<FrameData>();
-        const auto [lightUniform] = blackboard.get<LightData>();
+        const auto frameUniform = blackboard.get<FrameData>().FrameUniform;
+        const auto lightUniform = blackboard.get<LightData>().LightUniform;
 
         const auto& shadow  = blackboard.get<ShadowData>();
         const auto& gBuffer = blackboard.get<GBufferData>();
