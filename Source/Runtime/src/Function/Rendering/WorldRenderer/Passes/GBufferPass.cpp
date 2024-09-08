@@ -22,7 +22,7 @@ namespace SnowLeopardEngine
                                  const Extent2D&         resolution,
                                  const RenderableGroups& groups)
     {
-        const auto [frameUniform] = blackboard.get<FrameData>();
+        const auto frameUniform = blackboard.get<FrameData>().FrameUniform;
 
         blackboard.add<GBufferData>() = fg.addCallbackPass<GBufferData>(
             "GBuffer Pass",

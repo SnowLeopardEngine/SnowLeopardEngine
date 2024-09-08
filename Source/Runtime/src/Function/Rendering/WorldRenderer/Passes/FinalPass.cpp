@@ -40,7 +40,7 @@ namespace SnowLeopardEngine
 
     void FinalPass::Compose(FrameGraph& fg, const FrameGraphBlackboard& blackboard)
     {
-        const auto [frameUniform] = blackboard.get<FrameData>();
+        const auto frameUniform = blackboard.get<FrameData>().FrameUniform;
 
         auto output = blackboard.get<SceneColorData>().LDR;
 

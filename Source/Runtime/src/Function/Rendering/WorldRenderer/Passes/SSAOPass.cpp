@@ -24,7 +24,7 @@ namespace SnowLeopardEngine
 
     void SSAOPass::AddToGraph(FrameGraph& fg, FrameGraphBlackboard& blackboard)
     {
-        const auto [frameUniform] = blackboard.get<FrameData>();
+        const auto frameUniform = blackboard.get<FrameData>().FrameUniform;
 
         const auto& gBuffer = blackboard.get<GBufferData>();
         const auto  extent  = fg.getDescriptor<FrameGraphTexture>(gBuffer.Depth).Extent;

@@ -3,7 +3,7 @@
 #include <string>
 #include <stdexcept>
 #include <vector>
-#include <cmath>
+#include <cfloat>
 #include <cstring>
 #include <stdexcept>
 #include <fstream>

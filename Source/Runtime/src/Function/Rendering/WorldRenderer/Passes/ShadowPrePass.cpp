@@ -154,8 +154,8 @@ namespace SnowLeopardEngine
                                                      uint32_t                          cascadeIdx)
     {
         assert(cascadeIdx < kNumCascades);
-        const auto name            = "CSM #" + std::to_string(cascadeIdx);
-        const auto& [frameUniform] = blackboard.get<FrameData>();
+        const auto name         = "CSM #" + std::to_string(cascadeIdx);
+        const auto frameUniform = blackboard.get<FrameData>().FrameUniform;
 
         struct Data
         {
