@@ -19,6 +19,8 @@
     </a>
 </p>
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/z9oA2pugC6s?si=DHXFH37UxnmOAiYL" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 This project is a group project of COMP5530M(23/24 Group Project, 37449), University of Leeds.
 
 Group Members:
@@ -34,7 +36,15 @@ Group Members:
 | Yanni Ma     | Editor                                                               |
 
 ## Features
-TODO
+- Modern OpenGL (4.6)                                                                    
+- Unity-like Shaders (DzShader)
+- PhysX for Physics Simulation
+- PBR Rendering
+- Post-processing Effects
+- Skeletal Animations
+- Simple In-game GUI
+
+And more!
 
 ## Examples
 TODO
