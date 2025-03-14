@@ -19,7 +19,7 @@
     </a>
 </p>
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/z9oA2pugC6s?si=DHXFH37UxnmOAiYL" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+[![Youtube Preview](https://img.youtube.com/vi/z9oA2pugC6s/maxresdefault.jpg)](https://www.youtube.com/watch?v=z9oA2pugC6s)
 
 This project is a group project of COMP5530M(23/24 Group Project, 37449), University of Leeds.
 
