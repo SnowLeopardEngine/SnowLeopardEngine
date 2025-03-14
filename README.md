@@ -6,11 +6,11 @@
 
 <p align="center">
     <a href="https://github.com/SnowLeopardEngine/SnowLeopardEngine/actions" alt="CI-Windows">
-        <img src="https://img.shields.io/github/actions/workflow/status/SnowLeopardEngine/SnowLeopardEngine/BuildWindows.yml?branch=master&label=CI-Windows&logo=github" /></a>
+        <img src="https://img.shields.io/github/actions/workflow/status/SnowLeopardEngine/SnowLeopardEngine/BuildWindows.yml?branch=main&label=CI-Windows&logo=github" /></a>
     <a href="https://github.com/SnowLeopardEngine/SnowLeopardEngine/actions" alt="CI-Linux">
-        <img src="https://img.shields.io/github/actions/workflow/status/SnowLeopardEngine/SnowLeopardEngine/BuildLinux.yml?branch=master&label=CI-Linux&logo=github" /></a>
+        <img src="https://img.shields.io/github/actions/workflow/status/SnowLeopardEngine/SnowLeopardEngine/BuildLinux.yml?branch=main&label=CI-Linux&logo=github" /></a>
     <a href="https://github.com/SnowLeopardEngine/SnowLeopardEngine/actions" alt="CI-MacOS">
-        <img src="https://img.shields.io/github/actions/workflow/status/SnowLeopardEngine/SnowLeopardEngine/BuildMacOS.yml?branch=master&label=CI-MacOS&logo=github" /></a>
+        <img src="https://img.shields.io/github/actions/workflow/status/SnowLeopardEngine/SnowLeopardEngine/BuildMacOS.yml?branch=main&label=CI-MacOS&logo=github" /></a>
     <a href="https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues" alt="GitHub Issues">
         <img src="https://img.shields.io/github/issues/SnowLeopardEngine/SnowLeopardEngine">
     </a>
