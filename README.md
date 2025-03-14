@@ -27,12 +27,12 @@ Group Members:
 
 | Name         | Responsibility                                                       |
 | ------------ | -------------------------------------------------------------------- |
-| Kexuan Zhang | Leader. Architecture, Core Systems, Rendering, Editor, Audio, Report |
+| [Kexuan Zhang](https://zzxzzk115.github.io/) | Leader. Architecture, Core Systems, Rendering, Editor, Audio, Report |
 | Ziyu Min     | Associate Leader. Rendering, Shaders, Report                         |
 | Jubiao Lin   | Physics, In-Game GUI, Poster                                         |
-| Simiao Wang  | Physics, Poster, Showcase Video                                      |
+| [Simiao Wang](https://wangsimiao2000.github.io/)  | Physics, Poster, Showcase Video                                      |
 | Ruofan He    | GamePlay (Path-Finding)                                              |
-| Haodong Lin  | Animation                                                            |
+| [Haodong Lin](https://leolanger.github.io/)  | Animation                                                            |
 | Yanni Ma     | Editor                                                               |
 
 ## Features
