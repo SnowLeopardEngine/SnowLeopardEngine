@@ -8,7 +8,7 @@ namespace SnowLeopardEngine
 {
     static uint32_t calculateCubeSize(const Texture& equirectangular)
     {
-        assert(equirectangular.GetType() == GL_TEXTURE_2D);
+        assert(equirectangular.GetType() == TextureType::Texture2D);
         const auto x = 8 * (glm::floor(2 * equirectangular.GetExtent().Height / glm::pi<float>() / 8));
         return Math::NextPowerOf2(x);
     }

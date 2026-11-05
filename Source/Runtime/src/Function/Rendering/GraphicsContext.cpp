@@ -18,7 +18,7 @@
 
 namespace SnowLeopardEngine
 {
-    std::map<GLchar, Character> g_Characters;
+    std::map<char, Character> g_Characters;
 
     static void GLMessageCallback(GLenum source,
                                   GLenum type,
@@ -203,8 +203,8 @@ namespace SnowLeopardEngine
             Character character = {texture,
                                    glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
                                    glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-                                   static_cast<GLuint>(face->glyph->advance.x)};
-            g_Characters.insert(std::pair<GLchar, Character>(c, character));
+                                   static_cast<uint32_t>(face->glyph->advance.x)};
+            g_Characters.insert(std::pair<char, Character>(c, character));
         }
 
         FT_Done_Face(face);

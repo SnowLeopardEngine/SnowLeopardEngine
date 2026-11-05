@@ -4,43 +4,47 @@
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
-#include <glad/glad.h>
-
 namespace SnowLeopardEngine
 {
-    enum class PixelFormat : GLenum
+    enum class PixelFormat : uint8_t
     {
-        Unknown = GL_NONE,
+        Unknown = 0,
 
-        R8_UNorm = GL_R8,
-        R32I     = GL_R32I,
+        R8_UNorm,
+        R32I,
 
-        RGB8_UNorm  = GL_RGB8,
-        RGBA8_UNorm = GL_RGBA8,
+        RGB8_UNorm,
+        RGBA8_UNorm,
 
-        RGB8_SNorm  = GL_RGB8_SNORM,
-        RGBA8_SNorm = GL_RGBA8_SNORM,
+        RGB8_SNorm,
+        RGBA8_SNorm,
 
-        R16F    = GL_R16F,
-        RG16F   = GL_RG16F,
-        RGB16F  = GL_RGB16F,
-        RGBA16F = GL_RGBA16F,
+        R16F,
+        RG16F,
+        RGB16F,
+        RGBA16F,
 
-        RGB32F = GL_RGB32F,
+        RGB32F,
 
-        RGBA32F = GL_RGBA32F,
+        RGBA32F,
 
-        RGBA32UI = GL_RGBA32UI,
+        RGBA32UI,
 
-        Depth16  = GL_DEPTH_COMPONENT16,
-        Depth24  = GL_DEPTH_COMPONENT24,
-        Depth32F = GL_DEPTH_COMPONENT32F
+        Depth16,
+        Depth24,
+        Depth32F
     };
 
-    enum class TextureType : GLenum
+    enum class TextureType : uint8_t
     {
-        Texture2D = GL_TEXTURE_2D,
-        CubeMap   = GL_TEXTURE_CUBE_MAP
+        Unknown = 0,
+        Texture1D,
+        Texture1DArray,
+        Texture2D,
+        Texture2DArray,
+        Texture3D,
+        CubeMap,
+        CubeMapArray
     };
 
     class Texture
@@ -58,7 +62,7 @@ namespace SnowLeopardEngine
 
         explicit operator bool() const;
 
-        GLenum GetType() const;
+        TextureType GetType() const;
 
         Extent2D    GetExtent() const;
         uint32_t    GetDepth() const;
@@ -67,21 +71,21 @@ namespace SnowLeopardEngine
         PixelFormat GetPixelFormat() const;
 
     private:
-        Texture(GLuint id,
-                GLenum type,
+        Texture(RenderHandle id,
+                TextureType  type,
                 PixelFormat,
                 Extent2D,
                 uint32_t depth,
                 uint32_t numMipLevels,
                 uint32_t numLayers);
 
-        explicit operator GLuint() const;
+        explicit operator RenderHandle() const;
 
     private:
-        GLuint m_Id {GL_NONE};
-        GLenum m_Type {GL_NONE};
+        RenderHandle m_Id {kNullHandle};
+        TextureType  m_Type {TextureType::Unknown};
 
-        GLuint m_View {GL_NONE};
+        RenderHandle m_View {kNullHandle};
 
         Extent2D m_Extent {0u};
         uint32_t m_Depth {0u};
@@ -91,25 +95,25 @@ namespace SnowLeopardEngine
         PixelFormat m_PixelFormat {PixelFormat::Unknown};
     };
 
-    enum class TexelFilter : GLenum
+    enum class TexelFilter : uint8_t
     {
-        Nearest = GL_NEAREST,
-        Linear  = GL_LINEAR
+        Nearest = 0,
+        Linear
     };
-    enum class MipmapMode : GLenum
+    enum class MipmapMode : uint8_t
     {
-        None    = GL_NONE,
-        Nearest = GL_NEAREST,
-        Linear  = GL_LINEAR
+        None = 0,
+        Nearest,
+        Linear
     };
 
-    enum class SamplerAddressMode : GLenum
+    enum class SamplerAddressMode : uint8_t
     {
-        Repeat            = GL_REPEAT,
-        MirroredRepeat    = GL_MIRRORED_REPEAT,
-        ClampToEdge       = GL_CLAMP_TO_EDGE,
-        ClampToBorder     = GL_CLAMP_TO_BORDER,
-        MirrorClampToEdge = GL_MIRROR_CLAMP_TO_EDGE
+        Repeat = 0,
+        MirroredRepeat,
+        ClampToEdge,
+        ClampToBorder,
+        MirrorClampToEdge
     };
 
     struct SamplerInfo

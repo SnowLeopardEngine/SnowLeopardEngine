@@ -13,7 +13,7 @@ namespace SnowLeopardEngine
 
     Buffer::~Buffer()
     {
-        if (m_Id != GL_NONE)
+        if (m_Id != kNullHandle)
             SNOW_LEOPARD_CORE_ERROR("Buffer leak: {0}", m_Id);
     }
 
@@ -27,12 +27,12 @@ namespace SnowLeopardEngine
         return *this;
     }
 
-    Buffer::operator bool() const { return m_Id != GL_NONE; }
+    Buffer::operator bool() const { return m_Id != kNullHandle; }
 
-    GLsizeiptr Buffer::GetSize() const { return m_Size; }
+    int64_t Buffer::GetSize() const { return m_Size; }
     bool       Buffer::IsMapped() const { return m_MappedMemory != nullptr; }
 
-    Buffer::Buffer(GLuint id, GLsizeiptr size) : m_Id(id), m_Size(size) {}
+    Buffer::Buffer(RenderHandle id, int64_t size) : m_Id(id), m_Size(size) {}
 
-    Buffer::operator GLuint() const { return m_Id; }
+    Buffer::operator RenderHandle() const { return m_Id; }
 } // namespace SnowLeopardEngine

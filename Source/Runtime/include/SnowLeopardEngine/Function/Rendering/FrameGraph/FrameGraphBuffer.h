@@ -9,7 +9,7 @@ namespace SnowLeopardEngine
     public:
         struct Desc
         {
-            GLsizeiptr Size;
+            int64_t Size;
         };
 
         // NOLINTBEGIN

@@ -5,9 +5,12 @@
 #include "SnowLeopardEngine/Function/Rendering/IndexBuffer.h"
 #include "SnowLeopardEngine/Function/Rendering/Material.h"
 #include "SnowLeopardEngine/Function/Rendering/VertexBuffer.h"
+#include "GLConversions.h"
 
 namespace SnowLeopardEngine
 {
+    using GL::ToGL;
+
     // @return {data type, number of components, normalize}
     std::tuple<GLenum, GLint, GLboolean> statAttribute(VertexAttribute::Type type)
     {
@@ -143,7 +146,7 @@ namespace SnowLeopardEngine
         return *this;
     }
 
-    Buffer RenderContext::CreateBuffer(GLsizeiptr size, const void* data)
+    Buffer RenderContext::CreateBuffer(int64_t size, const void* data)
     {
         GLuint buffer;
         glCreateBuffers(1, &buffer);
@@ -152,18 +155,18 @@ namespace SnowLeopardEngine
         return {buffer, size};
     }
 
-    VertexBuffer RenderContext::CreateVertexBuffer(GLsizei stride, int64_t capacity, const void* data)
+    VertexBuffer RenderContext::CreateVertexBuffer(int32_t stride, int64_t capacity, const void* data)
     {
         return VertexBuffer {CreateBuffer(stride * capacity, data), stride};
     }
 
     IndexBuffer RenderContext::CreateIndexBuffer(IndexType indexType, int64_t capacity, const void* data)
     {
-        const auto stride = static_cast<GLsizei>(indexType);
+        const auto stride = static_cast<int64_t>(indexType);
         return IndexBuffer {CreateBuffer(stride * capacity, data), indexType};
     }
 
-    GLuint RenderContext::GetVertexArray(const VertexAttributes& attributes)
+    RenderHandle RenderContext::GetVertexArray(const VertexAttributes& attributes)
     {
         assert(!attributes.empty());
 
@@ -181,9 +184,9 @@ namespace SnowLeopardEngine
         return it->second;
     }
 
-    GLuint RenderContext::CreateGraphicsProgram(const std::string&                vertSource,
-                                                const std::string&                fragSource,
-                                                const std::optional<std::string>& geomSource)
+    RenderHandle RenderContext::CreateGraphicsProgram(const std::string&                vertSource,
+                                                      const std::string&                fragSource,
+                                                      const std::optional<std::string>& geomSource)
     {
         return CreateShaderProgram({
             CreateShaderObject(GL_VERTEX_SHADER, vertSource),
@@ -192,7 +195,7 @@ namespace SnowLeopardEngine
         });
     }
 
-    GLuint RenderContext::CreateComputeProgram(const std::string& compSource)
+    RenderHandle RenderContext::CreateComputeProgram(const std::string& compSource)
     {
         return CreateShaderProgram({
             CreateShaderObject(GL_COMPUTE_SHADER, compSource),
@@ -240,42 +243,41 @@ namespace SnowLeopardEngine
 
         glTextureParameteri(
             texture.m_Id, GL_TEXTURE_MIN_FILTER, selectTextureMinFilter(samplerInfo.MinFilter, samplerInfo.MipmapMode));
-        glTextureParameteri(texture.m_Id, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(samplerInfo.MagFilter));
-        glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_S, static_cast<GLenum>(samplerInfo.AddressModeS));
-        glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_T, static_cast<GLenum>(samplerInfo.AddressModeT));
-        glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_R, static_cast<GLenum>(samplerInfo.AddressModeR));
+        glTextureParameteri(texture.m_Id, GL_TEXTURE_MAG_FILTER, ToGL(samplerInfo.MagFilter));
+        glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_S, ToGL(samplerInfo.AddressModeS));
+        glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_T, ToGL(samplerInfo.AddressModeT));
+        glTextureParameteri(texture.m_Id, GL_TEXTURE_WRAP_R, ToGL(samplerInfo.AddressModeR));
 
         glTextureParameterf(texture.m_Id, GL_TEXTURE_MAX_ANISOTROPY, samplerInfo.MaxAnisotropy);
 
         if (samplerInfo.CompareOperator.has_value())
         {
             glTextureParameteri(texture.m_Id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-            glTextureParameteri(
-                texture.m_Id, GL_TEXTURE_COMPARE_FUNC, static_cast<GLenum>(*samplerInfo.CompareOperator));
+            glTextureParameteri(texture.m_Id, GL_TEXTURE_COMPARE_FUNC, ToGL(*samplerInfo.CompareOperator));
         }
         glTextureParameterfv(texture.m_Id, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(samplerInfo.BorderColor));
 
         return *this;
     }
 
-    GLuint RenderContext::CreateSampler(const SamplerInfo& samplerInfo)
+    RenderHandle RenderContext::CreateSampler(const SamplerInfo& samplerInfo)
     {
         GLuint sampler {GL_NONE};
         glCreateSamplers(1, &sampler);
 
         glSamplerParameteri(
             sampler, GL_TEXTURE_MIN_FILTER, selectTextureMinFilter(samplerInfo.MinFilter, samplerInfo.MipmapMode));
-        glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(samplerInfo.MagFilter));
-        glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, static_cast<GLenum>(samplerInfo.AddressModeS));
-        glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, static_cast<GLenum>(samplerInfo.AddressModeT));
-        glSamplerParameteri(sampler, GL_TEXTURE_WRAP_R, static_cast<GLenum>(samplerInfo.AddressModeR));
+        glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, ToGL(samplerInfo.MagFilter));
+        glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, ToGL(samplerInfo.AddressModeS));
+        glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, ToGL(samplerInfo.AddressModeT));
+        glSamplerParameteri(sampler, GL_TEXTURE_WRAP_R, ToGL(samplerInfo.AddressModeR));
 
         glSamplerParameterf(sampler, GL_TEXTURE_MAX_ANISOTROPY, samplerInfo.MaxAnisotropy);
 
         if (samplerInfo.CompareOperator.has_value())
         {
             glSamplerParameteri(sampler, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-            glSamplerParameteri(sampler, GL_TEXTURE_COMPARE_FUNC, static_cast<GLenum>(*samplerInfo.CompareOperator));
+            glSamplerParameteri(sampler, GL_TEXTURE_COMPARE_FUNC, ToGL(*samplerInfo.CompareOperator));
         }
         glSamplerParameterfv(sampler, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(samplerInfo.BorderColor));
 
@@ -292,48 +294,52 @@ namespace SnowLeopardEngine
     }
 
     RenderContext&
-    RenderContext::Upload(Texture& texture, GLint mipLevel, glm::uvec2 dimensions, const ImageData& image)
+    RenderContext::Upload(Texture& texture, int32_t mipLevel, glm::uvec2 dimensions, const ImageData& image)
     {
         return Upload(texture, mipLevel, {dimensions, 0}, 0, 0, image);
     }
 
     RenderContext&
-    RenderContext::Upload(Texture& texture, GLint mipLevel, GLint face, glm::uvec2 dimensions, const ImageData& image)
+    RenderContext::Upload(
+        Texture& texture, int32_t mipLevel, int32_t face, glm::uvec2 dimensions, const ImageData& image)
     {
         return Upload(texture, mipLevel, {dimensions, 0}, face, 0, image);
     }
 
     RenderContext& RenderContext::Upload(Texture&          texture,
-                                         GLint             mipLevel,
+                                         int32_t           mipLevel,
                                          const glm::uvec3& dimensions,
-                                         GLint             face,
-                                         GLsizei           layer,
+                                         int32_t           face,
+                                         int32_t           layer,
                                          const ImageData&  image)
     {
         assert(texture && image.Pixels != nullptr);
 
+        const auto format   = ToGL(image.Format);
+        const auto dataType = ToGL(image.DataType);
+
         switch (texture.m_Type)
         {
-            case GL_TEXTURE_1D:
+            case TextureType::Texture1D:
                 glTextureSubImage1D(
-                    texture.m_Id, mipLevel, 0, dimensions.x, image.Format, image.DataType, image.Pixels);
+                    texture.m_Id, mipLevel, 0, dimensions.x, format, dataType, image.Pixels);
                 break;
-            case GL_TEXTURE_1D_ARRAY:
+            case TextureType::Texture1DArray:
                 glTextureSubImage2D(
-                    texture.m_Id, mipLevel, 0, 0, dimensions.x, layer, image.Format, image.DataType, image.Pixels);
+                    texture.m_Id, mipLevel, 0, 0, dimensions.x, layer, format, dataType, image.Pixels);
                 break;
-            case GL_TEXTURE_2D:
+            case TextureType::Texture2D:
                 glTextureSubImage2D(texture.m_Id,
                                     mipLevel,
                                     0,
                                     0,
                                     dimensions.x,
                                     dimensions.y,
-                                    image.Format,
-                                    image.DataType,
+                                    format,
+                                    dataType,
                                     image.Pixels);
                 break;
-            case GL_TEXTURE_2D_ARRAY:
+            case TextureType::Texture2DArray:
                 glTextureSubImage3D(texture.m_Id,
                                     mipLevel,
                                     0,
@@ -342,11 +348,11 @@ namespace SnowLeopardEngine
                                     dimensions.x,
                                     dimensions.y,
                                     1,
-                                    image.Format,
-                                    image.DataType,
+                                    format,
+                                    dataType,
                                     image.Pixels);
                 break;
-            case GL_TEXTURE_3D:
+            case TextureType::Texture3D:
                 glTextureSubImage3D(texture.m_Id,
                                     mipLevel,
                                     0,
@@ -355,11 +361,11 @@ namespace SnowLeopardEngine
                                     dimensions.x,
                                     dimensions.y,
                                     dimensions.z,
-                                    image.Format,
-                                    image.DataType,
+                                    format,
+                                    dataType,
                                     image.Pixels);
                 break;
-            case GL_TEXTURE_CUBE_MAP:
+            case TextureType::CubeMap:
                 glTextureSubImage3D(texture.m_Id,
                                     mipLevel,
                                     0,
@@ -368,11 +374,11 @@ namespace SnowLeopardEngine
                                     dimensions.x,
                                     dimensions.y,
                                     1,
-                                    image.Format,
-                                    image.DataType,
+                                    format,
+                                    dataType,
                                     image.Pixels);
                 break;
-            case GL_TEXTURE_CUBE_MAP_ARRAY: {
+            case TextureType::CubeMapArray: {
                 const auto zoffset = (layer * 6) + face; // desired layer-face
                 // depth = how many layer-faces
                 glTextureSubImage3D(texture.m_Id,
@@ -383,8 +389,8 @@ namespace SnowLeopardEngine
                                     dimensions.x,
                                     dimensions.y,
                                     6 * texture.m_NumLayers,
-                                    image.Format,
-                                    image.DataType,
+                                    format,
+                                    dataType,
                                     image.Pixels);
             }
             break;
@@ -405,7 +411,7 @@ namespace SnowLeopardEngine
         return *this;
     }
 
-    RenderContext& RenderContext::Upload(Buffer& buffer, GLintptr offset, GLsizeiptr size, const void* data)
+    RenderContext& RenderContext::Upload(Buffer& buffer, int64_t offset, int64_t size, const void* data)
     {
         assert(buffer);
 
@@ -473,7 +479,7 @@ namespace SnowLeopardEngine
         return *this;
     }
 
-    RenderContext& RenderContext::Dispatch(GLuint computeProgram, const glm::uvec3& numGroups)
+    RenderContext& RenderContext::Dispatch(RenderHandle computeProgram, const glm::uvec3& numGroups)
     {
         SetShaderProgram(computeProgram);
         glDispatchCompute(numGroups.x, numGroups.y, numGroups.z);
@@ -481,7 +487,7 @@ namespace SnowLeopardEngine
         return *this;
     }
 
-    GLuint RenderContext::BeginRendering(const RenderingInfo& renderingInfo)
+    RenderHandle RenderContext::BeginRendering(const RenderingInfo& renderingInfo)
     {
         SNOW_LEOPARD_CORE_ASSERT(!m_RenderingStarted,
                                  "[RenderContext] Failed to begin rendering, already in rendering.");
@@ -558,7 +564,7 @@ namespace SnowLeopardEngine
         return *this;
     }
 
-    RenderContext& RenderContext::EndRendering(GLuint frameBufferID)
+    RenderContext& RenderContext::EndRendering(RenderHandle frameBufferID)
     {
         assert(m_RenderingStarted && frameBufferID != GL_NONE);
 
@@ -658,15 +664,16 @@ namespace SnowLeopardEngine
         return *this;
     }
 
-    RenderContext& RenderContext::BindImage(GLuint unit, const Texture& texture, GLint mipLevel, GLenum access)
+    RenderContext&
+    RenderContext::BindImage(uint32_t unit, const Texture& texture, int32_t mipLevel, ImageAccess access)
     {
         assert(texture && mipLevel < texture.m_NumMipLevels);
-        glBindImageTexture(
-            unit, texture.m_Id, mipLevel, GL_FALSE, 0, access, static_cast<GLenum>(texture.m_PixelFormat));
+        glBindImageTexture(unit, texture.m_Id, mipLevel, GL_FALSE, 0, ToGL(access), ToGL(texture.m_PixelFormat));
         return *this;
     }
 
-    RenderContext& RenderContext::BindTexture(GLuint unit, const Texture& texture, std::optional<GLuint> samplerId)
+    RenderContext&
+    RenderContext::BindTexture(uint32_t unit, const Texture& texture, std::optional<RenderHandle> samplerId)
     {
         assert(texture);
         glBindTextureUnit(unit, texture.m_Id);
@@ -675,7 +682,7 @@ namespace SnowLeopardEngine
         return *this;
     }
 
-    RenderContext& RenderContext::BindUniformBuffer(GLuint index, const UniformBuffer& buffer)
+    RenderContext& RenderContext::BindUniformBuffer(uint32_t index, const UniformBuffer& buffer)
     {
         assert(buffer);
         glBindBufferBase(GL_UNIFORM_BUFFER, index, buffer.m_Id);
@@ -715,7 +722,7 @@ namespace SnowLeopardEngine
         return *this;
     }
 
-    GLuint RenderContext::CreateVertexArray(const VertexAttributes& attributes)
+    RenderHandle RenderContext::CreateVertexArray(const VertexAttributes& attributes)
     {
         GLuint vao;
         glCreateVertexArrays(1, &vao);
@@ -750,24 +757,24 @@ namespace SnowLeopardEngine
 
         // http://github.khronos.org/KTX-Specification/#_texture_type
 
-        GLenum target = numFaces == 6     ? GL_TEXTURE_CUBE_MAP :
-                        depth > 0         ? GL_TEXTURE_3D :
-                        extent.Height > 0 ? GL_TEXTURE_2D :
-                                            GL_TEXTURE_1D;
-        assert(target == GL_TEXTURE_CUBE_MAP ? extent.Width == extent.Height : true);
+        TextureType type = numFaces == 6     ? TextureType::CubeMap :
+                           depth > 0         ? TextureType::Texture3D :
+                           extent.Height > 0 ? TextureType::Texture2D :
+                                               TextureType::Texture1D;
+        assert(type == TextureType::CubeMap ? extent.Width == extent.Height : true);
 
         if (numLayers > 0)
         {
-            switch (target)
+            switch (type)
             {
-                case GL_TEXTURE_1D:
-                    target = GL_TEXTURE_1D_ARRAY;
+                case TextureType::Texture1D:
+                    type = TextureType::Texture1DArray;
                     break;
-                case GL_TEXTURE_2D:
-                    target = GL_TEXTURE_2D_ARRAY;
+                case TextureType::Texture2D:
+                    type = TextureType::Texture2DArray;
                     break;
-                case GL_TEXTURE_CUBE_MAP:
-                    target = GL_TEXTURE_CUBE_MAP_ARRAY;
+                case TextureType::CubeMap:
+                    type = TextureType::CubeMapArray;
                     break;
 
                 default:
@@ -775,10 +782,12 @@ namespace SnowLeopardEngine
             }
         }
 
+        const GLenum target = ToGL(type);
+
         GLuint id {GL_NONE};
         glCreateTextures(target, 1, &id);
 
-        const auto internalFormat = static_cast<GLenum>(pixelFormat);
+        const auto internalFormat = ToGL(pixelFormat);
         switch (target)
         {
             case GL_TEXTURE_1D:
@@ -809,7 +818,7 @@ namespace SnowLeopardEngine
 
         return Texture {
             id,
-            target,
+            type,
             pixelFormat,
             extent,
             depth,
@@ -818,9 +827,9 @@ namespace SnowLeopardEngine
         };
     }
 
-    void RenderContext::CreateFaceView(Texture& cubeMap, GLuint mipLevel, GLuint layer, GLuint face)
+    void RenderContext::CreateFaceView(Texture& cubeMap, uint32_t mipLevel, uint32_t layer, uint32_t face)
     {
-        assert(cubeMap.m_Type == GL_TEXTURE_CUBE_MAP || cubeMap.m_Type == GL_TEXTURE_CUBE_MAP_ARRAY);
+        assert(cubeMap.m_Type == TextureType::CubeMap || cubeMap.m_Type == TextureType::CubeMapArray);
 
         if (cubeMap.m_View != GL_NONE)
             glDeleteTextures(1, &cubeMap.m_View);
@@ -829,35 +838,35 @@ namespace SnowLeopardEngine
         glTextureView(cubeMap.m_View,
                       GL_TEXTURE_2D,
                       cubeMap.m_Id,
-                      static_cast<GLenum>(cubeMap.m_PixelFormat),
+                      ToGL(cubeMap.m_PixelFormat),
                       mipLevel,
                       1,
                       (layer * 6) + face,
                       1);
     }
 
-    void RenderContext::AttachTexture(GLuint framebuffer, GLenum attachment, const AttachmentInfo& info)
+    void RenderContext::AttachTexture(RenderHandle framebuffer, uint32_t attachment, const AttachmentInfo& info)
     {
         const auto& [image, mipLevel, maybeLayer, maybeFace, _] = info;
 
         switch (image.m_Type)
         {
-            case GL_TEXTURE_CUBE_MAP:
-            case GL_TEXTURE_CUBE_MAP_ARRAY:
+            case TextureType::CubeMap:
+            case TextureType::CubeMapArray:
                 CreateFaceView(image, mipLevel, maybeLayer.value_or(0), maybeFace.value_or(0));
                 glNamedFramebufferTexture(framebuffer, attachment, image.m_View, 0);
                 break;
 
-            case GL_TEXTURE_2D:
+            case TextureType::Texture2D:
                 glNamedFramebufferTexture(framebuffer, attachment, image.m_Id, mipLevel);
                 break;
 
-            case GL_TEXTURE_2D_ARRAY:
+            case TextureType::Texture2DArray:
                 assert(maybeLayer.has_value());
                 glNamedFramebufferTextureLayer(framebuffer, attachment, image.m_Id, mipLevel, maybeLayer.value_or(0));
                 break;
 
-            case GL_TEXTURE_3D:
+            case TextureType::Texture3D:
                 glNamedFramebufferTexture(framebuffer, attachment, image.m_Id, 0);
                 break;
 
@@ -866,7 +875,7 @@ namespace SnowLeopardEngine
         }
     }
 
-    GLuint RenderContext::CreateShaderProgram(std::initializer_list<GLuint> shaders)
+    RenderHandle RenderContext::CreateShaderProgram(std::initializer_list<RenderHandle> shaders)
     {
         const auto program = glCreateProgram();
 
@@ -899,7 +908,7 @@ namespace SnowLeopardEngine
         return program;
     }
 
-    GLuint RenderContext::CreateShaderObject(GLenum type, const std::string& shaderSource)
+    RenderHandle RenderContext::CreateShaderObject(uint32_t type, const std::string& shaderSource)
     {
         auto          id = glCreateShader(type);
         const GLchar* strings {shaderSource.data()};
@@ -921,7 +930,7 @@ namespace SnowLeopardEngine
         return id;
     }
 
-    void RenderContext::SetShaderProgram(GLuint program)
+    void RenderContext::SetShaderProgram(RenderHandle program)
     {
         assert(program != GL_NONE);
         if (auto& current = m_CurrentPipeline.m_Program; current != program)
@@ -931,7 +940,7 @@ namespace SnowLeopardEngine
         }
     }
 
-    void RenderContext::SetVertexArray(GLuint vao)
+    void RenderContext::SetVertexArray(RenderHandle vao)
     {
         if (GL_NONE == vao)
             vao = m_DummyVAO;
@@ -967,7 +976,7 @@ namespace SnowLeopardEngine
         }
         if (enabled && depthFunc != current.DepthCompareOp)
         {
-            glDepthFunc(static_cast<GLenum>(depthFunc));
+            glDepthFunc(ToGL(depthFunc));
             current.DepthCompareOp = depthFunc;
         }
     }
@@ -987,7 +996,7 @@ namespace SnowLeopardEngine
         auto& current = m_CurrentPipeline.m_RasterizerState.PolygonMode;
         if (polygonMode != current)
         {
-            glPolygonMode(GL_FRONT_AND_BACK, static_cast<GLenum>(polygonMode));
+            glPolygonMode(GL_FRONT_AND_BACK, ToGL(polygonMode));
             current = polygonMode;
         }
     }
@@ -1020,7 +1029,7 @@ namespace SnowLeopardEngine
             {
                 if (current == CullMode::None)
                     glEnable(GL_CULL_FACE);
-                glCullFace(static_cast<GLenum>(cullMode));
+                glCullFace(ToGL(cullMode));
             }
             else
             {
@@ -1050,7 +1059,7 @@ namespace SnowLeopardEngine
         }
     }
 
-    void RenderContext::SetBlendState(GLuint index, const BlendState& state)
+    void RenderContext::SetBlendState(uint32_t index, const BlendState& state)
     {
         auto& current = m_CurrentPipeline.m_BlendStates[index];
         if (state != current)
@@ -1064,8 +1073,7 @@ namespace SnowLeopardEngine
             {
                 if (state.ColorOp != current.ColorOp || state.AlphaOp != current.AlphaOp)
                 {
-                    glBlendEquationSeparatei(
-                        index, static_cast<GLenum>(state.ColorOp), static_cast<GLenum>(state.AlphaOp));
+                    glBlendEquationSeparatei(index, ToGL(state.ColorOp), ToGL(state.AlphaOp));
 
                     current.ColorOp = state.ColorOp;
                     current.AlphaOp = state.AlphaOp;
@@ -1074,10 +1082,10 @@ namespace SnowLeopardEngine
                     state.SrcAlpha != current.SrcAlpha || state.DestAlpha != current.DestAlpha)
                 {
                     glBlendFuncSeparatei(index,
-                                         static_cast<GLenum>(state.SrcColor),
-                                         static_cast<GLenum>(state.DestColor),
-                                         static_cast<GLenum>(state.SrcAlpha),
-                                         static_cast<GLenum>(state.DestAlpha));
+                                         ToGL(state.SrcColor),
+                                         ToGL(state.DestColor),
+                                         ToGL(state.SrcAlpha),
+                                         ToGL(state.DestAlpha));
 
                     current.SrcColor  = state.SrcColor;
                     current.DestColor = state.DestColor;

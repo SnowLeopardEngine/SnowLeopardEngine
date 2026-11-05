@@ -19,8 +19,8 @@ namespace SnowLeopardEngine
     public:
         IndexBuffer() = default;
 
-        IndexType  GetIndexType() const;
-        GLsizeiptr GetCapacity() const;
+        IndexType GetIndexType() const;
+        int64_t   GetCapacity() const;
 
     private:
         IndexBuffer(Buffer, IndexType);

@@ -3,8 +3,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Asset/OzzMesh.h"
-
-#include <glad/glad.h>
+#include "SnowLeopardEngine/Function/Rendering/RenderHandle.h"
 
 namespace SnowLeopardEngine
 {
@@ -36,16 +35,16 @@ namespace SnowLeopardEngine
     };
     // clang-format on
 
-    enum class CompareOp : GLenum
+    enum class CompareOp : uint8_t
     {
-        Never          = GL_NEVER,
-        Less           = GL_LESS,
-        Equal          = GL_EQUAL,
-        LessOrEqual    = GL_LEQUAL,
-        Greater        = GL_GREATER,
-        NotEqual       = GL_NOTEQUAL,
-        GreaterOrEqual = GL_GEQUAL,
-        Always         = GL_ALWAYS
+        Never = 0,
+        Less,
+        Equal,
+        LessOrEqual,
+        Greater,
+        NotEqual,
+        GreaterOrEqual,
+        Always
     };
 
     using ViewportDesc = Rect2D;

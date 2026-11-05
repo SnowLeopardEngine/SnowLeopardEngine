@@ -11,13 +11,13 @@ namespace SnowLeopardEngine
     public:
         VertexBuffer() = default;
 
-        GLsizei    GetStride() const;
-        GLsizeiptr GetCapacity() const;
+        int32_t GetStride() const;
+        int64_t GetCapacity() const;
 
     private:
-        VertexBuffer(Buffer, GLsizei stride);
+        VertexBuffer(Buffer, int32_t stride);
 
     private:
-        GLsizei m_Stride {0};
+        int32_t m_Stride {0};
     };
 } // namespace SnowLeopardEngine

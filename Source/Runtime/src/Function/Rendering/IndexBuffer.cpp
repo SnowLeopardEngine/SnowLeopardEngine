@@ -4,7 +4,7 @@
 namespace SnowLeopardEngine
 {
     IndexType  IndexBuffer::GetIndexType() const { return m_IndexType; }
-    GLsizeiptr IndexBuffer::GetCapacity() const { return m_Size / static_cast<GLsizei>(m_IndexType); }
+    int64_t IndexBuffer::GetCapacity() const { return m_Size / static_cast<int64_t>(m_IndexType); }
 
     IndexBuffer::IndexBuffer(Buffer buffer, IndexType indexType) : Buffer {std::move(buffer)}, m_IndexType {indexType}
     {}

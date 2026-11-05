@@ -7,8 +7,6 @@
 #include "SnowLeopardEngine/Function/Rendering/VertexAttributes.h"
 #include "SnowLeopardEngine/Function/Rendering/VertexBuffer.h"
 
-#include <glad/glad.h>
-
 namespace SnowLeopardEngine
 {
     class Material;
@@ -16,11 +14,35 @@ namespace SnowLeopardEngine
     using UniformBuffer = Buffer;
     using StorageBuffer = Buffer;
 
+    // Layout of CPU pixel data passed to RenderContext::Upload.
+    enum class ImageFormat : uint8_t
+    {
+        Unknown = 0,
+        Red,
+        RG,
+        RGB,
+        RGBA
+    };
+
+    enum class ImageDataType : uint8_t
+    {
+        Unknown = 0,
+        UByte,
+        Float
+    };
+
     struct ImageData
     {
-        GLenum      Format {GL_NONE};
-        GLenum      DataType {GL_NONE};
-        const void* Pixels {nullptr};
+        ImageFormat   Format {ImageFormat::Unknown};
+        ImageDataType DataType {ImageDataType::Unknown};
+        const void*   Pixels {nullptr};
+    };
+
+    enum class ImageAccess : uint8_t
+    {
+        ReadOnly = 0,
+        WriteOnly,
+        ReadWrite
     };
 
     template<typename T>
@@ -43,18 +65,18 @@ namespace SnowLeopardEngine
         std::optional<AttachmentInfo> DepthAttachment {};
     };
 
-    enum class PrimitiveTopology : GLenum
+    enum class PrimitiveTopology : uint8_t
     {
-        Undefined = GL_NONE,
+        Undefined = 0,
 
-        PointList = GL_POINTS,
-        LineList  = GL_LINES,
-        LineStrip = GL_LINE_STRIP,
+        PointList,
+        LineList,
+        LineStrip,
 
-        TriangleList  = GL_TRIANGLES,
-        TriangleStrip = GL_TRIANGLE_STRIP,
+        TriangleList,
+        TriangleStrip,
 
-        PatchList = GL_PATCHES
+        PatchList
     };
 
     // struct GeometryInfo
@@ -81,17 +103,17 @@ namespace SnowLeopardEngine
 
         RenderContext& SetScissor(const Rect2D& rect);
 
-        Buffer       CreateBuffer(GLsizeiptr size, const void* data = nullptr);
-        VertexBuffer CreateVertexBuffer(GLsizei stride, int64_t capacity, const void* data = nullptr);
+        Buffer       CreateBuffer(int64_t size, const void* data = nullptr);
+        VertexBuffer CreateVertexBuffer(int32_t stride, int64_t capacity, const void* data = nullptr);
         IndexBuffer  CreateIndexBuffer(IndexType, int64_t capacity, const void* data = nullptr);
 
-        GLuint GetVertexArray(const VertexAttributes&);
+        RenderHandle GetVertexArray(const VertexAttributes&);
 
-        GLuint CreateGraphicsProgram(const std::string&                vertSource,
-                                     const std::string&                fragSource,
-                                     const std::optional<std::string>& geomSource = std::nullopt);
+        RenderHandle CreateGraphicsProgram(const std::string&                vertSource,
+                                           const std::string&                fragSource,
+                                           const std::optional<std::string>& geomSource = std::nullopt);
 
-        GLuint CreateComputeProgram(const std::string& compSource);
+        RenderHandle CreateComputeProgram(const std::string& compSource);
 
         Texture CreateTexture2D(Extent2D extent, PixelFormat, uint32_t numMipLevels = 1u, uint32_t numLayers = 0u);
         Texture CreateTexture3D(Extent2D, uint32_t depth, PixelFormat);
@@ -100,18 +122,18 @@ namespace SnowLeopardEngine
         RenderContext& GenerateMipmaps(Texture&);
 
         RenderContext& SetupSampler(Texture&, const SamplerInfo&);
-        GLuint         CreateSampler(const SamplerInfo&);
+        RenderHandle   CreateSampler(const SamplerInfo&);
 
         RenderContext& Clear(Texture&);
         // Upload Texture2D
-        RenderContext& Upload(Texture&, GLint mipLevel, glm::uvec2 dimensions, const ImageData&);
+        RenderContext& Upload(Texture&, int32_t mipLevel, glm::uvec2 dimensions, const ImageData&);
         // Upload Cubemap face
-        RenderContext& Upload(Texture&, GLint mipLevel, GLint face, glm::uvec2 dimensions, const ImageData&);
-        RenderContext&
-        Upload(Texture&, GLint mipLevel, const glm::uvec3& dimensions, GLint face, GLsizei layer, const ImageData&);
+        RenderContext& Upload(Texture&, int32_t mipLevel, int32_t face, glm::uvec2 dimensions, const ImageData&);
+        RenderContext& Upload(
+            Texture&, int32_t mipLevel, const glm::uvec3& dimensions, int32_t face, int32_t layer, const ImageData&);
 
         RenderContext& Clear(Buffer&);
-        RenderContext& Upload(Buffer&, GLintptr offset, GLsizeiptr size, const void* data);
+        RenderContext& Upload(Buffer&, int64_t offset, int64_t size, const void* data);
         void*          Map(Buffer&);
         RenderContext& Unmap(Buffer&);
 
@@ -119,14 +141,14 @@ namespace SnowLeopardEngine
         RenderContext& Destroy(Texture&);
         RenderContext& Destroy(GraphicsPipeline&);
 
-        RenderContext& Dispatch(GLuint computeProgram, const glm::uvec3& numGroups);
+        RenderContext& Dispatch(RenderHandle computeProgram, const glm::uvec3& numGroups);
 
-        GLuint         BeginRendering(const RenderingInfo& info);
+        RenderHandle   BeginRendering(const RenderingInfo& info);
         RenderContext& BeginRendering(const Rect2D&            area,
                                       std::optional<glm::vec4> clearColor   = {},
                                       std::optional<float>     clearDepth   = {},
                                       std::optional<int>       clearStencil = {});
-        RenderContext& EndRendering(GLuint frameBufferID);
+        RenderContext& EndRendering(RenderHandle frameBufferID);
 
         RenderContext& SetUniform1f(const std::string& name, float);
         RenderContext& SetUniform1i(const std::string& name, int32_t);
@@ -139,9 +161,9 @@ namespace SnowLeopardEngine
         RenderContext& SetUniformMat4(const std::string& name, const glm::mat4&);
 
         RenderContext& BindGraphicsPipeline(const GraphicsPipeline& pipeline);
-        RenderContext& BindImage(GLuint unit, const Texture&, GLint mipLevel, GLenum access);
-        RenderContext& BindTexture(GLuint unit, const Texture&, std::optional<GLuint> samplerId = {});
-        RenderContext& BindUniformBuffer(GLuint index, const UniformBuffer&);
+        RenderContext& BindImage(uint32_t unit, const Texture&, int32_t mipLevel, ImageAccess access);
+        RenderContext& BindTexture(uint32_t unit, const Texture&, std::optional<RenderHandle> samplerId = {});
+        RenderContext& BindUniformBuffer(uint32_t index, const UniformBuffer&);
         RenderContext& BindMaterial(Material*);
 
         RenderContext& DrawFullScreenTriangle();
@@ -164,7 +186,7 @@ namespace SnowLeopardEngine
         };
 
     private:
-        GLuint CreateVertexArray(const VertexAttributes&);
+        RenderHandle CreateVertexArray(const VertexAttributes&);
 
         Texture CreateImmutableTexture(Extent2D,
                                        uint32_t depth,
@@ -173,14 +195,16 @@ namespace SnowLeopardEngine
                                        uint32_t numMipLevels,
                                        uint32_t numLayers);
 
-        void CreateFaceView(Texture& cubeMap, GLuint mipLevel, GLuint layer, GLuint face);
-        void AttachTexture(GLuint framebuffer, GLenum attachment, const AttachmentInfo&);
+        void CreateFaceView(Texture& cubeMap, uint32_t mipLevel, uint32_t layer, uint32_t face);
+        // attachment: backend attachment point (GL_COLOR_ATTACHMENTi / GL_DEPTH_ATTACHMENT for OpenGL)
+        void AttachTexture(RenderHandle framebuffer, uint32_t attachment, const AttachmentInfo&);
 
-        GLuint CreateShaderProgram(std::initializer_list<GLuint> shaders);
-        GLuint CreateShaderObject(GLenum type, const std::string& shaderSource);
+        RenderHandle CreateShaderProgram(std::initializer_list<RenderHandle> shaders);
+        // type: backend shader stage (GL_VERTEX_SHADER, ... for OpenGL)
+        RenderHandle CreateShaderObject(uint32_t type, const std::string& shaderSource);
 
-        void SetShaderProgram(GLuint);
-        void SetVertexArray(GLuint);
+        void SetShaderProgram(RenderHandle);
+        void SetVertexArray(RenderHandle);
         void SetVertexBuffer(const VertexBuffer&);
         void SetIndexBuffer(const IndexBuffer&);
 
@@ -193,14 +217,14 @@ namespace SnowLeopardEngine
         void SetDepthClamp(bool enabled);
         void SetScissorTest(bool enabled);
 
-        void SetBlendState(GLuint index, const BlendState&);
+        void SetBlendState(uint32_t index, const BlendState&);
 
     private:
         bool             m_RenderingStarted = false;
         GraphicsPipeline m_CurrentPipeline;
 
-        GLuint                                  m_DummyVAO {GL_NONE};
-        std::unordered_map<std::size_t, GLuint> m_VertexArrays;
+        RenderHandle                                  m_DummyVAO {kNullHandle};
+        std::unordered_map<std::size_t, RenderHandle> m_VertexArrays;
     };
 
     class DebugMarker

@@ -2,8 +2,6 @@
 
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
-#include <glad/glad.h>
-
 namespace SnowLeopardEngine
 {
     struct DepthStencilState
@@ -17,35 +15,35 @@ namespace SnowLeopardEngine
         // clang-format on
     };
 
-    enum class BlendOp : GLenum
+    enum class BlendOp : uint8_t
     {
-        Add             = GL_FUNC_ADD,
-        Subtract        = GL_FUNC_SUBTRACT,
-        ReverseSubtract = GL_FUNC_REVERSE_SUBTRACT,
-        Min             = GL_MIN,
-        Max             = GL_MAX
+        Add = 0,
+        Subtract,
+        ReverseSubtract,
+        Min,
+        Max
     };
-    enum class BlendFactor : GLenum
+    enum class BlendFactor : uint8_t
     {
-        Zero                  = GL_ZERO,
-        One                   = GL_ONE,
-        SrcColor              = GL_SRC_COLOR,
-        OneMinusSrcColor      = GL_ONE_MINUS_SRC_COLOR,
-        DstColor              = GL_DST_COLOR,
-        OneMinusDstColor      = GL_ONE_MINUS_DST_COLOR,
-        SrcAlpha              = GL_SRC_ALPHA,
-        OneMinusSrcAlpha      = GL_ONE_MINUS_SRC_ALPHA,
-        DstAlpha              = GL_DST_ALPHA,
-        OneMinusDstAlpha      = GL_ONE_MINUS_DST_ALPHA,
-        ConstantColor         = GL_CONSTANT_COLOR,
-        OneMinusConstantColor = GL_ONE_MINUS_CONSTANT_COLOR,
-        ConstantAlpha         = GL_CONSTANT_ALPHA,
-        OneMinusConstantAlpha = GL_ONE_MINUS_CONSTANT_ALPHA,
-        SrcAlphaSaturate      = GL_SRC_ALPHA_SATURATE,
-        Src1Color             = GL_SRC1_COLOR,
-        OneMinusSrc1Color     = GL_ONE_MINUS_SRC1_COLOR,
-        Src1Alpha             = GL_SRC1_ALPHA,
-        OneMinusSrc1Alpha     = GL_ONE_MINUS_SRC1_ALPHA
+        Zero = 0,
+        One,
+        SrcColor,
+        OneMinusSrcColor,
+        DstColor,
+        OneMinusDstColor,
+        SrcAlpha,
+        OneMinusSrcAlpha,
+        DstAlpha,
+        OneMinusDstAlpha,
+        ConstantColor,
+        OneMinusConstantColor,
+        ConstantAlpha,
+        OneMinusConstantAlpha,
+        SrcAlphaSaturate,
+        Src1Color,
+        OneMinusSrc1Color,
+        Src1Alpha,
+        OneMinusSrc1Alpha
     };
 
     // src = incoming values
@@ -68,17 +66,17 @@ namespace SnowLeopardEngine
     };
     constexpr auto kMaxNumBlendStates = 4;
 
-    enum class PolygonMode : GLenum
+    enum class PolygonMode : uint8_t
     {
-        Point = GL_POINT,
-        Line  = GL_LINE,
-        Fill  = GL_FILL
+        Point = 0,
+        Line,
+        Fill
     };
-    enum class CullMode : GLenum
+    enum class CullMode : uint8_t
     {
-        None  = GL_NONE,
-        Back  = GL_BACK,
-        Front = GL_FRONT
+        None = 0,
+        Back,
+        Front
     };
     struct PolygonOffset
     {

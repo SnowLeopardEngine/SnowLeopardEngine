@@ -39,22 +39,22 @@ namespace SnowLeopardEngine
             assert(pixels);
 
             ImageData imageData {
-                .DataType = static_cast<GLenum>(hdr ? GL_FLOAT : GL_UNSIGNED_BYTE),
+                .DataType = hdr ? ImageDataType::Float : ImageDataType::UByte,
                 .Pixels   = pixels,
             };
             PixelFormat pixelFormat {PixelFormat::Unknown};
             switch (numChannels)
             {
                 case 1:
-                    imageData.Format = GL_RED;
+                    imageData.Format = ImageFormat::Red;
                     pixelFormat      = PixelFormat::R8_UNorm;
                     break;
                 case 3:
-                    imageData.Format = GL_RGB;
+                    imageData.Format = ImageFormat::RGB;
                     pixelFormat      = hdr ? PixelFormat::RGB16F : PixelFormat::RGB8_UNorm;
                     break;
                 case 4:
-                    imageData.Format = GL_RGBA;
+                    imageData.Format = ImageFormat::RGBA;
                     pixelFormat      = hdr ? PixelFormat::RGBA16F : PixelFormat::RGBA8_UNorm;
                     break;
 

@@ -2,8 +2,6 @@
 
 #include "SnowLeopardEngine/Function/Rendering/Pipeline/PipelineState.h"
 
-#include <glad/glad.h>
-
 namespace SnowLeopardEngine
 {
     class GraphicsPipeline
@@ -17,8 +15,8 @@ namespace SnowLeopardEngine
         public:
             Builder() = default;
 
-            Builder& SetShaderProgram(GLuint program);
-            Builder& SetVAO(GLuint vao);
+            Builder& SetShaderProgram(RenderHandle program);
+            Builder& SetVAO(RenderHandle vao);
             Builder& SetDepthStencil(const DepthStencilState&);
             Builder& SetRasterizerState(const RasterizerState&);
             Builder& SetBlendState(uint32_t attachment, const BlendState&);
@@ -26,8 +24,8 @@ namespace SnowLeopardEngine
             GraphicsPipeline Build();
 
         private:
-            GLuint m_Program = GL_NONE;
-            GLuint m_VAO     = GL_NONE;
+            RenderHandle m_Program = kNullHandle;
+            RenderHandle m_VAO     = kNullHandle;
 
             DepthStencilState                          m_DepthStencilState {};
             RasterizerState                            m_RasterizerState {};
@@ -37,8 +35,8 @@ namespace SnowLeopardEngine
     private:
         Rect2D m_Viewport, m_Scissor;
 
-        GLuint m_Program = GL_NONE;
-        GLuint m_VAO     = GL_NONE;
+        RenderHandle m_Program = kNullHandle;
+        RenderHandle m_VAO     = kNullHandle;
 
         DepthStencilState                          m_DepthStencilState {};
         RasterizerState                            m_RasterizerState {};

@@ -2,13 +2,13 @@
 
 namespace SnowLeopardEngine
 {
-    GraphicsPipeline::Builder& GraphicsPipeline::Builder::SetShaderProgram(GLuint program)
+    GraphicsPipeline::Builder& GraphicsPipeline::Builder::SetShaderProgram(RenderHandle program)
     {
         m_Program = program;
         return *this;
     }
 
-    GraphicsPipeline::Builder& GraphicsPipeline::Builder::SetVAO(GLuint vao)
+    GraphicsPipeline::Builder& GraphicsPipeline::Builder::SetVAO(RenderHandle vao)
     {
         m_VAO = vao;
         return *this;

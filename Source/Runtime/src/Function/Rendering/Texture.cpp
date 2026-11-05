@@ -15,7 +15,7 @@ namespace SnowLeopardEngine
 
     Texture::~Texture()
     {
-        if (m_Id != GL_NONE)
+        if (m_Id != kNullHandle)
             SNOW_LEOPARD_CORE_ERROR("Texture leak: {0}", m_Id);
     }
 
@@ -29,9 +29,9 @@ namespace SnowLeopardEngine
         return *this;
     }
 
-    Texture::operator bool() const { return m_Id != GL_NONE; }
+    Texture::operator bool() const { return m_Id != kNullHandle; }
 
-    GLenum Texture::GetType() const { return m_Type; }
+    TextureType Texture::GetType() const { return m_Type; }
 
     Extent2D    Texture::GetExtent() const { return m_Extent; }
     uint32_t    Texture::GetDepth() const { return m_Depth; }
@@ -39,8 +39,8 @@ namespace SnowLeopardEngine
     uint32_t    Texture::GetNumLayers() const { return m_NumLayers; }
     PixelFormat Texture::GetPixelFormat() const { return m_PixelFormat; }
 
-    Texture::Texture(GLuint      id,
-                     GLenum      type,
+    Texture::Texture(RenderHandle id,
+                     TextureType  type,
                      PixelFormat pixelFormat,
                      Extent2D    extent,
                      uint32_t    depth,
@@ -51,7 +51,7 @@ namespace SnowLeopardEngine
         m_PixelFormat {pixelFormat}
     {}
 
-    Texture::operator GLuint() const { return m_Id; }
+    Texture::operator RenderHandle() const { return m_Id; }
 
     //
     // Utility:

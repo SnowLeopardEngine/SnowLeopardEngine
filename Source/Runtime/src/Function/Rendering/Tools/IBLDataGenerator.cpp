@@ -73,7 +73,7 @@ namespace SnowLeopardEngine
 
     Texture IBLDataGenerator::GenerateIrradiance(const Texture& cubemap)
     {
-        assert(cubemap.GetType() == GL_TEXTURE_CUBE_MAP);
+        assert(cubemap.GetType() == TextureType::CubeMap);
 
         constexpr auto kSize      = 64u;
         auto           irradiance = m_RenderContext.CreateCubemap(kSize, PixelFormat::RGB16F, 1);
@@ -110,7 +110,7 @@ namespace SnowLeopardEngine
 
     Texture IBLDataGenerator::PrefilterEnvMap(const Texture& cubemap)
     {
-        assert(cubemap.GetType() == GL_TEXTURE_CUBE_MAP);
+        assert(cubemap.GetType() == TextureType::CubeMap);
 
         constexpr auto kSize             = 512u;
         auto           prefilteredEnvMap = m_RenderContext.CreateCubemap(kSize, PixelFormat::RGB16F, 0);

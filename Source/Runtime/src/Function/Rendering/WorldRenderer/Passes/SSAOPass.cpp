@@ -95,8 +95,8 @@ namespace SnowLeopardEngine
                     0,
                     {kSize, kSize},
                     {
-                        .Format   = GL_RGB,
-                        .DataType = GL_FLOAT,
+                        .Format   = ImageFormat::RGB,
+                        .DataType = ImageDataType::Float,
                         .Pixels   = ssaoNoise.data(),
                     });
     }
