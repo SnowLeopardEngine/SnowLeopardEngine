@@ -53,7 +53,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const auto&, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Final Composition Pass");
-                SNOW_LEOPARD_PROFILE_GL("Final Composition Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Final Composition Pass");
 
                 const auto extent = resources.getDescriptor<FrameGraphTexture>(output).Extent;
                 auto&      rc     = *static_cast<RenderContext*>(ctx);

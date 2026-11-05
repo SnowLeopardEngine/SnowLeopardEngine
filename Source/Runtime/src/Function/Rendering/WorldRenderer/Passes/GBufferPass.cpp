@@ -59,7 +59,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const GBufferData& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("GBuffer Pass");
-                SNOW_LEOPARD_PROFILE_GL("GBuffer Pass");
+                SNOW_LEOPARD_PROFILE_GPU("GBuffer Pass");
 
                 auto& rc = *static_cast<RenderContext*>(ctx);
 

@@ -63,7 +63,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER(name);
-                SNOW_LEOPARD_PROFILE_GL("Gaussian Blur Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Gaussian Blur Pass");
 
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = desc.Extent},

@@ -55,7 +55,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("FXAA Pass");
-                SNOW_LEOPARD_PROFILE_GL("FXAA Pass");
+                SNOW_LEOPARD_PROFILE_GPU("FXAA Pass");
 
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},

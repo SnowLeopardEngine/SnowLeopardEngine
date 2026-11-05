@@ -1,4 +1,7 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/InGameGUIPass.h"
+
+#include <glad/glad.h> // Temporary: raw glyph binding, removed in the next commit
+
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/Character.h"
@@ -41,7 +44,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const InGameGUIData& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("In-Game GUI Pass");
-                SNOW_LEOPARD_PROFILE_GL("In-Game GUI Pass");
+                SNOW_LEOPARD_PROFILE_GPU("In-Game GUI Pass");
 
                 auto& rc = *static_cast<RenderContext*>(ctx);
 

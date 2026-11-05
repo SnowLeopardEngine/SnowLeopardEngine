@@ -9,6 +9,7 @@
 // clang-format off
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <tracy/TracyOpenGL.hpp>
 // clang-format on
 
 #include FT_FREETYPE_H
@@ -138,12 +139,16 @@ namespace SnowLeopardEngine
         bool loadFreeType = LoadFreeType();
         SNOW_LEOPARD_CORE_ASSERT(loadFreeType, "[OpenGLContext] Failed to initialize FreeType!");
 
-        SNOW_LEOPARD_PROFILE_GL_INIT_CONTEXT;
+        TracyGpuContext;
     }
 
     void GraphicsContext::Shutdown() {}
 
-    void GraphicsContext::SwapBuffers() { g_EngineContext->WindowSys->SwapBuffers(); }
+    void GraphicsContext::SwapBuffers()
+    {
+        g_EngineContext->WindowSys->SwapBuffers();
+        TracyGpuCollect;
+    }
 
     void GraphicsContext::SetVSync(bool vsyncEnabled) { glfwSwapInterval(vsyncEnabled); }
 

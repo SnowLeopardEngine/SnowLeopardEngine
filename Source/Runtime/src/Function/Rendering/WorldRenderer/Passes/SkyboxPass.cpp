@@ -64,7 +64,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const auto&, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Skybox Pass");
-                SNOW_LEOPARD_PROFILE_GL("Skybox Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Skybox Pass");
 
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},

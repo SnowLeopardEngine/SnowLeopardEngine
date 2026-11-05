@@ -70,7 +70,7 @@ namespace SnowLeopardEngine
             [&](FrameGraph::Builder& builder, auto&) { cascadedUniformBuffer = builder.write(cascadedUniformBuffer); },
             [=, cascades = std::move(cascades)](const auto&, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("UploadCascades");
-                SNOW_LEOPARD_PROFILE_GL("UploadCascades");
+                SNOW_LEOPARD_PROFILE_GPU("UploadCascades");
 
                 CascadesUniform cascadesUniform {};
                 for (uint32_t i = 0; i < cascades.size(); ++i)
@@ -183,7 +183,7 @@ namespace SnowLeopardEngine
             [=, this, renderables = std::move(renderables)](
                 const Data& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER(name);
-                TracyGpuZone("CSM");
+                SNOW_LEOPARD_PROFILE_GPU("CSM");
 
                 constexpr float     kFarPlane {1.0f};
                 const RenderingInfo renderingInfo {

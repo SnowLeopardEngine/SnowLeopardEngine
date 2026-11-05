@@ -42,7 +42,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const SSAOData& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("SSAO Pass");
-                SNOW_LEOPARD_PROFILE_GL("SSAO Pass");
+                SNOW_LEOPARD_PROFILE_GPU("SSAO Pass");
 
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},

@@ -61,7 +61,7 @@ namespace SnowLeopardEngine
             },
             [=, this](auto&, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("TransparencyCompose Pass");
-                SNOW_LEOPARD_PROFILE_GL("TransparencyCompose Pass");
+                SNOW_LEOPARD_PROFILE_GPU("TransparencyCompose Pass");
 
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},

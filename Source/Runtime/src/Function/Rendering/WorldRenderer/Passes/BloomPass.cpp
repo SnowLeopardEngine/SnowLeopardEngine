@@ -71,7 +71,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Bloom Pass");
-                SNOW_LEOPARD_PROFILE_GL("Bloom Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Bloom Pass");
 
                 auto& rc = *static_cast<RenderContext*>(ctx);
 

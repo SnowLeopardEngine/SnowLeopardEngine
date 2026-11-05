@@ -64,7 +64,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const WeightedBlendedData& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Weighted Blended OIT Pass");
-                SNOW_LEOPARD_PROFILE_GL("Weighted Blended OIT Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Weighted Blended OIT Pass");
 
                 auto& rc = *static_cast<RenderContext*>(ctx);
 

@@ -64,7 +64,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Downsample Pass");
-                SNOW_LEOPARD_PROFILE_GL("Downsample Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Downsample Pass");
 
                 auto& targetTexture = getTexture(resources, data.Downsampled);
 

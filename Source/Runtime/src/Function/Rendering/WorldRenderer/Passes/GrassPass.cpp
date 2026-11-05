@@ -37,7 +37,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const GrassData& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Grass Pass");
-                SNOW_LEOPARD_PROFILE_GL("Grass Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Grass Pass");
 
                 auto& rc = *static_cast<RenderContext*>(ctx);
 

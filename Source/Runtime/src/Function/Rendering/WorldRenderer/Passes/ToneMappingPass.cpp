@@ -55,7 +55,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Tone-Mapping Pass");
-                SNOW_LEOPARD_PROFILE_GL("Tone-Mapping Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Tone-Mapping Pass");
 
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},

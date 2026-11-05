@@ -66,7 +66,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Blit Pass");
-                SNOW_LEOPARD_PROFILE_GL("Blit Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Blit Pass");
 
                 const RenderingInfo renderingInfo {.Area             = {.Extent = extent},
                                                    .ColorAttachments = {{.Image = getTexture(resources, data.Output)}},

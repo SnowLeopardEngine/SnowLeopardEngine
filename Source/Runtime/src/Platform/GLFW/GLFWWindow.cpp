@@ -192,7 +192,6 @@ namespace SnowLeopardEngine
     void GLFWWindow::SwapBuffers()
     {
         glfwSwapBuffers(m_Window);
-        SNOW_LEOPARD_PROFILE_GL_COLLECT;
     }
 
     void GLFWWindow::SetHideCursor(bool hide)

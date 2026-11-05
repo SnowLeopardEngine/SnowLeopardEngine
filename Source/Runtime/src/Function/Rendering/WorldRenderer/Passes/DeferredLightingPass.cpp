@@ -90,7 +90,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Deferred Lighting Pass");
-                SNOW_LEOPARD_PROFILE_GL("Deferred Lighting Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Deferred Lighting Pass");
 
                 const RenderingInfo renderingInfo {
                     .Area             = {.Extent = extent},

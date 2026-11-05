@@ -61,7 +61,7 @@ namespace SnowLeopardEngine
             },
             [=, this](const Data& data, FrameGraphPassResources& resources, void* ctx) {
                 NAMED_DEBUG_MARKER("Upsample Pass");
-                SNOW_LEOPARD_PROFILE_GL("Upsample Pass");
+                SNOW_LEOPARD_PROFILE_GPU("Upsample Pass");
 
                 auto& targetTexture = getTexture(resources, data.Upsampled);
 
