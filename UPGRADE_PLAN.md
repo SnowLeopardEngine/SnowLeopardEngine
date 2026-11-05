@@ -116,12 +116,16 @@ Principle: **make it build and run first, then replace the foundations (RHI, scr
 
 ### Phase 1 — Seal the Rendering Layer for VRI (~1 week)
 Goal: OpenGL still runs, but GL exists only inside one backend directory.
-- [ ] Replace `GL_*`-valued enums with engine-owned enums (`PrimitiveTopology`, `PixelFormat`, `CompareOp`, `BlendFactor`, ...)
-- [ ] Replace `GLuint` handles in `Buffer` / `Texture` / `GraphicsPipeline` with opaque handles
-- [ ] Route `InGameGUIPass`'s raw `glBindTextureUnit` through `RenderContext`
-- [ ] Move `RenderContext.cpp` and `GraphicsContext.cpp` into `Rendering/Backend/OpenGL/`; no `glad` in public headers
-- [ ] Make the GL Tracy zones in `Profiling.h` backend-neutral
+- [x] Replace `GL_*`-valued enums with engine-owned enums (`PrimitiveTopology`, `PixelFormat`, `CompareOp`, `BlendFactor`, ...)
+- [x] Replace `GLuint` handles in `Buffer` / `Texture` / `GraphicsPipeline` with opaque handles (`RenderHandle`)
+- [x] Route `InGameGUIPass`'s raw `glBindTextureUnit` through `RenderContext` (glyphs are now engine `Texture`s)
+- [x] Move `RenderContext.cpp` and `GraphicsContext.cpp` into `Rendering/Backend/OpenGL/`; no `glad` in public headers
+- [x] Make the GL Tracy zones in `Profiling.h` backend-neutral (`SNOW_LEOPARD_PROFILE_GPU`)
 - Acceptance: outside the backend directory, `grep -r "GLuint\|glad" Source` is empty, and every example renders identically
+  - [x] grep: only `add_deps("glad")` in `Source/Runtime/xmake.lua` remains
+  - [x] Clang syntax check of all 107 Runtime / Editor / GameDemo / Examples translation units passes (with and without `TRACY_ENABLE`)
+  - [ ] **Not yet verified**: a Windows build and a visual comparison of the examples (needs Phase 0 on a real machine)
+- Still GL-bound outside the backend, by design until Phase 2: GLFW context creation in `GLFWWindow`, and the editor's `imgui_impl_opengl3`
 
 > Value: whatever shape VRI's API takes, the problem is confined to one folder instead of 16 files.
 
@@ -140,7 +144,7 @@ Goal: OpenGL still runs, but GL exists only inside one backend directory.
 - [ ] **2.2 Frame graph**: `fg` does **not** handle barriers, while VRI requires explicit synchronization. Options:
   - (a) keep `fg` and call `transition()` manually in each pass — small change, easy to get wrong
   - (b) **port libvultra's RenderGraph** and replace `fg` — barriers and transient reuse come for free. **Recommended**; after Phase 1 the setup/execute structure of each pass carries over
-- [ ] **2.3 Shaders**: keep GLSL short-term but feed SPIR-V directly instead of going back through SPIRV-Cross. Port the 25 GLSL / DzShader files to Vulkan GLSL conventions (explicit `set/binding`, uniforms in UBOs or push constants, Y flip, [0,1] depth). Migrating to Slang is a separate decision
+- [ ] **2.3 Shaders — DzShader v3 on ANTLR + Slang**: replace the JSON DzShader with a ShaderLab-style text format (Properties / SubShader / Pass / render states / HLSL-like Slang program blocks), parsed by an ANTLR grammar and compiled by Slang to SPIR-V with reflection. libvultra's `.vshader` (`vshader_lexer.g4` / `vshader_parser.g4`, `shader_parser.cpp`, `shader_compiler.cpp`, last-valid hot reload) is the reference. Pipeline states declared in the shader (`Cull`, `ZTest`, `ZWrite`, `Blend`) map onto the engine-owned enums from Phase 1. Port the 25 GLSL / DzShader files; Vulkan conventions (Y flip, [0,1] depth) are handled once in the shader library
 - [ ] **2.4 Pass order**: Blit / Final → GBuffer + DeferredLighting → ShadowPrePass / CSM → Skybox / IBL precompute (CubemapConverter, IBLDataGenerator as compute) → SSAO / Bloom (Down/Upsample, GaussianBlur) / FXAA / ToneMapping → WeightedBlended + TransparencyCompose → Grass → InGameGUI (glyph atlas, no `glBindTextureUnit`)
   - Direct references in libvultra: `builtin_renderer.cpp` (GBuffer / DeferredLighting / Skybox), `shadow_cascades.cpp`, `tone_mapping_pass.cpp`, `environment.cpp` (IBL)
 - [ ] **2.5 ImGui**: upgrade the editor to imgui 1.92.x docking with a VRI renderer backend (following libvultra's EditorGui); the Viewport samples a texture exported by the render graph (resolves `TODO: Set RT`)
@@ -198,7 +202,7 @@ Defaults in **bold** are what this plan currently follows; change them here if n
    - B. Depend on libvultra as a subproject (`includes("external/libvultra")`) so SLE is only the game layer (PhysX / ozz / miniaudio / editor / gameplay). Least code, but requires libvultra to be public, and libvultra's architecture rules (Godot-style node tree) differ from SLE's EnTT component model
    - C. Archive SLE and use its physics / animation / audio work as input to libvultra's "optional extensions" roadmap item
 2. **Frame graph**: **port libvultra's RenderGraph** vs. keep `fg`.
-3. **Shader language**: **Vulkan GLSL first, Slang later** vs. Slang right away (shared shader library with libvultra, but DzShader must be redesigned).
+3. **Shader language**: ~~Vulkan GLSL first, Slang later~~ → **decided: Slang, with DzShader v3 as a ShaderLab-like syntax parsed by ANTLR** (following libvultra's `.vshader`).
 4. **Platforms**: **drop macOS temporarily**.
 5. **Packages**: **in-repo `external/packages` recipes** vs. keep maintaining the `SnowLeopardEngine/xmake-repo` fork.
 6. **C++ / runtime**: whether to follow libvultra to C++23 + static MSVC runtime (MT). PhysX, ozz, etc. must switch together to avoid LNK2038. Undecided; stays C++20 / MD until Phase 2.
@@ -218,3 +222,6 @@ Defaults in **bold** are what this plan currently follows; change them here if n
 | Date | Phase | Change |
 |---|---|---|
 | 2026-11-05 | — | Analysis and plan written |
+| 2026-11-05 | 1 | Cherry-picked the clang portability fix from `non-DSA` (also fixes the missing `RenderContext` declaration in `IBLDataGenerator.h`) |
+| 2026-11-05 | 1 | Engine-owned enums / `RenderHandle`; backend-neutral GPU profiling zones; glyphs as engine textures; GL implementation moved to `Backend/OpenGL` |
+| 2026-11-05 | 2.3 | Shader decision: DzShader v3 = ANTLR + Slang |
