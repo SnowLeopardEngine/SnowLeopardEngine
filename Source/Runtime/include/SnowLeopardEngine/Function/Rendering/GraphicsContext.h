@@ -19,7 +19,6 @@ namespace SnowLeopardEngine
         int  LoadGL();
         int  GetMinMajor();
         int  GetMinMinor();
-        bool LoadFreeType();
 
     protected:
         bool m_SupportDSA;

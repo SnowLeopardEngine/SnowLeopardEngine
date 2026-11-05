@@ -1,7 +1,4 @@
 #include "SnowLeopardEngine/Function/Rendering/WorldRenderer/Passes/InGameGUIPass.h"
-
-#include <glad/glad.h> // Temporary: raw glyph binding, removed in the next commit
-
 #include "SnowLeopardEngine/Core/Base/Macro.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Function/Rendering/Character.h"
@@ -83,11 +80,18 @@ namespace SnowLeopardEngine
                         {
                             const auto& ch = g_Characters[c];
 
-                            GLfloat xpos = x + ch.Bearing.x * scale;
-                            GLfloat ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+                            // Glyphs without pixels (e.g. space) only advance the pen.
+                            if (!ch.Glyph)
+                            {
+                                x += (ch.Advance >> 6) * scale;
+                                continue;
+                            }
 
-                            GLfloat w = ch.Size.x * scale;
-                            GLfloat h = ch.Size.y * scale;
+                            float xpos = x + ch.Bearing.x * scale;
+                            float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+
+                            float w = ch.Size.x * scale;
+                            float h = ch.Size.y * scale;
 
                             renderable.Mesh->Data.Vertices[0].Position = {xpos, ypos + h, 0};
                             renderable.Mesh->Data.Vertices[1].Position = {xpos, ypos, 0};
@@ -99,7 +103,7 @@ namespace SnowLeopardEngine
                                       renderable.Mesh->Data.Vertices.size() * sizeof(MeshVertexData),
                                       renderable.Mesh->Data.Vertices.data());
 
-                            glBindTextureUnit(0, ch.TextureId);
+                            rc.BindTexture(0, ch.Glyph);
                             rc.SetUniformVec4("baseColor", renderable.UISpecs.TextColor);
 
                             rc.Draw(*renderable.Mesh->Data.VertBuffer,

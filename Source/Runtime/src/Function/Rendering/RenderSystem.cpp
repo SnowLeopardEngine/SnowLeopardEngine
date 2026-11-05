@@ -2,6 +2,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Rendering/Character.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 
@@ -17,6 +18,10 @@ namespace SnowLeopardEngine
         m_Context->SetVSync(false);
 
         m_GlobalRenderContext = CreateRef<RenderContext>();
+
+        bool glyphsLoaded = LoadDefaultFontGlyphs(*m_GlobalRenderContext);
+        SNOW_LEOPARD_CORE_ASSERT(glyphsLoaded, "[RenderSystem] Failed to load font glyphs!");
+
         m_Renderer.Init();
 
         Subscribe(m_LogicSceneLoadedHandler);
@@ -32,6 +37,7 @@ namespace SnowLeopardEngine
         Unsubscribe(m_LogicSceneLoadedHandler);
 
         m_Renderer.Shutdown();
+        ReleaseFontGlyphs(*m_GlobalRenderContext);
         m_Context->Shutdown();
         m_Context.reset();
 
