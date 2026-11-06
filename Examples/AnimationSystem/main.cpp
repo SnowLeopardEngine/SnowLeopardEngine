@@ -28,6 +28,27 @@ public:
     }
 };
 
+// Keys 1 / 2 switch the character between dancing and walking through the "Walking" animator parameter.
+class CharacterScript : public NativeScriptInstance
+{
+public:
+    virtual void OnTick(float deltaTime) override
+    {
+        auto& inputSystem = DesktopApp::GetInstance()->GetEngine()->GetContext()->InputSys;
+        auto& animator    = m_OwnerEntity->GetComponent<AnimatorComponent>().CurrentAnimator;
+        if (inputSystem->GetKeyDown(KeyCode::D1))
+        {
+            SNOW_LEOPARD_INFO("[CharacterScript] Dance");
+            animator.SetBoolean("Walking", false);
+        }
+        if (inputSystem->GetKeyDown(KeyCode::D2))
+        {
+            SNOW_LEOPARD_INFO("[CharacterScript] Walk");
+            animator.SetBoolean("Walking", true);
+        }
+    }
+};
+
 class CustomLifeTime final : public LifeTimeComponent
 {
 public:
@@ -80,12 +101,22 @@ public:
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
 
         Ref<AnimationClip> danceAnimation = g_Model->AnimationClips[0];
+        Ref<AnimationClip> walkAnimation  = g_Model->AnimationClips[1];
 
-        Ref<Animator>           animator   = CreateRef<Animator>();
         Ref<AnimatorController> controller = CreateRef<AnimatorController>();
-
         controller->RegisterAnimationClip(danceAnimation);
+        controller->RegisterAnimationClip(walkAnimation);
+        controller->SetEntryAnimationClip(danceAnimation);
+
+        // Blackboard: one bool parameter drives both transitions.
+        controller->RegisterParameters("Walking", false);
+        controller->RegisterTransition(danceAnimation, walkAnimation, 0.3f)
+            ->SetConditions("Walking", ConditionOperator::Equal, true);
+        controller->RegisterTransition(walkAnimation, danceAnimation, 0.3f)
+            ->SetConditions("Walking", ConditionOperator::Equal, false);
+
         animatorComponent.CurrentAnimator.SetController(controller);
+        character.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(CharacterScript));
     }
 
     // Release the model while the engine is still up (its meshes own GPU buffers).
@@ -98,6 +129,7 @@ private:
 int main(int argc, char** argv) TRY
 {
     REGISTER_TYPE(EscScript);
+    REGISTER_TYPE(CharacterScript);
 
     g_Model = CreateRef<Model>();
 

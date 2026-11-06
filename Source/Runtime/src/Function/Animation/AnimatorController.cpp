@@ -10,7 +10,16 @@ namespace SnowLeopardEngine
         m_Parameters = CreateRef<std::map<std::string, std::variant<float, bool, std::monostate>>>();
     }
 
-    void AnimatorController::RegisterAnimationClip(const Ref<AnimationClip>& animationClip) { m_AnimationClips.push_back(animationClip); }
+    void AnimatorController::RegisterAnimationClip(const Ref<AnimationClip>& animationClip)
+    {
+        m_AnimationClips.push_back(animationClip);
+        // The first registered clip is the entry clip unless SetEntryAnimationClip picks another one; without an entry
+        // clip the animator never samples and the mesh stays in its bind pose.
+        if (m_CurrentAnimationClip == nullptr)
+        {
+            m_CurrentAnimationClip = animationClip;
+        }
+    }
 
     void AnimatorController::DeleteAnimationClip(const Ref<AnimationClip>& animationClip)
     {

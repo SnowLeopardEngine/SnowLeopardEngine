@@ -33,9 +33,20 @@ namespace SnowLeopardEngine
         if (m_Controller == nullptr)
         {
             SNOW_LEOPARD_CORE_ERROR("[Animator] Controller needed!");
+            return;
         }
 
-        CheckParameters();
+        // The controller may get its entry clip after SetController.
+        if (m_CurrentClip == nullptr)
+        {
+            m_CurrentClip = m_Controller->GetAnimationClip();
+        }
+
+        // A running blend finishes before the next transition is considered.
+        if (!m_IsBlending)
+        {
+            CheckParameters();
+        }
 
         m_DeltaTime = dt;
 
@@ -43,8 +54,10 @@ namespace SnowLeopardEngine
         {
             if (!m_IsBlending)
             {
-                m_CurrentTime = 0.0f;
-                m_IsBlending  = true;
+                // Keep the source clip playing from where it was instead of jumping to its first frame.
+                m_SourceStartTime = m_CurrentTime;
+                m_CurrentTime     = 0.0f;
+                m_IsBlending      = true;
             }
             Blending(m_SourceAnimationClip, m_TargetAnimationClip, m_Duration, dt);
         }
@@ -171,14 +184,14 @@ namespace SnowLeopardEngine
         animationClip[1] = targetAnimationClip;
 
         float ratio[2];
-        ratio[0] = fmodf(1 - m_CurrentTime / sourceAnimationClip->Animation.duration(), 1.0f);
+        ratio[0] = fmodf((m_SourceStartTime + m_CurrentTime) / sourceAnimationClip->Animation.duration(), 1.0f);
         ratio[1] = fmodf(m_CurrentTime / targetAnimationClip->Animation.duration(), 1.0f);
 
         float weight[2];
 
         if (duration > 0)
         {
-            float blendFactor = m_CurrentTime / duration;
+            float blendFactor = glm::clamp(m_CurrentTime / duration, 0.0f, 1.0f);
             weight[0]         = 1.0f - blendFactor;
             weight[1]         = blendFactor;
         }

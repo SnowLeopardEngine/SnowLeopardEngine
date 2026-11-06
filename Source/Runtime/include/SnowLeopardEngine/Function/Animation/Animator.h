@@ -47,6 +47,7 @@ namespace SnowLeopardEngine
 
         Ref<AnimationClip> m_SourceAnimationClip = nullptr;
         Ref<AnimationClip> m_TargetAnimationClip = nullptr;
-        float              m_Duration;
+        float              m_SourceStartTime     = 0; // source clip time when the blend started
+        float              m_Duration = 0;
     };
 } // namespace SnowLeopardEngine

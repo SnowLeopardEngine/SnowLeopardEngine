@@ -90,7 +90,9 @@ public:
 
         // Create a camera
         Entity camera                                      = scene->CreateEntity("MainCamera");
-        camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
+        // Behind the crowd, looking slightly down at it.
+        camera.GetComponent<TransformComponent>().Position = {0, 20, 90};
+        camera.GetComponent<TransformComponent>().SetRotationEuler(glm::vec3(-12, 0, 0));
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
 
@@ -118,9 +120,10 @@ public:
         auto& floorMeshRenderer            = floor.AddComponent<MeshRendererComponent>();
         floorMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Red.dzmaterial";
 
-        for (int x = -60; x < 60; x += 30)
+        // 4 x 4 dancers centred on the floor.
+        for (int x = -45; x <= 45; x += 30)
         {
-            for (int y = -60; y < 60; y += 30)
+            for (int y = -45; y <= 45; y += 30)
             {
                 auto model = CreateRef<Model>();
                 m_Models.emplace_back(model);

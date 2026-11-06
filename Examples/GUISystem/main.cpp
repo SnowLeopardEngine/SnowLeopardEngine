@@ -88,7 +88,12 @@ public:
         controller->SetEntryAnimationClip(animation);
         animatorComponent.CurrentAnimator.SetController(controller);
 
-        auto* tempRC = new RenderContext();
+        // UI coordinates are window pixels from the bottom-left corner; lay out around the window centre so the
+        // example works at any (fullscreen) resolution.
+        const float centerX = m_EngineContext->WindowSys->GetWidth() / 2.0f;
+        const float centerY = m_EngineContext->WindowSys->GetHeight() / 2.0f;
+
+        m_RenderContext = CreateScope<RenderContext>();
 
         const std::string uiImageMaterialPath = "Assets/Materials/Next/UIImage.dzmaterial";
         const std::string uiTextMaterialPath  = "Assets/Materials/Next/UIText.dzmaterial";
@@ -99,9 +104,9 @@ public:
 
         panelRect.Size                  = {320, 240};
         panelRect.Pivot                 = {0.5, 0.5};
-        panelRect.Pos                   = {512, 384, -0.1};
+        panelRect.Pos                   = {centerX, centerY, -0.1};
         auto& panelImageComp            = panelImage.AddComponent<UI::ImageComponent>();
-        panelImageComp.TargetGraphic    = IO::Load("Assets/Textures/GUI/Panel/Window/Big.png", *tempRC);
+        panelImageComp.TargetGraphic    = IO::Load("Assets/Textures/GUI/Panel/Window/Big.png", *m_RenderContext);
         panelImageComp.MaterialFilePath = uiImageMaterialPath;
 
         // Create a play button
@@ -109,10 +114,10 @@ public:
         auto&  playButtonRect = playButton.AddComponent<UI::RectTransformComponent>();
         playButtonRect.Size   = {100, 60};
         playButtonRect.Pivot  = {0.5, 0.5};
-        playButtonRect.Pos    = {512, 384, 0};
+        playButtonRect.Pos    = {centerX, centerY, 0};
         auto& playButtonComp  = playButton.AddComponent<UI::ButtonComponent>();
         playButtonComp.TintColor.TargetGraphic =
-            IO::Load("Assets/Textures/GUI/Buttons/Rect-Medium/PlayText/Default.png", *tempRC);
+            IO::Load("Assets/Textures/GUI/Buttons/Rect-Medium/PlayText/Default.png", *m_RenderContext);
         playButtonComp.MaterialFilePath = uiImageMaterialPath;
 
         Subscribe(m_ButtonClickedEventHandler);
@@ -122,7 +127,7 @@ public:
         auto&  helloTextRect = helloText.AddComponent<UI::RectTransformComponent>();
 
         helloTextRect.Size             = {100, 30};
-        helloTextRect.Pos              = {300, 100, 0};
+        helloTextRect.Pos              = {centerX - 90, centerY + 150, 0};
         auto& helloTextComp            = helloText.AddComponent<UI::TextComponent>();
         helloTextComp.TextContent      = "Hello, GUI System!";
         helloTextComp.Color            = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
@@ -136,7 +141,8 @@ public:
     }
 
 private:
-    EngineContext* m_EngineContext;
+    EngineContext*       m_EngineContext;
+    Scope<RenderContext> m_RenderContext; // owns the UI textures
 
     EventHandler<UIButtonClickedEvent> m_ButtonClickedEventHandler = [this](const UIButtonClickedEvent& e) {
         auto   button       = e.GetButtonEntity();

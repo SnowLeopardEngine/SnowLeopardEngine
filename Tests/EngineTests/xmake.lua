@@ -1,3 +1,4 @@
 includes("PhysicsScenarios")
 includes("SceneSerialization")
 includes("InputEvents")
+includes("AnimationPlayback")

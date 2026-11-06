@@ -32,7 +32,7 @@
 | In-game GUI | ★ | Canvas / Image / Text / Button only; a naive immediate design with no layout, styling or input focus. **Text rendering is known to be wrong** (owner report; cause not yet investigated). Every glyph is its own texture (no atlas); they became engine textures in Phase 1 |
 | Navigation | ☆ | **Not in the engine.** recast only appears in `Tests/LibraryTests/recastnavigation_Test` |
 | C# scripting | ☆ | **Effectively absent.** `Coral::HostInstance` is a local variable in the `CSharpScriptingSystem` constructor and is destroyed when it returns; only `Tests.Echo` is ever called; no script component, no bindings |
-| Editor | ★★ | Docking layout, Viewport / Inspector / Console / Resource panels; no Hierarchy, menu bar, toolbar, Settings or Preview; hand-written Inspector; Viewport has `TODO: Set RT` |
+| Editor | ★ | Docking layout, Viewport / Inspector / Console / Resource panels draw, but the editor cannot edit anything: no scene is created or opened (the test scene was removed in 3f55eb0 and nothing replaced it), there is no editor camera, the Viewport has no render target (`TODO: Set RT`) and picking is commented out, so nothing can be selected for the Inspector. No Hierarchy, menu bar, Settings or Preview |
 | Project / packaging | ★★ | `.dzproj` format done; simple game builder done (#139); no game template (#138) |
 
 ### Rendering Backend Coupling
@@ -87,7 +87,7 @@ Legend: `[ ]` not started, `[~]` partially done (judged against the code).
 
 ### Animation
 - [ ] **#68 Better Animation System** (umbrella; #71 done)
-  - [~] #69 Animator Controller — transitions done; blackboard and keyboard switching in the example missing
+  - [x] #69 Animator Controller — transitions, bool / float / trigger parameters (blackboard); the AnimationSystem example switches Dance / Walk with keys 1 / 2. Covered by the `AnimationPlayback` engine test
   - [ ] #70 Animation blending (ozz BlendJob)
 - [ ] #134 AnimatorController asset (`.dzanimcon`)
 
@@ -141,6 +141,8 @@ Principle: **make it build and run first, then replace the foundations (RHI, scr
 | TickOneFrame | yes | exits after one frame by design |
 | PhysicsSystem | yes | both spheres fall and roll on the height field (checked in frame captures). The example had a stray `CharacterController` on the blue sphere, which pinned it, and spawned spheres inside the random terrain; both fixed, camera raised |
 | AnimationSystem, GUISystem, OverallShowcase, RenderingSystem-Overview / -PBR / -Instancing | yes | clean shutdown since the ownership fix; before it, Debug exit stopped on the ozz allocator assert (known issue 11) |
+| — completeness audit | | AnimationSystem showed a **T-pose**: it never set an entry clip, so the animator never sampled (now the first registered clip is the entry clip, and the example loads both clips and switches with keys 1 / 2). GUISystem placed its UI at fixed 1024 × 768 coordinates, so at fullscreen it sat small in a corner (now laid out from the window centre; its leaked `RenderContext` is owned). OverallShowcase started with the camera inside a dancer (grid centred, camera moved back). The Overview / PBR point lights are commented out in the examples, not missing in the renderer. UI is not scaled with the display, so GUISystem / GameDemo widgets are small at 4K |
+| `AnimationPlayback` (engine test) | 9 / 9 pass | Vampire with Dancing + Walking: entry clip defaults to the first clip, mesh leaves the bind pose and keeps moving, bool-parameter transition Dance → Walk → Dance, and the blend starts from the current pose (it used to restart the source clip). Against the old animator 6 checks fail |
 | GameDemo | yes | menu only (no input during the run), so the character controller was not exercised; clean shutdown |
 | `JoltPhysics_Test` | passes | sphere rests at y = 0.480 on a box floor |
 | `PhysicsScenarios` (engine test) | 21 / 21 pass | steps the engine's fixed tick deterministically and checks: sphere / box / capsule / convex-mesh resting, static bodies, triggers, `OnColliderEnter` once per touch, character walking + GameDemo grounding ray, overlaps (bodies and characters), `AddForce`, runtime spawn (incl. mesh + material) and destroy, RigidBody under a CharacterController, height-field orientation against the mesh |
@@ -229,7 +231,7 @@ Replace Coral / scoral with a direct hostfxr host modelled on libvultra's `dotne
 - [ ] Gizmos (ImGuizmo already present) and picking via an ID buffer instead of the back-buffer hack in `RenderTypeDef.h`
 
 ### Phase 5 — Gameplay Systems (order as needed)
-- [ ] Animation: #70 BlendJob, #69 blackboard, #134 `.dzanimcon`, state-machine view in the editor
+- [ ] Animation: #70 BlendJob, #134 `.dzanimcon`, state-machine view in the editor (#69 blackboard done)
 - [ ] Physics: #133 `.dzphymat` (damping / CCD are done in the Jolt port), scene-unload hook (today the world is rebuilt when the next scene is cooked), Jolt debug renderer in the editor
 - [ ] **In-game GUI and text**: fix text rendering (glyph atlas, correct metrics / baseline / kerning, UTF-8), then replace the naive Canvas / Image / Text / Button system with a real retained UI (layout, anchors, styling, focus and input routing). Evaluate RmlUi against a home-grown widget set before writing code
 - [ ] Navigation: #59 NavMesh / NavMeshAgent (promote the recast test into the engine), #135 baking panel, #56 CullingMask
@@ -291,3 +293,4 @@ Defaults in **bold** are what this plan currently follows; change them here if n
 | 2026-11-06 | 0 | entt 3.16.0, imgui 1.92.5-docking; `SceneSerialization` engine test; editor starts with a relative project path; `copy_assets` no longer flattens `Assets/` on a target's first build; `$(buildir)` → `$(builddir)` |
 | 2026-11-06 | 0 | CI: Windows + Linux, Debug + Release, cached packages, Jolt test; macOS workflow removed |
 | 2026-11-06 | 2.0 | GLFW → SDL3 3.4.0 (window, GL context, input, gamepad API, editor backend); the editor really on imgui 1.92.5 (ImGuizmo's pin removed, API renames, missing end calls, default layout in code); `InputEvents` engine test |
+| 2026-11-06 | 0 | Example completeness audit: AnimationSystem T-pose (animator entry clip, blend timing), GUISystem layout at fullscreen, OverallShowcase camera; `AnimationPlayback` engine test; editor diagnosed as unable to edit (no scene, camera, render target or picking) |
