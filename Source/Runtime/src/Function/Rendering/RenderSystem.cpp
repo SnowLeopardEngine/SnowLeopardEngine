@@ -71,6 +71,7 @@ namespace SnowLeopardEngine
         IO::ReleaseAllTextures();
 
         m_PendingCapture.reset();
+        m_FrameGraph.reset();
         m_Frame.reset();
         m_Swapchain.reset();
         m_Device.reset();
@@ -91,6 +92,7 @@ namespace SnowLeopardEngine
         if (std::find(m_Overlays.begin(), m_Overlays.end(), overlay) == m_Overlays.end())
         {
             m_Overlays.push_back(overlay);
+            m_FrameGraph.reset(); // the graph has an overlay pass only while there are overlays
         }
     }
 
@@ -98,6 +100,44 @@ namespace SnowLeopardEngine
     {
         m_Device->WaitIdle();
         std::erase(m_Overlays, overlay);
+        m_FrameGraph.reset();
+    }
+
+    void RenderSystem::BuildFrameGraph(RHI::Texture& backbuffer)
+    {
+        m_FrameGraph       = CreateScope<RenderGraph>(*m_Device);
+        m_FrameGraphExtent = backbuffer.GetExtent();
+        auto& graph        = *m_FrameGraph;
+
+        // The acquired image's old content is never needed.
+        m_Backbuffer = graph.ImportResource("Backbuffer", backbuffer, false);
+
+        graph.AddPass("Clear", {{m_Backbuffer, GraphUsage::ColorWrite, true}}, [this](VriCommandBuffer* cmd, RenderGraph& g) {
+            auto& target = g.GetTexture(m_Backbuffer);
+            RHI::BeginColorPass(*m_Device, cmd, target.View(), target.GetExtent(), kClearColor);
+            m_Device->Core.CmdEndRendering(cmd);
+        });
+
+        if (!m_Overlays.empty())
+        {
+            graph.AddPass("Overlays", {{m_Backbuffer, GraphUsage::ColorReadWrite}}, [this](VriCommandBuffer* cmd, RenderGraph& g) {
+                for (auto* overlay : m_Overlays)
+                {
+                    overlay->Copy(cmd); // transfers stay outside the render pass
+                }
+                auto& target = g.GetTexture(m_Backbuffer);
+                RHI::BeginColorPass(*m_Device, cmd, target.View(), target.GetExtent());
+                for (auto* overlay : m_Overlays)
+                {
+                    overlay->Draw(cmd);
+                }
+                m_Device->Core.CmdEndRendering(cmd);
+            });
+        }
+
+        // Presenting is the frame's observable result.
+        graph.AddPass("Present", {{m_Backbuffer, GraphUsage::Present}}, [](VriCommandBuffer*, RenderGraph&) {}, true);
+        graph.Compile();
     }
 
     void RenderSystem::Present()
@@ -116,21 +156,17 @@ namespace SnowLeopardEngine
         {
             return; // minimized or out of date
         }
-        const auto extent = m_Swapchain->GetExtent();
+        if (!m_FrameGraph || m_FrameGraphExtent != target->GetExtent())
+        {
+            BuildFrameGraph(*target);
+        }
+        else
+        {
+            m_FrameGraph->Bind(m_Backbuffer, *target);
+        }
 
         auto* cmd = m_Frame->Begin();
-        for (auto* overlay : m_Overlays)
-        {
-            overlay->Copy(cmd);
-        }
-
-        target->Transition(cmd, {VriAccess_ColorAttachmentWrite, VriLayout_ColorAttachment, VriPipelineStage_ColorAttachmentOutput});
-        RHI::BeginColorPass(*m_Device, cmd, target->View(), extent, kClearColor);
-        for (auto* overlay : m_Overlays)
-        {
-            overlay->Draw(cmd);
-        }
-        m_Device->Core.CmdEndRendering(cmd);
+        m_FrameGraph->Execute(cmd); // ends with the image in the present layout
 
         ++m_PresentedFrames;
         const bool capture = m_CaptureFrame != 0 && m_PresentedFrames == m_CaptureFrame;
@@ -139,7 +175,6 @@ namespace SnowLeopardEngine
             Capture(cmd, *target);
         }
 
-        target->Transition(cmd, {VriAccess_None, VriLayout_Present, VriPipelineStage_None});
         m_Frame->SubmitAndWait();
         m_Swapchain->Present();
 

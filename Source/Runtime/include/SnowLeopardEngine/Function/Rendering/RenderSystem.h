@@ -6,6 +6,7 @@
 #include "SnowLeopardEngine/Function/Rendering/RHI/Device.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Resources.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Swapchain.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderGraph/RenderGraph.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
 #include <filesystem>
@@ -25,7 +26,8 @@ namespace SnowLeopardEngine
     };
 
     // Owns the VRI device, the window's swapchain and the frame. Per frame: OnTick records the scene (Phase 2.4),
-    // Present uploads overlays, acquires the swapchain image, draws the overlays, submits and presents.
+    // Present uploads overlays, acquires the swapchain image, runs the frame graph (clear, overlays, present),
+    // submits and presents.
     class RenderSystem final : public EngineSubSystem
     {
     public:
@@ -52,6 +54,7 @@ namespace SnowLeopardEngine
 
     private:
         void OnLogicSceneLoaded(const LogicSceneLoadedEvent& e);
+        void BuildFrameGraph(RHI::Texture& backbuffer);
         void Capture(VriCommandBuffer* cmd, RHI::Texture& target);
 
     private:
@@ -60,6 +63,11 @@ namespace SnowLeopardEngine
         Scope<RHI::Frame>     m_Frame;
 
         std::vector<RenderOverlay*> m_Overlays;
+
+        // Built once per swapchain extent / overlay set; each frame rebinds the acquired swapchain image.
+        Scope<RenderGraph>    m_FrameGraph;
+        RenderGraph::Resource m_Backbuffer {};
+        RHI::Extent           m_FrameGraphExtent {};
 
         Rect2D m_Viewport {};
         bool   m_RenderToTexture = false;
