@@ -2,6 +2,8 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 
+struct ImVec2;
+
 namespace SnowLeopardEngine::Editor
 {
     struct EditorGUISystemInitInfo
@@ -23,5 +25,9 @@ namespace SnowLeopardEngine::Editor
 
     private:
         void SetupUIStyle();
+        void BuildDefaultLayout(uint32_t dockSpaceId, const ImVec2& size);
+
+    private:
+        uint32_t m_EventListener = 0; // Window::NativeEventListenerId feeding SDL events to ImGui
     };
 } // namespace SnowLeopardEngine::Editor

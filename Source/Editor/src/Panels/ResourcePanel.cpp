@@ -84,7 +84,8 @@ namespace SnowLeopardEngine::Editor
                 if (!vertical)
                 {
                     ImGui::BeginColumns("ResourcePanelColumns", 2, ImGuiOldColumnFlags_NoResize);
-                    ImGui::SetColumnWidth(0, ImGui::GetWindowContentRegionMax().x / 3.0f);
+                    // GetWindowContentRegionMax() was removed in imgui 1.92; this is the same right edge in window coordinates
+                    ImGui::SetColumnWidth(0, (ImGui::GetCursorPos().x + ImGui::GetContentRegionAvail().x) / 3.0f);
                     ImGui::BeginChild("##folders_common");
                 }
                 else
@@ -267,6 +268,12 @@ namespace SnowLeopardEngine::Editor
                 }
                 ImGui::EndDragDropTarget();
             }
+
+            // imgui >= 1.92 reports a missing EndColumns() as "Missing End()" and recovers with a broken layout
+            if (!vertical)
+            {
+                ImGui::EndColumns();
+            }
         }
         ImGui::End();
     }
@@ -410,7 +417,7 @@ namespace SnowLeopardEngine::Editor
                 nodeFlags |= ImGuiTreeNodeFlags_Leaf;
             if (defaultOpen)
                 nodeFlags |= ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Leaf;
-            nodeFlags |= ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_AllowItemOverlap |
+            nodeFlags |= ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_AllowOverlap |
                          ImGuiTreeNodeFlags_SpanAvailWidth;
             bool        isOpen = ImGui::TreeNodeEx(reinterpret_cast<void*>(dirInfo), nodeFlags, "");
             const char* folderIcon =

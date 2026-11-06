@@ -3,12 +3,14 @@
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
-#include <GLFW/glfw3.h>
 #include <IconsMaterialDesignIcons.h>
 #include <ImGuizmo.h>
 #include <imgui.h>
-#include <imgui_impl_glfw.h>
+#include <imgui_internal.h> // DockBuilder
+#include <imgui_impl_sdl3.h>
 #include <imgui_impl_opengl3.h>
+
+#include <SDL3/SDL.h>
 
 namespace SnowLeopardEngine::Editor
 {
@@ -55,7 +57,10 @@ namespace SnowLeopardEngine::Editor
 
         SetupUIStyle();
 
-        ImGui_ImplGlfw_InitForOpenGL(static_cast<GLFWwindow*>(g_EngineContext->WindowSys->GetPlatformWindow()), true);
+        auto* window = g_EngineContext->WindowSys->GetWindow();
+        ImGui_ImplSDL3_InitForOpenGL(static_cast<SDL_Window*>(window->GetPlatformWindow()), window->GetGraphicsContext());
+        m_EventListener = window->AddNativeEventListener(
+            [](const void* event) { ImGui_ImplSDL3_ProcessEvent(static_cast<const SDL_Event*>(event)); });
         ImGui_ImplOpenGL3_Init("#version 330");
 
         // init panel manager
@@ -70,8 +75,9 @@ namespace SnowLeopardEngine::Editor
     {
         SNOW_LEOPARD_INFO("[EditorGUISystem] Shutting Down...");
         PanelManager::Shutdown();
+        g_EngineContext->WindowSys->GetWindow()->RemoveNativeEventListener(m_EventListener);
         ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
+        ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();
     }
 
@@ -113,6 +119,7 @@ namespace SnowLeopardEngine::Editor
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
         {
             ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
+            BuildDefaultLayout(dockSpaceId, viewport->Size);
             ImGui::DockSpace(dockSpaceId, ImVec2(0.0f, 0.0f), dockSpaceFlags);
         }
         style.WindowMinSize.x = minWinSizeX;
@@ -126,16 +133,46 @@ namespace SnowLeopardEngine::Editor
         ImGui::End();
     }
 
+    void EditorGUISystem::BuildDefaultLayout(uint32_t dockSpaceId, const ImVec2& size)
+    {
+        // Built in code rather than shipped as an imgui.ini: dock node IDs saved by one imgui version did not match
+        // the IDs 1.92 computes, which left every panel floating. A layout the user saved (a split dock space) wins.
+        static bool checked = false;
+        if (checked)
+        {
+            return;
+        }
+        checked = true;
+
+        ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockSpaceId);
+        if (node != nullptr && node->IsSplitNode())
+        {
+            return;
+        }
+
+        ImGui::DockBuilderRemoveNode(dockSpaceId);
+        ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(dockSpaceId, size);
+
+        ImGuiID center = dockSpaceId;
+        ImGuiID right  = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.25f, nullptr, &center);
+        ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.25f, nullptr, &center);
+
+        ImGui::DockBuilderDockWindow("Viewport", center);
+        ImGui::DockBuilderDockWindow("Inspector", right);
+        ImGui::DockBuilderDockWindow("Dear ImGui Demo", right);
+        ImGui::DockBuilderDockWindow(ICON_MDI_FOLDER_STAR "Resources", bottom);
+        ImGui::DockBuilderDockWindow("Console", bottom);
+        ImGui::DockBuilderFinish(dockSpaceId);
+    }
+
     void EditorGUISystem::Begin()
     {
         // High DPI scaling
-        float dpiScaleX, dpiScaleY;
-        glfwGetWindowContentScale(
-            static_cast<GLFWwindow*>(g_EngineContext->WindowSys->GetPlatformWindow()), &dpiScaleX, &dpiScaleY);
-        ImGui::GetIO().FontGlobalScale = dpiScaleX;
+        ImGui::GetIO().FontGlobalScale = g_EngineContext->WindowSys->GetContentScale();
 
         ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
     }
@@ -152,10 +189,11 @@ namespace SnowLeopardEngine::Editor
 
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
-            GLFWwindow* backupCurrentContext = glfwGetCurrentContext();
+            SDL_Window*   backupCurrentWindow  = SDL_GL_GetCurrentWindow();
+            SDL_GLContext backupCurrentContext = SDL_GL_GetCurrentContext();
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backupCurrentContext);
+            SDL_GL_MakeCurrent(backupCurrentWindow, backupCurrentContext);
         }
     }
 
@@ -190,7 +228,7 @@ namespace SnowLeopardEngine::Editor
         style.GrabRounding              = 0.0f;
         style.TabRounding               = 0.0f;
         style.TabBorderSize             = 1.0f;
-        style.TabMinWidthForCloseButton = 0.0f;
+        style.TabCloseButtonMinWidthUnselected = 0.0f; // was TabMinWidthForCloseButton (renamed in imgui 1.91.9)
         style.ColorButtonPosition       = ImGuiDir_Right;
         style.ButtonTextAlign           = ImVec2(0.5f, 0.5f);
         style.SelectableTextAlign       = ImVec2(0.0f, 0.0f);
@@ -247,10 +285,10 @@ namespace SnowLeopardEngine::Editor
         style.Colors[ImGuiCol_ResizeGripActive]  = ImVec4(1.0f, 0.4862745106220245f, 0.4862745106220245f, 1.0f);
         style.Colors[ImGuiCol_Tab]        = ImVec4(0.2196078449487686f, 0.2196078449487686f, 0.2196078449487686f, 1.0f);
         style.Colors[ImGuiCol_TabHovered] = ImVec4(0.2901960909366608f, 0.2901960909366608f, 0.2901960909366608f, 1.0f);
-        style.Colors[ImGuiCol_TabActive]  = ImVec4(0.1764705926179886f, 0.1764705926179886f, 0.1764705926179886f, 1.0f);
-        style.Colors[ImGuiCol_TabUnfocused] =
+        style.Colors[ImGuiCol_TabSelected] = ImVec4(0.1764705926179886f, 0.1764705926179886f, 0.1764705926179886f, 1.0f);
+        style.Colors[ImGuiCol_TabDimmed] =
             ImVec4(0.1490196138620377f, 0.06666667014360428f, 0.06666667014360428f, 0.9700000286102295f);
-        style.Colors[ImGuiCol_TabUnfocusedActive] =
+        style.Colors[ImGuiCol_TabDimmedSelected] =
             ImVec4(0.4039215743541718f, 0.1529411822557449f, 0.1529411822557449f, 1.0f);
         style.Colors[ImGuiCol_PlotLines] = ImVec4(0.6078431606292725f, 0.6078431606292725f, 0.6078431606292725f, 1.0f);
         style.Colors[ImGuiCol_PlotLinesHovered]     = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
@@ -268,7 +306,7 @@ namespace SnowLeopardEngine::Editor
             ImVec4(0.2627451121807098f, 0.6352941393852234f, 0.8784313797950745f, 0.4377682209014893f);
         style.Colors[ImGuiCol_DragDropTarget] =
             ImVec4(0.4666666686534882f, 0.1843137294054031f, 0.1843137294054031f, 0.9656652212142944f);
-        style.Colors[ImGuiCol_NavHighlight] = ImVec4(0.407843142747879f, 0.407843142747879f, 0.407843142747879f, 1.0f);
+        style.Colors[ImGuiCol_NavCursor] = ImVec4(0.407843142747879f, 0.407843142747879f, 0.407843142747879f, 1.0f);
         style.Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.0f, 1.0f, 1.0f, 0.699999988079071f);
         style.Colors[ImGuiCol_NavWindowingDimBg] =
             ImVec4(0.800000011920929f, 0.800000011920929f, 0.800000011920929f, 0.2000000029802322f);

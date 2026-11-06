@@ -68,6 +68,11 @@ namespace SnowLeopardEngine
         void* GetPlatformWindow() const { return m_Window->GetPlatformWindow(); }
         void* GetNativeWindow() const { return m_Window->GetNativeWindow(); }
 
+        float GetContentScale() const { return m_Window->GetContentScale(); }
+
+        // The platform window, for the rest of its interface (VSync, GL loader, native event listeners, ...).
+        Window* GetWindow() const { return m_Window; }
+
     private:
         Window* m_Window = nullptr;
     };

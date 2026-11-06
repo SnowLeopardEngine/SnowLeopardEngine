@@ -314,6 +314,8 @@ namespace SnowLeopardEngine::Editor
                 // TODO: Draw more components
             }
         }
+
+        ImGui::End(); // was missing: older imgui closed the window silently, 1.92 reports it every frame
     }
 
     void InspectorPanel::Shutdown() {}

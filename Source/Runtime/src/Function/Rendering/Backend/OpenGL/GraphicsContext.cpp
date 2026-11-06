@@ -5,7 +5,6 @@
 
 // clang-format off
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <tracy/TracyOpenGL.hpp>
 // clang-format on
 
@@ -149,12 +148,12 @@ namespace SnowLeopardEngine
         TracyGpuCollect;
     }
 
-    void GraphicsContext::SetVSync(bool vsyncEnabled) { glfwSwapInterval(vsyncEnabled); }
+    void GraphicsContext::SetVSync(bool vsyncEnabled) { g_EngineContext->WindowSys->GetWindow()->SetVSync(vsyncEnabled); }
 
     bool GraphicsContext::CaptureBackBuffer(const std::filesystem::path& pngPath)
     {
-        int width = 0, height = 0;
-        glfwGetFramebufferSize(glfwGetCurrentContext(), &width, &height);
+        const int width  = static_cast<int>(g_EngineContext->WindowSys->GetWidth());
+        const int height = static_cast<int>(g_EngineContext->WindowSys->GetHeight());
         if (width <= 0 || height <= 0)
         {
             return false;
@@ -177,7 +176,10 @@ namespace SnowLeopardEngine
         return stbi_write_png(pngPath.string().c_str(), width, height, 3, pixels.data(), width * 3) != 0;
     }
 
-    int GraphicsContext::LoadGL() { return gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)); }
+    int GraphicsContext::LoadGL()
+    {
+        return gladLoadGLLoader(reinterpret_cast<GLADloadproc>(g_EngineContext->WindowSys->GetWindow()->GetProcAddressLoader()));
+    }
 
     int GraphicsContext::GetMinMajor() { return SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MAJOR; }
 

@@ -160,4 +160,39 @@ namespace SnowLeopardEngine
         ButtonMiddle = Button_2
     };
 
+    // Positional names (Xbox layout: South = A, East = B, West = X, North = Y).
+    enum class GamepadButton
+    {
+        South = 0,
+        East,
+        West,
+        North,
+        Back,
+        Guide,
+        Start,
+        LeftStick,
+        RightStick,
+        LeftShoulder,
+        RightShoulder,
+        DPadUp,
+        DPadDown,
+        DPadLeft,
+        DPadRight,
+
+        Count
+    };
+
+    // Sticks are in [-1, 1] (+Y is down, as reported by SDL), triggers in [0, 1].
+    enum class GamepadAxis
+    {
+        LeftX = 0,
+        LeftY,
+        RightX,
+        RightY,
+        LeftTrigger,
+        RightTrigger,
+
+        Count
+    };
+
 } // namespace SnowLeopardEngine

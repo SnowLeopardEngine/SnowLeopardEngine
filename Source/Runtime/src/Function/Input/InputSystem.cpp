@@ -92,8 +92,74 @@ namespace SnowLeopardEngine
         return it != m_MouseButtonUpStates.end() && it->second;
     }
 
+    // gamepad
+
+    void InputSystem::SetGamepadConnected(bool connected)
+    {
+        m_GamepadConnected = connected;
+        if (!connected)
+        {
+            m_GamepadButtons.fill(false);
+            m_GamepadAxes.fill(0.0f);
+        }
+    }
+
+    void InputSystem::SetGamepadButtonState(GamepadButton button, bool pressed)
+    {
+        const auto index = static_cast<size_t>(button);
+        if (index >= s_GamepadButtonCount)
+        {
+            return;
+        }
+
+        if (pressed && !m_GamepadButtons[index])
+        {
+            m_GamepadButtonsDown[index] = true;
+        }
+        if (!pressed && m_GamepadButtons[index])
+        {
+            m_GamepadButtonsUp[index] = true;
+        }
+        m_GamepadButtons[index] = pressed;
+    }
+
+    void InputSystem::SetGamepadAxis(GamepadAxis axis, float value)
+    {
+        const auto index = static_cast<size_t>(axis);
+        if (index < s_GamepadAxisCount)
+        {
+            m_GamepadAxes[index] = value;
+        }
+    }
+
+    bool InputSystem::GetGamepadButton(GamepadButton button) const
+    {
+        const auto index = static_cast<size_t>(button);
+        return index < s_GamepadButtonCount && m_GamepadButtons[index];
+    }
+
+    bool InputSystem::GetGamepadButtonDown(GamepadButton button) const
+    {
+        const auto index = static_cast<size_t>(button);
+        return index < s_GamepadButtonCount && m_GamepadButtonsDown[index];
+    }
+
+    bool InputSystem::GetGamepadButtonUp(GamepadButton button) const
+    {
+        const auto index = static_cast<size_t>(button);
+        return index < s_GamepadButtonCount && m_GamepadButtonsUp[index];
+    }
+
+    float InputSystem::GetGamepadAxis(GamepadAxis axis) const
+    {
+        const auto index = static_cast<size_t>(axis);
+        return index < s_GamepadAxisCount ? m_GamepadAxes[index] : 0.0f;
+    }
+
     void InputSystem::ClearStates()
     {
+        m_GamepadButtonsDown.fill(false);
+        m_GamepadButtonsUp.fill(false);
         m_KeyDownStates.clear();
         m_KeyUpStates.clear();
         m_MouseButtonDownStates.clear();

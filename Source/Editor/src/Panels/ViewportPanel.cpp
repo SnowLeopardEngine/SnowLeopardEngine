@@ -78,11 +78,12 @@ namespace SnowLeopardEngine::Editor
         if (m_ViewportMode == ViewportMode::Edit)
         {
             // Get mouse relative position (Origin is left bottom) to the viewport window
-            auto      viewportMinRegion = ImGui::GetWindowContentRegionMin();
-            auto      viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-            auto      viewportOffset    = ImGui::GetWindowPos();
-            glm::vec2 bounds0  = {viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
-            glm::vec2 bounds1  = {viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
+            // Nothing has been drawn into the child yet, so the cursor is at the content region's top-left corner
+            // (GetWindowContentRegionMin / Max were removed in imgui 1.92).
+            auto      viewportMin  = ImGui::GetCursorScreenPos();
+            auto      viewportSize = ImGui::GetContentRegionAvail();
+            glm::vec2 bounds0      = {viewportMin.x, viewportMin.y};
+            glm::vec2 bounds1      = {viewportMin.x + viewportSize.x, viewportMin.y + viewportSize.y};
             ImVec2    mousePos = ImGui::GetMousePos();
             mousePos.x -= bounds0.x;
             mousePos.y -= bounds0.y;

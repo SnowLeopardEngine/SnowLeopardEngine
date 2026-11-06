@@ -1,5 +1,6 @@
 -- add requirements
-add_requires("imgui v1.92.5-docking", {configs = {glfw = true, opengl3 = true, wchar32 = true}})
+add_requires("imgui v1.92.5-docking", {configs = {sdl3 = true, opengl3 = true, wchar32 = true}})
+add_requireconfs("imgui.libsdl3", {version = "3.4.0", configs = {shared = true}})
 add_requires("argparse")
 
 -- target defination, name: SnowLeopardEditor
@@ -28,6 +29,7 @@ target("SnowLeopardEditor")
 
     -- add packages
     add_packages("imgui", { public = true })
+    add_packages("libsdl3")
     add_packages("argparse", { public = true })
 
     -- add dependencies
@@ -35,8 +37,3 @@ target("SnowLeopardEditor")
 
     -- set target directory
     set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/SnowLeopardEditor")
-
-    -- copy config
-    on_config(function(target)
-        os.cp("$(scriptdir)/config/*", target:targetdir())
-    end)

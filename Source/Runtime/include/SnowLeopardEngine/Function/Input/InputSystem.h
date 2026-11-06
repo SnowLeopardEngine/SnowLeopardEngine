@@ -5,6 +5,8 @@
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
 
+#include <array>
+
 namespace SnowLeopardEngine
 {
     class InputSystem final : public EngineSubSystem
@@ -26,6 +28,13 @@ namespace SnowLeopardEngine
         glm::vec2 GetMousePositionFlipY() { return m_MousePositionFlipY; }
         glm::vec2 GetMouseScrollDelta() { return m_MouseScrollDelta; }
 
+        // Gamepad (the first connected one)
+        bool  IsGamepadConnected() const { return m_GamepadConnected; }
+        bool  GetGamepadButton(GamepadButton button) const;
+        bool  GetGamepadButtonDown(GamepadButton button) const;
+        bool  GetGamepadButtonUp(GamepadButton button) const;
+        float GetGamepadAxis(GamepadAxis axis) const;
+
     private:
         template<typename T>
         int ToInt(T code) const
@@ -39,10 +48,15 @@ namespace SnowLeopardEngine
         void SetMousePosition(const glm::vec2& position) { m_MousePosition = position; }
         void SetMousePositionFlipY(const glm::vec2& positionFlipY) { m_MousePositionFlipY = positionFlipY; }
         void SetMouseScrollDelta(const glm::vec2& scrollDelta) { m_MouseScrollDelta = scrollDelta; };
+        void AddMouseScrollDelta(const glm::vec2& scrollDelta) { m_MouseScrollDelta += scrollDelta; };
+
+        void SetGamepadConnected(bool connected);
+        void SetGamepadButtonState(GamepadButton button, bool pressed);
+        void SetGamepadAxis(GamepadAxis axis, float value);
 
         void ClearStates();
 
-        friend class GLFWWindow;
+        friend class SDL3Window;
 
     private:
         std::map<int, bool> m_KeyDownStates;
@@ -56,5 +70,14 @@ namespace SnowLeopardEngine
         glm::vec2 m_MousePosition      = {0, 0};
         glm::vec2 m_MousePositionFlipY = {0, 0};
         glm::vec2 m_MouseScrollDelta   = {0, 0};
+
+        static constexpr size_t s_GamepadButtonCount = static_cast<size_t>(GamepadButton::Count);
+        static constexpr size_t s_GamepadAxisCount   = static_cast<size_t>(GamepadAxis::Count);
+
+        bool                                      m_GamepadConnected = false;
+        std::array<bool, s_GamepadButtonCount>    m_GamepadButtons {};
+        std::array<bool, s_GamepadButtonCount>    m_GamepadButtonsDown {};
+        std::array<bool, s_GamepadButtonCount>    m_GamepadButtonsUp {};
+        std::array<float, s_GamepadAxisCount>     m_GamepadAxes {};
     };
 } // namespace SnowLeopardEngine

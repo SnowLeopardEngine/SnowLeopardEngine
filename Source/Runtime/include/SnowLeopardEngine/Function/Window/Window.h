@@ -2,6 +2,8 @@
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
 
+#include <functional>
+
 namespace SnowLeopardEngine
 {
     struct WindowInitInfo
@@ -20,12 +22,19 @@ namespace SnowLeopardEngine
 
     enum class WindowType
     {
-        GLFW = 0,
+        SDL3 = 0,
     };
 
     class Window
     {
     public:
+        // Receives every platform event (an `SDL_Event*` for SDL3) before the engine handles it; used by the editor's
+        // ImGui backend.
+        using NativeEventListener   = std::function<void(const void* nativeEvent)>;
+        using NativeEventListenerId = uint32_t;
+
+        virtual ~Window() = default;
+
         /**
          * @brief Get the window type
          *
@@ -68,15 +77,25 @@ namespace SnowLeopardEngine
          */
         virtual uint32_t GetHeight() const = 0;
 
+        // Display scale of the window (1 = 96 dpi on Windows).
+        virtual float GetContentScale() const = 0;
+
         virtual bool ShouldClose() const = 0;
         virtual bool IsMinimized() const = 0;
 
         virtual void MakeCurrentContext() = 0;
         virtual void SwapBuffers()        = 0;
+        virtual void SetVSync(bool enabled) = 0;
+        // GL function loader (`void* (*)(const char*)`) for glad.
+        virtual void* GetProcAddressLoader() const = 0;
 
         virtual void SetHideCursor(bool hide) = 0;
 
         virtual void* GetPlatformWindow() const = 0;
         virtual void* GetNativeWindow() const   = 0;
+        virtual void* GetGraphicsContext() const = 0;
+
+        virtual NativeEventListenerId AddNativeEventListener(NativeEventListener listener) = 0;
+        virtual void                  RemoveNativeEventListener(NativeEventListenerId id)  = 0;
     };
 } // namespace SnowLeopardEngine

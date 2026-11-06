@@ -35,8 +35,8 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git clang libx11-dev libxrandr-dev libxrender-dev \
-            libglvnd-dev libxinerama-dev libxcursor-dev libxi-dev libxkbcommon-dev libwayland-dev
+          # SDL3 (built from source by xmake) needs the X11 / Wayland / GL / audio development headers
+          sudo apt-get install -y build-essential cmake git clang pkg-config libx11-dev libxext-dev libxrandr-dev             libxrender-dev libxinerama-dev libxcursor-dev libxi-dev libxss-dev libxfixes-dev libxtst-dev             libxkbcommon-dev libwayland-dev wayland-protocols libdecor-0-dev libegl1-mesa-dev libgl1-mesa-dev             libglvnd-dev libasound2-dev libpulse-dev libudev-dev libdbus-1-dev
 
       - name: Build C# bindings
         run: bash ./Source/CSharpBindings/build.sh

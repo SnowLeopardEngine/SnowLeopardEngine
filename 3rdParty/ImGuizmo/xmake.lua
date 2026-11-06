@@ -1,5 +1,5 @@
--- add requirements
-add_requires("imgui v1.90.1-docking", {configs = {glfw = true, opengl3 = true, wchar32 = true}})
+-- imgui is required once, in Source/Editor/xmake.lua (a second add_requires here used to win and pinned the
+-- editor to an older imgui)
 
 -- define target
 target("ImGuizmo")

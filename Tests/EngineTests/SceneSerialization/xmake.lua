@@ -21,4 +21,4 @@ target("SceneSerialization")
     add_rules("copy_assets")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Tests/EngineTests/SceneSerialization")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Tests/EngineTests/SceneSerialization")

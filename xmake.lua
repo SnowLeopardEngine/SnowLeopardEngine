@@ -34,8 +34,24 @@ rule("copy_assets")
     after_build(function(target)
         print("Install C# bindings for target: " .. target:name())
         os.cp("$(builddir)/assembly/SnowLeopardEngine/*", target:targetdir())
+
+        -- shared packages of the engine (SDL3) have to sit next to every executable
+        local engine = target:dep("SnowLeopardEngine")
+        local sdl    = engine and engine:pkg("libsdl3")
+        if sdl then
+            if is_plat("windows", "mingw") then
+                os.cp(path.join(sdl:installdir(), "bin", "*.dll"), target:targetdir())
+            elseif is_plat("macosx") then
+                os.cp(path.join(sdl:installdir(), "lib", "*.dylib"), target:targetdir())
+            else
+                os.cp(path.join(sdl:installdir(), "lib", "*.so*"), target:targetdir(), {symlink = true})
+            end
+        end
     end)
     on_load(function(target)
+        if not is_plat("windows", "mingw") then
+            target:add("rpathdirs", "@loader_path", "$ORIGIN") -- find the copied shared libraries next to the binary
+        end
         -- https://xmake.io/#/zh-cn/manual/builtin_modules?id=oscp
         -- copy the folder itself: "Assets/*" with rootdir flattened sub-folders on a target's first build
         os.cp("$(projectdir)/Assets", target:targetdir())

@@ -1,8 +1,10 @@
 -- add requirements
 add_requires("fmt", { configs = { header_only = true }})
 add_requires("spdlog", { configs = { fmt_external = true }}) -- share one fmt with the engine instead of the bundled copy
-add_requires("glfw", "glm", "stduuid", "entt v3.16.0", "assimp")
+add_requires("glm", "stduuid", "entt v3.16.0", "assimp")
 add_requires("miniaudio", "stb", "tracy", "magic_enum", "cereal", "shaderc", "spirv-cross", "scoral", "cryptopp", "fg", "freetype")
+-- one shared SDL for the engine DLL and the editor's imgui backend (two static copies would not share state)
+add_requires("libsdl3 3.4.0", { configs = { shared = true }})
 add_requires("joltphysics v5.5.0", { configs = { debug = is_mode("debug") }})
 add_requires("ozz-animation 0.14.2", { configs = { debug = is_mode("debug") }})
 
@@ -26,7 +28,7 @@ target("SnowLeopardEngine")
     -- add packages
     add_packages("spdlog", { public = true })
     add_packages("fmt", { public = true })
-    add_packages("glfw", { public = true })
+    add_packages("libsdl3") -- private: SDL only appears in Platform/SDL3/SDL3Window.cpp
     add_packages("glm", { public = true })
     add_packages("stduuid", { public = true })
     add_packages("entt", { public = true })
