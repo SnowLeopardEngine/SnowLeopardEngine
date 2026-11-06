@@ -9,6 +9,9 @@ add_requires("joltphysics v5.5.0", { configs = { debug = is_mode("debug") }})
 add_requires("ozz-animation 0.14.2", { configs = { debug = is_mode("debug") }})
 -- rendering: VRI (Vulkan backend) is the only graphics API
 add_requires("vri-vultra v0.2.0", {alias = "vri"})
+-- shaders: DzShader v3 is parsed with ANTLR (generated parser in the tree) and compiled by Slang to SPIR-V
+add_requires("antlr4-runtime 4.13.2", {configs = {shared = false}, system = false})
+add_requires("slang-prebuilt 2026.11")
 
 -- target defination, name: SnowLeopardEngine
 target("SnowLeopardEngine")
@@ -46,6 +49,10 @@ target("SnowLeopardEngine")
     add_packages("ozz-animation", { public = true })
     add_packages("joltphysics", { public = true })
     add_packages("vri", { public = true }) -- public: the editor draws ImGui through VRI
+    add_packages("antlr4-runtime", "slang-prebuilt") -- private: only Function/Rendering/Shader uses them
+    add_defines("ANTLR4CPP_STATIC")
+    -- the ANTLR generated parser: third-party style code, keep its warnings out of the engine build
+    add_files("src/Function/Rendering/Shader/Grammar/generated/*.cpp", {warnings = "none"})
 
     -- add dependencies (inside project)
     add_deps("FastNoiseLite")

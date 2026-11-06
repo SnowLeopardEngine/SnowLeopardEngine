@@ -35,16 +35,18 @@ rule("copy_assets")
         print("Install C# bindings for target: " .. target:name())
         os.cp("$(builddir)/assembly/SnowLeopardEngine/*", target:targetdir())
 
-        -- shared packages of the engine (SDL3) have to sit next to every executable
+        -- shared packages of the engine (SDL3, the Slang compiler) have to sit next to every executable
         local engine = target:dep("SnowLeopardEngine")
-        local sdl    = engine and engine:pkg("libsdl3")
-        if sdl then
-            if is_plat("windows", "mingw") then
-                os.cp(path.join(sdl:installdir(), "bin", "*.dll"), target:targetdir())
-            elseif is_plat("macosx") then
-                os.cp(path.join(sdl:installdir(), "lib", "*.dylib"), target:targetdir())
-            else
-                os.cp(path.join(sdl:installdir(), "lib", "*.so*"), target:targetdir(), {symlink = true})
+        for _, name in ipairs({"libsdl3", "slang-prebuilt"}) do
+            local pkg = engine and engine:pkg(name)
+            if pkg then
+                if is_plat("windows", "mingw") then
+                    os.cp(path.join(pkg:installdir(), "bin", "*.dll"), target:targetdir())
+                elseif is_plat("macosx") then
+                    os.cp(path.join(pkg:installdir(), "lib", "*.dylib"), target:targetdir())
+                else
+                    os.cp(path.join(pkg:installdir(), "lib", "*.so*"), target:targetdir(), {symlink = true})
+                end
             end
         end
     end)
