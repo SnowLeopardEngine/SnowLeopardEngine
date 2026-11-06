@@ -37,3 +37,6 @@ target("SnowLeopardEditor")
 
     -- set target directory
     set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/SnowLeopardEditor")
+
+    -- default arguments for `xmake run SnowLeopardEditor`; arguments given on the command line replace them
+    set_runargs("--project", path.join(os.scriptdir(), "../../ExampleProject.dzproj"))
