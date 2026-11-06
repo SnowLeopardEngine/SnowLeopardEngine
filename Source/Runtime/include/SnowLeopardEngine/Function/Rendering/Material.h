@@ -70,6 +70,11 @@ namespace SnowLeopardEngine
 
         size_t GetHash() const;
 
+        // Sets every uniform of the standard surface shaders (GBufferPass / WeightedBlendedPass) to its default.
+        // Materials only set the properties they list, and GL uniforms keep their last value per program, so without
+        // this a material inherits e.g. `metallic` or `useEmissiveMap` from whatever was drawn before it.
+        static void ResetSurfaceDefaults(RenderContext& rc);
+
     private:
         void AutoBind(RenderContext& rc);
 

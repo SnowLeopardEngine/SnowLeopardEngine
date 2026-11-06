@@ -11,6 +11,21 @@ namespace SnowLeopardEngine
         return hash;
     }
 
+    void Material::ResetSurfaceDefaults(RenderContext& rc)
+    {
+        rc.SetUniformVec4("albedo", glm::vec4(1.0f))
+            .SetUniform1i("useAlbedoMap", 0)
+            .SetUniformVec4("emissive", glm::vec4(0.0f))
+            .SetUniform1i("useEmissiveMap", 0)
+            .SetUniform1f("metallic", 0.0f)
+            .SetUniform1i("useMetallicMap", 0)
+            .SetUniform1f("roughness", 0.5f)
+            .SetUniform1i("useRoughnessMap", 0)
+            .SetUniform1f("ao", 1.0f)
+            .SetUniform1i("useAoMap", 0)
+            .SetUniform1f("opacity", 1.0f);
+    }
+
     void Material::AutoBind(RenderContext& rc)
     {
         m_TextureSlot = 0;

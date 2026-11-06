@@ -57,7 +57,7 @@ vec3 calPointLight(PointLight pointLight, vec3 F0, vec3 N, vec3 V, PBRMaterial m
 }
 
 vec3 calIBLAmbient(vec3 diffuseColor, vec3 F0, vec3 N, vec3 V, PBRMaterial material, sampler2D brdfLUT, samplerCube irradianceMap, samplerCube prefilteredEnvMap) {
-    float NdotV = dot(N, V);
+    float NdotV = clamp(dot(N, V), 0.0, 1.0);
     LightContribution iblContribution = calIBL(diffuseColor, F0, 0.5, material.roughness, N, V, NdotV, brdfLUT, irradianceMap, prefilteredEnvMap);
     return iblContribution.Diffuse * material.ao + iblContribution.Specular * material.ao;
 }
@@ -72,15 +72,17 @@ vec3 calPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NU
     const vec3 diffuseColor = mix(material.albedo * (1.0 - F0), vec3(0.0), material.metallic);
     F0 = mix(F0, material.albedo, material.metallic);
 
-    vec3 Lo = vec3(0.0);
-    // directional light contribution
-    Lo += calDirectionalLight(directionalLight, F0, N, V, material);
-    // point lights contribution
+    // directional light contribution (the only light the cascaded shadow maps cover)
+    vec3 directLo = calDirectionalLight(directionalLight, F0, N, V, material);
+
+    // point lights contribution (no shadows for point lights yet)
+    vec3 pointLo = vec3(0.0);
     for(uint i = 0; i < numPointLights; ++i) {
-        Lo += calPointLight(pointLights[i], F0, N, V, material, fragPos);
+        pointLo += calPointLight(pointLights[i], F0, N, V, material, fragPos);
     }
 
-    Lo += calIBLAmbient(diffuseColor, F0, N, V, material, brdfLUT, irradianceMap, prefilteredEnvMap);
+    // image-based (sky) lighting: occluded by AO, not by the sun's shadow
+    vec3 iblLo = calIBLAmbient(diffuseColor, F0, N, V, material, brdfLUT, irradianceMap, prefilteredEnvMap);
 
     // select cascade layer
     vec4 fragPosViewSpace = getViewMatrix() * vec4(fragPos, 1.0);
@@ -90,7 +92,7 @@ vec3 calPBRLighting(DirectionalLight directionalLight, PointLight pointLights[NU
     float shadow = calShadow(cascadeIndex, fragPos, normal, directionalLight.direction, cascadedShadowMaps);
 
     vec3 ambient = vec3(0.01) * material.albedo * material.ao;
-    vec3 color = material.emissive + ambient + (1.0 - shadow) * Lo;
+    vec3 color = material.emissive + ambient + iblLo + pointLo + (1.0 - shadow) * directLo;
 
     return color;
 }

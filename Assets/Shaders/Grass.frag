@@ -17,5 +17,6 @@ void main() {
     {
         discard;
     }
-    grassTarget = vec4(grassColor.rgb, 1.0);
+    // The grass target is blitted into the linear HDR scene color, so decode the sRGB texture first.
+    grassTarget = vec4(gammaToLinear(grassColor.rgb), 1.0);
 }
