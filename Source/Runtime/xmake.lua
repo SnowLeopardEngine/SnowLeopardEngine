@@ -3,7 +3,7 @@ add_requires("fmt", { configs = { header_only = true }})
 add_requires("spdlog", { configs = { fmt_external = true }}) -- share one fmt with the engine instead of the bundled copy
 add_requires("glfw", "glm", "stduuid", "entt v3.10.3", "assimp")
 add_requires("miniaudio", "stb", "tracy", "magic_enum", "cereal", "shaderc", "spirv-cross", "scoral", "cryptopp", "fg", "freetype")
-add_requires("sphysx-cross", { configs = { debug = is_mode("debug") }})
+add_requires("joltphysics v5.5.0", { configs = { debug = is_mode("debug") }})
 add_requires("ozz-animation 0.14.2", { configs = { debug = is_mode("debug") }})
 
 -- target defination, name: SnowLeopardEngine
@@ -43,14 +43,13 @@ target("SnowLeopardEngine")
     add_packages("fg", { public = true })
     add_packages("freetype", { public = true })
     add_packages("ozz-animation", { public = true })
-    add_packages("sphysx-cross", { public = true })
+    add_packages("joltphysics", { public = true })
 
     -- add dependencies (inside project)
     add_deps("glad")
     add_deps("FastNoiseLite")
 
     -- defines
-    add_defines("PX_PHYSX_STATIC_LIB") -- force static lib https://github.com/NVIDIAGameWorks/PhysX/issues/260
     if is_mode("debug") then
         add_defines("_DEBUG")
     else

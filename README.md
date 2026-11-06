@@ -38,7 +38,7 @@ Group Members:
 ## Features
 - Modern OpenGL (4.6)                                                                    
 - Unity-like Shaders (DzShader)
-- PhysX for Physics Simulation
+- Jolt Physics for Physics Simulation
 - PBR Rendering
 - Post-processing Effects
 - Skeletal Animations

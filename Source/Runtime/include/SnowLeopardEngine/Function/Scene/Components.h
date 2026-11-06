@@ -9,6 +9,7 @@
 #include "SnowLeopardEngine/Function/Geometry/HeightMap.h"
 #include "SnowLeopardEngine/Function/NativeScripting/NativeScriptInstance.h"
 #include "SnowLeopardEngine/Function/Physics/PhysicsMaterial.h"
+#include "SnowLeopardEngine/Function/Physics/PhysicsTypes.h"
 #include "SnowLeopardEngine/Function/Rendering/Material.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/LayerManager.h"
@@ -16,7 +17,6 @@
 
 #include "cereal/cereal.hpp"
 #include "glm/ext/scalar_constants.hpp"
-#include <PxPhysicsAPI.h>
 #include <entt/fwd.hpp>
 
 // CppAst.NET Macro
@@ -301,7 +301,7 @@ namespace SnowLeopardEngine
 
         __cppast(tooltip = "The angular damping of the rigidBody") float AngularDamping = 0.05f;
 
-        __cppast(ignore) physx::PxRigidActor* InternalBody = nullptr;
+        __cppast(ignore) PhysicsBodyHandle InternalBody = InvalidPhysicsBody;
 
         __cppast(ignore) bool IsStatic = false;
 
@@ -426,7 +426,7 @@ namespace SnowLeopardEngine
 
         __cppast(ignore) Ref<PhysicsMaterial> Material = nullptr;
 
-        __cppast(ignore) physx::PxRigidStatic* InternalBody = nullptr;
+        __cppast(ignore) PhysicsBodyHandle InternalBody = InvalidPhysicsBody;
 
         // NOLINTBEGIN
         template<class Archive>
@@ -453,12 +453,11 @@ namespace SnowLeopardEngine
         float     StepOffset  = 0.3;
         float     Height      = 1.0f;
         float     Radius      = 0.5f;
-        float     MinMoveDisp = 0.2;
+        float     MinMoveDisp = 0.2; // kept for scene-file compatibility; unused since the move to Jolt
         glm::vec3 Offset      = {0, 0.5, 0};
 
-        Ref<PhysicsMaterial>       Material           = nullptr;
-        physx::PxController*       InternalController = nullptr;
-        physx::PxControllerFilters Filters;
+        Ref<PhysicsMaterial>                    Material           = nullptr;
+        __cppast(ignore) PhysicsCharacterHandle InternalController = nullptr;
 
         // NOLINTBEGIN
         template<class Archive>

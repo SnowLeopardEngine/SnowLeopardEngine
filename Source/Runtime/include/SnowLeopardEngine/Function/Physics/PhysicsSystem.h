@@ -1,6 +1,5 @@
 #pragma once
 
-#include "PxActor.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Base/EngineSubSystem.h"
 #include "SnowLeopardEngine/Core/Event/Event.h"
@@ -8,34 +7,23 @@
 #include "SnowLeopardEngine/Core/Event/SceneEvents.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Physics/OverlapInfo.h"
-#include "SnowLeopardEngine/Function/Physics/PhysicsErrorCallback.h"
+#include "SnowLeopardEngine/Function/Physics/PhysicsTypes.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/LogicScene.h"
 
-#include "glm/fwd.hpp"
-#include <PxPhysicsAPI.h>
 #include <unordered_map>
 
 namespace SnowLeopardEngine
 {
-    class PhysicsSystem final : public EngineSubSystem, public physx::PxSimulationEventCallback
+    // Physics backed by Jolt Physics. Jolt types never leave PhysicsSystem.cpp: components hold
+    // opaque handles (PhysicsTypes.h) and everything else lives in the private JoltState.
+    class PhysicsSystem final : public EngineSubSystem
     {
     public:
         DECLARE_SUBSYSTEM(PhysicsSystem)
 
         void CookPhysicsScene(LogicScene* logicScene);
         void OnFixedTick();
-
-        void onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count) override;
-        void onWake(physx::PxActor** actors, physx::PxU32 count) override;
-        void onSleep(physx::PxActor** actors, physx::PxU32 count) override;
-        void onContact(const physx::PxContactPairHeader& pairHeader,
-                       const physx::PxContactPair*       pairs,
-                       physx::PxU32                      count) override;
-        void onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count) override;
-        void onAdvance(const physx::PxRigidBody* const* bodyBuffer,
-                       const physx::PxTransform*        poseBuffer,
-                       physx::PxU32                     count) override;
 
         /** APIs **/
 
@@ -54,50 +42,57 @@ namespace SnowLeopardEngine
         bool OverlapSphere(const glm::vec3& sphereOrigin, float sphereRadius, OverlapInfo& info);
 
     private:
+        struct JoltState;
+
         void OnLogicSceneLoaded(const LogicSceneLoadedEvent& e);
         void ReleaseInternalResources();
+        void DispatchContactEvents();
 
         void OnEntityCreate(const EntityCreateEvent& e);
         void OnEntityDestroy(const EntityDestroyEvent& e);
 
-        physx::PxActor* createSphere(TransformComponent&      transform,
-                                     EntityStatusComponent&   entityStatus,
-                                     RigidBodyComponent&      rigidBody,
-                                     SphereColliderComponent& sphereCollider);
+        PhysicsBodyHandle createSphere(Entity                   entity,
+                                       TransformComponent&      transform,
+                                       EntityStatusComponent&   entityStatus,
+                                       RigidBodyComponent&      rigidBody,
+                                       SphereColliderComponent& sphereCollider);
 
-        physx::PxActor* createBox(TransformComponent&    transform,
-                                  EntityStatusComponent& entityStatus,
-                                  RigidBodyComponent&    rigidBody,
-                                  BoxColliderComponent&  boxCollider);
+        PhysicsBodyHandle createBox(Entity                 entity,
+                                    TransformComponent&    transform,
+                                    EntityStatusComponent& entityStatus,
+                                    RigidBodyComponent&    rigidBody,
+                                    BoxColliderComponent&  boxCollider);
 
-        physx::PxActor* createCapsule(TransformComponent&       transform,
-                                      EntityStatusComponent&    entityStatus,
-                                      RigidBodyComponent&       rigidBody,
-                                      CapsuleColliderComponent& capsuleCollider);
+        PhysicsBodyHandle createCapsule(Entity                    entity,
+                                        TransformComponent&       transform,
+                                        EntityStatusComponent&    entityStatus,
+                                        RigidBodyComponent&       rigidBody,
+                                        CapsuleColliderComponent& capsuleCollider);
 
-        physx::PxActor* createTerrain(TransformComponent&       transform,
-                                      TerrainComponent&         terrain,
-                                      TerrainColliderComponent& terrainCollider);
+        PhysicsBodyHandle createTerrain(Entity                    entity,
+                                        TransformComponent&       transform,
+                                        TerrainComponent&         terrain,
+                                        TerrainColliderComponent& terrainCollider);
 
-        void createCharacter(TransformComponent& transform, CharacterControllerComponent& characterController);
+        void createCharacter(Entity                        entity,
+                             TransformComponent&           transform,
+                             CharacterControllerComponent& characterController);
 
-        physx::PxActor* createMesh(TransformComponent&    transform,
-                                   EntityStatusComponent& entityStatus,
-                                   RigidBodyComponent&    rigidBody,
-                                   MeshFilterComponent&   meshFilter,
-                                   MeshColliderComponent& meshCollider);
+        PhysicsBodyHandle createMesh(Entity                 entity,
+                                     TransformComponent&    transform,
+                                     EntityStatusComponent& entityStatus,
+                                     RigidBodyComponent&    rigidBody,
+                                     MeshFilterComponent&   meshFilter,
+                                     MeshColliderComponent& meshCollider);
+
+        void releaseBody(PhysicsBodyHandle& body);
+        void releaseCharacter(PhysicsCharacterHandle& character);
 
     private:
-        physx::PxDefaultAllocator   m_Allocator;
-        PhysicsErrorCallback        m_ErrorCallback;
-        physx::PxFoundation*        m_Foundation        = nullptr;
-        physx::PxPhysics*           m_Physics           = nullptr;
-        physx::PxScene*             m_Scene             = nullptr;
-        LogicScene*                 m_LogicScene        = nullptr;
-        physx::PxCooking*           m_Cooking           = nullptr;
-        physx::PxControllerManager* m_ControllerManager = nullptr;
+        Scope<JoltState> m_Jolt;
+        LogicScene*      m_LogicScene = nullptr;
 
-        std::unordered_map<physx::PxActor*, Entity> m_Actor2EntityMap;
+        std::unordered_map<PhysicsBodyHandle, Entity> m_Body2EntityMap;
 
         EventHandler<LogicSceneLoadedEvent> m_LogicSceneLoadedHandler = [this](const LogicSceneLoadedEvent& e) {
             OnLogicSceneLoaded(e);

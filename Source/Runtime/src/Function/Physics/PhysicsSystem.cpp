@@ -1,74 +1,323 @@
 #include "SnowLeopardEngine/Function/Physics/PhysicsSystem.h"
-#include "PxActorData.h"
-#include "PxForceMode.h"
-#include "PxRigidBody.h"
-#include "PxRigidDynamic.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
-#include "SnowLeopardEngine/Function/Util/Util.h"
-#include "foundation/PxSimpleTypes.h"
 
-using namespace physx;
+// Jolt must be included first: it sets up the configuration macros used by every other Jolt header.
+#include <Jolt/Jolt.h>
+
+#include <Jolt/Core/Factory.h>
+#include <Jolt/Core/IssueReporting.h>
+#include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Core/TempAllocator.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Body/BodyFilter.h>
+#include <Jolt/Physics/Body/BodyLock.h>
+#include <Jolt/Physics/Character/CharacterVirtual.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/CollideShape.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <Jolt/Physics/Collision/ContactListener.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
+#include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/RegisterTypes.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <cstdio>
+#include <mutex>
+#include <thread>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace SnowLeopardEngine
 {
-    // Set the actions when collision occurs,Physx needs to do.
-    static PxFilterFlags SimulationFilterShader(PxFilterObjectAttributes attributes0,
-                                                PxFilterData             filterData0,
-                                                PxFilterObjectAttributes attributes1,
-                                                PxFilterData             filterData1,
-                                                PxPairFlags&             pairFlags,
-                                                const void*              constantBlock,
-                                                PxU32                    constantBlockSize)
+    namespace
     {
-        pairFlags = PxPairFlag::eCONTACT_DEFAULT | PxPairFlag::eNOTIFY_TOUCH_FOUND;
-        return PxFilterFlags();
-    }
+        // ---------------------------------------------------------------------------------------------
+        // Limits and layers
+        // ---------------------------------------------------------------------------------------------
+
+        constexpr JPH::uint cMaxBodies             = 65536;
+        constexpr JPH::uint cNumBodyMutexes        = 0; // 0 = Jolt's default
+        constexpr JPH::uint cMaxBodyPairs          = 65536;
+        constexpr JPH::uint cMaxContactConstraints = 10240;
+        constexpr JPH::uint cTempAllocatorSize     = 32 * 1024 * 1024;
+
+        // Same gravity the PhysX scene used.
+        const glm::vec3 cGravity = {0.0f, -9.8f, 0.0f};
+
+        // Guards against degenerate collider sizes, which Jolt asserts on.
+        constexpr float cMinExtent = 1.0e-3f;
+
+        namespace Layers
+        {
+            constexpr JPH::ObjectLayer NonMoving = 0; // static bodies, terrain
+            constexpr JPH::ObjectLayer Moving    = 1; // dynamic bodies, character inner bodies
+        } // namespace Layers
+
+        namespace BroadPhaseLayers
+        {
+            constexpr JPH::BroadPhaseLayer NonMoving(0);
+            constexpr JPH::BroadPhaseLayer Moving(1);
+            constexpr JPH::uint            Count = 2;
+        } // namespace BroadPhaseLayers
+
+        class BroadPhaseLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface
+        {
+        public:
+            JPH::uint GetNumBroadPhaseLayers() const override { return BroadPhaseLayers::Count; }
+
+            JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override
+            {
+                return inLayer == Layers::NonMoving ? BroadPhaseLayers::NonMoving : BroadPhaseLayers::Moving;
+            }
+
+#if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
+            const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const override
+            {
+                return inLayer == BroadPhaseLayers::NonMoving ? "NonMoving" : "Moving";
+            }
+#endif
+        };
+
+        class ObjectVsBroadPhaseLayerFilterImpl final : public JPH::ObjectVsBroadPhaseLayerFilter
+        {
+        public:
+            bool ShouldCollide(JPH::ObjectLayer inLayer, JPH::BroadPhaseLayer inBroadPhaseLayer) const override
+            {
+                // Static geometry never needs to be tested against other static geometry.
+                return inLayer == Layers::Moving || inBroadPhaseLayer == BroadPhaseLayers::Moving;
+            }
+        };
+
+        class ObjectLayerPairFilterImpl final : public JPH::ObjectLayerPairFilter
+        {
+        public:
+            bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::ObjectLayer inLayer2) const override
+            {
+                return inLayer1 == Layers::Moving || inLayer2 == Layers::Moving;
+            }
+        };
+
+        // Jolt reports contacts from its worker threads, once per touching sub-shape pair (e.g. per terrain triangle a
+        // ball rolls onto). Contacts are counted per body pair so that "enter" fires once when two bodies start
+        // touching, like PhysX's eNOTIFY_TOUCH_FOUND did. Enter events are dispatched on the main thread after the step.
+        class ContactQueue final : public JPH::ContactListener
+        {
+        public:
+            using Pair = std::pair<PhysicsBodyHandle, PhysicsBodyHandle>;
+
+            void OnContactAdded(const JPH::Body& inBody1,
+                                const JPH::Body& inBody2,
+                                const JPH::ContactManifold& /*inManifold*/,
+                                JPH::ContactSettings& /*ioSettings*/) override
+            {
+                const Pair                  pair = MakePair(inBody1.GetID(), inBody2.GetID());
+                std::lock_guard<std::mutex> lock(m_Mutex);
+                if (++m_Touching[pair] == 1)
+                {
+                    m_Entered.push_back(pair);
+                }
+            }
+
+            void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override
+            {
+                const Pair                  pair = MakePair(inSubShapePair.GetBody1ID(), inSubShapePair.GetBody2ID());
+                std::lock_guard<std::mutex> lock(m_Mutex);
+                auto                        it = m_Touching.find(pair);
+                if (it != m_Touching.end() && --it->second <= 0)
+                {
+                    m_Touching.erase(it);
+                }
+            }
+
+            std::vector<Pair> DrainEntered()
+            {
+                std::lock_guard<std::mutex> lock(m_Mutex);
+                std::vector<Pair>           pairs;
+                pairs.swap(m_Entered);
+                return pairs;
+            }
+
+            void Reset()
+            {
+                std::lock_guard<std::mutex> lock(m_Mutex);
+                m_Entered.clear();
+                m_Touching.clear();
+            }
+
+        private:
+            struct PairHash
+            {
+                size_t operator()(const Pair& pair) const
+                {
+                    return std::hash<uint64_t> {}((static_cast<uint64_t>(pair.first) << 32) | pair.second);
+                }
+            };
+
+            static Pair MakePair(const JPH::BodyID& a, const JPH::BodyID& b)
+            {
+                const PhysicsBodyHandle ha = a.GetIndexAndSequenceNumber();
+                const PhysicsBodyHandle hb = b.GetIndexAndSequenceNumber();
+                return ha < hb ? Pair {ha, hb} : Pair {hb, ha};
+            }
+
+            std::mutex                                   m_Mutex;
+            std::vector<Pair>                            m_Entered;
+            std::unordered_map<Pair, int, PairHash>      m_Touching;
+        };
+
+        // ---------------------------------------------------------------------------------------------
+        // Conversions
+        // ---------------------------------------------------------------------------------------------
+
+        inline JPH::Vec3  ToJolt(const glm::vec3& v) { return JPH::Vec3(v.x, v.y, v.z); }
+        inline JPH::RVec3 ToJoltR(const glm::vec3& v) { return JPH::RVec3(v.x, v.y, v.z); }
+        inline JPH::Quat  ToJolt(const glm::quat& q) { return JPH::Quat(q.x, q.y, q.z, q.w); }
+
+        inline glm::vec3 ToGLM(JPH::Vec3Arg v) { return {v.GetX(), v.GetY(), v.GetZ()}; }
+#ifdef JPH_DOUBLE_PRECISION
+        inline glm::vec3 ToGLM(JPH::DVec3Arg v)
+        {
+            return {static_cast<float>(v.GetX()), static_cast<float>(v.GetY()), static_cast<float>(v.GetZ())};
+        }
+#endif
+        inline glm::quat ToGLM(JPH::QuatArg q) { return {q.GetW(), q.GetX(), q.GetY(), q.GetZ()}; }
+
+        inline JPH::BodyID ToBodyID(PhysicsBodyHandle handle) { return JPH::BodyID(handle); }
+
+        inline JPH::uint64 ToUserData(Entity entity)
+        {
+            return static_cast<JPH::uint64>(static_cast<uint32_t>(static_cast<entt::entity>(entity)));
+        }
+
+        void JoltTrace(const char* inFormat, ...)
+        {
+            va_list args;
+            va_start(args, inFormat);
+            char buffer[1024];
+            std::vsnprintf(buffer, sizeof(buffer), inFormat, args);
+            va_end(args);
+            SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][Jolt] {0}", buffer);
+        }
+
+        int GetWorkerThreadCount()
+        {
+            const int hardwareThreads = static_cast<int>(std::thread::hardware_concurrency());
+            return hardwareThreads > 1 ? hardwareThreads - 1 : 1;
+        }
+
+        // Colliders are offset in the body's local space, so the body origin stays at the entity's transform.
+        JPH::RefConst<JPH::Shape> WithOffset(const JPH::RefConst<JPH::Shape>& shape, const glm::vec3& offset)
+        {
+            if (offset == glm::vec3(0.0f))
+            {
+                return shape;
+            }
+            return new JPH::RotatedTranslatedShape(ToJolt(offset), JPH::Quat::sIdentity(), shape);
+        }
+
+        void ApplyMaterial(JPH::BodyCreationSettings& settings, const Ref<PhysicsMaterial>& material)
+        {
+            // Jolt has a single friction coefficient per body; the dynamic one is the closest match.
+            // A missing material means frictionless and non-bouncy, as it did with PhysX.
+            settings.mFriction    = material ? material->DynamicFriction : 0.0f;
+            settings.mRestitution = material ? material->Bounciness : 0.0f;
+        }
+
+        JPH::EMotionQuality ToMotionQuality(bool enableCCD)
+        {
+            return enableCCD ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
+        }
+    } // namespace
+
+    // -------------------------------------------------------------------------------------------------
+    // JoltState
+    // -------------------------------------------------------------------------------------------------
+
+    struct PhysicsSystem::JoltState
+    {
+        JPH::TempAllocatorImpl   TempAllocator {cTempAllocatorSize};
+        JPH::JobSystemThreadPool JobSystem {JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, GetWorkerThreadCount()};
+
+        BroadPhaseLayerInterfaceImpl      BroadPhaseLayerInterface;
+        ObjectVsBroadPhaseLayerFilterImpl ObjectVsBroadPhaseLayerFilter;
+        ObjectLayerPairFilterImpl         ObjectLayerPairFilter;
+        ContactQueue                      Contacts;
+
+        JPH::CharacterVsCharacterCollisionSimple CharacterVsCharacter;
+
+        // Declared before Characters so that the characters (and their inner bodies) are destroyed first.
+        Scope<JPH::PhysicsSystem> World;
+
+        std::unordered_map<JPH::CharacterVirtual*, JPH::Ref<JPH::CharacterVirtual>> Characters;
+
+        bool HasWorld() const { return World != nullptr; }
+
+        JPH::BodyInterface& Bodies() { return World->GetBodyInterface(); }
+
+        void ResetWorld()
+        {
+            DestroyWorld();
+
+            World = CreateScope<JPH::PhysicsSystem>();
+            World->Init(cMaxBodies,
+                        cNumBodyMutexes,
+                        cMaxBodyPairs,
+                        cMaxContactConstraints,
+                        BroadPhaseLayerInterface,
+                        ObjectVsBroadPhaseLayerFilter,
+                        ObjectLayerPairFilter);
+            World->SetGravity(ToJolt(cGravity));
+            World->SetContactListener(&Contacts);
+        }
+
+        void DestroyWorld()
+        {
+            for (auto& [character, ref] : Characters)
+            {
+                CharacterVsCharacter.Remove(character);
+            }
+            Characters.clear();
+            World.reset();
+            Contacts.Reset();
+        }
+
+        ~JoltState() { DestroyWorld(); }
+    };
+
+    // -------------------------------------------------------------------------------------------------
+    // Lifetime
+    // -------------------------------------------------------------------------------------------------
 
     PhysicsSystem::PhysicsSystem()
     {
-        // Create foundation
-        m_Foundation = PxCreateFoundation(PX_PHYSICS_VERSION, m_Allocator, m_ErrorCallback);
-        if (!m_Foundation)
-        {
-            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] PxCreateFoundation failed!");
-            m_State = SystemState::Error;
-            return;
-        }
+        JPH::RegisterDefaultAllocator();
+        JPH::Trace              = &JoltTrace;
+        JPH::Factory::sInstance = new JPH::Factory();
+        JPH::RegisterTypes();
 
-        // Create pvd (debugging handle)
-        auto* const pvd = PxCreatePvd(*m_Foundation);
-
-        // Create pvd session, connect.
-        auto* const transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
-        pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
-
-        // Create physics
-        m_Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, PxTolerancesScale(), true, pvd);
-        if (!m_Physics)
-        {
-            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] PxCreatePhysics failed!");
-            m_State = SystemState::Error;
-            return;
-        }
-
-        // Create cooking
-        m_Cooking = PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation, PxCookingParams(PxTolerancesScale()));
-        if (!m_Cooking)
-        {
-            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] PxCreateCooking failed!");
-            m_State = SystemState::Error;
-            return;
-        }
+        m_Jolt = CreateScope<JoltState>();
 
         Subscribe(m_LogicSceneLoadedHandler);
         Subscribe(m_EntityCreateHandler);
         Subscribe(m_EntityDestroyHandler);
 
-        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem] Initialized");
+        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem] Initialized (Jolt Physics {0}.{1}.{2})",
+                               JPH_VERSION_MAJOR,
+                               JPH_VERSION_MINOR,
+                               JPH_VERSION_PATCH);
         m_State = SystemState::InitOk;
     }
 
@@ -80,70 +329,36 @@ namespace SnowLeopardEngine
         Unsubscribe(m_EntityCreateHandler);
         Unsubscribe(m_LogicSceneLoadedHandler);
 
-        // TODO: When scene unloading
-        ReleaseInternalResources();
+        // Destroying the world releases every body and character. The scene's components are not touched here
+        // because the scene may already be gone at shutdown.
+        m_Body2EntityMap.clear();
+        m_Jolt.reset();
 
-        if (m_ControllerManager != nullptr)
-        {
-            m_ControllerManager->release();
-        }
-
-        if (m_Scene != nullptr)
-        {
-            m_Scene->release();
-        }
-
-        m_Cooking->release();
-        m_Physics->release();
-        m_Foundation->release();
+        JPH::UnregisterTypes();
+        delete JPH::Factory::sInstance;
+        JPH::Factory::sInstance = nullptr;
 
         m_State = SystemState::ShutdownOk;
     }
 
+    // -------------------------------------------------------------------------------------------------
+    // Scene
+    // -------------------------------------------------------------------------------------------------
+
     void PhysicsSystem::CookPhysicsScene(LogicScene* logicScene)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
+
+        // Re-cooking the same scene: clear the handles its components still hold. A previous, different scene is
+        // left alone (it may already be destroyed); resetting the world below drops all of its bodies anyway.
+        if (logicScene == m_LogicScene)
+        {
+            ReleaseInternalResources();
+        }
+
         m_LogicScene = logicScene;
-
-        if (m_ControllerManager)
-        {
-            m_ControllerManager->release();
-            m_ControllerManager = nullptr;
-        }
-
-        if (m_Scene)
-        {
-            m_Scene->release();
-            m_Scene = nullptr;
-        }
-
-        m_Actor2EntityMap.clear();
-
-        // Create a scene
-        PxSceneDesc sceneDesc(m_Physics->getTolerancesScale());
-        sceneDesc.gravity                 = PxVec3(0.0f, -9.8f, 0.0f); // scene gravity
-        auto* cpuDispatcher               = PxDefaultCpuDispatcherCreate(2);
-        sceneDesc.cpuDispatcher           = cpuDispatcher;
-        sceneDesc.simulationEventCallback = this;
-        // sceneDesc.filterShader  = PxDefaultSimulationFilterShader;
-        sceneDesc.filterShader = SimulationFilterShader;
-        m_Scene                = m_Physics->createScene(sceneDesc);
-        auto* pvdClient        = m_Scene->getScenePvdClient();
-        if (pvdClient)
-        {
-            pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
-            pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
-            pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
-        }
-
-        // Create Controller Manager
-        m_ControllerManager = PxCreateControllerManager(*m_Scene);
-        if (!m_ControllerManager)
-        {
-            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] PxCreateControllerManager failed!");
-            m_State = SystemState::Error;
-            return;
-        }
+        m_Body2EntityMap.clear();
+        m_Jolt->ResetWorld();
 
         // Cook the scene from logic
         auto& registry = logicScene->GetRegistry();
@@ -155,8 +370,7 @@ namespace SnowLeopardEngine
                                EntityStatusComponent&   entityStatus,
                                RigidBodyComponent&      rigidBody,
                                SphereColliderComponent& sphereCollider) {
-                auto* actor              = createSphere(transform, entityStatus, rigidBody, sphereCollider);
-                m_Actor2EntityMap[actor] = {entity, logicScene};
+                createSphere({entity, logicScene}, transform, entityStatus, rigidBody, sphereCollider);
             });
 
         // Case 2: RigidBody + BoxCollider
@@ -166,8 +380,7 @@ namespace SnowLeopardEngine
                                EntityStatusComponent& entityStatus,
                                RigidBodyComponent&    rigidBody,
                                BoxColliderComponent&  boxCollider) {
-                auto* actor              = createBox(transform, entityStatus, rigidBody, boxCollider);
-                m_Actor2EntityMap[actor] = {entity, logicScene};
+                createBox({entity, logicScene}, transform, entityStatus, rigidBody, boxCollider);
             });
 
         // case3: RigidBodyComponent + CapsuleColliderComponent
@@ -177,26 +390,23 @@ namespace SnowLeopardEngine
                                EntityStatusComponent&    entityStatus,
                                RigidBodyComponent&       rigidBody,
                                CapsuleColliderComponent& capsuleCollider) {
-                auto* actor              = createCapsule(transform, entityStatus, rigidBody, capsuleCollider);
-                m_Actor2EntityMap[actor] = {entity, logicScene};
+                createCapsule({entity, logicScene}, transform, entityStatus, rigidBody, capsuleCollider);
             });
 
         // case4: TerrainComponent + TerrainColliderComponent
-        registry.view<TransformComponent, EntityStatusComponent, TerrainComponent, TerrainColliderComponent>().each(
+        registry.view<TransformComponent, TerrainComponent, TerrainColliderComponent>().each(
             [this, logicScene](entt::entity              entity,
                                TransformComponent&       transform,
-                               EntityStatusComponent&    entityStatus,
                                TerrainComponent&         terrain,
                                TerrainColliderComponent& terrainCollider) {
-                auto* actor              = createTerrain(transform, terrain, terrainCollider);
-                m_Actor2EntityMap[actor] = {entity, logicScene};
+                createTerrain({entity, logicScene}, transform, terrain, terrainCollider);
             });
 
         // case5: CharacterController
         registry.view<TransformComponent, CharacterControllerComponent>().each(
             [this, logicScene](
                 entt::entity entity, TransformComponent& transform, CharacterControllerComponent& characterController) {
-                createCharacter(transform, characterController);
+                createCharacter({entity, logicScene}, transform, characterController);
             });
 
         // case6: MeshFilterComponent + MeshColliderComponent + RigidBodyComponent
@@ -212,129 +422,142 @@ namespace SnowLeopardEngine
                                      RigidBodyComponent&    rigidBody,
                                      MeshFilterComponent&   meshFilter,
                                      MeshColliderComponent& meshCollider) {
-                auto* actor              = createMesh(transform, entityStatus, rigidBody, meshFilter, meshCollider);
-                m_Actor2EntityMap[actor] = {entity, logicScene};
+                createMesh({entity, logicScene}, transform, entityStatus, rigidBody, meshFilter, meshCollider);
             });
 
         // TODO: More cases
+
+        // Everything was just inserted in one go; rebuild the broad phase tree once instead of incrementally.
+        m_Jolt->World->OptimizeBroadPhase();
     }
 
     void PhysicsSystem::OnFixedTick()
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
-        if (m_Scene != nullptr)
+        if (m_LogicScene == nullptr || !m_Jolt->HasWorld())
         {
-            auto& registry = m_LogicScene->GetRegistry();
+            return;
+        }
 
-            // Tick rigid bodies
-            registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent>().each(
-                [&registry](entt::entity           entity,
-                            TransformComponent&    transform,
-                            EntityStatusComponent& entityStatus,
-                            RigidBodyComponent&    rigidBody) {
-                    rigidBody.IsStatic = entityStatus.IsStatic;
-                    if (rigidBody.InternalBody == nullptr)
+        auto& registry = m_LogicScene->GetRegistry();
+        auto& bodies   = m_Jolt->Bodies();
+
+        // Push edited rigid body properties into the simulation
+        registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent>().each(
+            [this, &registry, &bodies](entt::entity           entity,
+                                       TransformComponent&    transform,
+                                       EntityStatusComponent& entityStatus,
+                                       RigidBodyComponent&    rigidBody) {
+                rigidBody.IsStatic = entityStatus.IsStatic;
+                if (rigidBody.InternalBody == InvalidPhysicsBody)
+                {
+                    auto name = registry.get<NameComponent>(entity).Name;
+                    SNOW_LEOPARD_CORE_WARN("[PhysicsSystem] A rigidBody without shape! Entity name: {0}", name);
+                    return;
+                }
+
+                if (rigidBody.IsStatic)
+                {
+                    return;
+                }
+
+                const JPH::BodyID   bodyID         = ToBodyID(rigidBody.InternalBody);
+                JPH::EMotionQuality currentQuality = JPH::EMotionQuality::Discrete;
+                {
+                    JPH::BodyLockWrite lock(m_Jolt->World->GetBodyLockInterface(), bodyID);
+                    if (!lock.Succeeded() || !lock.GetBody().IsDynamic())
                     {
-                        auto name = registry.get<NameComponent>(entity).Name;
-                        SNOW_LEOPARD_CORE_WARN("[PhysicsSystem] A rigidBody without shape! Entity name: {0}", name);
                         return;
                     }
 
-                    if (!rigidBody.IsStatic)
+                    JPH::Body&             body   = lock.GetBody();
+                    JPH::MotionProperties* motion = body.GetMotionProperties();
+                    motion->SetLinearDamping(rigidBody.LinearDamping);
+                    motion->SetAngularDamping(rigidBody.AngularDamping);
+
+                    const float mass = std::max(rigidBody.Mass, cMinExtent);
+                    if (std::abs(motion->GetInverseMass() - 1.0f / mass) > 1.0e-6f)
                     {
-                        // TODO: wrap as a function
-                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->setMass(rigidBody.Mass);
-                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->setLinearDamping(rigidBody.LinearDamping);
-                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)
-                            ->setAngularDamping(rigidBody.AngularDamping);
-
-                        PxRigidBodyFlags currentFlags =
-                            static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->getRigidBodyFlags();
-                        if (rigidBody.EnableCCD)
-                        {
-                            currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
-                        }
-                        else
-                        {
-                            currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
-                        }
-                        static_cast<PxRigidDynamic*>(rigidBody.InternalBody)->setRigidBodyFlags(currentFlags);
-                    }
-                });
-
-            m_Scene->simulate(Time::FixedDeltaTime);
-            m_Scene->fetchResults(true);
-
-            // Fetch rigid bodies
-            registry.view<TransformComponent, RigidBodyComponent>().each(
-                [&registry](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody) {
-                    if (rigidBody.InternalBody == nullptr)
-                    {
-                        auto name = registry.get<NameComponent>(entity).Name;
-                        SNOW_LEOPARD_CORE_WARN("[PhysicsSystem] A rigidBody without shape! Entity name: {0}", name);
-                        return;
+                        JPH::MassProperties massProperties = body.GetShape()->GetMassProperties();
+                        massProperties.ScaleToMass(mass);
+                        motion->SetMassProperties(JPH::EAllowedDOFs::All, massProperties);
                     }
 
-                    PxTransform pxTransform = rigidBody.InternalBody->getGlobalPose();
-                    PxVec3      pxPosition  = pxTransform.p;
-                    PxQuat      pxRotation  = pxTransform.q;
-                    transform.Position      = {pxPosition.x, pxPosition.y, pxPosition.z};
-                    glm::quat rotation      = {pxRotation.w, pxRotation.x, pxRotation.y, pxRotation.z};
-                    transform.SetRotation(rotation);
-                });
+                    currentQuality = motion->GetMotionQuality();
+                }
 
-            // Fetch character controllers
-            registry.view<TransformComponent, CharacterControllerComponent>().each(
-                [](entt::entity entity, TransformComponent& transform, CharacterControllerComponent& controller) {
-                    if (controller.InternalController != nullptr)
-                    {
-                        auto position      = controller.InternalController->getPosition();
-                        transform.Position = {position.x, position.y, position.z};
-                    }
-                });
-        }
+                // SetMotionQuality takes its own body lock, so it has to run after the scope above.
+                const JPH::EMotionQuality wantedQuality = ToMotionQuality(rigidBody.EnableCCD);
+                if (currentQuality != wantedQuality)
+                {
+                    bodies.SetMotionQuality(bodyID, wantedQuality);
+                }
+            });
+
+        m_Jolt->World->Update(Time::FixedDeltaTime, 1, &m_Jolt->TempAllocator, &m_Jolt->JobSystem);
+
+        // Fetch rigid bodies
+        registry.view<TransformComponent, RigidBodyComponent>().each(
+            [&bodies](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody) {
+                if (rigidBody.InternalBody == InvalidPhysicsBody || rigidBody.IsStatic)
+                {
+                    return;
+                }
+
+                JPH::RVec3 position;
+                JPH::Quat  rotation;
+                bodies.GetPositionAndRotation(ToBodyID(rigidBody.InternalBody), position, rotation);
+                transform.Position = ToGLM(position);
+                transform.SetRotation(ToGLM(rotation));
+            });
+
+        // Fetch character controllers (the position is the capsule center, as it was with the PhysX controller)
+        registry.view<TransformComponent, CharacterControllerComponent>().each(
+            [](entt::entity entity, TransformComponent& transform, CharacterControllerComponent& controller) {
+                if (controller.InternalController != nullptr)
+                {
+                    transform.Position = ToGLM(controller.InternalController->GetPosition());
+                }
+            });
+
+        DispatchContactEvents();
     }
 
-    void PhysicsSystem::onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count)
+    void PhysicsSystem::DispatchContactEvents()
     {
-        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onConstraintBreak");
-    }
-
-    void PhysicsSystem::onWake(physx::PxActor** actors, physx::PxU32 count)
-    {
-        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onWake");
-    }
-
-    void PhysicsSystem::onSleep(physx::PxActor** actors, physx::PxU32 count)
-    {
-        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onSleep");
-    }
-
-    void PhysicsSystem::onContact(const physx::PxContactPairHeader& pairHeader,
-                                  const physx::PxContactPair*       pairs,
-                                  physx::PxU32                      count)
-    {
-        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onContact");
-        if (m_LogicScene != nullptr)
+        auto pairs = m_Jolt->Contacts.DrainEntered();
+        if (pairs.empty() || m_LogicScene == nullptr)
         {
-            auto& registry = m_LogicScene->GetRegistry();
-            registry.view<NativeScriptingComponent>().each(
-                [](entt::entity entity, NativeScriptingComponent& nativescripting) {
-                    nativescripting.ScriptInstance->OnColliderEnter();
-                });
+            return;
         }
-    }
 
-    void PhysicsSystem::onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count)
-    {
-        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onTrigger");
-    }
+        auto& registry = m_LogicScene->GetRegistry();
 
-    void PhysicsSystem::onAdvance(const physx::PxRigidBody* const* bodyBuffer,
-                                  const physx::PxTransform*        poseBuffer,
-                                  const physx::PxU32               count)
-    {
-        SNOW_LEOPARD_CORE_INFO("[PhysicsSystem][EventCallBack] onAdvance");
+        auto notify = [this, &registry](PhysicsBodyHandle body) {
+            auto it = m_Body2EntityMap.find(body);
+            if (it == m_Body2EntityMap.end())
+            {
+                return;
+            }
+
+            const entt::entity entity = it->second;
+            if (!registry.valid(entity))
+            {
+                return;
+            }
+
+            if (auto* scripting = registry.try_get<NativeScriptingComponent>(entity);
+                scripting != nullptr && scripting->ScriptInstance != nullptr)
+            {
+                scripting->ScriptInstance->OnColliderEnter();
+            }
+        };
+
+        for (const auto& [body1, body2] : pairs)
+        {
+            notify(body1);
+            notify(body2);
+        }
     }
 
     /** APIs **/
@@ -343,18 +566,38 @@ namespace SnowLeopardEngine
     void
     PhysicsSystem::Move(const CharacterControllerComponent& component, const glm::vec3& movement, float deltaTime) const
     {
-        if (component.InternalController != nullptr)
+        JPH::CharacterVirtual* character = component.InternalController;
+        if (character == nullptr || deltaTime <= 0.0f || !m_Jolt->HasWorld())
         {
-            component.InternalController->move(
-                PhysXGLMHelpers::GetPhysXVec3(movement), component.MinMoveDisp, deltaTime, component.Filters);
+            return;
         }
+
+        // The PhysX controller took a displacement; Jolt's virtual character takes a velocity.
+        character->SetLinearVelocity(ToJolt(movement) / deltaTime);
+
+        JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
+        // Callers apply their own gravity through the displacement, like they did with the PhysX controller.
+        updateSettings.mStickToFloorStepDown = JPH::Vec3::sZero();
+        updateSettings.mWalkStairsStepUp     = JPH::Vec3(0.0f, component.StepOffset, 0.0f);
+
+        // The character must not collide with its own inner body.
+        JPH::IgnoreSingleBodyFilter ignoreSelf(character->GetInnerBodyID());
+
+        character->ExtendedUpdate(deltaTime,
+                                  m_Jolt->World->GetGravity(),
+                                  updateSettings,
+                                  m_Jolt->World->GetDefaultBroadPhaseLayerFilter(Layers::Moving),
+                                  m_Jolt->World->GetDefaultLayerFilter(Layers::Moving),
+                                  ignoreSelf,
+                                  {},
+                                  m_Jolt->TempAllocator);
     }
 
     glm::vec3 PhysicsSystem::GetLinearVelocity(const CharacterControllerComponent& component) const
     {
         if (component.InternalController != nullptr)
         {
-            return PhysXGLMHelpers::GetGLMVec3(component.InternalController->getActor()->getLinearVelocity());
+            return ToGLM(component.InternalController->GetLinearVelocity());
         }
 
         return glm::vec3(0);
@@ -363,71 +606,70 @@ namespace SnowLeopardEngine
     /** RigidBody **/
     void PhysicsSystem::AddForce(const RigidBodyComponent& component, const glm::vec3& force) const
     {
-        if (component.InternalBody != nullptr && !component.IsStatic)
+        if (component.InternalBody != InvalidPhysicsBody && !component.IsStatic && m_Jolt->HasWorld())
         {
-            PxRigidBody* body = static_cast<PxRigidBody*>(component.InternalBody);
-            body->addForce(PhysXGLMHelpers::GetPhysXVec3(force), PxForceMode::eFORCE, true);
+            m_Jolt->Bodies().AddForce(ToBodyID(component.InternalBody), ToJolt(force));
         }
     }
 
     void PhysicsSystem::AddTorque(const RigidBodyComponent& component, const glm::vec3& torque) const
     {
-        if (component.InternalBody != nullptr && !component.IsStatic)
+        if (component.InternalBody != InvalidPhysicsBody && !component.IsStatic && m_Jolt->HasWorld())
         {
-            PxRigidBody* body = static_cast<PxRigidBody*>(component.InternalBody);
-            body->addTorque(PhysXGLMHelpers::GetPhysXVec3(torque), PxForceMode::eFORCE, true);
+            m_Jolt->Bodies().AddTorque(ToBodyID(component.InternalBody), ToJolt(torque));
         }
     }
 
     bool PhysicsSystem::SimpleRaycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance)
     {
-        PxQueryFilterData fd;
-        fd.flags |= PxQueryFlag::eANY_HIT;
-
-        PxRaycastBuffer hit;
-        bool            status = m_Scene->raycast(PhysXGLMHelpers::GetPhysXVec3(origin),
-                                       PhysXGLMHelpers::GetPhysXVec3(direction),
-                                       maxDistance,
-                                       hit,
-                                       PxHitFlags(PxHitFlag::eDEFAULT),
-                                       fd);
-        // Because it's a simple API, so ignore most of hit info here.
-        if (!status)
+        if (!m_Jolt->HasWorld() || maxDistance <= 0.0f || glm::length(direction) == 0.0f)
         {
             return false;
         }
 
-        return hit.hasAnyHits();
+        // Jolt encodes the ray length in the direction vector.
+        const JPH::RRayCast ray {ToJoltR(origin), ToJolt(glm::normalize(direction) * maxDistance)};
+
+        // Because it's a simple API, so ignore most of hit info here.
+        JPH::RayCastResult hit;
+        return m_Jolt->World->GetNarrowPhaseQuery().CastRay(ray, hit);
     }
 
     bool PhysicsSystem::OverlapSphere(const glm::vec3& sphereOrigin, float sphereRadius, OverlapInfo& info)
     {
-        PxSphereGeometry sphereGeom(sphereRadius);
-        PxTransform      spherePose(PhysXGLMHelpers::GetPhysXVec3(sphereOrigin));
-
-        const PxU32     bufferSize = 256;
-        PxOverlapHit    hitBuffer[bufferSize];
-        PxOverlapBuffer buf(hitBuffer, bufferSize);
-
-        bool overlapResult = m_Scene->overlap(sphereGeom, spherePose, buf);
-        if (overlapResult)
+        if (!m_Jolt->HasWorld() || sphereRadius <= 0.0f)
         {
-            if (buf.getNbAnyHits() > 0)
-            {
-                for (PxU32 i = 0; i < buf.getNbAnyHits(); ++i)
-                {
-                    auto anyHit = buf.getAnyHit(i);
-                    if (m_Actor2EntityMap.count(anyHit.actor) > 0)
-                    {
-                        info.OverlappedEntities.emplace_back(m_Actor2EntityMap[anyHit.actor]);
-                    }
-                }
-            }
-
-            return true;
+            return false;
         }
 
-        return overlapResult;
+        JPH::SphereShape sphere(sphereRadius);
+        sphere.SetEmbedded(); // stack-allocated shape: keep the ref count from deleting it
+
+        JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
+        m_Jolt->World->GetNarrowPhaseQuery().CollideShape(&sphere,
+                                                          JPH::Vec3::sOne(),
+                                                          JPH::RMat44::sTranslation(ToJoltR(sphereOrigin)),
+                                                          JPH::CollideShapeSettings(),
+                                                          JPH::RVec3::sZero(),
+                                                          collector);
+
+        // One body can produce several hits (e.g. a compound or a heightfield); report each entity once.
+        std::unordered_set<PhysicsBodyHandle> seen;
+        for (const auto& hit : collector.mHits)
+        {
+            const PhysicsBodyHandle body = hit.mBodyID2.GetIndexAndSequenceNumber();
+            if (!seen.insert(body).second)
+            {
+                continue;
+            }
+
+            if (auto it = m_Body2EntityMap.find(body); it != m_Body2EntityMap.end())
+            {
+                info.OverlappedEntities.emplace_back(it->second);
+            }
+        }
+
+        return !collector.mHits.empty();
     }
 
     void PhysicsSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e) { CookPhysicsScene(e.GetLogicScene()); }
@@ -438,36 +680,30 @@ namespace SnowLeopardEngine
         {
             auto& registry = m_LogicScene->GetRegistry();
 
-            registry.view<RigidBodyComponent>().each([](entt::entity entity, RigidBodyComponent& rigidBody) {
-                if (rigidBody.InternalBody != nullptr)
-                {
-                    rigidBody.InternalBody->release();
-                    rigidBody.InternalBody = nullptr;
-                }
-            });
+            registry.view<RigidBodyComponent>().each(
+                [this](entt::entity entity, RigidBodyComponent& rigidBody) { releaseBody(rigidBody.InternalBody); });
 
             registry.view<TerrainColliderComponent>().each(
-                [](entt::entity entity, TerrainColliderComponent& terrainCollider) {
-                    if (terrainCollider.InternalBody != nullptr)
-                    {
-                        terrainCollider.InternalBody->release();
-                        terrainCollider.InternalBody = nullptr;
-                    }
+                [this](entt::entity entity, TerrainColliderComponent& terrainCollider) {
+                    releaseBody(terrainCollider.InternalBody);
                 });
 
             registry.view<CharacterControllerComponent>().each(
-                [](entt::entity entity, CharacterControllerComponent& controller) {
-                    if (controller.InternalController != nullptr)
-                    {
-                        controller.InternalController->release();
-                        controller.InternalController = nullptr;
-                    }
+                [this](entt::entity entity, CharacterControllerComponent& controller) {
+                    releaseCharacter(controller.InternalController);
                 });
         }
+
+        m_Body2EntityMap.clear();
     }
 
     void PhysicsSystem::OnEntityCreate(const EntityCreateEvent& e)
     {
+        if (!m_Jolt->HasWorld())
+        {
+            return;
+        }
+
         auto entity = e.GetEntity();
 
         TransformComponent&    transformComp    = entity.GetComponent<TransformComponent>();
@@ -477,43 +713,38 @@ namespace SnowLeopardEngine
         {
             RigidBodyComponent&      rigidBodyComp      = entity.GetComponent<RigidBodyComponent>();
             SphereColliderComponent& sphereColliderComp = entity.GetComponent<SphereColliderComponent>();
-            auto* actor              = createSphere(transformComp, entityStatusComp, rigidBodyComp, sphereColliderComp);
-            m_Actor2EntityMap[actor] = entity;
+            createSphere(entity, transformComp, entityStatusComp, rigidBodyComp, sphereColliderComp);
         }
         if (entity.HasComponent<BoxColliderComponent>() && entity.HasComponent<RigidBodyComponent>())
         {
             BoxColliderComponent& boxColliderComp = entity.GetComponent<BoxColliderComponent>();
             RigidBodyComponent&   rigidBodyComp   = entity.GetComponent<RigidBodyComponent>();
-            auto*                 actor = createBox(transformComp, entityStatusComp, rigidBodyComp, boxColliderComp);
-            m_Actor2EntityMap[actor]    = entity;
+            createBox(entity, transformComp, entityStatusComp, rigidBodyComp, boxColliderComp);
         }
         if (entity.HasComponent<CapsuleColliderComponent>() && entity.HasComponent<RigidBodyComponent>())
         {
             CapsuleColliderComponent& capsuleColliderComp = entity.GetComponent<CapsuleColliderComponent>();
             RigidBodyComponent&       rigidBodyComp       = entity.GetComponent<RigidBodyComponent>();
-            auto* actor = createCapsule(transformComp, entityStatusComp, rigidBodyComp, capsuleColliderComp);
-            m_Actor2EntityMap[actor] = entity;
+            createCapsule(entity, transformComp, entityStatusComp, rigidBodyComp, capsuleColliderComp);
         }
         if (entity.HasComponent<TerrainComponent>() && entity.HasComponent<TerrainColliderComponent>())
         {
             TerrainComponent&         terrainComp         = entity.GetComponent<TerrainComponent>();
             TerrainColliderComponent& terrainColliderComp = entity.GetComponent<TerrainColliderComponent>();
-            auto*                     actor = createTerrain(transformComp, terrainComp, terrainColliderComp);
-            m_Actor2EntityMap[actor]        = entity;
+            createTerrain(entity, transformComp, terrainComp, terrainColliderComp);
         }
         if (entity.HasComponent<CharacterControllerComponent>())
         {
             CharacterControllerComponent& characterControllerComp = entity.GetComponent<CharacterControllerComponent>();
-            createCharacter(transformComp, characterControllerComp);
+            createCharacter(entity, transformComp, characterControllerComp);
         }
-        if (entity.HasComponent<MeshColliderComponent>() && entity.HasComponent<MeshFilterComponent>())
+        if (entity.HasComponent<MeshColliderComponent>() && entity.HasComponent<MeshFilterComponent>() &&
+            entity.HasComponent<RigidBodyComponent>())
         {
             MeshFilterComponent&   meshFilterComponent   = entity.GetComponent<MeshFilterComponent>();
             MeshColliderComponent& meshColliderComponent = entity.GetComponent<MeshColliderComponent>();
             RigidBodyComponent&    rigidBodyComp         = entity.GetComponent<RigidBodyComponent>();
-            auto*                  actor =
-                createMesh(transformComp, entityStatusComp, rigidBodyComp, meshFilterComponent, meshColliderComponent);
-            m_Actor2EntityMap[actor] = entity;
+            createMesh(entity, transformComp, entityStatusComp, rigidBodyComp, meshFilterComponent, meshColliderComponent);
         }
     }
 
@@ -522,451 +753,348 @@ namespace SnowLeopardEngine
         auto entity = e.GetEntity();
         if (entity.HasComponent<RigidBodyComponent>())
         {
-            RigidBodyComponent& rigidBodyComp = entity.GetComponent<RigidBodyComponent>();
-            if (rigidBodyComp.InternalBody != nullptr)
-            {
-                m_Actor2EntityMap.erase(rigidBodyComp.InternalBody);
-                rigidBodyComp.InternalBody->release();
-                rigidBodyComp.InternalBody = nullptr;
-            }
+            releaseBody(entity.GetComponent<RigidBodyComponent>().InternalBody);
         }
         if (entity.HasComponent<TerrainColliderComponent>())
         {
-            TerrainColliderComponent& terrainColliderComp = entity.GetComponent<TerrainColliderComponent>();
-            if (terrainColliderComp.InternalBody != nullptr)
-            {
-                m_Actor2EntityMap.erase(terrainColliderComp.InternalBody);
-                terrainColliderComp.InternalBody->release();
-                terrainColliderComp.InternalBody = nullptr;
-            }
+            releaseBody(entity.GetComponent<TerrainColliderComponent>().InternalBody);
         }
         if (entity.HasComponent<CharacterControllerComponent>())
         {
-            CharacterControllerComponent& characterControllerComp = entity.GetComponent<CharacterControllerComponent>();
-            if (characterControllerComp.InternalController != nullptr)
-            {
-                characterControllerComp.InternalController->release();
-                characterControllerComp.InternalController = nullptr;
-            }
+            releaseCharacter(entity.GetComponent<CharacterControllerComponent>().InternalController);
         }
     }
 
-    physx::PxActor* PhysicsSystem::createSphere(TransformComponent&      transform,
-                                                EntityStatusComponent&   entityStatus,
-                                                RigidBodyComponent&      rigidBody,
-                                                SphereColliderComponent& sphereCollider)
+    // -------------------------------------------------------------------------------------------------
+    // Body creation
+    // -------------------------------------------------------------------------------------------------
+
+    namespace
     {
-        // create a rigidBody
-        PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
+        // Creates a body from a finished shape; shared by every collider type.
+        PhysicsBodyHandle CreateBody(JPH::BodyInterface&              bodies,
+                                     Entity                           entity,
+                                     const JPH::RefConst<JPH::Shape>& shape,
+                                     const TransformComponent&        transform,
+                                     bool                             isStatic,
+                                     const RigidBodyComponent*        rigidBody,
+                                     const Ref<PhysicsMaterial>&      material,
+                                     bool                             isTrigger,
+                                     bool                             applyRotation = true)
+        {
+            JPH::BodyCreationSettings settings(shape,
+                                               ToJoltR(transform.Position),
+                                               applyRotation ? ToJolt(transform.GetRotation()) :
+                                                               JPH::Quat::sIdentity(),
+                                               isStatic ? JPH::EMotionType::Static : JPH::EMotionType::Dynamic,
+                                               isStatic ? Layers::NonMoving : Layers::Moving);
+            settings.mUserData = ToUserData(entity);
+            settings.mIsSensor = isTrigger;
+            ApplyMaterial(settings, material);
 
+            if (!isStatic && rigidBody != nullptr)
+            {
+                settings.mOverrideMassProperties       = JPH::EOverrideMassProperties::CalculateInertia;
+                settings.mMassPropertiesOverride.mMass = std::max(rigidBody->Mass, cMinExtent);
+                settings.mLinearDamping                = rigidBody->LinearDamping;
+                settings.mAngularDamping               = rigidBody->AngularDamping;
+                settings.mMotionQuality                = ToMotionQuality(rigidBody->EnableCCD);
+            }
+
+            const JPH::BodyID id =
+                bodies.CreateAndAddBody(settings, isStatic ? JPH::EActivation::DontActivate : JPH::EActivation::Activate);
+            if (id.IsInvalid())
+            {
+                SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] Out of bodies (limit {0}) while creating a collider", cMaxBodies);
+                return InvalidPhysicsBody;
+            }
+
+            return id.GetIndexAndSequenceNumber();
+        }
+    } // namespace
+
+    PhysicsBodyHandle PhysicsSystem::createSphere(Entity                   entity,
+                                                  TransformComponent&      transform,
+                                                  EntityStatusComponent&   entityStatus,
+                                                  RigidBodyComponent&      rigidBody,
+                                                  SphereColliderComponent& sphereCollider)
+    {
         rigidBody.IsStatic = entityStatus.IsStatic;
-
-        PxRigidActor* body;
-        if (entityStatus.IsStatic)
-        {
-            body = m_Physics->createRigidStatic(pxTransform);
-        }
-        else
-        {
-            // TODO: Jubiao Lin setLinearDamping, setAngularDamping, enable ccd here:
-            // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
-            body = m_Physics->createRigidDynamic(pxTransform);
-            static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
-            static_cast<PxRigidDynamic*>(body)->setLinearDamping(rigidBody.LinearDamping);
-            static_cast<PxRigidDynamic*>(body)->setAngularDamping(rigidBody.AngularDamping);
-
-            PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
-            if (rigidBody.EnableCCD)
-            {
-                currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
-            }
-            else
-            {
-                currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
-            }
-            static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
-        }
-
-        // create a sphere shape
-        PxMaterial* material;
-        if (sphereCollider.Material == nullptr)
-        {
-            material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-        }
-        else
-        {
-            material = m_Physics->createMaterial(sphereCollider.Material->DynamicFriction,
-                                                 sphereCollider.Material->StaticFriction,
-                                                 sphereCollider.Material->Bounciness);
-        }
-
-        PxShapeFlags shapeFlags;
-        if (sphereCollider.IsTrigger)
-        {
-            shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
-        }
-        else
-        {
-            shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
-        }
 
         if (sphereCollider.Radius == 0)
         {
             sphereCollider.Radius = 0.5f * transform.Scale.x;
         }
-        PxSphereGeometry sphereGeometry(sphereCollider.Radius);
-        auto*            sphereShape = m_Physics->createShape(sphereGeometry, *material);
 
-        // attach the shape to the rigidBody
-        if (body->attachShape(*sphereShape))
+        JPH::RefConst<JPH::Shape> shape = new JPH::SphereShape(std::max(sphereCollider.Radius, cMinExtent));
+
+        rigidBody.InternalBody = CreateBody(m_Jolt->Bodies(),
+                                            entity,
+                                            shape,
+                                            transform,
+                                            entityStatus.IsStatic,
+                                            &rigidBody,
+                                            sphereCollider.Material,
+                                            sphereCollider.IsTrigger);
+        if (rigidBody.InternalBody != InvalidPhysicsBody)
         {
-            sphereShape->release();
-            sphereShape = nullptr;
+            m_Body2EntityMap[rigidBody.InternalBody] = entity;
         }
-
-        // add the rigidBody to the scene
-        m_Scene->addActor(*body);
-
-        rigidBody.InternalBody = body;
-
-        return body;
+        return rigidBody.InternalBody;
     }
 
-    physx::PxActor* PhysicsSystem::createBox(TransformComponent&    transform,
-                                             EntityStatusComponent& entityStatus,
-                                             RigidBodyComponent&    rigidBody,
-                                             BoxColliderComponent&  boxCollider)
+    PhysicsBodyHandle PhysicsSystem::createBox(Entity                 entity,
+                                               TransformComponent&    transform,
+                                               EntityStatusComponent& entityStatus,
+                                               RigidBodyComponent&    rigidBody,
+                                               BoxColliderComponent&  boxCollider)
     {
-        // create a rigidBody
-        PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
-        pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(boxCollider.Offset);
-
         rigidBody.IsStatic = entityStatus.IsStatic;
-
-        PxRigidActor* body;
-        if (entityStatus.IsStatic)
-        {
-            body = m_Physics->createRigidStatic(pxTransform);
-        }
-        else
-        {
-            // TODO: Jubiao Lin setLinearDamping, setAngularDamping, enable ccd here:
-            // https://github.com/SnowLeopardEngine/SnowLeopardEngine/issues/10
-            body = m_Physics->createRigidDynamic(pxTransform);
-            static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
-            static_cast<PxRigidDynamic*>(body)->setLinearDamping(rigidBody.LinearDamping);
-            static_cast<PxRigidDynamic*>(body)->setAngularDamping(rigidBody.AngularDamping);
-
-            PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
-            if (rigidBody.EnableCCD)
-            {
-                currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
-            }
-            else
-            {
-                currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
-            }
-            static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
-        }
-
-        // create a box shape
-        PxMaterial* material;
-        if (boxCollider.Material == nullptr)
-        {
-            material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-        }
-        else
-        {
-            material = m_Physics->createMaterial(boxCollider.Material->DynamicFriction,
-                                                 boxCollider.Material->StaticFriction,
-                                                 boxCollider.Material->Bounciness);
-        }
-
-        PxShapeFlags shapeFlags;
-        if (boxCollider.IsTrigger)
-        {
-            shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
-        }
-        else
-        {
-            shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
-        }
 
         if (boxCollider.Size == glm::vec3(0, 0, 0))
         {
             boxCollider.Size = transform.Scale;
         }
-        PxBoxGeometry boxGeometry(boxCollider.Size.x / 2.0f, boxCollider.Size.y / 2.0f, boxCollider.Size.z / 2.0f);
-        auto*         boxShape = m_Physics->createShape(boxGeometry, *material);
 
-        // attach the shape to the rigidBody
-        if (body->attachShape(*boxShape))
+        const glm::vec3 halfExtent = glm::max(boxCollider.Size * 0.5f, glm::vec3(cMinExtent));
+        const float     convexRadius =
+            std::min({JPH::cDefaultConvexRadius, halfExtent.x, halfExtent.y, halfExtent.z});
+
+        JPH::RefConst<JPH::Shape> shape =
+            WithOffset(new JPH::BoxShape(ToJolt(halfExtent), convexRadius), boxCollider.Offset);
+
+        rigidBody.InternalBody = CreateBody(m_Jolt->Bodies(),
+                                            entity,
+                                            shape,
+                                            transform,
+                                            entityStatus.IsStatic,
+                                            &rigidBody,
+                                            boxCollider.Material,
+                                            boxCollider.IsTrigger);
+        if (rigidBody.InternalBody != InvalidPhysicsBody)
         {
-            boxShape->release();
-            boxShape = nullptr;
+            m_Body2EntityMap[rigidBody.InternalBody] = entity;
         }
-
-        // add the rigidBody to the scene
-        m_Scene->addActor(*body);
-
-        rigidBody.InternalBody = body;
-
-        return body;
+        return rigidBody.InternalBody;
     }
 
-    physx::PxActor* PhysicsSystem::createCapsule(TransformComponent&       transform,
-                                                 EntityStatusComponent&    entityStatus,
-                                                 RigidBodyComponent&       rigidBody,
-                                                 CapsuleColliderComponent& capsuleCollider)
+    PhysicsBodyHandle PhysicsSystem::createCapsule(Entity                    entity,
+                                                   TransformComponent&       transform,
+                                                   EntityStatusComponent&    entityStatus,
+                                                   RigidBodyComponent&       rigidBody,
+                                                   CapsuleColliderComponent& capsuleCollider)
     {
-        // create a rigidBody
-        PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
-        pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(capsuleCollider.Offset);
-
         rigidBody.IsStatic = entityStatus.IsStatic;
 
-        PxRigidActor* body;
-        if (entityStatus.IsStatic)
+        // Height is the cylinder part (distance between the two hemisphere centers); the capsule is Y-up.
+        const float               radius     = std::max(capsuleCollider.Radius, cMinExtent);
+        const float               halfHeight = capsuleCollider.Height * 0.5f;
+        JPH::RefConst<JPH::Shape> core       = halfHeight > cMinExtent ?
+                                                   static_cast<JPH::Shape*>(new JPH::CapsuleShape(halfHeight, radius)) :
+                                                   static_cast<JPH::Shape*>(new JPH::SphereShape(radius));
+
+        rigidBody.InternalBody = CreateBody(m_Jolt->Bodies(),
+                                            entity,
+                                            WithOffset(core, capsuleCollider.Offset),
+                                            transform,
+                                            entityStatus.IsStatic,
+                                            &rigidBody,
+                                            capsuleCollider.Material,
+                                            capsuleCollider.IsTrigger);
+        if (rigidBody.InternalBody != InvalidPhysicsBody)
         {
-            body = m_Physics->createRigidStatic(pxTransform);
+            m_Body2EntityMap[rigidBody.InternalBody] = entity;
         }
-        else
-        {
-            body = m_Physics->createRigidDynamic(pxTransform);
-            static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);
-            static_cast<PxRigidDynamic*>(body)->setLinearDamping(rigidBody.LinearDamping);
-            static_cast<PxRigidDynamic*>(body)->setAngularDamping(rigidBody.AngularDamping);
-
-            PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
-            if (rigidBody.EnableCCD)
-            {
-                currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
-            }
-            else
-            {
-                currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
-            }
-            static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
-        }
-
-        // create a box shape
-        PxMaterial* material;
-        if (capsuleCollider.Material == nullptr)
-        {
-            material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-        }
-        else
-        {
-            material = m_Physics->createMaterial(capsuleCollider.Material->DynamicFriction,
-                                                 capsuleCollider.Material->StaticFriction,
-                                                 capsuleCollider.Material->Bounciness);
-        }
-
-        PxCapsuleGeometry capsuleGeometry(capsuleCollider.Radius, capsuleCollider.Height);
-        auto*             capsuleShape = m_Physics->createShape(capsuleGeometry, *material);
-        if (body->attachShape(*capsuleShape))
-        {
-            capsuleShape->release();
-            capsuleShape = nullptr;
-        }
-
-        m_Scene->addActor(*body);
-
-        rigidBody.InternalBody = body;
-
-        return body;
+        return rigidBody.InternalBody;
     }
 
-    physx::PxActor* PhysicsSystem::createTerrain(TransformComponent&       transform,
-                                                 TerrainComponent&         terrain,
-                                                 TerrainColliderComponent& terrainCollider)
+    PhysicsBodyHandle PhysicsSystem::createTerrain(Entity                    entity,
+                                                   TransformComponent&       transform,
+                                                   TerrainComponent&         terrain,
+                                                   TerrainColliderComponent& terrainCollider)
     {
-        uint32_t             heightMapWidth  = terrain.TerrainHeightMap.Width;
-        uint32_t             heightMapHeight = terrain.TerrainHeightMap.Height;
-        PxHeightFieldSample* hfSample        = new PxHeightFieldSample[heightMapWidth * heightMapHeight];
+        const HeightMap& heightMap = terrain.TerrainHeightMap;
 
-        for (uint32_t row = 0; row < heightMapHeight; ++row)
+        // Jolt height fields are square. The terrain mesh assumes a square map as well.
+        const uint32_t sampleCount = std::min(heightMap.Width, heightMap.Height);
+        if (heightMap.Width != heightMap.Height)
         {
-            for (uint32_t column = 0; column < heightMapWidth; ++column)
+            SNOW_LEOPARD_CORE_WARN("[PhysicsSystem] Terrain height map is {0}x{1}; only the {2}x{2} corner collides",
+                                   heightMap.Width,
+                                   heightMap.Height,
+                                   sampleCount);
+        }
+        if (sampleCount < 4)
+        {
+            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] Terrain height map is too small for a collider ({0} samples)",
+                                    sampleCount);
+            return InvalidPhysicsBody;
+        }
+
+        // Same layout as HeightfieldMesh: vertex (column, row) sits at (column * XScale, height * YScale, row * ZScale).
+        std::vector<float> samples(static_cast<size_t>(sampleCount) * sampleCount);
+        for (uint32_t row = 0; row < sampleCount; ++row)
+        {
+            for (uint32_t column = 0; column < sampleCount; ++column)
             {
-                uint32_t sampleIndex = row + column * heightMapHeight;
-                // reverse because PhysX row = our column.
-                hfSample[sampleIndex].height         = static_cast<PxI16>(terrain.TerrainHeightMap.Get(row, column));
-                hfSample[sampleIndex].materialIndex0 = hfSample[sampleIndex].materialIndex1 = 0;
+                samples[static_cast<size_t>(row) * sampleCount + column] = heightMap.Get(row, column);
             }
         }
 
-        PxHeightFieldDesc hfDesc;
-        hfDesc.format         = PxHeightFieldFormat::eS16_TM;
-        hfDesc.nbColumns      = heightMapWidth;
-        hfDesc.nbRows         = heightMapHeight;
-        hfDesc.samples.data   = hfSample;
-        hfDesc.samples.stride = sizeof(PxHeightFieldSample);
-
-        PxHeightField* heightField = PxCreateHeightField(hfDesc, m_Physics->getPhysicsInsertionCallback());
-        delete[] hfSample;
-
-        // reverse X-Z because PhysX row = our column.
-        PxHeightFieldGeometry hfGeometry(
-            heightField, PxMeshGeometryFlags(), terrain.YScale, terrain.XScale, terrain.ZScale);
-        PxMaterial* material;
-        if (terrainCollider.Material == nullptr)
+        JPH::HeightFieldShapeSettings shapeSettings(samples.data(),
+                                                    JPH::Vec3::sZero(),
+                                                    JPH::Vec3(terrain.XScale, terrain.YScale, terrain.ZScale),
+                                                    sampleCount);
+        JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+        if (shapeResult.HasError())
         {
-            material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-        }
-        else
-        {
-            material = m_Physics->createMaterial(terrainCollider.Material->DynamicFriction,
-                                                 terrainCollider.Material->StaticFriction,
-                                                 terrainCollider.Material->Bounciness);
+            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] Failed to create the terrain collider: {0}",
+                                    shapeResult.GetError().c_str());
+            return InvalidPhysicsBody;
         }
 
-        PxRigidStatic* body =
-            m_Physics->createRigidStatic(PxTransform(PhysXGLMHelpers::GetPhysXVec3(transform.Position)));
-
-        PxShape* shape = m_Physics->createShape(hfGeometry, *material);
-        if (body->attachShape(*shape))
+        // Terrain only follows the entity's position, as before.
+        terrainCollider.InternalBody = CreateBody(m_Jolt->Bodies(),
+                                                  entity,
+                                                  shapeResult.Get(),
+                                                  transform,
+                                                  true,
+                                                  nullptr,
+                                                  terrainCollider.Material,
+                                                  terrainCollider.IsTrigger,
+                                                  false);
+        if (terrainCollider.InternalBody != InvalidPhysicsBody)
         {
-            shape->release();
-            shape = nullptr;
+            m_Body2EntityMap[terrainCollider.InternalBody] = entity;
         }
-
-        m_Scene->addActor(*body);
-
-        terrainCollider.InternalBody = body;
-
-        return body;
+        return terrainCollider.InternalBody;
     }
 
-    void PhysicsSystem::createCharacter(TransformComponent&           transform,
+    void PhysicsSystem::createCharacter(Entity                        entity,
+                                        TransformComponent&           transform,
                                         CharacterControllerComponent& characterController)
     {
-        PxMaterial* material;
-        if (characterController.Material == nullptr)
+        // As with the PhysX capsule controller, Height is the distance between the hemisphere centers and the
+        // character position is the capsule center.
+        const float radius     = std::max(characterController.Radius, cMinExtent);
+        const float halfHeight = std::max(characterController.Height * 0.5f, cMinExtent);
+
+        JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
+        settings->mShape                                 = new JPH::CapsuleShape(halfHeight, radius);
+        settings->mUp                                    = JPH::Vec3::sAxisY();
+        settings->mMaxSlopeAngle                         = JPH::DegreesToRadians(characterController.SlopeLimit);
+        // Only contacts with the lower hemisphere can support the character.
+        settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), halfHeight);
+        // An inner kinematic body keeps the character visible to ray casts, overlaps and other bodies, like the
+        // kinematic actor behind a PhysX controller.
+        settings->mInnerBodyShape = settings->mShape;
+        settings->mInnerBodyLayer = Layers::Moving;
+
+        const glm::vec3 position = transform.Position + characterController.Offset;
+
+        JPH::Ref<JPH::CharacterVirtual> character = new JPH::CharacterVirtual(
+            settings, ToJoltR(position), JPH::Quat::sIdentity(), ToUserData(entity), m_Jolt->World.get());
+
+        character->SetCharacterVsCharacterCollision(&m_Jolt->CharacterVsCharacter);
+        m_Jolt->CharacterVsCharacter.Add(character);
+        m_Jolt->Characters[character.GetPtr()] = character;
+
+        if (!character->GetInnerBodyID().IsInvalid())
         {
-            material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-        }
-        else
-        {
-            material = m_Physics->createMaterial(characterController.Material->DynamicFriction,
-                                                 characterController.Material->StaticFriction,
-                                                 characterController.Material->Bounciness);
+            m_Body2EntityMap[character->GetInnerBodyID().GetIndexAndSequenceNumber()] = entity;
         }
 
-        // Set Controller Descripoter
-        PxCapsuleControllerDesc desc;
-        desc.height   = characterController.Height;
-        desc.radius   = characterController.Radius;
-        desc.material = material;
-        desc.position.set(transform.Position.x + characterController.Offset.x,
-                          transform.Position.y + characterController.Offset.y,
-                          transform.Position.z + characterController.Offset.z);
-        desc.upDirection = PxVec3(0, 1, 0);
-        desc.slopeLimit  = cosf(characterController.SlopeLimit);
-        desc.stepOffset  = characterController.StepOffset;
-        desc.material    = material;
-
-        PxController* controller = m_ControllerManager->createController(desc);
-
-        characterController.InternalController = controller;
+        characterController.InternalController = character.GetPtr();
     }
 
-    physx::PxActor* PhysicsSystem::createMesh(TransformComponent&    transform,
-                                              EntityStatusComponent& entityStatus,
-                                              RigidBodyComponent&    rigidBody,
-                                              MeshFilterComponent&   meshFilter,
-                                              MeshColliderComponent& meshCollider)
+    PhysicsBodyHandle PhysicsSystem::createMesh(Entity                 entity,
+                                                TransformComponent&    transform,
+                                                EntityStatusComponent& entityStatus,
+                                                RigidBodyComponent&    rigidBody,
+                                                MeshFilterComponent&   meshFilter,
+                                                MeshColliderComponent& meshCollider)
     {
-        PxTransform pxTransform = PhysXGLMHelpers::GetPhysXTransform(&transform);
-        pxTransform.p += PhysXGLMHelpers::GetPhysXVec3(meshCollider.Offset);
-
         rigidBody.IsStatic = entityStatus.IsStatic;
 
-        PxRigidActor* body;
-        if (entityStatus.IsStatic)
+        if (meshFilter.Meshes == nullptr)
         {
-            body = m_Physics->createRigidStatic(pxTransform);
-        }
-        else
-        {
-            body = m_Physics->createRigidDynamic(pxTransform);
-            // static_cast<PxRigidDynamic*>(body)->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-            static_cast<PxRigidDynamic*>(body)->setMass(rigidBody.Mass);                     // set Mass
-            static_cast<PxRigidDynamic*>(body)->setLinearDamping(rigidBody.LinearDamping);   // set Linear Damping
-            static_cast<PxRigidDynamic*>(body)->setAngularDamping(rigidBody.AngularDamping); // set Angular Damping
-
-            PxRigidBodyFlags currentFlags = static_cast<PxRigidDynamic*>(body)->getRigidBodyFlags();
-            if (rigidBody.EnableCCD) // Continuous Collision Detection
-            {
-                currentFlags |= PxRigidBodyFlag::eENABLE_CCD;
-            }
-            else
-            {
-                currentFlags &= ~PxRigidBodyFlag::eENABLE_CCD;
-            }
-            static_cast<PxRigidDynamic*>(body)->setRigidBodyFlags(currentFlags);
-        }
-        // create a mesh collider shape
-        PxMaterial* material;
-        if (meshCollider.Material == nullptr)
-        {
-            material = m_Physics->createMaterial(0.0f, 0.0f, 0.0f);
-        }
-        else
-        {
-            material = m_Physics->createMaterial(meshCollider.Material->DynamicFriction,
-                                                 meshCollider.Material->StaticFriction,
-                                                 meshCollider.Material->Bounciness);
+            SNOW_LEOPARD_CORE_WARN("[PhysicsSystem] MeshCollider without a mesh, skipped");
+            return InvalidPhysicsBody;
         }
 
-        PxShapeFlags shapeFlags;
-        if (meshCollider.IsTrigger)
-        {
-            shapeFlags = PxShapeFlag::eTRIGGER_SHAPE;
-        }
-        else
-        {
-            shapeFlags = PxShapeFlag::eSIMULATION_SHAPE;
-        }
-
-        size_t totalVertexCount = 0;
-        for (const auto& meshItem : meshFilter.Meshes->Items)
-        {
-            totalVertexCount += meshItem.Data.Vertices.size();
-        }
-
-        PxVec3* vertices     = new PxVec3[totalVertexCount];
-        size_t  vertexOffset = 0;
+        // Like the PhysX version, the collider is the convex hull of every vertex of the model.
+        JPH::Array<JPH::Vec3> points;
         for (const auto& meshItem : meshFilter.Meshes->Items)
         {
             for (const auto& vertex : meshItem.Data.Vertices)
             {
-                vertices[vertexOffset++] = PxVec3(vertex.Position.x, vertex.Position.y, vertex.Position.z);
+                points.push_back(ToJolt(vertex.Position));
             }
         }
 
-        // Switch to dynamic body by attach another convex mesh shape
-        PxConvexMeshDesc convexDesc;
-        convexDesc.points.count  = totalVertexCount;
-        convexDesc.points.stride = sizeof(PxVec3);
-        convexDesc.points.data   = vertices;
-        convexDesc.flags         = PxConvexFlag::eCOMPUTE_CONVEX;
+        JPH::ConvexHullShapeSettings    shapeSettings(points);
+        JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+        if (shapeResult.HasError())
+        {
+            SNOW_LEOPARD_CORE_ERROR("[PhysicsSystem] Failed to build the convex hull for a MeshCollider: {0}",
+                                    shapeResult.GetError().c_str());
+            return InvalidPhysicsBody;
+        }
 
-        PxDefaultMemoryOutputStream     writeBuffer;
-        PxConvexMeshCookingResult::Enum result;
-        m_Cooking->cookConvexMesh(convexDesc, writeBuffer, &result);
-
-        PxDefaultMemoryInputData input(writeBuffer.getData(), writeBuffer.getSize());
-        PxConvexMesh*            convexMesh = m_Physics->createConvexMesh(input);
-
-        PxRigidActorExt::createExclusiveShape(*body, PxConvexMeshGeometry(convexMesh), *material);
-        m_Scene->addActor(*body);
-
-        rigidBody.InternalBody = body;
-
-        delete[] vertices;
-
-        return body;
+        rigidBody.InternalBody = CreateBody(m_Jolt->Bodies(),
+                                            entity,
+                                            WithOffset(shapeResult.Get(), meshCollider.Offset),
+                                            transform,
+                                            entityStatus.IsStatic,
+                                            &rigidBody,
+                                            meshCollider.Material,
+                                            meshCollider.IsTrigger);
+        if (rigidBody.InternalBody != InvalidPhysicsBody)
+        {
+            m_Body2EntityMap[rigidBody.InternalBody] = entity;
+        }
+        return rigidBody.InternalBody;
     }
 
+    // -------------------------------------------------------------------------------------------------
+    // Release
+    // -------------------------------------------------------------------------------------------------
+
+    void PhysicsSystem::releaseBody(PhysicsBodyHandle& body)
+    {
+        if (body == InvalidPhysicsBody)
+        {
+            return;
+        }
+
+        m_Body2EntityMap.erase(body);
+        if (m_Jolt->HasWorld())
+        {
+            const JPH::BodyID id = ToBodyID(body);
+            auto&             bodies = m_Jolt->Bodies();
+            if (bodies.IsAdded(id))
+            {
+                bodies.RemoveBody(id);
+            }
+            bodies.DestroyBody(id);
+        }
+        body = InvalidPhysicsBody;
+    }
+
+    void PhysicsSystem::releaseCharacter(PhysicsCharacterHandle& character)
+    {
+        if (character == nullptr)
+        {
+            return;
+        }
+
+        if (!character->GetInnerBodyID().IsInvalid())
+        {
+            m_Body2EntityMap.erase(character->GetInnerBodyID().GetIndexAndSequenceNumber());
+        }
+
+        m_Jolt->CharacterVsCharacter.Remove(character);
+        m_Jolt->Characters.erase(character); // drops the last reference; the inner body goes with it
+        character = nullptr;
+    }
 } // namespace SnowLeopardEngine

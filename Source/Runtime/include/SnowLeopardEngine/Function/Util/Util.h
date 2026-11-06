@@ -3,22 +3,9 @@
 #include "SnowLeopardEngine/Core/Math/Math.h"
 
 #include "ozz/base/maths/simd_math.h"
-#include <PxPhysicsAPI.h>
 
 namespace SnowLeopardEngine
 {
-    class TransformComponent;
-
-    class PhysXGLMHelpers
-    {
-    public:
-        static inline physx::PxVec3 GetPhysXVec3(const glm::vec3& vec) { return physx::PxVec3(vec.x, vec.y, vec.z); }
-        static inline physx::PxQuat GetPhysXQuat(const glm::quat& q) { return physx::PxQuat(q.x, q.y, q.z, q.w); }
-        static physx::PxTransform   GetPhysXTransform(TransformComponent* transform);
-
-        static inline glm::vec3 GetGLMVec3(const physx::PxVec3& vec) { return glm::vec3(vec.x, vec.y, vec.z); }
-    };
-
     class OzzGLMHelpers
     {
     public:
