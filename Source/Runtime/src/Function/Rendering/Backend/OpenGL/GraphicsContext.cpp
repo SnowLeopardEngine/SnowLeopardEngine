@@ -13,6 +13,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
+#include <vector>
+
 namespace SnowLeopardEngine
 {
     static void GLMessageCallback(GLenum source,
@@ -145,6 +150,32 @@ namespace SnowLeopardEngine
     }
 
     void GraphicsContext::SetVSync(bool vsyncEnabled) { glfwSwapInterval(vsyncEnabled); }
+
+    bool GraphicsContext::CaptureBackBuffer(const std::filesystem::path& pngPath)
+    {
+        int width = 0, height = 0;
+        glfwGetFramebufferSize(glfwGetCurrentContext(), &width, &height);
+        if (width <= 0 || height <= 0)
+        {
+            return false;
+        }
+
+        GLint previousReadFramebuffer = 0, previousPackAlignment = 4;
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &previousReadFramebuffer);
+        glGetIntegerv(GL_PACK_ALIGNMENT, &previousPackAlignment);
+
+        std::vector<unsigned char> pixels(static_cast<size_t>(width) * height * 3);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        glReadBuffer(GL_BACK);
+        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+
+        glPixelStorei(GL_PACK_ALIGNMENT, previousPackAlignment);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, previousReadFramebuffer);
+
+        stbi_flip_vertically_on_write(1); // GL rows start at the bottom
+        return stbi_write_png(pngPath.string().c_str(), width, height, 3, pixels.data(), width * 3) != 0;
+    }
 
     int GraphicsContext::LoadGL() { return gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)); }
 

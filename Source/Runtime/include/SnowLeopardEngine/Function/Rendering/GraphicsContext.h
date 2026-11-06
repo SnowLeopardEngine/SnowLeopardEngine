@@ -13,6 +13,9 @@ namespace SnowLeopardEngine
         void SwapBuffers();
         void SetVSync(bool vsyncEnabled);
 
+        // Writes the current back buffer (the frame about to be presented) to a PNG file.
+        bool CaptureBackBuffer(const std::filesystem::path& pngPath);
+
         bool IsSupportDSA() const { return m_SupportDSA; }
 
     private:
