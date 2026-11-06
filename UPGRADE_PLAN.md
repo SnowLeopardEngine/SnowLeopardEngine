@@ -1,8 +1,8 @@
 # SnowLeopardEngine Upgrade Plan
 
 > Baseline: `main` @ `f1da16b` (2025-03-14). The code on `main` is identical to `dev` (2024-09-06); `main` only adds README edits.
-> `non-DSA` is one commit ahead (`57706fd`, macOS build fix touching 11 files). `demo-1` is an early branch with 5 unmerged commits and can be ignored. Every other feature branch is already merged.
-> Work happens on the long-lived `revival` branch and is merged back phase by phase.
+> `non-DSA` was one commit ahead (`57706fd`, macOS build fix, cherry-picked here). `demo-1` was an early branch with 5 unmerged commits. Every other feature branch was already merged. The old branches are being removed; only `main`, `dev` and `dev-next` stay (decision 7).
+> Work happens on the long-lived **`dev-next`** branch and is merged back phase by phase.
 > Rendering reference: the public [VRI](https://github.com/zzxzzk115/VRI) v0.1.17, plus the author's (private) libvultra `dev-VRI` branch, used as a design reference for the VRI integration, the render graph and the .NET hostfxr host.
 
 ---
@@ -12,8 +12,8 @@
 | Item | State |
 |---|---|
 | Size | Runtime ~9.2k lines, Editor ~2.3k, GameDemo 1k, 25 GLSL / DzShader files |
-| Build | xmake + custom package repo `SnowLeopardEngine/xmake-repo@dev` (a fork of xmake-repo adding `scoral` and `sphysx-cross`). C++20 |
-| Dependencies | spdlog, fmt 9.1, glfw, glm, entt 3.10.3, assimp, miniaudio, stb, tracy, magic_enum, cereal, shaderc, spirv-cross, cryptopp, fg (skaarj1989/FrameGraph), freetype, ozz-animation 0.14.2, PhysX (sphysx-cross), imgui 1.90.1-docking, Coral (scoral) |
+| Build | xmake + custom package repo `SnowLeopardEngine/xmake-repo`, now rebuilt from the owner's `xmake-repo@backup` (upstream 2026-02 + Vultra packages) plus the SLE recipes (`scoral`, `fg`, `fastnoise2`). C++20. **Builds and runs on Windows / MSVC 2022 (Phase 0)** |
+| Dependencies | spdlog 1.17 (external fmt), fmt 12.1, glfw, glm, entt 3.10.3, assimp, miniaudio, stb, tracy, magic_enum, cereal, shaderc, spirv-cross, cryptopp, fg (skaarj1989/FrameGraph), freetype, ozz-animation 0.14.2, **Jolt Physics 5.5.0** (replaced PhysX), imgui 1.90.1-docking, Coral (scoral) |
 | CI | Windows / Linux / macOS workflows |
 
 ### Subsystem Maturity
@@ -22,14 +22,14 @@
 |---|---|---|
 | Core (Log / Event / UUID / Time / Math / Reflection) | ★★★★ | Usable. `TypeFactory` reflection is basic; SMeta (`__cppast(smeta_unit)` annotations) only covers some components and has no generator yet |
 | Engine / EngineContext | ★★★ | Global `g_EngineContext` singleton; subsystem init order is hard-coded in `Engine::Init`; `LifeTimeComponent` works |
-| Window / Input | ★★★ | GLFW only; no gamepad support; keyboard event dispatch left as TODO |
+| Window / Input | ★★★ | GLFW only; no gamepad support; keyboard event dispatch left as TODO. **To be replaced by SDL3** (decision 9) |
 | Scene (EnTT) | ★★★ | ~30 components; cereal serialization; asset loading scattered across `LogicScene.cpp` ("Move to AssetManager" TODOs) |
 | Asset / IO | ★★ | CoreUUID asset handles exist (#126) but there is no real AssetManager; `Resources.h` imports only some asset types |
 | Rendering | ★★★★ | The most complete part: FrameGraph + deferred pipeline, PBR/IBL, SSAO, Bloom, FXAA, tone mapping, WBOIT, skybox, grass, CSM (`ShadowCascadesBuilder` / `CSM.glsl`, no PCSS), GPU instancing, frustum culling |
-| Physics (PhysX) | ★★★ | Rigid bodies, colliders, character controller, triggers, overlaps; no damping / CCD settings, no physics material asset |
+| Physics (Jolt) | ★★★ | Ported from PhysX to Jolt (decision 8): rigid bodies (sphere / box / capsule / convex mesh / height field), `CharacterVirtual` controller, sensors, ray cast, sphere overlap, mass / damping / CCD. Jolt types stay inside `PhysicsSystem.cpp`. No physics material asset yet |
 | Animation (ozz) | ★★ | Single clip playback and transitions; no blending (BlendJob), blackboard or `.dzanimcon` asset |
 | Audio (miniaudio) | ★★ | AudioClip / Source / Listener components exist; 3D audio (#127) unfinished |
-| In-game GUI | ★★ | Canvas / Image / Text / Button; text drawn with raw GL (`glBindTextureUnit` in `InGameGUIPass`) |
+| In-game GUI | ★ | Canvas / Image / Text / Button only; a naive immediate design with no layout, styling or input focus. **Text rendering is known to be wrong** (owner report; cause not yet investigated). Every glyph is its own texture (no atlas); they became engine textures in Phase 1 |
 | Navigation | ☆ | **Not in the engine.** recast only appears in `Tests/LibraryTests/recastnavigation_Test` |
 | C# scripting | ☆ | **Effectively absent.** `Coral::HostInstance` is a local variable in the `CSharpScriptingSystem` constructor and is destroyed when it returns; only `Tests.Echo` is ever called; no script component, no bindings |
 | Editor | ★★ | Docking layout, Viewport / Inspector / Console / Resource panels; no Hierarchy, menu bar, toolbar, Settings or Preview; hand-written Inspector; Viewport has `TODO: Set RT` |
@@ -40,7 +40,7 @@
 - Raw `gl*` calls live in only 3 files: `RenderContext.cpp` (948 lines), `GraphicsContext.cpp` and `InGameGUIPass.cpp`.
 - **GL types leak into 16 files** (`Buffer.h`, `Texture.h`, `VertexBuffer.h`, `IndexBuffer.h`, `RenderTypeDef.h`, `PipelineState.h`, `GraphicsPipeline.h`, `FrameGraphBuffer.h`, `Character.h`, `Profiling.h`, `TextureLoader.cpp`, ...). `RenderContext.h` includes `<glad/glad.h>` and engine enums are defined with `GL_*` values (`PrimitiveTopology : GLenum`).
 - The API is already Vulkan-shaped (`RenderingInfo` / `AttachmentInfo` / begin-rendering style, FrameGraph, pipeline objects), so most pass code can keep its structure.
-- Uses GL 4.5 DSA (22 `glCreate*` / `glNamed*` call sites), which is why macOS needed the `non-DSA` branch. That branch becomes obsolete after VRI.
+- Uses GL 4.5 DSA (22 `glCreate*` / `glNamed*` call sites), which is why macOS needed the (now removed) `non-DSA` branch. VRI makes it moot.
 - Shader path is already GLSL → shaderc → SPIR-V → SPIRV-Cross → GLSL, so feeding SPIR-V directly to a Vulkan-class RHI is a small change.
 
 ### Known Issues Not Tracked in GitHub Issues
@@ -51,8 +51,11 @@
 4. No instancing for skinned meshes (TODOs in the GBuffer, WeightedBlended and Grass passes).
 5. `Entity::SetName/SetTag/SetLayer` do not validate; tags/layers are not serialized with the project.
 6. FIXMEs at `EditorGUISystem.cpp:121` (commented-out clear) and `LogicScene.cpp:614`.
-7. Old pinned dependencies (fmt 9.1.0, entt 3.10.3, imgui 1.90.1) and a forked package repo — the first build will very likely hit package problems.
+7. Old pinned dependencies (entt 3.10.3, imgui 1.90.1) remain; fmt was unpinned in Phase 0.
 8. Binary `Tools/*/Coral/Coral.Managed.dll` committed to the repository.
+9. **Tone mapping and gamma correction are in the wrong order**: `Assets/Shaders/ToneMappingPass.frag` runs `linearToGamma` *before* `toneMapACES`, so ACES receives gamma-encoded input and the output is never gamma-corrected. Correct order: `toneMapACES(hdr)` on linear HDR, then `linearToGamma`. Fixing it changes every example's output, so it is deliberately not part of the Phase 0 baseline (see Phase 1 follow-up).
+10. **Text rendering is wrong** (owner report) and the in-game GUI is too naive to build a game UI on (see Phase 5).
+11. Debug builds assert at exit in ozz-animation's default allocator (`"Memory leak detected"`, `allocator.cc:54`) in 7 of 14 apps: ozz objects (skeletons / animations / meshes) outlive the allocator. The assert dialog blocks a clean Debug shutdown; Release is unaffected.
 
 ---
 
@@ -108,11 +111,33 @@ Legend: `[ ]` not started, `[~]` partially done (judged against the code).
 Principle: **make it build and run first, then replace the foundations (RHI, scripting), then fill in features.** Each phase is independently deliverable and verifiable.
 
 ### Phase 0 — Revive the Build (1–2 days)
-- [ ] Get `xmake f -m debug && xmake` working on Windows and record every failing package
-- [ ] Package strategy (decision 5): move custom recipes into in-repo `external/packages` (libvultra's approach), keeping a personal xmake-repo as fallback
-- [ ] Upgrade dependencies: fmt → 10/11, entt → 3.13+, imgui → current docking branch; fix warnings
+- [x] Get `xmake f -m debug && xmake` working on Windows and record every failing package (MSVC 14.44, xmake 3.1.2). Failures found:
+  - **The old fork shadowed upstream**: `SnowLeopardEngine/xmake-repo@dev` (2024-09) was a full copy of xmake-repo, so its stale recipes won over the official ones; first hit was `glm` ("links not found" + stale checksum). Fixed by rebuilding the fork from the owner's `xmake-repo@backup` (decision 5)
+  - `sphysx-cross`: PhysX object paths reach exactly 260 characters under the package cache and cl.exe cannot write them (`C1083`) even with long paths enabled. Resolved by replacing PhysX with Jolt (decision 8)
+  - `ozz-animation`: upstream `has_runtime("MD")` is false for `MDd`, so Debug builds got the static CRT (LNK2038 risk). Recipe patched to accept `MD` and `MDd`
+  - `spdlog` 1.17 used its bundled fmt next to the engine's fmt 9.1.0 (`fmt::v9` redefinitions). spdlog now uses `fmt_external`, the fmt pin is gone, and fmt ≥ 11 requires `/utf-8` on MSVC (added globally)
+  - fmt ≥ 10 no longer formats enums implicitly: `LogSystem.h` adds a formatter that logs enums by name (magic_enum)
+  - `scoral` (Coral): hostfxr lookup only accepted a `host/fxr` folder whose path contains `'8'`; the .NET installer keeps only the newest hostfxr (9.0.6 here), so every app asserted at startup. Recipe patched to accept any major version ≥ 8
+  - Environment: `TEMP` / `TMP` pointing into `AppData` is not writable for the build here; builds run with `TEMP` under `CodeRepository`
+- [x] Package strategy (decision 5): keep **`SnowLeopardEngine/xmake-repo`**, rebuilt from the owner's `xmake-repo@backup` plus the SLE recipes
+- [~] Upgrade dependencies: fmt → 12.1 done; entt → 3.13+ and imgui → current docking branch still to do; fix warnings
 - [ ] Repair CI; Windows green at minimum
-- [ ] Run every example and GameDemo; record what works as the regression baseline
+- [x] Run every example and GameDemo; record what works as the regression baseline (see below)
+
+**Regression baseline (2026-11-06, Windows 11, Debug, GL 4.5).** Each app was started, left running for 12 s, then closed through its window.
+
+| App | Starts and runs | Notes |
+|---|---|---|
+| Application, AudioSystem, InputSystem, LifeTimeComponents | yes | clean shutdown |
+| NativeScripting | yes | quits itself by design (`DesktopApp::Quit()` in the script), clean shutdown |
+| TickOneFrame | yes | exits after one frame by design |
+| PhysicsSystem | yes | spheres fall onto the height-field terrain; runtime-spawned spheres get bodies; `OnColliderEnter` fires |
+| AnimationSystem, GUISystem, OverallShowcase, RenderingSystem-Overview / -PBR / -Instancing | yes | Debug exit stops on the ozz allocator assert (known issue 11) |
+| GameDemo | yes | menu only (no input during the run), so the character controller was not exercised; clean shutdown |
+| `JoltPhysics_Test` | passes | sphere rests at y = 0.480 on a box floor |
+| SnowLeopardEditor | not run | |
+
+Not covered yet: a **visual** check of each example (only logs were checked) and GameDemo gameplay (character movement, grounding ray, speaker overlap).
 
 ### Phase 1 — Seal the Rendering Layer for VRI (~1 week)
 Goal: OpenGL still runs, but GL exists only inside one backend directory.
@@ -124,8 +149,10 @@ Goal: OpenGL still runs, but GL exists only inside one backend directory.
 - Acceptance: outside the backend directory, `grep -r "GLuint\|glad" Source` is empty, and every example renders identically
   - [x] grep: only `add_deps("glad")` in `Source/Runtime/xmake.lua` remains
   - [x] Clang syntax check of all 107 Runtime / Editor / GameDemo / Examples translation units passes (with and without `TRACY_ENABLE`)
-  - [ ] **Not yet verified**: a Windows build and a visual comparison of the examples (needs Phase 0 on a real machine)
+  - [x] Windows / MSVC build of everything (Phase 0), and every example starts and runs
+  - [ ] **Not yet verified**: a visual comparison of the examples against `main`
 - Still GL-bound outside the backend, by design until Phase 2: GLFW context creation in `GLFWWindow`, and the editor's `imgui_impl_opengl3`
+- [ ] Follow-up: **fix the tone mapping / gamma order** (known issue 9) in the GL renderer *before* GL reference screenshots are taken for Phase 2, so VRI is compared against correct output
 
 > Value: whatever shape VRI's API takes, the problem is confined to one folder instead of 16 files.
 
@@ -140,7 +167,8 @@ Goal: OpenGL still runs, but GL exists only inside one backend directory.
 
 **Key constraint**: SLE is public and libvultra is private. `includes("external/libvultra")` would make SLE unbuildable for everyone else. Default approach: **SLE depends only on public VRI and ports the code it needs from libvultra** (same author, MIT).
 
-- [ ] **2.1 VRI integration**: add the `vri` package (with the `vri-vultra` patch recipe); port `Device` / `Frame` / `Swapchain` / `Texture` / `Buffer` into `Rendering/Backend/VRI/`; present the GLFW window through a VRI swapchain (no GL context)
+- [ ] **2.0 GLFW → SDL3** (decision 9): replace `GLFWWindow` and the GLFW input path with SDL3 (window, keyboard / mouse, **gamepad**, high-DPI, clipboard), behind the existing `Window` / `InputSystem` interfaces. Doing it first means the VRI swapchain is created once, from an SDL3 window, instead of being written for GLFW and then redone. The editor switches to `imgui_impl_sdl3`
+- [ ] **2.1 VRI integration**: add the `vri` package (already on the rebuilt package repo, v0.1.19); port `Device` / `Frame` / `Swapchain` / `Texture` / `Buffer` into `Rendering/Backend/VRI/`; present the SDL3 window through a VRI swapchain (no GL context)
 - [ ] **2.2 Frame graph**: `fg` does **not** handle barriers, while VRI requires explicit synchronization. Options:
   - (a) keep `fg` and call `transition()` manually in each pass — small change, easy to get wrong
   - (b) **port libvultra's RenderGraph** and replace `fg` — barriers and transient reuse come for free. **Recommended**; after Phase 1 the setup/execute structure of each pass carries over
@@ -148,7 +176,7 @@ Goal: OpenGL still runs, but GL exists only inside one backend directory.
 - [ ] **2.4 Pass order**: Blit / Final → GBuffer + DeferredLighting → ShadowPrePass / CSM → Skybox / IBL precompute (CubemapConverter, IBLDataGenerator as compute) → SSAO / Bloom (Down/Upsample, GaussianBlur) / FXAA / ToneMapping → WeightedBlended + TransparencyCompose → Grass → InGameGUI (glyph atlas, no `glBindTextureUnit`)
   - Direct references in libvultra: `builtin_renderer.cpp` (GBuffer / DeferredLighting / Skybox), `shadow_cascades.cpp`, `tone_mapping_pass.cpp`, `environment.cpp` (IBL)
 - [ ] **2.5 ImGui**: upgrade the editor to imgui 1.92.x docking with a VRI renderer backend (following libvultra's EditorGui); the Viewport samples a texture exported by the render graph (resolves `TODO: Set RT`)
-- [ ] **2.6 Cleanup**: remove `glad`, the GL `GraphicsContext` and the `non-DSA` branch; Tracy GPU zones via VRI timestamps
+- [ ] **2.6 Cleanup**: remove `glad` and the GL `GraphicsContext`; Tracy GPU zones via VRI timestamps
 - Platforms: VRI is validated in libvultra on Windows x64 and Linux x86_64 (Vulkan). **Drop macOS from CI for now**; revisit with VRI Metal / MoltenVK later
 - Acceptance: the three RenderingSystem examples (Overview / PBR / Instancing) and OverallShowcase run **with zero Vulkan validation errors** and match GL screenshots (finite-frame + readback, `--frames N --capture`)
 
@@ -180,7 +208,8 @@ Replace Coral / scoral with a direct hostfxr host modelled on libvultra's `dotne
 
 ### Phase 5 — Gameplay Systems (order as needed)
 - [ ] Animation: #70 BlendJob, #69 blackboard, #134 `.dzanimcon`, state-machine view in the editor
-- [ ] Physics: #133 `.dzphymat`, damping / CCD, cleanup on scene unload (`PhysicsSystem.cpp:83`)
+- [ ] Physics: #133 `.dzphymat` (damping / CCD are done in the Jolt port), scene-unload hook (today the world is rebuilt when the next scene is cooked), Jolt debug renderer in the editor
+- [ ] **In-game GUI and text**: fix text rendering (glyph atlas, correct metrics / baseline / kerning, UTF-8), then replace the naive Canvas / Image / Text / Button system with a real retained UI (layout, anchors, styling, focus and input routing). Evaluate RmlUi against a home-grown widget set before writing code
 - [ ] Navigation: #59 NavMesh / NavMeshAgent (promote the recast test into the engine), #135 baking panel, #56 CullingMask
 - [ ] Audio: #127 3D spatialization (miniaudio supports it); close #3
 - [ ] Rendering extras: #112 PCSS, #110 / #60 meshoptimizer, skinned-mesh instancing
@@ -199,17 +228,21 @@ Defaults in **bold** are what this plan currently follows; change them here if n
 
 1. **Relationship with libvultra**:
    - **A. Depend only on public VRI; port code from libvultra** — SLE stays independent and publicly buildable
-   - B. Depend on libvultra as a subproject (`includes("external/libvultra")`) so SLE is only the game layer (PhysX / ozz / miniaudio / editor / gameplay). Least code, but requires libvultra to be public, and libvultra's architecture rules (Godot-style node tree) differ from SLE's EnTT component model
+   - B. Depend on libvultra as a subproject (`includes("external/libvultra")`) so SLE is only the game layer (Jolt / ozz / miniaudio / editor / gameplay). Least code, but requires libvultra to be public, and libvultra's architecture rules (Godot-style node tree) differ from SLE's EnTT component model
    - C. Archive SLE and use its physics / animation / audio work as input to libvultra's "optional extensions" roadmap item
 2. **Frame graph**: **port libvultra's RenderGraph** vs. keep `fg`.
 3. **Shader language**: ~~Vulkan GLSL first, Slang later~~ → **decided: Slang, with DzShader v3 as a ShaderLab-like syntax parsed by ANTLR** (following libvultra's `.vshader`).
 4. **Platforms**: **drop macOS temporarily**.
-5. **Packages**: **in-repo `external/packages` recipes** vs. keep maintaining the `SnowLeopardEngine/xmake-repo` fork.
-6. **C++ / runtime**: whether to follow libvultra to C++23 + static MSVC runtime (MT). PhysX, ozz, etc. must switch together to avoid LNK2038. Undecided; stays C++20 / MD until Phase 2.
-7. **Branching**: **long-lived `revival` branch, one PR per phase**; archive or delete the old (fully merged) feature branches.
+5. **Packages**: ~~in-repo `external/packages` recipes~~ → **decided: keep `SnowLeopardEngine/xmake-repo`, synced from the owner's `xmake-repo` (`backup` branch: recent upstream + the Vultra packages VRI / vshadersystem / slang-prebuilt / antlr-cpp that Phase 2 needs) plus the SLE recipes on top.** The old fork was a 2024 copy of the whole upstream and shadowed newer official recipes.
+6. **C++ / runtime**: whether to follow libvultra to C++23 + static MSVC runtime (MT). Jolt, ozz, etc. must switch together to avoid LNK2038. Undecided; stays C++20 / MD until Phase 2.
+7. **Branching**: ~~long-lived `revival` branch~~ → **decided: long-lived `dev-next` branch, one PR per phase. Only `main`, `dev` and `dev-next` remain**; the 20 old feature branches are deleted (every tip is kept in a git bundle, `old-branches-2026-11-06.bundle`, outside the repo).
+8. **Physics**: ~~PhysX (`sphysx-cross`)~~ → **decided: Jolt Physics** (official xmake recipe, no custom package, no GPU DLLs, MIT). Done in Phase 0.
+9. **Windowing / input**: ~~GLFW~~ → **decided: SDL3**, as step 2.0 before the VRI swapchain.
+10. **GameDemo**: **rewrite rather than port** (Phase 6). It only has to keep building until then.
 
 ## 5. Risks
-- Custom packages (`sphysx-cross`, `scoral`) and old pinned versions may stall the first build; Phase 0 duration is uncertain.
+- ~~Custom packages and old pinned versions may stall the first build~~ — happened (see Phase 0); resolved. Remaining custom recipes: `scoral` (until Phase 3), `fg` (until 2.2), `fastnoise2`.
+- Jolt port: the character controller kept PhysX semantics (capsule-center position, displacement-based `Move`), but feel and edge cases (steps, slopes, pushing) can differ. GameDemo gameplay was not exercised yet; the rewritten demo (decision 10) is where it gets tuned.
 - With ~18 render passes, the VRI migration needs a GL-vs-VRI screenshot regression loop or subtle differences will slip through.
 - Moving from GL to a Vulkan-class API, the usual failure points are coordinate conventions (Y flip, depth range, cubemap orientation) and synchronization. Carry over the VRI patches and the pitfalls libvultra already documented (swapchain extent, cube-array feature, timestamps on hybrid GPUs).
 - VRI is still v0.1.x; pin the version and upgrade in step with libvultra.
@@ -225,3 +258,8 @@ Defaults in **bold** are what this plan currently follows; change them here if n
 | 2026-11-05 | 1 | Cherry-picked the clang portability fix from `non-DSA` (also fixes the missing `RenderContext` declaration in `IBLDataGenerator.h`) |
 | 2026-11-05 | 1 | Engine-owned enums / `RenderHandle`; backend-neutral GPU profiling zones; glyphs as engine textures; GL implementation moved to `Backend/OpenGL` |
 | 2026-11-05 | 2.3 | Shader decision: DzShader v3 = ANTLR + Slang |
+| 2026-11-06 | 0 | Package repo rebuilt from the owner's `xmake-repo@backup` + SLE recipes (`ozz-animation` MDd and `scoral` hostfxr fixes) |
+| 2026-11-06 | 0 | PhysX → Jolt Physics 5.5.0; `JoltPhysics_Test` replaces `PhysX_Test` |
+| 2026-11-06 | 0 | fmt unpinned (12.1, shared with spdlog), `/utf-8` on MSVC, enum log formatter |
+| 2026-11-06 | 0 | First Windows / MSVC build of everything; all 13 examples and GameDemo start and run (baseline above) |
+| 2026-11-06 | — | Decisions: SDL3 replaces GLFW; GameDemo to be rewritten; work moves to `dev-next`, old branches removed. Known issues added: tone mapping / gamma order, text rendering, naive GUI, ozz Debug exit assert |
