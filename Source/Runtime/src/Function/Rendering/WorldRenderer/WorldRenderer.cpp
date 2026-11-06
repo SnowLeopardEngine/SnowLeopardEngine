@@ -85,6 +85,10 @@ namespace SnowLeopardEngine
             .Destroy(m_GlobalLightProbe.Diffuse)
             .Destroy(m_GlobalLightProbe.Specular)
             .Destroy(m_Skybox);
+        if (m_OutputTexture)
+        {
+            m_RenderContext->Destroy(m_OutputTexture);
+        }
     }
 
     void WorldRenderer::OnLogicSceneLoaded(LogicScene* scene)
@@ -204,7 +208,32 @@ namespace SnowLeopardEngine
         sceneColor.LDR = m_FXAAPass->AddToGraph(fg, blitted);
 
         // Final composition
-        m_FinalPass->Compose(fg, blackboard);
+        if (m_RenderToTexture)
+        {
+            const Extent2D extent = m_Viewport.Extent;
+            if (!m_OutputTexture || m_OutputTexture.GetExtent() != extent)
+            {
+                if (m_OutputTexture)
+                {
+                    m_RenderContext->Destroy(m_OutputTexture);
+                }
+                m_OutputTexture = m_RenderContext->CreateTexture2D(extent, PixelFormat::RGBA8_UNorm);
+                m_RenderContext->SetupSampler(m_OutputTexture,
+                                              {
+                                                  .MinFilter    = TexelFilter::Linear,
+                                                  .MipmapMode   = MipmapMode::None,
+                                                  .MagFilter    = TexelFilter::Linear,
+                                                  .AddressModeS = SamplerAddressMode::ClampToEdge,
+                                                  .AddressModeT = SamplerAddressMode::ClampToEdge,
+                                                  .AddressModeR = SamplerAddressMode::ClampToEdge,
+                                              });
+            }
+            m_FinalPass->Compose(fg, blackboard, importTexture(fg, "Viewport Output", &m_OutputTexture));
+        }
+        else
+        {
+            m_FinalPass->Compose(fg, blackboard);
+        }
 
         fg.compile();
         fg.execute(m_RenderContext.get(), m_TransientResources.get());
@@ -512,8 +541,9 @@ namespace SnowLeopardEngine
     {
         auto& mainCameraTransformComponent = m_MainCamera.GetComponent<TransformComponent>();
         auto& mainCameraComponent          = m_MainCamera.GetComponent<CameraComponent>();
-        mainCameraComponent.ViewportWidth  = g_EngineContext->WindowSys->GetWidth();
-        mainCameraComponent.ViewportHeight = g_EngineContext->WindowSys->GetHeight();
+        // The aspect ratio follows what is rendered: the window, or the editor's Viewport panel.
+        mainCameraComponent.ViewportWidth  = m_Viewport.Extent.Width;
+        mainCameraComponent.ViewportHeight = m_Viewport.Extent.Height;
 
         m_FrameUniform.ElapsedTime = Time::ElapsedTime;
 

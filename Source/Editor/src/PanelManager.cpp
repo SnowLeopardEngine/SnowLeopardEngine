@@ -57,5 +57,8 @@ namespace SnowLeopardEngine::Editor
         {
             panel->Shutdown();
         }
+        // Panels hold scenes (the Viewport's editing scene); release them while the engine is still up, not at
+        // static destruction.
+        s_Panels.clear();
     }
 } // namespace SnowLeopardEngine::Editor

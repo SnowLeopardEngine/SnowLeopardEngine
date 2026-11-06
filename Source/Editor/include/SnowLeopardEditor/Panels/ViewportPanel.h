@@ -28,10 +28,10 @@ namespace SnowLeopardEngine::Editor
     private:
         void HandleInput();
         void DrawToolbar();
+        void CreateDefaultScene();
 
     private:
-        // Ref<FrameBuffer> m_RenderTarget = nullptr;
-        glm::vec2        m_ViewportSize = {1024, 1024};
+        glm::vec2 m_ViewportSize = {0, 0};
 
         Ref<LogicScene> m_EditingScene    = nullptr;
         Ref<LogicScene> m_SimulatingScene = nullptr;

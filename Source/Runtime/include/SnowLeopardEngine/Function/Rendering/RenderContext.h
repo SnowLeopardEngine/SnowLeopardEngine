@@ -122,6 +122,9 @@ namespace SnowLeopardEngine
         RenderContext& GenerateMipmaps(Texture&);
 
         RenderContext& SetupSampler(Texture&, const SamplerInfo&);
+
+        // Identifier of a texture for the UI backend (ImTextureID); for OpenGL the texture name.
+        static uint64_t GetUITextureID(const Texture&);
         RenderHandle   CreateSampler(const SamplerInfo&);
 
         RenderContext& Clear(Texture&);

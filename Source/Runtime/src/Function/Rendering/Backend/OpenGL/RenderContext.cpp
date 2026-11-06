@@ -487,6 +487,11 @@ namespace SnowLeopardEngine
         return *this;
     }
 
+    uint64_t RenderContext::GetUITextureID(const Texture& texture)
+    {
+        return static_cast<uint64_t>(static_cast<RenderHandle>(texture));
+    }
+
     RenderHandle RenderContext::BeginRendering(const RenderingInfo& renderingInfo)
     {
         SNOW_LEOPARD_CORE_ASSERT(!m_RenderingStarted,

@@ -17,7 +17,50 @@ namespace SnowLeopardEngine::Editor
     {
         REGISTER_TYPE(EditorCameraScript);
 
-        // TODO: Set RT
+        // The scene is rendered into a texture that this panel draws, instead of into the window.
+        g_EngineContext->RenderSys->SetRenderToTexture(true);
+
+        CreateDefaultScene();
+    }
+
+    void ViewportPanel::CreateDefaultScene()
+    {
+        // Until scenes can be opened from the project (menu bar, Phase 4) the editor starts with a small scene.
+        auto scene = g_EngineContext->SceneMngr->CreateScene("Untitled Scene", true);
+        scene->SetSimulationMode(LogicSceneSimulationMode::Editor);
+        m_EditingScene = scene;
+
+        // The renderer draws through the first camera, so the editor camera is created first.
+        m_EditorCamera = scene->CreateEntity("EditorCamera");
+        auto& cameraTransform    = m_EditorCamera.GetComponent<TransformComponent>();
+        cameraTransform.Position = {0, 8, 25};
+        cameraTransform.SetRotationEuler(glm::vec3(-15, 0, 0));
+        m_EditorCamera.AddComponent<CameraComponent>().ClearFlags = CameraClearFlags::Skybox;
+        m_EditorCamera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EditorCameraScript));
+
+        auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
+
+        Entity floor                                         = scene->CreateEntity("Floor");
+        floor.GetComponent<TransformComponent>().Scale       = {50, 1, 50};
+        floor.GetComponent<EntityStatusComponent>().IsStatic = true;
+        floor.AddComponent<RigidBodyComponent>();
+        floor.AddComponent<BoxColliderComponent>(normalMaterial);
+        floor.AddComponent<MeshFilterComponent>().PrimitiveType           = MeshPrimitiveType::Cube;
+        floor.AddComponent<MeshRendererComponent>().MaterialFilePath      = "Assets/Materials/Next/White.dzmaterial";
+
+        Entity sphere                                     = scene->CreateEntity("Sphere");
+        sphere.GetComponent<TransformComponent>().Position = {0, 6, 0};
+        sphere.GetComponent<TransformComponent>().Scale    = {3, 3, 3};
+        sphere.AddComponent<RigidBodyComponent>();
+        sphere.AddComponent<SphereColliderComponent>(normalMaterial);
+        sphere.AddComponent<MeshFilterComponent>().PrimitiveType      = MeshPrimitiveType::Sphere;
+        sphere.AddComponent<MeshRendererComponent>().MaterialFilePath = "Assets/Materials/Next/Blue.dzmaterial";
+
+        Entity cube                                     = scene->CreateEntity("Cube");
+        cube.GetComponent<TransformComponent>().Position = {-6, 1.5, 2};
+        cube.GetComponent<TransformComponent>().Scale    = {2, 2, 2};
+        cube.AddComponent<MeshFilterComponent>().PrimitiveType      = MeshPrimitiveType::Cube;
+        cube.AddComponent<MeshRendererComponent>().MaterialFilePath = "Assets/Materials/Next/Red.dzmaterial";
     }
 
     void ViewportPanel::OnFixedTick()
@@ -39,16 +82,6 @@ namespace SnowLeopardEngine::Editor
         // Tick logic
         g_EngineContext->SceneMngr->OnTick(deltaTime);
 
-        // m_RenderTarget->Bind();
-        // m_RenderTarget->ClearColorAttachment(1, -1); // Clear RED buffer (picking buffer)
-        // m_RenderTarget->Unbind();
-
-        if (!g_EngineContext->WindowSys->IsMinimized())
-        {
-            // Tick rendering system
-            g_EngineContext->RenderSys->OnTick(deltaTime);
-        }
-
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
         ImGui::Begin("Viewport");
         ImGui::PopStyleVar();
@@ -58,30 +91,34 @@ namespace SnowLeopardEngine::Editor
         ImGui::EndChild();
 
         ImGui::BeginChild("ViewportMain", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar);
-        // uint32_t colorAttachment0 = m_RenderTarget->GetColorAttachmentID(0);
-        // if (colorAttachment0)
-        // {
-        //     // update viewport size & frame buffer size
-        //     auto      size         = ImGui::GetContentRegionAvail();
-        //     glm::vec2 viewportSize = {size.x, size.y};
 
-        //     if (m_ViewportSize != viewportSize)
-        //     {
-        //         m_RenderTarget->Resize(viewportSize.x, viewportSize.y);
-        //         m_ViewportSize = viewportSize;
-        //     }
+        // Nothing has been drawn into the child yet, so the cursor is at the content region's top-left corner
+        // (GetWindowContentRegionMin / Max were removed in imgui 1.92).
+        const auto viewportMin  = ImGui::GetCursorScreenPos();
+        const auto viewportSize = ImGui::GetContentRegionAvail();
 
-        //     // Render Framebuffer to an image.
-        //     ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<intptr_t>(colorAttachment0)), size, {0, 1}, {1, 0});
-        // }
+        // Render the scene at the panel's size, then show it.
+        if (!g_EngineContext->WindowSys->IsMinimized() && viewportSize.x >= 1.0f && viewportSize.y >= 1.0f)
+        {
+            m_ViewportSize = {viewportSize.x, viewportSize.y};
+            g_EngineContext->RenderSys->UpdateViewport({
+                .Offset = {.X = 0, .Y = 0},
+                .Extent = {.Width  = static_cast<uint32_t>(viewportSize.x),
+                           .Height = static_cast<uint32_t>(viewportSize.y)},
+            });
+            g_EngineContext->RenderSys->OnTick(deltaTime);
+
+            if (const auto texture = g_EngineContext->RenderSys->GetOutputTextureID(); texture != 0)
+            {
+                // GL textures start at the bottom row.
+                ImGui::Image(static_cast<ImTextureID>(texture), viewportSize, {0, 1}, {1, 0});
+                ImGui::SetCursorScreenPos(viewportMin);
+            }
+        }
 
         if (m_ViewportMode == ViewportMode::Edit)
         {
             // Get mouse relative position (Origin is left bottom) to the viewport window
-            // Nothing has been drawn into the child yet, so the cursor is at the content region's top-left corner
-            // (GetWindowContentRegionMin / Max were removed in imgui 1.92).
-            auto      viewportMin  = ImGui::GetCursorScreenPos();
-            auto      viewportSize = ImGui::GetContentRegionAvail();
             glm::vec2 bounds0      = {viewportMin.x, viewportMin.y};
             glm::vec2 bounds1      = {viewportMin.x + viewportSize.x, viewportMin.y + viewportSize.y};
             ImVec2    mousePos = ImGui::GetMousePos();

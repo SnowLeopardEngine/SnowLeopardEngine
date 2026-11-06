@@ -43,6 +43,11 @@ namespace SnowLeopardEngine
 
         inline void UpdateViewport(const Rect2D& viewport) { m_Viewport = viewport; }
 
+        // Off: frames go to the window. On: frames go to an output texture of the viewport size (the editor's
+        // Viewport panel draws it).
+        void           SetRenderToTexture(bool enabled) { m_RenderToTexture = enabled; }
+        const Texture* GetOutputTexture() const { return m_OutputTexture ? &m_OutputTexture : nullptr; }
+
     private:
         void CreateTools();
         void CreatePasses();
@@ -65,6 +70,8 @@ namespace SnowLeopardEngine
         // -------- Context --------
         Scope<RenderContext> m_RenderContext = nullptr;
         Rect2D               m_Viewport;
+        bool                 m_RenderToTexture = false;
+        Texture              m_OutputTexture;
 
         // -------- FrameGraph Transient Resource Manager --------
         Scope<TransientResources> m_TransientResources = nullptr;

@@ -4,6 +4,8 @@
 
 #include <fg/Fwd.hpp>
 
+#include <optional>
+
 namespace SnowLeopardEngine
 {
     class FinalPass
@@ -12,7 +14,8 @@ namespace SnowLeopardEngine
         explicit FinalPass(RenderContext&);
         ~FinalPass();
 
-        void Compose(FrameGraph&, const FrameGraphBlackboard&);
+        // Draws the scene colour to the window, or into `target` (an imported texture) when given.
+        void Compose(FrameGraph&, const FrameGraphBlackboard&, std::optional<FrameGraphResource> target = {});
 
     private:
         RenderContext&   m_RenderContext;

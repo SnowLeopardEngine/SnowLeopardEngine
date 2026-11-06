@@ -125,7 +125,6 @@ namespace SnowLeopardEngine::Editor
         style.WindowMinSize.x = minWinSizeX;
         style.WindowMinSize.y = minWinSizeY;
 
-        // FIXME: g_EngineContext->RenderSys->GetAPI()->ClearColor(glm::vec4(0, 0, 0, 0), ClearBit::Default);
         ImGui::ShowDemoWindow();
 
         PanelManager::OnTick(deltaTime);
@@ -185,6 +184,11 @@ namespace SnowLeopardEngine::Editor
         // Rendering
         ImGui::Render();
 
+        // The scene goes to the Viewport texture, so the window only shows the GUI: clear what is behind it.
+        g_EngineContext->RenderSys->GetGlobalRenderContext()->BeginRendering(
+            {.Extent = {.Width  = g_EngineContext->WindowSys->GetWidth(),
+                        .Height = g_EngineContext->WindowSys->GetHeight()}},
+            glm::vec4 {0.0f, 0.0f, 0.0f, 1.0f});
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)

@@ -38,7 +38,7 @@ namespace SnowLeopardEngine
 
     FinalPass::~FinalPass() { m_RenderContext.Destroy(m_Pipeline); }
 
-    void FinalPass::Compose(FrameGraph& fg, const FrameGraphBlackboard& blackboard)
+    void FinalPass::Compose(FrameGraph& fg, const FrameGraphBlackboard& blackboard, std::optional<FrameGraphResource> target)
     {
         const auto frameUniform = blackboard.get<FrameData>().FrameUniform;
 
@@ -49,6 +49,10 @@ namespace SnowLeopardEngine
             [&](FrameGraph::Builder& builder, auto&) {
                 builder.read(frameUniform);
                 builder.read(output);
+                if (target.has_value())
+                {
+                    target = builder.write(*target);
+                }
                 builder.setSideEffect();
             },
             [=, this](const auto&, FrameGraphPassResources& resources, void* ctx) {
@@ -58,11 +62,30 @@ namespace SnowLeopardEngine
                 const auto extent = resources.getDescriptor<FrameGraphTexture>(output).Extent;
                 auto&      rc     = *static_cast<RenderContext*>(ctx);
 
-                rc.BeginRendering({.Extent = extent}, glm::vec4 {0.0f});
+                RenderHandle framebuffer = kNullHandle;
+                if (target.has_value())
+                {
+                    const RenderingInfo renderingInfo {
+                        .Area             = {.Extent = extent},
+                        .ColorAttachments = {{
+                            .Image      = getTexture(resources, *target),
+                            .ClearValue = glm::vec4 {0.0f},
+                        }},
+                    };
+                    framebuffer = rc.BeginRendering(renderingInfo);
+                }
+                else
+                {
+                    rc.BeginRendering({.Extent = extent}, glm::vec4 {0.0f});
+                }
                 rc.BindGraphicsPipeline(m_Pipeline)
                     .BindUniformBuffer(0, getBuffer(resources, frameUniform))
                     .BindTexture(0, getTexture(resources, output))
                     .DrawFullScreenTriangle();
+                if (framebuffer != kNullHandle)
+                {
+                    rc.EndRendering(framebuffer);
+                }
             });
     }
 } // namespace SnowLeopardEngine

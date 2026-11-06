@@ -19,7 +19,13 @@ namespace SnowLeopardEngine
         void OnTick(float deltaTime);
         void Present();
 
-        void SetRenderTarget(const Ref<FrameBuffer>& renderTarget) {}
+        // Render into a texture instead of the window (editor Viewport); 0 until the first frame was rendered.
+        void     SetRenderToTexture(bool enabled) { m_Renderer.SetRenderToTexture(enabled); }
+        uint64_t GetOutputTextureID() const
+        {
+            const auto* texture = m_Renderer.GetOutputTexture();
+            return texture != nullptr ? RenderContext::GetUITextureID(*texture) : 0;
+        }
         inline void UpdateViewport(const Rect2D& viewport) { m_Renderer.UpdateViewport(viewport); }
 
         Ref<GraphicsContext> GetGraphicsContext() const { return m_Context; }
