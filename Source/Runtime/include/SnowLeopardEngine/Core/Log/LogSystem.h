@@ -8,6 +8,27 @@
 #include <spdlog/fmt/ostr.h>
 // clang-format on
 
+#include <magic_enum.hpp>
+
+#include <string_view>
+#include <type_traits>
+
+// fmt >= 10 no longer formats enums implicitly. Log enums by name (falling back to the underlying value), which is
+// what the engine's log calls expect. An explicit fmt::formatter for a specific enum still takes precedence.
+template<typename T>
+struct fmt::formatter<T, char, std::enable_if_t<std::is_enum_v<T>>> : fmt::formatter<std::string_view>
+{
+    auto format(T value, fmt::format_context& ctx) const
+    {
+        const std::string_view name = magic_enum::enum_name(value);
+        if (!name.empty())
+        {
+            return fmt::formatter<std::string_view>::format(name, ctx);
+        }
+        return fmt::format_to(ctx.out(), "{}", static_cast<std::underlying_type_t<T>>(value));
+    }
+};
+
 namespace SnowLeopardEngine
 {
     class LogSystem final : public EngineSubSystem

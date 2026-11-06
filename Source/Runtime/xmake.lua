@@ -1,5 +1,7 @@
 -- add requirements
-add_requires("spdlog", "fmt 9.1.0", "glfw", "glm", "stduuid", "entt v3.10.3", "assimp")
+add_requires("fmt", { configs = { header_only = true }})
+add_requires("spdlog", { configs = { fmt_external = true }}) -- share one fmt with the engine instead of the bundled copy
+add_requires("glfw", "glm", "stduuid", "entt v3.10.3", "assimp")
 add_requires("miniaudio", "stb", "tracy", "magic_enum", "cereal", "shaderc", "spirv-cross", "scoral", "cryptopp", "fg", "freetype")
 add_requires("sphysx-cross", { configs = { debug = is_mode("debug") }})
 add_requires("ozz-animation 0.14.2", { configs = { debug = is_mode("debug") }})

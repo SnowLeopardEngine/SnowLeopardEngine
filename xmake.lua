@@ -18,6 +18,7 @@ if is_plat("windows") then
     add_cxxflags("/bigobj") -- avoid big obj
     add_cxxflags("-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING")
     add_cxxflags("/EHsc")
+    add_cxflags("/utf-8", {tools = {"msvc", "cl"}}) -- required by fmt >= 11 (and spdlog through it)
     if is_mode("debug") then
         set_runtimes("MDd")
         add_links("ucrtd")
@@ -46,7 +47,7 @@ add_rules("plugin.vsxmake.autoupdate")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 
 -- add our own xmake-repo here
-add_repositories("snow-leopard-engine-xmake-repo https://github.com/SnowLeopardEngine/xmake-repo.git dev")
+add_repositories("snow-leopard-engine-xmake-repo https://github.com/SnowLeopardEngine/xmake-repo.git dev-next")
 
 -- include 3rdParty libraries
 includes("3rdParty")
