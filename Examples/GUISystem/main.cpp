@@ -5,7 +5,6 @@
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/OzzModelLoader.h"
 #include "SnowLeopardEngine/Function/IO/TextureLoader.h"
-#include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include <SnowLeopardEngine/Engine/DesktopApp.h>
@@ -93,7 +92,6 @@ public:
         const float centerX = m_EngineContext->WindowSys->GetWidth() / 2.0f;
         const float centerY = m_EngineContext->WindowSys->GetHeight() / 2.0f;
 
-        m_RenderContext = CreateScope<RenderContext>();
 
         const std::string uiImageMaterialPath = "Assets/Materials/Next/UIImage.dzmaterial";
         const std::string uiTextMaterialPath  = "Assets/Materials/Next/UIText.dzmaterial";
@@ -106,7 +104,7 @@ public:
         panelRect.Pivot                 = {0.5, 0.5};
         panelRect.Pos                   = {centerX, centerY, -0.1};
         auto& panelImageComp            = panelImage.AddComponent<UI::ImageComponent>();
-        panelImageComp.TargetGraphic    = IO::Load("Assets/Textures/GUI/Panel/Window/Big.png", *m_RenderContext);
+        panelImageComp.TargetGraphic    = IO::Load("Assets/Textures/GUI/Panel/Window/Big.png");
         panelImageComp.MaterialFilePath = uiImageMaterialPath;
 
         // Create a play button
@@ -117,7 +115,7 @@ public:
         playButtonRect.Pos    = {centerX, centerY, 0};
         auto& playButtonComp  = playButton.AddComponent<UI::ButtonComponent>();
         playButtonComp.TintColor.TargetGraphic =
-            IO::Load("Assets/Textures/GUI/Buttons/Rect-Medium/PlayText/Default.png", *m_RenderContext);
+            IO::Load("Assets/Textures/GUI/Buttons/Rect-Medium/PlayText/Default.png");
         playButtonComp.MaterialFilePath = uiImageMaterialPath;
 
         Subscribe(m_ButtonClickedEventHandler);
@@ -142,7 +140,6 @@ public:
 
 private:
     EngineContext*       m_EngineContext;
-    Scope<RenderContext> m_RenderContext; // owns the UI textures
 
     EventHandler<UIButtonClickedEvent> m_ButtonClickedEventHandler = [this](const UIButtonClickedEvent& e) {
         auto   button       = e.GetButtonEntity();

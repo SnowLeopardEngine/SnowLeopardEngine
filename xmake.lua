@@ -65,6 +65,8 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 
 -- add our own xmake-repo here
 add_repositories("snow-leopard-engine-xmake-repo https://github.com/SnowLeopardEngine/xmake-repo.git dev-next")
+-- in-tree recipes not yet published to the package repo (VRI as libvultra builds it)
+add_repositories("snow-leopard-engine-local xmake")
 
 -- include 3rdParty libraries
 includes("3rdParty")

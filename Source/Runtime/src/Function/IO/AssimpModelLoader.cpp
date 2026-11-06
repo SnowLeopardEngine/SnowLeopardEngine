@@ -50,7 +50,6 @@ namespace SnowLeopardEngine
     {
         MeshItem meshItem        = {};
         meshItem.Name            = mesh->mName.C_Str();
-        meshItem.Data.VertFormat = VertexFormat::Builder {}.BuildDefault();
 
         bool hasBones = mesh->HasBones();
 

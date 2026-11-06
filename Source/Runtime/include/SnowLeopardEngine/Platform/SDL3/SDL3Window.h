@@ -4,7 +4,6 @@
 
 // SDL stays out of public headers; only SDL3Window.cpp includes it.
 struct SDL_Window;
-struct SDL_GLContextState;
 
 namespace SnowLeopardEngine
 {
@@ -24,16 +23,11 @@ namespace SnowLeopardEngine
         bool ShouldClose() const override { return m_ShouldClose; }
         bool IsMinimized() const override { return m_IsMinimized; }
 
-        void MakeCurrentContext() override;
-        void SwapBuffers() override;
-        void SetVSync(bool enabled) override;
-        void* GetProcAddressLoader() const override;
 
         void SetHideCursor(bool hide) override;
 
         void* GetPlatformWindow() const override { return m_Window; }
         void* GetNativeWindow() const override;
-        void* GetGraphicsContext() const override { return m_GLContext; }
 
         NativeEventListenerId AddNativeEventListener(NativeEventListener listener) override;
         void                  RemoveNativeEventListener(NativeEventListenerId id) override;
@@ -42,8 +36,7 @@ namespace SnowLeopardEngine
         void UpdatePixelSize();
 
     private:
-        SDL_Window*         m_Window    = nullptr;
-        SDL_GLContextState* m_GLContext = nullptr;
+        SDL_Window* m_Window = nullptr;
 
         uint32_t m_Width       = 0;
         uint32_t m_Height      = 0;

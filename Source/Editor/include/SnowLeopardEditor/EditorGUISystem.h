@@ -6,6 +6,8 @@ struct ImVec2;
 
 namespace SnowLeopardEngine::Editor
 {
+    class ImGuiRenderer;
+
     struct EditorGUISystemInitInfo
     {
         std::string ProjectFilePath;
@@ -14,6 +16,9 @@ namespace SnowLeopardEngine::Editor
     class EditorGUISystem
     {
     public:
+        EditorGUISystem();
+        ~EditorGUISystem(); // defined where ImGuiRenderer is complete
+
         void Init(const EditorGUISystemInitInfo& initInfo);
         void Shutdown();
 
@@ -28,6 +33,7 @@ namespace SnowLeopardEngine::Editor
         void BuildDefaultLayout(uint32_t dockSpaceId, const ImVec2& size);
 
     private:
-        uint32_t m_EventListener = 0; // Window::NativeEventListenerId feeding SDL events to ImGui
+        uint32_t             m_EventListener = 0; // Window::NativeEventListenerId feeding SDL events to ImGui
+        Scope<ImGuiRenderer> m_Renderer;          // draws ImGui in the render system's swapchain pass
     };
 } // namespace SnowLeopardEngine::Editor

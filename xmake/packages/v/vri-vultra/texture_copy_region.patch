@@ -1,0 +1,37 @@
+--- a/source/backend_vk/core_vk.cpp
++++ b/source/backend_vk/core_vk.cpp
+@@ -1680,16 +1680,24 @@
+                                      VriTexture*               src,
+                                      const VriTextureCopyDesc* region)
+         {
+-            const TextureVK* s          = reinterpret_cast<const TextureVK*>(src);
+-            const TextureVK* d          = reinterpret_cast<const TextureVK*>(dst);
+-            VkImageCopy      c          = {};
+-            c.srcSubresource.aspectMask = region ? ToVkAspect(region->src.aspect) : VK_IMAGE_ASPECT_COLOR_BIT;
+-            c.srcSubresource.mipLevel   = region ? region->src.mip : 0;
+-            c.srcSubresource.layerCount = 1;
+-            c.dstSubresource.aspectMask = region ? ToVkAspect(region->dst.aspect) : VK_IMAGE_ASPECT_COLOR_BIT;
+-            c.dstSubresource.mipLevel   = region ? region->dst.mip : 0;
+-            c.dstSubresource.layerCount = 1;
+-            c.extent                    = s->extent;
++            const TextureVK*           s           = reinterpret_cast<const TextureVK*>(src);
++            const TextureVK*           d           = reinterpret_cast<const TextureVK*>(dst);
++            const VriTextureRegionDesc source      = region ? region->src : VriTextureRegionDesc {};
++            const VriTextureRegionDesc destination = region ? region->dst : VriTextureRegionDesc {};
++            VkImageCopy                c {};
++            c.srcSubresource.aspectMask     = region ? ToVkAspect(source.aspect) : VK_IMAGE_ASPECT_COLOR_BIT;
++            c.srcSubresource.mipLevel       = source.mip;
++            c.srcSubresource.baseArrayLayer = source.baseLayer;
++            c.srcSubresource.layerCount     = source.layerNum ? source.layerNum : 1;
++            c.dstSubresource.aspectMask     = region ? ToVkAspect(destination.aspect) : VK_IMAGE_ASPECT_COLOR_BIT;
++            c.dstSubresource.mipLevel       = destination.mip;
++            c.dstSubresource.baseArrayLayer = destination.baseLayer;
++            c.dstSubresource.layerCount     = destination.layerNum ? destination.layerNum : c.srcSubresource.layerCount;
++            c.srcOffset                     = {source.x, source.y, source.z};
++            c.dstOffset                     = {destination.x, destination.y, destination.z};
++            c.extent = {source.width ? source.width : std::max(s->extent.width >> source.mip, 1u),
++                        source.height ? source.height : std::max(s->extent.height >> source.mip, 1u),
++                        source.depth ? source.depth : std::max(s->extent.depth >> source.mip, 1u)};
+             vkCmdCopyImage(CB(cmd)->cmd,
+                            s->image,
+                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,

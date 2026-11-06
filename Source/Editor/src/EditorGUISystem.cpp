@@ -1,4 +1,5 @@
 #include "SnowLeopardEditor/EditorGUISystem.h"
+#include "SnowLeopardEditor/ImGuiRenderer.h"
 #include "SnowLeopardEditor/PanelManager.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
@@ -8,12 +9,14 @@
 #include <imgui.h>
 #include <imgui_internal.h> // DockBuilder
 #include <imgui_impl_sdl3.h>
-#include <imgui_impl_opengl3.h>
 
 #include <SDL3/SDL.h>
 
 namespace SnowLeopardEngine::Editor
 {
+    EditorGUISystem::EditorGUISystem()  = default;
+    EditorGUISystem::~EditorGUISystem() = default;
+
     void EditorGUISystem::Init(const EditorGUISystemInitInfo& initInfo)
     {
         // Setup Dear ImGui context
@@ -24,7 +27,8 @@ namespace SnowLeopardEngine::Editor
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;   // Enable Docking
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport
+        // Multi-viewport (detached panels as OS windows) needs per-window VRI swapchains; not wired up yet.
+        // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
@@ -58,10 +62,13 @@ namespace SnowLeopardEngine::Editor
         SetupUIStyle();
 
         auto* window = g_EngineContext->WindowSys->GetWindow();
-        ImGui_ImplSDL3_InitForOpenGL(static_cast<SDL_Window*>(window->GetPlatformWindow()), window->GetGraphicsContext());
+        // SDL3 for input and windowing; VRI's ImGui renderer draws (no GL / Vulkan specific ImGui backend).
+        ImGui_ImplSDL3_InitForOther(static_cast<SDL_Window*>(window->GetPlatformWindow()));
         m_EventListener = window->AddNativeEventListener(
             [](const void* event) { ImGui_ImplSDL3_ProcessEvent(static_cast<const SDL_Event*>(event)); });
-        ImGui_ImplOpenGL3_Init("#version 330");
+        auto& renderSystem = g_EngineContext->RenderSys;
+        m_Renderer         = CreateScope<ImGuiRenderer>(renderSystem->GetDevice(), renderSystem->GetSwapchainFormat());
+        renderSystem->AddOverlay(m_Renderer.get());
 
         // init panel manager
         PanelManagerInitInfo panelInitInfo = {};
@@ -76,7 +83,8 @@ namespace SnowLeopardEngine::Editor
         SNOW_LEOPARD_INFO("[EditorGUISystem] Shutting Down...");
         PanelManager::Shutdown();
         g_EngineContext->WindowSys->GetWindow()->RemoveNativeEventListener(m_EventListener);
-        ImGui_ImplOpenGL3_Shutdown();
+        g_EngineContext->RenderSys->RemoveOverlay(m_Renderer.get());
+        m_Renderer.reset();
         ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();
     }
@@ -170,7 +178,6 @@ namespace SnowLeopardEngine::Editor
         // High DPI scaling
         ImGui::GetIO().FontGlobalScale = g_EngineContext->WindowSys->GetContentScale();
 
-        ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
@@ -181,24 +188,8 @@ namespace SnowLeopardEngine::Editor
         ImGuiIO& io    = ImGui::GetIO();
         io.DisplaySize = ImVec2(g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight());
 
-        // Rendering
+        // Build the draw data; the render system uploads and draws it (ImGuiRenderer) when it presents.
         ImGui::Render();
-
-        // The scene goes to the Viewport texture, so the window only shows the GUI: clear what is behind it.
-        g_EngineContext->RenderSys->GetGlobalRenderContext()->BeginRendering(
-            {.Extent = {.Width  = g_EngineContext->WindowSys->GetWidth(),
-                        .Height = g_EngineContext->WindowSys->GetHeight()}},
-            glm::vec4 {0.0f, 0.0f, 0.0f, 1.0f});
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            SDL_Window*   backupCurrentWindow  = SDL_GL_GetCurrentWindow();
-            SDL_GLContext backupCurrentContext = SDL_GL_GetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            SDL_GL_MakeCurrent(backupCurrentWindow, backupCurrentContext);
-        }
     }
 
     void EditorGUISystem::SetupUIStyle()

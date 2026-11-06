@@ -60,8 +60,6 @@ namespace SnowLeopardEngine
          */
         bool IsMinimized() { return m_Window->IsMinimized(); }
 
-        void MakeCurrentContext() { m_Window->MakeCurrentContext(); }
-        void SwapBuffers() { m_Window->SwapBuffers(); }
 
         void SetHideCursor(bool hide) { m_Window->SetHideCursor(hide); }
 
@@ -70,7 +68,7 @@ namespace SnowLeopardEngine
 
         float GetContentScale() const { return m_Window->GetContentScale(); }
 
-        // The platform window, for the rest of its interface (VSync, GL loader, native event listeners, ...).
+        // The platform window, for the rest of its interface (native event listeners, content scale, ...).
         Window* GetWindow() const { return m_Window; }
 
     private:

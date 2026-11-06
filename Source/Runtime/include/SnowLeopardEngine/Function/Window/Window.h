@@ -83,17 +83,10 @@ namespace SnowLeopardEngine
         virtual bool ShouldClose() const = 0;
         virtual bool IsMinimized() const = 0;
 
-        virtual void MakeCurrentContext() = 0;
-        virtual void SwapBuffers()        = 0;
-        virtual void SetVSync(bool enabled) = 0;
-        // GL function loader (`void* (*)(const char*)`) for glad.
-        virtual void* GetProcAddressLoader() const = 0;
-
         virtual void SetHideCursor(bool hide) = 0;
 
         virtual void* GetPlatformWindow() const = 0;
         virtual void* GetNativeWindow() const   = 0;
-        virtual void* GetGraphicsContext() const = 0;
 
         virtual NativeEventListenerId AddNativeEventListener(NativeEventListener listener) = 0;
         virtual void                  RemoveNativeEventListener(NativeEventListenerId id)  = 0;

@@ -1,0 +1,22 @@
+--- a/source/core/validation_layer.cpp
++++ b/source/core/validation_layer.cpp
+@@ -712,6 +712,11 @@
+         VriResult VRI_CALL Resize(VriSwapChain* sc, uint32_t w, uint32_t h)
+         {
+             return SV(sc)->dev->swap.Resize(SV(sc)->real, w, h);
++        }
++
++        VriResult VRI_CALL GetSwapChainExtent(VriSwapChain* sc, uint32_t* width, uint32_t* height)
++        {
++            return SV(sc)->dev->swap.GetSwapChainExtent(SV(sc)->real, width, height);
+         }
+ 
+         // ---- extension interfaces taking a wrapped command buffer ----------
+@@ -1115,6 +1120,7 @@
+                 AcquireNextTexture,
+                 Present,
+                 Resize,
++                GetSwapChainExtent,
+             };
+             *static_cast<VriSwapChainInterface*>(out) = wrapped;
+             return VriResult_Success;

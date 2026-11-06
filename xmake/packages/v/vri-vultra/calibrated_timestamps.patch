@@ -1,0 +1,42 @@
+diff --git a/source/backend_vk/device_vk.cpp b/source/backend_vk/device_vk.cpp
+index 6306ad0..54d3a9f 100644
+--- a/source/backend_vk/device_vk.cpp
++++ b/source/backend_vk/device_vk.cpp
+@@ -578,6 +578,9 @@ namespace vri::vk
+         // Calibrated timestamps (correlated GPU+CPU clocks). No feature struct; just the
+         // extension. Confirmed in LoadExtensionFunctions, which also picks the host time domain.
+         if (hasExt("VK_KHR_calibrated_timestamps"))
++        {
+             extensions.push_back("VK_KHR_calibrated_timestamps");
++            m_hasKhrCalibratedTimestamps = true;
++        }
+         else if (hasExt("VK_EXT_calibrated_timestamps"))
+             extensions.push_back("VK_EXT_calibrated_timestamps");
+@@ -1067,11 +1070,11 @@ namespace vri::vk
+             LoadCoreOrKhr("vkGetCalibratedTimestampsKHR", "vkGetCalibratedTimestampsEXT"));
+         if (m_ext.GetCalibratedTimestamps)
+         {
++            // Instance lookup can return another ICD's KHR trampoline even when this GPU only
++            // enabled EXT. Use the alias belonging to this physical device's enabled extension.
+             auto getDomains = reinterpret_cast<PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsKHR>(
+-                vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceCalibrateableTimeDomainsKHR"));
+-            if (!getDomains)
+-                getDomains = reinterpret_cast<PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsKHR>(
+-                    vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT"));
++                vkGetInstanceProcAddr(m_instance, m_hasKhrCalibratedTimestamps ?
++                    "vkGetPhysicalDeviceCalibrateableTimeDomainsKHR" : "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT"));
+             if (getDomains)
+             {
+                 uint32_t n = 0;
+diff --git a/source/backend_vk/device_vk.h b/source/backend_vk/device_vk.h
+index d88b0ec..2f06337 100644
+--- a/source/backend_vk/device_vk.h
++++ b/source/backend_vk/device_vk.h
+@@ -128,6 +128,7 @@ namespace vri::vk
+         bool            m_hasSamplerAnisotropy         = false;
+         float           m_maxSamplerAnisotropy         = 1.0f;
+         bool            m_hasCalibratedTimestamps      = false;
++        bool            m_hasKhrCalibratedTimestamps   = false;
+         bool            m_hasDrawIndirectCount         = false;
+         bool            m_hasMemoryBudget              = false;
+         bool            m_hasMemoryPriority            = false;

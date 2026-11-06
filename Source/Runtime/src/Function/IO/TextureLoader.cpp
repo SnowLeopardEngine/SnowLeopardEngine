@@ -1,118 +1,52 @@
 #include "SnowLeopardEngine/Function/IO/TextureLoader.h"
-#include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
+#include "SnowLeopardEngine/Engine/EngineContext.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <stb_image.h>
+
+#include <unordered_map>
 
 namespace SnowLeopardEngine
 {
     namespace IO
     {
-        Texture* Load(const std::filesystem::path& texturePath, RenderContext& rc, bool flip)
+        namespace
         {
-            if (texturePath.empty())
-            {
-                return nullptr;
-            }
+            std::unordered_map<std::string, Scope<RHI::Texture>> g_TextureCache;
+        }
 
-            auto       p = std::filesystem::absolute(texturePath);
-            const auto h = std::filesystem::hash_value(p);
-            if (auto it = g_TextureCache.find(h); it != g_TextureCache.cend())
+        RHI::Texture* Load(const std::filesystem::path& texturePath, bool flip)
+        {
+            const auto key = texturePath.generic_string() + (flip ? "|flip" : "");
+            if (auto it = g_TextureCache.find(key); it != g_TextureCache.end())
             {
-                auto extent = it->second->GetExtent();
-                assert(extent.Width > 0 && extent.Height > 0);
-
                 return it->second.get();
             }
 
             stbi_set_flip_vertically_on_load(flip);
-
-            auto* f = stbi__fopen(texturePath.string().c_str(), "rb");
-            assert(f);
-
-            const auto hdr = stbi_is_hdr_from_file(f);
-
-            int32_t width, height, numChannels;
-            auto*   pixels = hdr ? (void*)stbi_loadf_from_file(f, &width, &height, &numChannels, 0) :
-                                   (void*)stbi_load_from_file(f, &width, &height, &numChannels, 0);
-            fclose(f);
-            assert(pixels);
-
-            ImageData imageData {
-                .DataType = hdr ? ImageDataType::Float : ImageDataType::UByte,
-                .Pixels   = pixels,
-            };
-            PixelFormat pixelFormat {PixelFormat::Unknown};
-            switch (numChannels)
+            int  width = 0, height = 0, channels = 0;
+            auto pixels = stbi_load(texturePath.generic_string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
+            if (pixels == nullptr)
             {
-                case 1:
-                    imageData.Format = ImageFormat::Red;
-                    pixelFormat      = PixelFormat::R8_UNorm;
-                    break;
-                case 3:
-                    imageData.Format = ImageFormat::RGB;
-                    pixelFormat      = hdr ? PixelFormat::RGB16F : PixelFormat::RGB8_UNorm;
-                    break;
-                case 4:
-                    imageData.Format = ImageFormat::RGBA;
-                    pixelFormat      = hdr ? PixelFormat::RGBA16F : PixelFormat::RGBA8_UNorm;
-                    break;
-
-                default:
-                    assert(false);
+                SNOW_LEOPARD_CORE_ERROR("[TextureLoader] Failed to load {0}", texturePath.generic_string());
+                return nullptr;
             }
 
-            uint32_t numMipLevels {1u};
-            if (Math::IsPowerOf2(width) && Math::IsPowerOf2(height))
-                numMipLevels = calcMipLevels(glm::max(width, height));
-
-            auto texture = rc.CreateTexture2D(
-                {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}, pixelFormat, numMipLevels);
-            rc.Upload(texture, 0, {width, height}, imageData)
-                .SetupSampler(texture,
-                              {
-                                  .MinFilter     = TexelFilter::Linear,
-                                  .MipmapMode    = MipmapMode::Linear,
-                                  .MagFilter     = TexelFilter::Linear,
-                                  .MaxAnisotropy = 16.0f,
-                              });
+            auto& device = g_EngineContext->RenderSys->GetDevice();
+            auto  desc   = RHI::ColorTextureDesc({uint32_t(width), uint32_t(height)}, VriFormat_RGBA8_UNORM);
+            desc.usage   = VriTextureUsage_ShaderResource | VriTextureUsage_TransferDst;
+            auto texture = CreateScope<RHI::Texture>(device, desc);
+            RHI::UploadTexture2D(
+                device,
+                *texture,
+                std::span(reinterpret_cast<const std::byte*>(pixels), size_t(width) * size_t(height) * 4));
             stbi_image_free(pixels);
 
-            if (numMipLevels > 1)
-                rc.GenerateMipmaps(texture);
-
-            auto     newTexture = CreateScope<Texture>(std::move(texture));
-            Texture* result     = newTexture.get();
-            g_TextureCache[h]   = std::move(newTexture);
-
+            auto* result         = texture.get();
+            g_TextureCache[key] = std::move(texture);
             return result;
         }
 
-        void Release(const std::filesystem::path& texturePath, Texture& texture, RenderContext& rc)
-        {
-            if (texturePath.empty())
-            {
-                return;
-            }
-
-            auto       p = std::filesystem::absolute(texturePath);
-            const auto h = std::filesystem::hash_value(p);
-            if (auto it = g_TextureCache.find(h); it != g_TextureCache.cend())
-            {
-                rc.Destroy(*it->second);
-                g_TextureCache.erase(it); // frees the Texture object as well
-            }
-        }
-
-        void ReleaseAllTextures(RenderContext& rc)
-        {
-            for (auto& [hash, texture] : g_TextureCache)
-            {
-                rc.Destroy(*texture);
-            }
-            g_TextureCache.clear();
-        }
-
-        std::unordered_map<size_t, Scope<Texture>> g_TextureCache;
+        void ReleaseAllTextures() { g_TextureCache.clear(); }
     } // namespace IO
 } // namespace SnowLeopardEngine

@@ -80,7 +80,6 @@ namespace SnowLeopardEngine
             }
         }
 
-        item.Data.VertFormat = VertexFormat::Builder {}.BuildDefault();
 
         for (uint32_t indexId = 0; indexId < meshInstance.triangle_index_count(); ++indexId)
         {

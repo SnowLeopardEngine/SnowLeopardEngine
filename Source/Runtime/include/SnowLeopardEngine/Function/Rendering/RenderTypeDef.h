@@ -3,14 +3,9 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Asset/OzzMesh.h"
-#include "SnowLeopardEngine/Function/Rendering/RenderHandle.h"
 
 namespace SnowLeopardEngine
 {
-    class IndexBuffer;
-    class VertexBuffer;
-    class VertexFormat;
-
     // clang-format off
     struct Offset2D
     {
@@ -35,18 +30,6 @@ namespace SnowLeopardEngine
     };
     // clang-format on
 
-    enum class CompareOp : uint8_t
-    {
-        Never = 0,
-        Less,
-        Equal,
-        LessOrEqual,
-        Greater,
-        NotEqual,
-        GreaterOrEqual,
-        Always
-    };
-
     using ViewportDesc = Rect2D;
 
     struct MeshVertexData
@@ -63,10 +46,6 @@ namespace SnowLeopardEngine
     {
         std::vector<MeshVertexData> Vertices;
         std::vector<uint32_t>       Indices;
-
-        Ref<IndexBuffer>  IdxBuffer  = nullptr;
-        Ref<VertexBuffer> VertBuffer = nullptr;
-        Ref<VertexFormat> VertFormat = nullptr;
     };
 
     struct MeshItem

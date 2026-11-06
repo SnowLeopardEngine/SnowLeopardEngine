@@ -1,5 +1,5 @@
 -- add requirements
-add_requires("imgui v1.92.5-docking", {configs = {sdl3 = true, opengl3 = true, wchar32 = true}})
+add_requires("imgui v1.92.5-docking", {configs = {sdl3 = true, wchar32 = true}})
 add_requireconfs("imgui.libsdl3", {version = "3.4.0", configs = {shared = true}})
 add_requires("argparse")
 

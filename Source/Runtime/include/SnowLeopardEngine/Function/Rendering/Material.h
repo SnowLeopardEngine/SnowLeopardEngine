@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Base/Hash.h"
-#include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
+#include "SnowLeopardEngine/Core/Base/Base.h"
 
 #include <cereal/cereal.hpp>
 
@@ -57,10 +57,9 @@ namespace SnowLeopardEngine
         // NOLINTEND
     };
 
+    // A .dzmaterial definition. GPU state (pipeline, descriptor sets) is created by the renderer (Phase 2.3 / 2.4).
     class Material
     {
-        friend class RenderContext;
-
     public:
         Material() = default;
         explicit Material(const DzMaterial& define) : m_Define(define) {}
@@ -70,27 +69,8 @@ namespace SnowLeopardEngine
 
         size_t GetHash() const;
 
-        // Sets every uniform of the standard surface shaders (GBufferPass / WeightedBlendedPass) to its default.
-        // Materials only set the properties they list, and GL uniforms keep their last value per program, so without
-        // this a material inherits e.g. `metallic` or `useEmissiveMap` from whatever was drawn before it.
-        static void ResetSurfaceDefaults(RenderContext& rc);
-
-    private:
-        void AutoBind(RenderContext& rc);
-
-        void SetInt(RenderContext& rc, const std::string& propertyName, int value);
-        void SetFloat(RenderContext& rc, const std::string& propertyName, float value);
-        void SetColor(RenderContext& rc, const std::string& propertyName, const glm::vec4& value);
-        void SetTexture2D(RenderContext& rc, const std::string& propertyName, const std::string& texturePath);
-        void SetCubemap(RenderContext&                            rc,
-                        const std::string&                        propertyName,
-                        const std::vector<std::filesystem::path>& cubemapInfo);
-        void SetVector(RenderContext& rc, const std::string& propertyName, const glm::vec4& value);
-
     private:
         DzMaterial m_Define;
-
-        uint32_t m_TextureSlot = 0;
     };
 } // namespace SnowLeopardEngine
 

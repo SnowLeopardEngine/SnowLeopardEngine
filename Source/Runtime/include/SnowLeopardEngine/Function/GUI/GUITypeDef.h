@@ -1,13 +1,13 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Math/Math.h"
-#include "SnowLeopardEngine/Function/Rendering/Texture.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/Resources.h"
 
 #include "cereal/cereal.hpp"
 
 namespace SnowLeopardEngine::UI
 {
-    using RenderTarget = Texture*;
+    using RenderTarget = RHI::Texture*;
 
     enum ButtonTintType
     {

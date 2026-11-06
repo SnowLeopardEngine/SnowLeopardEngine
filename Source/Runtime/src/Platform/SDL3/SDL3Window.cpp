@@ -194,22 +194,8 @@ namespace SnowLeopardEngine
             SNOW_LEOPARD_CORE_ASSERT(result, "[SDL3Window] SDL_Init failed: {0}", SDL_GetError());
         }
 
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MAJOR);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, SNOW_LEOPARD_RENDER_API_OPENGL_MIN_MINOR);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-        int contextFlags = 0;
-#ifndef NDEBUG
-        contextFlags |= SDL_GL_CONTEXT_DEBUG_FLAG;
-#endif
-#if SNOW_LEOPARD_PLATFORM_DARWIN
-        contextFlags |= SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;
-#endif
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, contextFlags);
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-        SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-
-        SDL_WindowFlags flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        // No graphics context: the render system creates a VRI (Vulkan) swapchain from the native window.
+        SDL_WindowFlags flags = SDL_WINDOW_HIGH_PIXEL_DENSITY;
         if (initInfo.Resizable)
         {
             flags |= SDL_WINDOW_RESIZABLE;
@@ -239,9 +225,6 @@ namespace SnowLeopardEngine
             }
         }
 
-        m_GLContext = SDL_GL_CreateContext(m_Window);
-        SNOW_LEOPARD_CORE_ASSERT(m_GLContext, "[SDL3Window] SDL_GL_CreateContext failed: {0}", SDL_GetError());
-
         UpdatePixelSize();
 
         // TODO: Set icon
@@ -267,11 +250,6 @@ namespace SnowLeopardEngine
             g_Gamepad = nullptr;
         }
 
-        if (m_GLContext != nullptr)
-        {
-            SDL_GL_DestroyContext(m_GLContext);
-            m_GLContext = nullptr;
-        }
         if (m_Window != nullptr)
         {
             SDL_DestroyWindow(m_Window);
@@ -430,14 +408,6 @@ namespace SnowLeopardEngine
         const float scale = SDL_GetWindowDisplayScale(m_Window);
         return scale > 0.0f ? scale : 1.0f;
     }
-
-    void SDL3Window::MakeCurrentContext() { SDL_GL_MakeCurrent(m_Window, m_GLContext); }
-
-    void SDL3Window::SwapBuffers() { SDL_GL_SwapWindow(m_Window); }
-
-    void SDL3Window::SetVSync(bool enabled) { SDL_GL_SetSwapInterval(enabled ? 1 : 0); }
-
-    void* SDL3Window::GetProcAddressLoader() const { return reinterpret_cast<void*>(&SDL_GL_GetProcAddress); }
 
     void SDL3Window::SetHideCursor(bool hide)
     {

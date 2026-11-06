@@ -1,0 +1,2 @@
+# Package patches are checksum-pinned: keep their bytes exactly as committed (no CRLF conversion).
+xmake/packages/**/*.patch -text

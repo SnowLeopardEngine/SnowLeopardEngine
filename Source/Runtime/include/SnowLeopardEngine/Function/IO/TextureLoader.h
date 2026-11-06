@@ -1,19 +1,17 @@
 #pragma once
 
-#include "SnowLeopardEngine/Function/Rendering/Texture.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/Resources.h"
+
+#include <filesystem>
 
 namespace SnowLeopardEngine
 {
-    class RenderContext;
-
     namespace IO
     {
-        Texture* Load(const std::filesystem::path& texturePath, RenderContext& rc, bool flip = true);
-        void     Release(const std::filesystem::path& texturePath, Texture& texture, RenderContext& rc);
+        // Loads an image file into an RGBA8 GPU texture. Textures are cached by path and owned by the cache;
+        // ReleaseAllTextures (render system shutdown) frees them.
+        RHI::Texture* Load(const std::filesystem::path& texturePath, bool flip = true);
 
-        // Destroys every cached texture. Call while the render context is still alive.
-        void ReleaseAllTextures(RenderContext& rc);
-
-        extern std::unordered_map<size_t, Scope<Texture>> g_TextureCache;
+        void ReleaseAllTextures();
     } // namespace IO
 } // namespace SnowLeopardEngine
