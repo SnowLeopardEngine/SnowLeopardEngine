@@ -278,7 +278,10 @@ namespace SnowLeopardEngine
         TriggerEvent(preloadEvent);
 
         // Meshes and materials (dirty code for now; TODO: Move to AssetManager)
-        m_Registry.each([this](entt::entity entity) { LoadEntityRenderResources(entity); });
+        for (auto entity : m_Registry.view<entt::entity>())
+        {
+            LoadEntityRenderResources(entity);
+        }
 
         // Load Audio
         m_Registry.view<TransformComponent, AudioListenerComponent>().each(

@@ -9,7 +9,14 @@ namespace SnowLeopardEngine
 
     void FileSystem::InitExecutableDirectory(const char* executableFilePath)
     {
-        std::filesystem::path exePath(executableFilePath);
+        // argv[0] may be a bare file name (e.g. when launched by a shell from the exe's folder); a relative path would
+        // make the directory empty, so resolve it against the working directory first.
+        std::error_code       error;
+        std::filesystem::path exePath = std::filesystem::absolute(executableFilePath, error);
+        if (error)
+        {
+            exePath = executableFilePath;
+        }
         s_ExeDirectory = exePath.parent_path();
     }
 

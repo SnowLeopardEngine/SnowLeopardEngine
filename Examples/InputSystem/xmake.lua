@@ -20,4 +20,4 @@ target("InputSystem")
     add_rules("copy_assets")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Examples/InputSystem")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Examples/InputSystem")

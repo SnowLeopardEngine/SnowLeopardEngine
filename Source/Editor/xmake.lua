@@ -1,5 +1,5 @@
 -- add requirements
-add_requires("imgui v1.90.1-docking", {configs = {glfw = true, opengl3 = true, wchar32 = true}})
+add_requires("imgui v1.92.5-docking", {configs = {glfw = true, opengl3 = true, wchar32 = true}})
 add_requires("argparse")
 
 -- target defination, name: SnowLeopardEditor
@@ -34,7 +34,7 @@ target("SnowLeopardEditor")
     add_deps("SnowLeopardEngine", "ImGuizmo", "IconFontCppHeaders")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/SnowLeopardEditor")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/SnowLeopardEditor")
 
     -- copy config
     on_config(function(target)

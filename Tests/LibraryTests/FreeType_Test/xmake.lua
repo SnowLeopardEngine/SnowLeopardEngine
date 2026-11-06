@@ -14,7 +14,7 @@ target("FreeType_Test")
     add_deps("glad")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/FreeType_Test")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/FreeType_Test")
 
     -- copy fonts
     after_build(function(target)

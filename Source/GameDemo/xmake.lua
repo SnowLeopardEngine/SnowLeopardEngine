@@ -20,7 +20,7 @@ target("GameDemo")
     add_rules("copy_assets")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/GameDemo")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/GameDemo")
 
     -- copy assets
     on_config(function(target)

@@ -13,4 +13,4 @@ target("JoltPhysics_Test")
     add_packages("joltphysics")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/JoltPhysics_Test")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/JoltPhysics_Test")

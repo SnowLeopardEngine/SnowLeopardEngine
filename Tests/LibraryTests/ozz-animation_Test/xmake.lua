@@ -15,7 +15,7 @@ target("ozz-animation_Test")
     add_packages("raylib")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/ozz-animation_Test")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/ozz-animation_Test")
 
     -- copy ozz files
     on_load(function(target)

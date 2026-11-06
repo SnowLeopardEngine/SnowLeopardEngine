@@ -20,4 +20,4 @@ target("NativeScripting")
     add_rules("copy_assets")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Examples/NativeScripting")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Examples/NativeScripting")

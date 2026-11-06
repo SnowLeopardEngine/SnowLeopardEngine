@@ -26,6 +26,8 @@ namespace SnowLeopardEngine::Editor
             std::cerr << "Project file doesn't exist: " << project << std::endl;
             return false;
         }
+        // Asset import walks the project file's folder; a bare file name would give an empty folder.
+        project = std::filesystem::absolute(project).generic_string();
 
         // create the engine
         m_Engine = CreateRef<Engine>();

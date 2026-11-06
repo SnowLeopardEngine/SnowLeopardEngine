@@ -13,4 +13,4 @@ target("fg_Test")
     add_packages("fg")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/fg_Test")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/fg_Test")

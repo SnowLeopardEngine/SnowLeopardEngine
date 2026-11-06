@@ -20,4 +20,4 @@ target("RenderingSystem-Overview")
     add_rules("copy_assets")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Examples/RenderingSystem/Overview")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Examples/RenderingSystem/Overview")

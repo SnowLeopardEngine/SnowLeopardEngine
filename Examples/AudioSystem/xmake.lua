@@ -20,7 +20,7 @@ target("AudioSystem")
     add_rules("copy_assets")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Examples/AudioSystem")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Examples/AudioSystem")
 
     -- copy sounds
     after_build(function(target)

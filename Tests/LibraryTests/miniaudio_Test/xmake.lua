@@ -13,7 +13,7 @@ target("miniaudio_Test")
     add_packages("miniaudio")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/miniaudio_Test")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/miniaudio_Test")
 
     -- copy sounds
     after_build(function(target)

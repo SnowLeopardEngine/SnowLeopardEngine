@@ -1,7 +1,7 @@
 -- add requirements
 add_requires("fmt", { configs = { header_only = true }})
 add_requires("spdlog", { configs = { fmt_external = true }}) -- share one fmt with the engine instead of the bundled copy
-add_requires("glfw", "glm", "stduuid", "entt v3.10.3", "assimp")
+add_requires("glfw", "glm", "stduuid", "entt v3.16.0", "assimp")
 add_requires("miniaudio", "stb", "tracy", "magic_enum", "cereal", "shaderc", "spirv-cross", "scoral", "cryptopp", "fg", "freetype")
 add_requires("joltphysics v5.5.0", { configs = { debug = is_mode("debug") }})
 add_requires("ozz-animation 0.14.2", { configs = { debug = is_mode("debug") }})
@@ -60,4 +60,4 @@ target("SnowLeopardEngine")
     add_defines("TRACY_ENABLE")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/SnowLeopardEngine")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/SnowLeopardEngine")

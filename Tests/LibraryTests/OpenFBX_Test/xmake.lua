@@ -13,7 +13,7 @@ target("OpenFBX_Test")
     add_packages("openfbx")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/OpenFBX_Test")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/OpenFBX_Test")
 
     -- copy fbx files
     after_build(function(target)

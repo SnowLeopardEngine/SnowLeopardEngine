@@ -13,7 +13,7 @@ target("recastnavigation_Test")
     add_packages("recastnavigation")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/recastnavigation_Test")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/recastnavigation_Test")
 
     -- copy assets
     on_load(function(target)

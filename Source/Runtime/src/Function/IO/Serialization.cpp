@@ -9,6 +9,27 @@ namespace SnowLeopardEngine
 {
     namespace IO
     {
+        namespace
+        {
+            // entt >= 3.13: one get<T>() per storage, entities first.
+            template<typename... Component>
+            void SaveSnapshot(const entt::registry& registry, cereal::JSONOutputArchive& output)
+            {
+                entt::snapshot snapshot {registry};
+                snapshot.get<entt::entity>(output);
+                (snapshot.get<Component>(output), ...);
+            }
+
+            template<typename... Component>
+            void LoadSnapshot(entt::registry& registry, cereal::JSONInputArchive& input)
+            {
+                entt::snapshot_loader loader {registry};
+                loader.get<entt::entity>(input);
+                (loader.get<Component>(input), ...);
+                loader.orphans();
+            }
+        } // namespace
+
         bool Serialize(LogicScene* scene, const std::filesystem::path& dstPath)
         {
             std::ofstream os(dstPath.generic_string());
@@ -20,7 +41,7 @@ namespace SnowLeopardEngine
             }
 
             cereal::JSONOutputArchive output(os);
-            entt::snapshot {scene->GetRegistry()}.entities(output).component<ALL_SERIALIZABLE_COMPONENT_TYPES>(output);
+            SaveSnapshot<ALL_SERIALIZABLE_COMPONENT_TYPES>(scene->GetRegistry(), output);
 
             return true;
         }
@@ -37,10 +58,7 @@ namespace SnowLeopardEngine
             }
 
             cereal::JSONInputArchive input(is);
-            entt::snapshot_loader {scene->GetRegistry()}
-                .entities(input)
-                .component<ALL_SERIALIZABLE_COMPONENT_TYPES>(input)
-                .orphans();
+            LoadSnapshot<ALL_SERIALIZABLE_COMPONENT_TYPES>(scene->GetRegistry(), input);
 
             return true;
         }

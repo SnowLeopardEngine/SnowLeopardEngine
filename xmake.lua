@@ -33,11 +33,12 @@ end
 rule("copy_assets")
     after_build(function(target)
         print("Install C# bindings for target: " .. target:name())
-        os.cp("$(buildir)/assembly/SnowLeopardEngine/*", target:targetdir())
+        os.cp("$(builddir)/assembly/SnowLeopardEngine/*", target:targetdir())
     end)
     on_load(function(target)
         -- https://xmake.io/#/zh-cn/manual/builtin_modules?id=oscp
-        os.cp("$(projectdir)/Assets/*", target:targetdir() .. "/Assets", {rootdir = "Assets"})
+        -- copy the folder itself: "Assets/*" with rootdir flattened sub-folders on a target's first build
+        os.cp("$(projectdir)/Assets", target:targetdir())
         os.cp("$(projectdir)/Tools/$(plat)/$(arch)/Coral/Coral**", target:targetdir())
     end)
 rule_end()

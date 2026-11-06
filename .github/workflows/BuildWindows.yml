@@ -2,15 +2,19 @@ name: Build Windows
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev, dev-next ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev, dev-next ]
 
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [ debug, release ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
 
@@ -20,8 +24,26 @@ jobs:
 
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
-          xmake-version: latest
+          xmake-version: '3.1.2'
+          actions-cache-folder: '.xmake-cache'
+          actions-cache-key: 'windows-${{ matrix.mode }}'
+          package-cache: true
+          package-cache-key: 'windows-${{ matrix.mode }}'
+          build-cache: true
+          build-cache-key: 'windows-${{ matrix.mode }}'
+
+      - name: Build C# bindings
+        shell: pwsh
+        run: ./Source/CSharpBindings/build.ps1
+
+      - name: Configure
+        run: |
+          xmake repo -u
+          xmake f -m ${{ matrix.mode }} -y
 
       - name: Build
-        shell: pwsh
-        run: ./build.bat
+        run: xmake -y
+
+      # Engine tests need an OpenGL window, which hosted runners do not have; the Jolt library test is headless.
+      - name: Test
+        run: xmake run JoltPhysics_Test

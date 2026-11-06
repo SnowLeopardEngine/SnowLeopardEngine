@@ -13,7 +13,7 @@ target("tinygltf_Test")
     add_packages("tinygltf")
 
     -- set target directory
-    set_targetdir("$(buildir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/tinygltf_Test")
+    set_targetdir("$(builddir)/$(plat)/$(arch)/$(mode)/Tests/LibraryTests/tinygltf_Test")
 
     -- copy gltf files
     on_load(function(target)

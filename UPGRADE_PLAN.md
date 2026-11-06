@@ -13,8 +13,8 @@
 |---|---|
 | Size | Runtime ~9.2k lines, Editor ~2.3k, GameDemo 1k, 25 GLSL / DzShader files |
 | Build | xmake + custom package repo `SnowLeopardEngine/xmake-repo`, now rebuilt from the owner's `xmake-repo@backup` (upstream 2026-02 + Vultra packages) plus the SLE recipes (`scoral`, `fg`, `fastnoise2`). C++20. **Builds and runs on Windows / MSVC 2022 (Phase 0)** |
-| Dependencies | spdlog 1.17 (external fmt), fmt 12.1, glfw, glm, entt 3.10.3, assimp, miniaudio, stb, tracy, magic_enum, cereal, shaderc, spirv-cross, cryptopp, fg (skaarj1989/FrameGraph), freetype, ozz-animation 0.14.2, **Jolt Physics 5.5.0** (replaced PhysX), imgui 1.90.1-docking, Coral (scoral) |
-| CI | Windows / Linux / macOS workflows |
+| Dependencies | spdlog 1.17 (external fmt), fmt 12.1, glfw, glm, entt 3.16.0, assimp, miniaudio, stb, tracy, magic_enum, cereal, shaderc, spirv-cross, cryptopp, fg (skaarj1989/FrameGraph), freetype, ozz-animation 0.14.2, **Jolt Physics 5.5.0** (replaced PhysX), imgui 1.92.5-docking, Coral (scoral) |
+| CI | Windows / Linux workflows (Debug + Release, xmake 3.1.2, package cache, headless Jolt test); macOS dropped (decision 4) |
 
 ### Subsystem Maturity
 
@@ -51,7 +51,7 @@
 4. No instancing for skinned meshes (TODOs in the GBuffer, WeightedBlended and Grass passes).
 5. `Entity::SetName/SetTag/SetLayer` do not validate; tags/layers are not serialized with the project.
 6. FIXMEs at `EditorGUISystem.cpp:121` (commented-out clear) and `LogicScene.cpp:614`.
-7. Old pinned dependencies (entt 3.10.3, imgui 1.90.1) remain; fmt was unpinned in Phase 0.
+7. ~~Old pinned dependencies~~ — fmt unpinned (12.1), entt 3.10.3 → 3.16.0, imgui 1.90.1 → 1.92.5-docking (Phase 0).
 8. Binary `Tools/*/Coral/Coral.Managed.dll` committed to the repository.
 9. ~~Tone mapping and gamma correction are in the wrong order~~ — **fixed**, together with the other lighting bugs found once the output was actually looked at (frame captures, see Phase 0):
    - `ToneMappingPass.frag` ran `linearToGamma` before `toneMapACES` (grey veil, lifted blacks). Now ACES on linear HDR with Narkowicz's 0.6 exposure pre-scale, then gamma. Exposure is a constant for now (TODO: camera / render setting).
@@ -125,8 +125,10 @@ Principle: **make it build and run first, then replace the foundations (RHI, scr
   - `scoral` (Coral): hostfxr lookup only accepted a `host/fxr` folder whose path contains `'8'`; the .NET installer keeps only the newest hostfxr (9.0.6 here), so every app asserted at startup. Recipe patched to accept any major version ≥ 8
   - Environment: `TEMP` / `TMP` pointing into `AppData` is not writable for the build here; builds run with `TEMP` under `CodeRepository`
 - [x] Package strategy (decision 5): keep **`SnowLeopardEngine/xmake-repo`**, rebuilt from the owner's `xmake-repo@backup` plus the SLE recipes
-- [~] Upgrade dependencies: fmt → 12.1 done; entt → 3.13+ and imgui → current docking branch still to do; fix warnings
-- [ ] Repair CI; Windows green at minimum
+- [x] Upgrade dependencies: fmt → 12.1, entt → 3.16.0, imgui → 1.92.5-docking
+  - entt ≥ 3.13 replaced `snapshot::entities().component<T...>()` with one `get<T>()` per storage, and removed `registry::each`. Scene save / load is covered by the new `SceneSerialization` engine test
+  - imgui 1.92 needed no editor code changes; warnings are still to be cleaned up
+- [~] Repair CI: workflows run on `main` / `dev` / `dev-next`, build Debug and Release on Windows and Linux with xmake 3.1.2 and a package / build cache, then run `JoltPhysics_Test` (engine tests need a GL window, which hosted runners lack). The macOS workflow is removed (decision 4). **Not run on GitHub yet**: green only once pushed, and Linux has not been built since the revival
 - [x] Run every example and GameDemo; record what works as the regression baseline (see below)
 
 **Regression baseline (2026-11-06, Windows 11, Debug, GL 4.5).** Each app was started, left running for 12 s, then closed through its window.
@@ -141,11 +143,12 @@ Principle: **make it build and run first, then replace the foundations (RHI, scr
 | GameDemo | yes | menu only (no input during the run), so the character controller was not exercised; clean shutdown |
 | `JoltPhysics_Test` | passes | sphere rests at y = 0.480 on a box floor |
 | `PhysicsScenarios` (engine test) | 21 / 21 pass | steps the engine's fixed tick deterministically and checks: sphere / box / capsule / convex-mesh resting, static bodies, triggers, `OnColliderEnter` once per touch, character walking + GameDemo grounding ray, overlaps (bodies and characters), `AddForce`, runtime spawn (incl. mesh + material) and destroy, RigidBody under a CharacterController, height-field orientation against the mesh |
-| SnowLeopardEditor | not run | |
+| `SceneSerialization` (engine test) | 23 / 23 pass | scene → JSON → scene: entity count, UUIDs, transforms, physics / mesh / material / camera / light values, a destroyed entity, UUID lookup and new entities after load |
+| SnowLeopardEditor | yes | `--project ExampleProject.dzproj` (copied next to the exe): docking layout, Resource / Console / Inspector panels draw with imgui 1.92. The viewport is empty (`TODO: Set RT`, step 2.5). Fixed: a relative project path or a bare `argv[0]` made the asset / resource folders empty and the editor exited on `directory_iterator("")` |
 
 **Visual check.** `SLE_CAPTURE_FRAME=<n>` (and optionally `SLE_CAPTURE_PATH`) writes the n-th presented frame to a PNG (`GraphicsContext::CaptureBackBuffer`, GL backend). Every example except TickOneFrame / NativeScripting (they exit at once) was captured and inspected after the rendering fixes. Bodies rest ~2 cm into the ground (Jolt's default penetration slop).
 
-Not covered yet: GameDemo gameplay (it needs mouse input on the menu), the editor, and a pixel comparison against `main` (GL reference shots for Phase 2 should be taken from the fixed renderer, not from `main`).
+Not covered yet: GameDemo gameplay (it needs mouse input on the menu), editor interaction, and a pixel comparison against `main` (GL reference shots for Phase 2 should be taken from the fixed renderer, not from `main`).
 
 **Fixed alongside:** entities created at runtime (`TriggerEntityCreate`) never got their primitive mesh or material, because only `LogicScene::OnLoad` loaded them; the renderer then dereferenced null. Resource loading is now per entity (`LoadEntityRenderResources`) and runs for spawned entities too, and the renderer skips entities without a mesh or material.
 
@@ -276,3 +279,5 @@ Defaults in **bold** are what this plan currently follows; change them here if n
 | 2026-11-06 | 0 | Mesh / material / texture ownership moved to RAII (`Ref` / `Scope`), scenes destroyed first at shutdown; all 14 apps now shut down cleanly in Debug |
 | 2026-11-06 | 0 / 1 | Rendering: tone mapping / gamma order, exposure, grass decode, shadowed IBL, leaking material uniforms. Frame capture (`SLE_CAPTURE_FRAME`) and a visual check of every example |
 | 2026-11-06 | 0 | Physics: `PhysicsScenarios` engine test (21 checks); RigidBody under a CharacterController is ignored with a warning; runtime-spawned entities get meshes / materials; PhysicsSystem example fixed |
+| 2026-11-06 | 0 | entt 3.16.0, imgui 1.92.5-docking; `SceneSerialization` engine test; editor starts with a relative project path; `copy_assets` no longer flattens `Assets/` on a target's first build; `$(buildir)` → `$(builddir)` |
+| 2026-11-06 | 0 | CI: Windows + Linux, Debug + Release, cached packages, Jolt test; macOS workflow removed |
