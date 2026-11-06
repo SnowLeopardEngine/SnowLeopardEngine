@@ -443,7 +443,9 @@ namespace SnowLeopardEngine
         auto& bodies   = m_Jolt->Bodies();
 
         // Push edited rigid body properties into the simulation
-        registry.view<TransformComponent, EntityStatusComponent, RigidBodyComponent>().each(
+        registry
+            .view<TransformComponent, EntityStatusComponent, RigidBodyComponent>(entt::exclude<CharacterControllerComponent>)
+            .each(
             [this, &registry, &bodies](entt::entity           entity,
                                        TransformComponent&    transform,
                                        EntityStatusComponent& entityStatus,
@@ -497,7 +499,8 @@ namespace SnowLeopardEngine
         m_Jolt->World->Update(Time::FixedDeltaTime, 1, &m_Jolt->TempAllocator, &m_Jolt->JobSystem);
 
         // Fetch rigid bodies
-        registry.view<TransformComponent, RigidBodyComponent>().each(
+        registry.view<TransformComponent, RigidBodyComponent>(entt::exclude<CharacterControllerComponent>)
+            .each(
             [&bodies](entt::entity entity, TransformComponent& transform, RigidBodyComponent& rigidBody) {
                 if (rigidBody.InternalBody == InvalidPhysicsBody || rigidBody.IsStatic)
                 {
@@ -771,6 +774,20 @@ namespace SnowLeopardEngine
 
     namespace
     {
+        // A CharacterController drives its entity. A RigidBody on the same entity would be a second physics object
+        // fighting over the transform (the PhysX port silently let the controller overwrite it), so it is ignored.
+        bool IsDrivenByCharacter(Entity entity)
+        {
+            if (!entity.HasComponent<CharacterControllerComponent>())
+            {
+                return false;
+            }
+            SNOW_LEOPARD_CORE_WARN("[PhysicsSystem] Entity {0} has both a RigidBody and a CharacterController; the "
+                                   "controller drives it and the RigidBody is ignored",
+                                   entity.GetName());
+            return true;
+        }
+
         // Creates a body from a finished shape; shared by every collider type.
         PhysicsBodyHandle CreateBody(JPH::BodyInterface&              bodies,
                                      Entity                           entity,
@@ -819,6 +836,11 @@ namespace SnowLeopardEngine
                                                   RigidBodyComponent&      rigidBody,
                                                   SphereColliderComponent& sphereCollider)
     {
+        if (IsDrivenByCharacter(entity))
+        {
+            return InvalidPhysicsBody;
+        }
+
         rigidBody.IsStatic = entityStatus.IsStatic;
 
         if (sphereCollider.Radius == 0)
@@ -849,6 +871,11 @@ namespace SnowLeopardEngine
                                                RigidBodyComponent&    rigidBody,
                                                BoxColliderComponent&  boxCollider)
     {
+        if (IsDrivenByCharacter(entity))
+        {
+            return InvalidPhysicsBody;
+        }
+
         rigidBody.IsStatic = entityStatus.IsStatic;
 
         if (boxCollider.Size == glm::vec3(0, 0, 0))
@@ -884,6 +911,11 @@ namespace SnowLeopardEngine
                                                    RigidBodyComponent&       rigidBody,
                                                    CapsuleColliderComponent& capsuleCollider)
     {
+        if (IsDrivenByCharacter(entity))
+        {
+            return InvalidPhysicsBody;
+        }
+
         rigidBody.IsStatic = entityStatus.IsStatic;
 
         // Height is the cylinder part (distance between the two hemisphere centers); the capsule is Y-up.
@@ -1014,6 +1046,11 @@ namespace SnowLeopardEngine
                                                 MeshFilterComponent&   meshFilter,
                                                 MeshColliderComponent& meshCollider)
     {
+        if (IsDrivenByCharacter(entity))
+        {
+            return InvalidPhysicsBody;
+        }
+
         rigidBody.IsStatic = entityStatus.IsStatic;
 
         if (meshFilter.Meshes == nullptr)

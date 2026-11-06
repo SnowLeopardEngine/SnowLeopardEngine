@@ -53,7 +53,12 @@
 6. FIXMEs at `EditorGUISystem.cpp:121` (commented-out clear) and `LogicScene.cpp:614`.
 7. Old pinned dependencies (entt 3.10.3, imgui 1.90.1) remain; fmt was unpinned in Phase 0.
 8. Binary `Tools/*/Coral/Coral.Managed.dll` committed to the repository.
-9. **Tone mapping and gamma correction are in the wrong order**: `Assets/Shaders/ToneMappingPass.frag` runs `linearToGamma` *before* `toneMapACES`, so ACES receives gamma-encoded input and the output is never gamma-corrected. Correct order: `toneMapACES(hdr)` on linear HDR, then `linearToGamma`. Fixing it changes every example's output, so it is deliberately not part of the Phase 0 baseline (see Phase 1 follow-up).
+9. ~~Tone mapping and gamma correction are in the wrong order~~ — **fixed**, together with the other lighting bugs found once the output was actually looked at (frame captures, see Phase 0):
+   - `ToneMappingPass.frag` ran `linearToGamma` before `toneMapACES` (grey veil, lifted blacks). Now ACES on linear HDR with Narkowicz's 0.6 exposure pre-scale, then gamma. Exposure is a constant for now (TODO: camera / render setting).
+   - `Grass.frag` wrote the sRGB grass texture straight into the linear HDR buffer; it is decoded first now.
+   - `PBRLighting.glsl` multiplied IBL and point lights by the sun's shadow, so everything in the sun's shadow was pitch black. Only the directional light is shadowed now; `NdotV` is clamped.
+   - Materials only set the uniforms they list and GL keeps uniforms per program, so materials inherited `metallic`, `emissive`, `use*Map` from the previous draw (the terrain turned mirror-like). `Material::ResetSurfaceDefaults` runs before every bind in the GBuffer and WeightedBlended passes.
+   - Not touched: the old JSON `.dzshader` files (unused by the current renderer; replaced by DzShader v3 in 2.3), and material color constants are still treated as linear (a Unity-style sRGB color convention is a decision for DzShader v3).
 10. **Text rendering is wrong** (owner report) and the in-game GUI is too naive to build a game UI on (see Phase 5).
 11. ~~Debug builds assert at exit in ozz-animation's allocator (`"Memory leak detected"`) in 7 of 14 apps~~ — **fixed**. Cause: `MeshFilterComponent` owned a raw `MeshGroup*` and only freed it when `UsePrimitive` was set, which the examples never set, so every primitive mesh leaked (each `MeshItem` embeds an `ozz::sample::Mesh`). Now `Meshes` is a `Ref<MeshGroup>`; model meshes are shared with `ShareMeshes(model)`, which keeps the model alive; the material / texture caches own their entries and are emptied in `RenderSystem` shutdown; `Engine::Shutdown` destroys scenes before the systems their resources need. This also removed a use-after-free: two examples freed models (and their GPU buffers) after the render context was gone. Still not done: `g_EngineContext` itself is never deleted, and there is no general leak check beyond ozz's counter.
 
@@ -131,13 +136,18 @@ Principle: **make it build and run first, then replace the foundations (RHI, scr
 | Application, AudioSystem, InputSystem, LifeTimeComponents | yes | clean shutdown |
 | NativeScripting | yes | quits itself by design (`DesktopApp::Quit()` in the script), clean shutdown |
 | TickOneFrame | yes | exits after one frame by design |
-| PhysicsSystem | yes | spheres fall onto the height-field terrain; runtime-spawned spheres get bodies; `OnColliderEnter` fires |
+| PhysicsSystem | yes | both spheres fall and roll on the height field (checked in frame captures). The example had a stray `CharacterController` on the blue sphere, which pinned it, and spawned spheres inside the random terrain; both fixed, camera raised |
 | AnimationSystem, GUISystem, OverallShowcase, RenderingSystem-Overview / -PBR / -Instancing | yes | clean shutdown since the ownership fix; before it, Debug exit stopped on the ozz allocator assert (known issue 11) |
 | GameDemo | yes | menu only (no input during the run), so the character controller was not exercised; clean shutdown |
 | `JoltPhysics_Test` | passes | sphere rests at y = 0.480 on a box floor |
+| `PhysicsScenarios` (engine test) | 21 / 21 pass | steps the engine's fixed tick deterministically and checks: sphere / box / capsule / convex-mesh resting, static bodies, triggers, `OnColliderEnter` once per touch, character walking + GameDemo grounding ray, overlaps (bodies and characters), `AddForce`, runtime spawn (incl. mesh + material) and destroy, RigidBody under a CharacterController, height-field orientation against the mesh |
 | SnowLeopardEditor | not run | |
 
-Not covered yet: a **visual** check of each example (only logs were checked) and GameDemo gameplay (character movement, grounding ray, speaker overlap).
+**Visual check.** `SLE_CAPTURE_FRAME=<n>` (and optionally `SLE_CAPTURE_PATH`) writes the n-th presented frame to a PNG (`GraphicsContext::CaptureBackBuffer`, GL backend). Every example except TickOneFrame / NativeScripting (they exit at once) was captured and inspected after the rendering fixes. Bodies rest ~2 cm into the ground (Jolt's default penetration slop).
+
+Not covered yet: GameDemo gameplay (it needs mouse input on the menu), the editor, and a pixel comparison against `main` (GL reference shots for Phase 2 should be taken from the fixed renderer, not from `main`).
+
+**Fixed alongside:** entities created at runtime (`TriggerEntityCreate`) never got their primitive mesh or material, because only `LogicScene::OnLoad` loaded them; the renderer then dereferenced null. Resource loading is now per entity (`LoadEntityRenderResources`) and runs for spawned entities too, and the renderer skips entities without a mesh or material.
 
 ### Phase 1 — Seal the Rendering Layer for VRI (~1 week)
 Goal: OpenGL still runs, but GL exists only inside one backend directory.
@@ -150,9 +160,9 @@ Goal: OpenGL still runs, but GL exists only inside one backend directory.
   - [x] grep: only `add_deps("glad")` in `Source/Runtime/xmake.lua` remains
   - [x] Clang syntax check of all 107 Runtime / Editor / GameDemo / Examples translation units passes (with and without `TRACY_ENABLE`)
   - [x] Windows / MSVC build of everything (Phase 0), and every example starts and runs
-  - [ ] **Not yet verified**: a visual comparison of the examples against `main`
+  - [x] Visual check of every example via frame capture (after the lighting fixes; no pixel comparison against `main`, whose output was wrong)
 - Still GL-bound outside the backend, by design until Phase 2: GLFW context creation in `GLFWWindow`, and the editor's `imgui_impl_opengl3`
-- [ ] Follow-up: **fix the tone mapping / gamma order** (known issue 9) in the GL renderer *before* GL reference screenshots are taken for Phase 2, so VRI is compared against correct output
+- [x] Follow-up: fix the tone mapping / gamma order (known issue 9) in the GL renderer before GL reference screenshots are taken for Phase 2
 
 > Value: whatever shape VRI's API takes, the problem is confined to one folder instead of 16 files.
 
@@ -264,3 +274,5 @@ Defaults in **bold** are what this plan currently follows; change them here if n
 | 2026-11-06 | 0 | First Windows / MSVC build of everything; all 13 examples and GameDemo start and run (baseline above) |
 | 2026-11-06 | — | Decisions: SDL3 replaces GLFW; GameDemo to be rewritten; work moves to `dev-next`, old branches removed. Known issues added: tone mapping / gamma order, text rendering, naive GUI, ozz Debug exit assert |
 | 2026-11-06 | 0 | Mesh / material / texture ownership moved to RAII (`Ref` / `Scope`), scenes destroyed first at shutdown; all 14 apps now shut down cleanly in Debug |
+| 2026-11-06 | 0 / 1 | Rendering: tone mapping / gamma order, exposure, grass decode, shadowed IBL, leaking material uniforms. Frame capture (`SLE_CAPTURE_FRAME`) and a visual check of every example |
+| 2026-11-06 | 0 | Physics: `PhysicsScenarios` engine test (21 checks); RigidBody under a CharacterController is ignored with a warning; runtime-spawned entities get meshes / materials; PhysicsSystem example fixed |

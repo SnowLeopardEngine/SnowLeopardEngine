@@ -44,7 +44,7 @@ public:
 
             Entity sphere            = scene->CreateEntity("Sphere");
             auto&  sphereTransform   = sphere.GetComponent<TransformComponent>();
-            sphereTransform.Position = {5, 20, 0};
+            sphereTransform.Position = {5, 50, 0};
             sphereTransform.Scale *= 3;
 
             sphere.AddComponent<RigidBodyComponent>();
@@ -72,7 +72,9 @@ public:
 
         // Create a camera
         Entity camera                                      = scene->CreateEntity("MainCamera");
-        camera.GetComponent<TransformComponent>().Position = {0, 10, 30};
+        // Above the hills, looking down at the drop point (terrain heights go up to 40).
+        camera.GetComponent<TransformComponent>().Position = {0, 70, 45};
+        camera.GetComponent<TransformComponent>().SetRotationEuler(glm::vec3(-40, 0, 0));
         auto& cameraComponent                              = camera.AddComponent<CameraComponent>();
         cameraComponent.ClearFlags                         = CameraClearFlags::Skybox; // Enable skybox
 
@@ -87,12 +89,11 @@ public:
         Entity sphere = scene->CreateEntity("Sphere");
 
         auto& sphereTransform    = sphere.GetComponent<TransformComponent>();
-        sphereTransform.Position = {0, 15, 0};
+        sphereTransform.Position = {0, 50, 0}; // above the terrain (random heights up to 40)
         sphereTransform.Scale *= 3;
 
         sphere.AddComponent<RigidBodyComponent>();
         sphere.AddComponent<SphereColliderComponent>(normalMaterial);
-        sphere.AddComponent<CharacterControllerComponent>();
 
         auto& sphereMeshFilter              = sphere.AddComponent<MeshFilterComponent>();
         sphereMeshFilter.PrimitiveType      = MeshPrimitiveType::Sphere;
@@ -104,7 +105,7 @@ public:
         // create a testSphere to test MeshColliderComponent
         Entity testSphere            = scene->CreateEntity("TestSphere");
         auto&  testSphereTransform   = testSphere.GetComponent<TransformComponent>();
-        testSphereTransform.Position = {5, 15, 0};
+        testSphereTransform.Position = {5, 50, 0};
         testSphereTransform.Scale *= 3;
         testSphere.AddComponent<RigidBodyComponent>(1.0f, 0.0f, 0.5f, false);
         auto& testSphereMeshFilter              = testSphere.AddComponent<MeshFilterComponent>();
