@@ -290,7 +290,8 @@ namespace SnowLeopardEngine
                    EntityStatusComponent& status,
                    MeshFilterComponent&   meshFilter,
                    MeshRendererComponent& meshRenderer) {
-                if (!status.IsEnabled)
+                // Skip entities whose mesh or material is missing (failed to load, or not loaded yet).
+                if (!status.IsEnabled || meshFilter.Meshes == nullptr || meshRenderer.Mat == nullptr)
                 {
                     return;
                 }

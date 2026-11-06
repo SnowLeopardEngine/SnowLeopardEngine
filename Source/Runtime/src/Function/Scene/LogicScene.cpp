@@ -184,9 +184,73 @@ namespace SnowLeopardEngine
     {
         if (m_IsLoaded)
         {
+            // OnLoad has already run, so this entity's meshes and materials are not loaded yet.
+            LoadEntityRenderResources(entity);
+
             EntityCreateEvent entityCreateEvent(entity);
             TriggerEvent(entityCreateEvent);
         }
+    }
+
+    void LogicScene::LoadEntityRenderResources(entt::entity entity)
+    {
+        // TODO: Move to AssetManager
+        if (auto* meshFilter = m_Registry.try_get<MeshFilterComponent>(entity))
+        {
+            if (meshFilter->PrimitiveType != MeshPrimitiveType::Invalid)
+            {
+                meshFilter->Meshes = CreateRef<MeshGroup>();
+
+                switch (meshFilter->PrimitiveType)
+                {
+                    case MeshPrimitiveType::Quad:
+                        meshFilter->Meshes->Items.emplace_back(GeometryFactory::CreateMeshPrimitive<QuadMesh>());
+                        break;
+                    case MeshPrimitiveType::Cube:
+                        meshFilter->Meshes->Items.emplace_back(GeometryFactory::CreateMeshPrimitive<CubeMesh>());
+                        break;
+                    case MeshPrimitiveType::Sphere:
+                        meshFilter->Meshes->Items.emplace_back(GeometryFactory::CreateMeshPrimitive<SphereMesh>());
+                        break;
+                    case MeshPrimitiveType::Capsule:
+                        meshFilter->Meshes->Items.emplace_back(GeometryFactory::CreateMeshPrimitive<CapsuleMesh>());
+                        break;
+                    case MeshPrimitiveType::Heightfield:
+                        meshFilter->Meshes->Items.emplace_back(
+                            GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(Utils::GenerateBlankHeightMap(50, 50)));
+                        break;
+                    case MeshPrimitiveType::Invalid:
+                        break;
+                }
+            }
+            else if (FileSystem::Exists(meshFilter->FilePath))
+            {
+                meshFilter->Meshes = CreateRef<MeshGroup>();
+                Model assimpModel;
+                AssimpModelLoader::LoadModel(meshFilter->FilePath, assimpModel);
+                *meshFilter->Meshes = assimpModel.Meshes;
+            }
+
+            meshFilter->AssignEntityID(static_cast<int>(entity));
+        }
+
+        if (auto* terrain = m_Registry.try_get<TerrainComponent>(entity))
+        {
+            terrain->Mesh = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
+                terrain->TerrainHeightMap, terrain->XScale, terrain->YScale, terrain->ZScale);
+        }
+
+        auto loadMaterial = [](auto* renderer) {
+            if (renderer != nullptr && FileSystem::Exists(renderer->MaterialFilePath))
+            {
+                renderer->Mat = IO::Load(renderer->MaterialFilePath);
+            }
+        };
+        loadMaterial(m_Registry.try_get<MeshRendererComponent>(entity));
+        loadMaterial(m_Registry.try_get<TerrainRendererComponent>(entity));
+        loadMaterial(m_Registry.try_get<UI::ImageComponent>(entity));
+        loadMaterial(m_Registry.try_get<UI::ButtonComponent>(entity));
+        loadMaterial(m_Registry.try_get<UI::TextComponent>(entity));
     }
 
     Entity LogicScene::GetEntityWithCoreUUID(CoreUUID id) const { return m_EntityMap->at(id); }
@@ -213,103 +277,8 @@ namespace SnowLeopardEngine
         LogicScenePreLoadEvent preloadEvent(this);
         TriggerEvent(preloadEvent);
 
-        // Mesh Loading (dirty code for now)
-        m_Registry.view<MeshFilterComponent>().each([this](entt::entity entity, MeshFilterComponent& meshFilter) {
-            // TODO: Move to AssetManager
-            if (meshFilter.PrimitiveType != MeshPrimitiveType::Invalid)
-            {
-                meshFilter.Meshes = CreateRef<MeshGroup>();
-
-                switch (meshFilter.PrimitiveType)
-                {
-                    case MeshPrimitiveType::Quad: {
-                        auto meshItem = GeometryFactory::CreateMeshPrimitive<QuadMesh>();
-                        meshFilter.Meshes->Items.emplace_back(meshItem);
-                        break;
-                    }
-
-                    case MeshPrimitiveType::Cube: {
-                        auto meshItem = GeometryFactory::CreateMeshPrimitive<CubeMesh>();
-                        meshFilter.Meshes->Items.emplace_back(meshItem);
-                        break;
-                    }
-
-                    case MeshPrimitiveType::Sphere: {
-                        auto meshItem = GeometryFactory::CreateMeshPrimitive<SphereMesh>();
-                        meshFilter.Meshes->Items.emplace_back(meshItem);
-                        break;
-                    }
-                    case MeshPrimitiveType::Capsule: {
-                        auto meshItem = GeometryFactory::CreateMeshPrimitive<CapsuleMesh>();
-                        meshFilter.Meshes->Items.emplace_back(meshItem);
-                        break;
-                    }
-                    break;
-                    case MeshPrimitiveType::Heightfield: {
-                        auto meshItem = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
-                            Utils::GenerateBlankHeightMap(50, 50));
-                        meshFilter.Meshes->Items.emplace_back(meshItem);
-                        break;
-                    }
-                    case MeshPrimitiveType::Invalid:
-                        break;
-                }
-            }
-            else
-            {
-                if (FileSystem::Exists(meshFilter.FilePath))
-                {
-                    meshFilter.Meshes = CreateRef<MeshGroup>();
-                    Model assimpModel;
-                    AssimpModelLoader::LoadModel(meshFilter.FilePath, assimpModel);
-                    *meshFilter.Meshes = assimpModel.Meshes;
-                }
-            }
-
-            meshFilter.AssignEntityID(static_cast<int>(entity));
-        });
-        m_Registry.view<TerrainComponent>().each([](entt::entity entity, TerrainComponent& terrain) {
-            // TODO: Move to AssetManager
-            terrain.Mesh = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
-                terrain.TerrainHeightMap, terrain.XScale, terrain.YScale, terrain.ZScale);
-        });
-
-        // Material Loading
-        m_Registry.view<MeshRendererComponent>().each([](entt::entity entity, MeshRendererComponent& renderer) {
-            // TODO: Move to AssetManager
-            if (FileSystem::Exists(renderer.MaterialFilePath))
-            {
-                renderer.Mat = IO::Load(renderer.MaterialFilePath);
-            }
-        });
-        m_Registry.view<TerrainRendererComponent>().each([](entt::entity entity, TerrainRendererComponent& renderer) {
-            // TODO: Move to AssetManager
-            if (FileSystem::Exists(renderer.MaterialFilePath))
-            {
-                renderer.Mat = IO::Load(renderer.MaterialFilePath);
-            }
-        });
-        m_Registry.view<UI::ImageComponent>().each([](entt::entity e, UI::ImageComponent& image) {
-            // TODO: Move to AssetManager
-            if (FileSystem::Exists(image.MaterialFilePath))
-            {
-                image.Mat = IO::Load(image.MaterialFilePath);
-            }
-        });
-        m_Registry.view<UI::ButtonComponent>().each([](entt::entity e, UI::ButtonComponent& button) {
-            // TODO: Move to AssetManager
-            if (FileSystem::Exists(button.MaterialFilePath))
-            {
-                button.Mat = IO::Load(button.MaterialFilePath);
-            }
-        });
-        m_Registry.view<UI::TextComponent>().each([](entt::entity e, UI::TextComponent& text) {
-            // TODO: Move to AssetManager
-            if (FileSystem::Exists(text.MaterialFilePath))
-            {
-                text.Mat = IO::Load(text.MaterialFilePath);
-            }
-        });
+        // Meshes and materials (dirty code for now; TODO: Move to AssetManager)
+        m_Registry.each([this](entt::entity entity) { LoadEntityRenderResources(entity); });
 
         // Load Audio
         m_Registry.view<TransformComponent, AudioListenerComponent>().each(
