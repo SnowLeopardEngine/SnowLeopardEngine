@@ -126,6 +126,13 @@ namespace SnowLeopardEngine
         {
             lifeTime->OnUnload();
         }
+        // Lifetime components may hold scenes (and through them models and GPU resources); drop them now.
+        m_LiftTimeComponents.clear();
+
+        // Scenes go first: their components own meshes (GPU buffers), audio clips, etc., which must be freed
+        // while the render, audio and physics systems still exist.
+        g_EngineContext->SceneMngr->OnUnload();
+        g_EngineContext->SceneMngr.Shutdown();
 
         g_EngineContext->CSharpScriptingSys.Shutdown();
         g_EngineContext->CameraSys.Shutdown();
@@ -133,8 +140,6 @@ namespace SnowLeopardEngine
         g_EngineContext->RenderSys.Shutdown();
         g_EngineContext->PhysicsSys.Shutdown();
         g_EngineContext->ProjectMngr.Shutdown();
-        g_EngineContext->SceneMngr->OnUnload();
-        g_EngineContext->SceneMngr.Shutdown();
         g_EngineContext->InputSys.Shutdown();
         g_EngineContext->WindowSys.Shutdown();
         g_EngineContext->AudioSys.Shutdown();

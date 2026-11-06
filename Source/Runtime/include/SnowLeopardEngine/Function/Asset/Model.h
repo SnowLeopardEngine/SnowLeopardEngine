@@ -13,4 +13,11 @@ namespace SnowLeopardEngine
 
         std::vector<Ref<AnimationClip>> AnimationClips; // ozz
     };
+
+    // A handle to the model's meshes that also keeps the model alive (shared_ptr aliasing constructor), for
+    // MeshFilterComponent::Meshes.
+    inline Ref<MeshGroup> ShareMeshes(const Ref<Model>& model)
+    {
+        return model ? Ref<MeshGroup>(model, &model->Meshes) : nullptr;
+    }
 } // namespace SnowLeopardEngine

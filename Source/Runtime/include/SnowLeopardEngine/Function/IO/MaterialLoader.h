@@ -8,6 +8,9 @@ namespace SnowLeopardEngine
     {
         Material* Load(const std::filesystem::path& materialPath);
 
-        extern std::unordered_map<std::string, Material*> g_MaterialCache;
+        // Frees every cached material. Pointers returned by Load() are invalid afterwards.
+        void ReleaseAllMaterials();
+
+        extern std::unordered_map<std::string, Scope<Material>> g_MaterialCache;
     } // namespace IO
 } // namespace SnowLeopardEngine

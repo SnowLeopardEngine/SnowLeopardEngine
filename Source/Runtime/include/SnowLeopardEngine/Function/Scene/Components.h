@@ -655,7 +655,10 @@ namespace SnowLeopardEngine
         bool              UsePrimitive  = false;
         MeshPrimitiveType PrimitiveType = MeshPrimitiveType::Invalid;
 
-        MeshGroup* Meshes = nullptr;
+        // Shared ownership: meshes created for this component (primitives, model files) are freed with the last
+        // component that uses them; meshes of a loaded Model are shared with ShareMeshes(model), which keeps the
+        // model alive as long as they are in use.
+        Ref<MeshGroup> Meshes = nullptr;
 
         // NOLINTBEGIN
         template<class Archive>
@@ -668,17 +671,13 @@ namespace SnowLeopardEngine
         MeshFilterComponent()                           = default;
         MeshFilterComponent(const MeshFilterComponent&) = default;
 
-        ~MeshFilterComponent()
-        {
-            if (UsePrimitive || (!FilePath.empty() && Meshes != nullptr))
-            {
-                delete Meshes;
-                Meshes = nullptr;
-            }
-        }
-
         void AssignEntityID(int entityID) const
         {
+            if (Meshes == nullptr)
+            {
+                return;
+            }
+
             for (auto& meshItem : Meshes->Items)
             {
                 for (auto& vertex : meshItem.Data.Vertices)

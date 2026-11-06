@@ -7,29 +7,32 @@ namespace SnowLeopardEngine
 {
     namespace IO
     {
-        std::unordered_map<std::string, Material*> g_MaterialCache;
+        std::unordered_map<std::string, Scope<Material>> g_MaterialCache;
 
         Material* Load(const std::filesystem::path& materialPath)
         {
             auto pathStr = materialPath.generic_string();
 
-            if (g_MaterialCache.count(pathStr) > 0)
+            if (auto it = g_MaterialCache.find(pathStr); it != g_MaterialCache.end())
             {
-                return g_MaterialCache[pathStr];
+                return it->second.get();
             }
 
-            auto* material = new Material();
+            auto material = CreateScope<Material>();
 
-            if (!Deserialize(material, materialPath))
+            if (!Deserialize(material.get(), materialPath))
             {
                 SNOW_LEOPARD_CORE_ERROR("[MaterialLoader] Failed to deserialize {0}", pathStr);
                 return nullptr;
             }
 
-            g_MaterialCache[pathStr] = material;
+            Material* result         = material.get();
+            g_MaterialCache[pathStr] = std::move(material);
 
-            return material;
+            return result;
         }
+
+        void ReleaseAllMaterials() { g_MaterialCache.clear(); }
     } // namespace IO
 
 } // namespace SnowLeopardEngine

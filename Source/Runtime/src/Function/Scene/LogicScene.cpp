@@ -218,7 +218,7 @@ namespace SnowLeopardEngine
             // TODO: Move to AssetManager
             if (meshFilter.PrimitiveType != MeshPrimitiveType::Invalid)
             {
-                meshFilter.Meshes = new MeshGroup();
+                meshFilter.Meshes = CreateRef<MeshGroup>();
 
                 switch (meshFilter.PrimitiveType)
                 {
@@ -259,7 +259,7 @@ namespace SnowLeopardEngine
             {
                 if (FileSystem::Exists(meshFilter.FilePath))
                 {
-                    meshFilter.Meshes = new MeshGroup;
+                    meshFilter.Meshes = CreateRef<MeshGroup>();
                     Model assimpModel;
                     AssimpModelLoader::LoadModel(meshFilter.FilePath, assimpModel);
                     *meshFilter.Meshes = assimpModel.Meshes;

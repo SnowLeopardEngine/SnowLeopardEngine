@@ -15,7 +15,7 @@
 
 using namespace SnowLeopardEngine;
 
-Model* g_Model;
+Ref<Model> g_Model;
 
 class EscScript : public NativeScriptInstance
 {
@@ -67,7 +67,7 @@ public:
         config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
         config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
         config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/animation_Dancing.ozz");
-        bool ok = OzzModelLoader::Load(config, g_Model);
+        bool ok = OzzModelLoader::Load(config, g_Model.get());
 
         // Create a character
         Entity character              = scene->CreateEntity("Character");
@@ -76,7 +76,7 @@ public:
         characterTransform.Scale      = {10, 10, 10};
         auto& characterMeshFilter     = character.AddComponent<MeshFilterComponent>();
         // characterMeshFilter.FilePath           = "Assets/Models/Walking.fbx";
-        characterMeshFilter.Meshes             = &g_Model->Meshes;
+        characterMeshFilter.Meshes             = ShareMeshes(g_Model);
         auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
         characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
@@ -129,7 +129,11 @@ public:
         helloTextComp.MaterialFilePath = uiTextMaterialPath;
     }
 
-    virtual void OnUnload() { Unsubscribe(m_ButtonClickedEventHandler); }
+    virtual void OnUnload() override
+    {
+        Unsubscribe(m_ButtonClickedEventHandler);
+        g_Model.reset(); // while the engine is still up (its meshes own GPU buffers)
+    }
 
 private:
     EngineContext* m_EngineContext;
@@ -147,7 +151,7 @@ int main(int argc, char** argv)
 {
     REGISTER_TYPE(EscScript);
 
-    g_Model = new Model();
+    g_Model = CreateRef<Model>();
 
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title      = "Example - GUISystem";
@@ -171,7 +175,6 @@ int main(int argc, char** argv)
 
     app.Run();
 
-    delete g_Model;
 
     return 0;
 }

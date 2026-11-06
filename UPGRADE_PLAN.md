@@ -55,7 +55,7 @@
 8. Binary `Tools/*/Coral/Coral.Managed.dll` committed to the repository.
 9. **Tone mapping and gamma correction are in the wrong order**: `Assets/Shaders/ToneMappingPass.frag` runs `linearToGamma` *before* `toneMapACES`, so ACES receives gamma-encoded input and the output is never gamma-corrected. Correct order: `toneMapACES(hdr)` on linear HDR, then `linearToGamma`. Fixing it changes every example's output, so it is deliberately not part of the Phase 0 baseline (see Phase 1 follow-up).
 10. **Text rendering is wrong** (owner report) and the in-game GUI is too naive to build a game UI on (see Phase 5).
-11. Debug builds assert at exit in ozz-animation's default allocator (`"Memory leak detected"`, `allocator.cc:54`) in 7 of 14 apps: ozz objects (skeletons / animations / meshes) outlive the allocator. The assert dialog blocks a clean Debug shutdown; Release is unaffected.
+11. ~~Debug builds assert at exit in ozz-animation's allocator (`"Memory leak detected"`) in 7 of 14 apps~~ — **fixed**. Cause: `MeshFilterComponent` owned a raw `MeshGroup*` and only freed it when `UsePrimitive` was set, which the examples never set, so every primitive mesh leaked (each `MeshItem` embeds an `ozz::sample::Mesh`). Now `Meshes` is a `Ref<MeshGroup>`; model meshes are shared with `ShareMeshes(model)`, which keeps the model alive; the material / texture caches own their entries and are emptied in `RenderSystem` shutdown; `Engine::Shutdown` destroys scenes before the systems their resources need. This also removed a use-after-free: two examples freed models (and their GPU buffers) after the render context was gone. Still not done: `g_EngineContext` itself is never deleted, and there is no general leak check beyond ozz's counter.
 
 ---
 
@@ -132,7 +132,7 @@ Principle: **make it build and run first, then replace the foundations (RHI, scr
 | NativeScripting | yes | quits itself by design (`DesktopApp::Quit()` in the script), clean shutdown |
 | TickOneFrame | yes | exits after one frame by design |
 | PhysicsSystem | yes | spheres fall onto the height-field terrain; runtime-spawned spheres get bodies; `OnColliderEnter` fires |
-| AnimationSystem, GUISystem, OverallShowcase, RenderingSystem-Overview / -PBR / -Instancing | yes | Debug exit stops on the ozz allocator assert (known issue 11) |
+| AnimationSystem, GUISystem, OverallShowcase, RenderingSystem-Overview / -PBR / -Instancing | yes | clean shutdown since the ownership fix; before it, Debug exit stopped on the ozz allocator assert (known issue 11) |
 | GameDemo | yes | menu only (no input during the run), so the character controller was not exercised; clean shutdown |
 | `JoltPhysics_Test` | passes | sphere rests at y = 0.480 on a box floor |
 | SnowLeopardEditor | not run | |
@@ -263,3 +263,4 @@ Defaults in **bold** are what this plan currently follows; change them here if n
 | 2026-11-06 | 0 | fmt unpinned (12.1, shared with spdlog), `/utf-8` on MSVC, enum log formatter |
 | 2026-11-06 | 0 | First Windows / MSVC build of everything; all 13 examples and GameDemo start and run (baseline above) |
 | 2026-11-06 | — | Decisions: SDL3 replaces GLFW; GameDemo to be rewritten; work moves to `dev-next`, old branches removed. Known issues added: tone mapping / gamma order, text rendering, naive GUI, ozz Debug exit assert |
+| 2026-11-06 | 0 | Mesh / material / texture ownership moved to RAII (`Ref` / `Scope`), scenes destroyed first at shutdown; all 14 apps now shut down cleanly in Debug |

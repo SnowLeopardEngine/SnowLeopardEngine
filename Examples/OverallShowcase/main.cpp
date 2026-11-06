@@ -48,13 +48,13 @@ static Entity CreateQuad(const std::string& materialFilePath, const glm::vec3& p
     return quad;
 }
 
-static Entity CreateCharacter(const Ref<LogicScene>& scene, Model* model, const glm::vec3& position)
+static Entity CreateCharacter(const Ref<LogicScene>& scene, const Ref<Model>& model, const glm::vec3& position)
 {
     OzzModelLoadConfig config = {};
     config.OzzMeshPath        = "Assets/Models/Vampire/mesh.ozz";
     config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
     config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/animation_Dancing.ozz");
-    bool ok = OzzModelLoader::Load(config, model);
+    bool ok = OzzModelLoader::Load(config, model.get());
 
     // Create a character
     Entity character            = scene->CreateEntity("Character");
@@ -63,7 +63,7 @@ static Entity CreateCharacter(const Ref<LogicScene>& scene, Model* model, const 
     characterTransform.Scale    = {5, 5, 5};
     auto& characterMeshFilter   = character.AddComponent<MeshFilterComponent>();
     // characterMeshFilter.FilePath           = "Assets/Models/Walking.fbx";
-    characterMeshFilter.Meshes             = &model->Meshes;
+    characterMeshFilter.Meshes             = ShareMeshes(model);
     auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
     characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
     auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
@@ -122,7 +122,7 @@ public:
         {
             for (int y = -60; y < 60; y += 30)
             {
-                Model* model = new Model();
+                auto model = CreateRef<Model>();
                 m_Models.emplace_back(model);
                 CreateCharacter(scene, model, {x, 0, y});
             }
@@ -134,15 +134,12 @@ public:
 
     void OnUnload() override
     {
-        for (Model* model : m_Models)
-        {
-            delete model;
-            model = nullptr;
-        }
+        // Entities that still render a model keep it alive through MeshFilterComponent::Meshes.
+        m_Models.clear();
     }
 
 private:
-    std::vector<Model*> m_Models;
+    std::vector<Ref<Model>> m_Models;
     EngineContext*      m_EngineContext;
 };
 

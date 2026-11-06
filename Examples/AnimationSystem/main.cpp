@@ -12,7 +12,7 @@
 
 using namespace SnowLeopardEngine;
 
-Model* g_Model;
+Ref<Model> g_Model;
 
 class EscScript : public NativeScriptInstance
 {
@@ -65,7 +65,7 @@ public:
         config.OzzSkeletonPath    = "Assets/Models/Vampire/skeleton.ozz";
         config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/animation_Dancing.ozz");
         config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Walking.ozz");
-        bool ok = OzzModelLoader::Load(config, g_Model);
+        bool ok = OzzModelLoader::Load(config, g_Model.get());
 
         // Create a character
         Entity character              = scene->CreateEntity("Character");
@@ -74,7 +74,7 @@ public:
         characterTransform.Scale      = {10, 10, 10};
         auto& characterMeshFilter     = character.AddComponent<MeshFilterComponent>();
         // characterMeshFilter.FilePath           = "Assets/Models/Walking.fbx";
-        characterMeshFilter.Meshes             = &g_Model->Meshes;
+        characterMeshFilter.Meshes             = ShareMeshes(g_Model);
         auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
         characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
         auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
@@ -88,6 +88,9 @@ public:
         animatorComponent.CurrentAnimator.SetController(controller);
     }
 
+    // Release the model while the engine is still up (its meshes own GPU buffers).
+    virtual void OnUnload() override final { g_Model.reset(); }
+
 private:
     EngineContext* m_EngineContext;
 };
@@ -96,7 +99,7 @@ int main(int argc, char** argv) TRY
 {
     REGISTER_TYPE(EscScript);
 
-    g_Model = new Model();
+    g_Model = CreateRef<Model>();
 
     DesktopAppInitInfo initInfo {};
     initInfo.Engine.Window.Title      = "Example - AnimationSystem";
@@ -120,7 +123,6 @@ int main(int argc, char** argv) TRY
 
     app.Run();
 
-    delete g_Model;
 
     return 0;
 }

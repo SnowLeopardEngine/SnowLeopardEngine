@@ -2,6 +2,8 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/IO/MaterialLoader.h"
+#include "SnowLeopardEngine/Function/IO/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/Character.h"
 #include "SnowLeopardEngine/Function/Rendering/GraphicsContext.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderContext.h"
@@ -38,6 +40,11 @@ namespace SnowLeopardEngine
 
         m_Renderer.Shutdown();
         ReleaseFontGlyphs(*m_GlobalRenderContext);
+
+        // The loader caches own their entries; free them while the GL context still exists.
+        IO::ReleaseAllMaterials();
+        IO::ReleaseAllTextures(*m_GlobalRenderContext);
+
         m_Context->Shutdown();
         m_Context.reset();
 

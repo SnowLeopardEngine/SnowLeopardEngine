@@ -22,7 +22,7 @@ namespace SnowLeopardEngine
                 auto extent = it->second->GetExtent();
                 assert(extent.Width > 0 && extent.Height > 0);
 
-                return it->second;
+                return it->second.get();
             }
 
             stbi_set_flip_vertically_on_load(flip);
@@ -81,10 +81,11 @@ namespace SnowLeopardEngine
             if (numMipLevels > 1)
                 rc.GenerateMipmaps(texture);
 
-            auto* newTexture  = new Texture {std::move(texture)};
-            g_TextureCache[h] = newTexture;
+            auto     newTexture = CreateScope<Texture>(std::move(texture));
+            Texture* result     = newTexture.get();
+            g_TextureCache[h]   = std::move(newTexture);
 
-            return newTexture;
+            return result;
         }
 
         void Release(const std::filesystem::path& texturePath, Texture& texture, RenderContext& rc)
@@ -98,11 +99,20 @@ namespace SnowLeopardEngine
             const auto h = std::filesystem::hash_value(p);
             if (auto it = g_TextureCache.find(h); it != g_TextureCache.cend())
             {
-                rc.Destroy(texture);
-                g_TextureCache.erase(h);
+                rc.Destroy(*it->second);
+                g_TextureCache.erase(it); // frees the Texture object as well
             }
         }
 
-        std::unordered_map<size_t, Texture*> g_TextureCache;
+        void ReleaseAllTextures(RenderContext& rc)
+        {
+            for (auto& [hash, texture] : g_TextureCache)
+            {
+                rc.Destroy(*texture);
+            }
+            g_TextureCache.clear();
+        }
+
+        std::unordered_map<size_t, Scope<Texture>> g_TextureCache;
     } // namespace IO
 } // namespace SnowLeopardEngine

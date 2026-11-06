@@ -420,8 +420,8 @@ class GameLoad final : public LifeTimeComponent
 public:
     virtual void OnLoad() override final
     {
-        m_PlayerModel   = new Model();
-        m_EnemyModel    = new Model();
+        m_PlayerModel   = CreateRef<Model>();
+        m_EnemyModel    = CreateRef<Model>();
         m_RenderContext = CreateScope<RenderContext>();
         LoadMainMenuScene();
 
@@ -431,8 +431,8 @@ public:
     virtual void OnUnload() override final
     {
         Unsubscribe(m_ButtonClickedEventHandler);
-        delete m_EnemyModel;
-        delete m_PlayerModel;
+        m_EnemyModel.reset();
+        m_PlayerModel.reset();
     }
 
 private:
@@ -622,7 +622,7 @@ private:
                 config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/Death.ozz");       // 5
                 config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/ThrowObject.ozz"); // 6
                 config.OzzAnimationPaths.emplace_back("Assets/Models/Vampire/RibHit.ozz");      // 7
-                bool ok = OzzModelLoader::Load(config, m_PlayerModel);
+                bool ok = OzzModelLoader::Load(config, m_PlayerModel.get());
             }
 
             Entity character              = m_GameScene->CreateEntity("Character");
@@ -631,7 +631,7 @@ private:
             characterTransform.Scale      = {10, 10, 10};
             characterTransform.SetRotationEuler(glm::vec3(0, 180, 0));
             auto& characterMeshFilter              = character.AddComponent<MeshFilterComponent>();
-            characterMeshFilter.Meshes             = &m_PlayerModel->Meshes;
+            characterMeshFilter.Meshes             = ShareMeshes(m_PlayerModel);
             auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
             characterMeshRenderer.MaterialFilePath = "Assets/Materials/Next/Vampire.dzmaterial";
             auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
@@ -748,7 +748,7 @@ private:
                 config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyRunning.ozz");
                 config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyPunching.ozz");
                 config.OzzAnimationPaths.emplace_back("DemoAssets/Models/Enemy/EnemyDeath.ozz");
-                bool ok = OzzModelLoader::Load(config, m_EnemyModel);
+                bool ok = OzzModelLoader::Load(config, m_EnemyModel.get());
             }
 
             Entity character                       = m_GameScene->CreateEntity("Enemy");
@@ -756,7 +756,7 @@ private:
             characterTransform.Position            = {-30, 50, -200};
             characterTransform.Scale               = {12, 12, 12};
             auto& characterMeshFilter              = character.AddComponent<MeshFilterComponent>();
-            characterMeshFilter.Meshes             = &m_EnemyModel->Meshes;
+            characterMeshFilter.Meshes             = ShareMeshes(m_EnemyModel);
             auto& characterMeshRenderer            = character.AddComponent<MeshRendererComponent>();
             characterMeshRenderer.MaterialFilePath = "DemoAssets/Models/Enemy/Enemy.dzmaterial";
             auto& animatorComponent                = character.AddComponent<AnimatorComponent>();
@@ -920,10 +920,10 @@ private:
     Scope<RenderContext> m_RenderContext = nullptr;
 
     // Player
-    Model* m_PlayerModel = nullptr;
+    Ref<Model> m_PlayerModel = nullptr;
 
     // Enemy
-    Model* m_EnemyModel = nullptr;
+    Ref<Model> m_EnemyModel = nullptr;
 
     // Speaker
     Entity m_Speaker;
