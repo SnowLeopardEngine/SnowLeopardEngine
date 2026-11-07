@@ -473,7 +473,7 @@ private:
         gameNameTextRect.Pos              = {width / 2.0f - 500, height / 2.0f + 300, 0};
         auto& gameNameTextComp            = gameNameText.AddComponent<UI::TextComponent>();
         gameNameTextComp.TextContent      = "Untitled 3D RPG Game DEMO";
-        gameNameTextComp.FontSize         = 24.0f;
+        gameNameTextComp.FontSize         = 96;
         gameNameTextComp.Color            = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f);
         gameNameTextComp.MaterialFilePath = TextMaterialPath;
 
@@ -494,7 +494,7 @@ private:
         playTextRect.Pos              = {width / 2.0f - 30, height / 2.0f - 10, 0};
         auto& playTextComp            = playText.AddComponent<UI::TextComponent>();
         playTextComp.TextContent      = "Play";
-        playTextComp.FontSize         = 8;
+        playTextComp.FontSize         = 32;
         playTextComp.Color            = glm::vec4(1.0f, 0.8f, 0.0f, 1.0f);
         playTextComp.MaterialFilePath = TextMaterialPath;
 
@@ -515,7 +515,7 @@ private:
         exitTextRect.Pos              = {width / 2.0f - 30, height / 2.0f - 110, 0};
         auto& exitTextComp            = exitText.AddComponent<UI::TextComponent>();
         exitTextComp.TextContent      = "Exit";
-        exitTextComp.FontSize         = 8;
+        exitTextComp.FontSize         = 32;
         exitTextComp.Color            = glm::vec4(1.0f, 0.8f, 0.0f, 1.0f);
         exitTextComp.MaterialFilePath = TextMaterialPath;
     }
@@ -580,7 +580,7 @@ private:
         gameOverTextRect.Pos              = {width / 2 - 300, height - 100, 0};
         auto& gameOverTextComp            = gameOverText.AddComponent<UI::TextComponent>();
         gameOverTextComp.TextContent      = "GAME OVER";
-        gameOverTextComp.FontSize         = 24;
+        gameOverTextComp.FontSize         = 96;
         gameOverTextComp.Color            = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
         gameOverTextComp.MaterialFilePath = TextMaterialPath;
         gameOverText.GetComponent<EntityStatusComponent>().IsEnabled = false;
@@ -843,7 +843,7 @@ private:
         playTextRect.Pos              = {740, 350, 0};
         auto& playTextComp            = playText.AddComponent<UI::TextComponent>();
         playTextComp.TextContent      = "Play Music";
-        playTextComp.FontSize         = 8;
+        playTextComp.FontSize         = 32;
         playTextComp.Color            = glm::vec4(1.0f, 0.8f, 0.0f, 1.0f);
         playTextComp.MaterialFilePath = TextMaterialPath;
 

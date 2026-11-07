@@ -8,6 +8,7 @@
 namespace SnowLeopardEngine
 {
     const std::string RenderQueue_Opaque      = "Opaque";
+    const std::string RenderQueue_AlphaTest   = "AlphaTest"; // cut-out (foliage, fences): two-sided, alpha cutoff
     const std::string RenderQueue_Transparent = "Transparent";
 
     struct DzMaterialProperty

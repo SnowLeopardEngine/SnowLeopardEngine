@@ -949,14 +949,14 @@ namespace SnowLeopardEngine
         {
             std::string  TextContent;
             std::string  FontFilePath;
-            unsigned int FontSize = 12;
+            unsigned int FontSize = 48; // em size in pixels
             glm::vec4    Color    = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             enum Alignment
             {
                 Left,
                 Center,
                 Right
-            } TextAlignment = Center;
+            } TextAlignment = Left; // about RectTransform Pos.x
 
             MeshItem Mesh = GeometryFactory::CreateMeshPrimitive<QuadMesh>(true);
 

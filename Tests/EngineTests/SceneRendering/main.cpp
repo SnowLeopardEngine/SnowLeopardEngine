@@ -2,8 +2,9 @@
 //
 // Renders a small scene (floor, spheres, sun, environment) offscreen through its own SceneRenderer and render graph
 // and reads the result back: the sky, a lit object, the sun's cascaded shadow on the floor, GPU frustum culling
-// (draw counts per view), an alpha-blended transparent, CameraClearFlags::Color, a textured (bindless) material and
-// a point light's attenuation. Exit code = number of failures.
+// (draw counts per view), an alpha-blended transparent, CameraClearFlags::Color, a textured (bindless) material,
+// a point light's attenuation, alpha-tested foliage (one shared mesh, its own culling views) and the in-game UI
+// batch (painter's order, SDF text). Exit code = number of failures.
 
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Engine/Engine.h"
@@ -46,14 +47,14 @@ namespace
             const auto* p = &Pixels[(size_t(y) * kExtent.Width + x) * 4];
             return {p[0], p[1], p[2]};
         }
-        // Mean over a 5 x 5 block (robust to edges and PCF noise).
-        glm::vec3 Mean(glm::ivec2 pixel) const
+        // Mean over a (2 r + 1)^2 block (robust to edges and PCF noise).
+        glm::vec3 Mean(glm::ivec2 pixel, int r = 2) const
         {
             glm::vec3 sum(0);
-            for (int dy = -2; dy <= 2; ++dy)
-                for (int dx = -2; dx <= 2; ++dx)
+            for (int dy = -r; dy <= r; ++dy)
+                for (int dx = -r; dx <= r; ++dx)
                     sum += glm::vec3(At(pixel.x + dx, pixel.y + dy));
-            return sum / 25.0f;
+            return sum / float((2 * r + 1) * (2 * r + 1));
         }
     };
 
@@ -225,6 +226,67 @@ int main() TRY
     Check(nearAfter.b - nearBefore.b > 2 * std::max(farAfter.b - farBefore.b, 1.0f),
           "point light attenuates with distance",
           "near +" + std::to_string(int(nearAfter.b - nearBefore.b)) + ", far +" + std::to_string(int(farAfter.b - farBefore.b)));
+
+    // ---- alpha-tested grass: 40 entities, each with its own quad mesh, share one arena range
+    const auto uniqueBefore = renderer.GetStatistics().UniqueMeshes;
+    const auto patch        = ToPixel(camera, {10, 1, -7}); // clear of the spheres
+    auto greenPixels = [&](const Image& img) {
+        int count = 0;
+        for (int dy = -12; dy <= 12; ++dy)
+            for (int dx = -12; dx <= 12; ++dx)
+            {
+                const auto c = img.At(patch.x + dx, patch.y + dy);
+                count += c.g > c.r + 25 && c.g > c.b + 25;
+            }
+        return count;
+    };
+    const int bareGreen = greenPixels(image);
+    for (int i = 0; i < 40; ++i)
+    {
+        Entity blade = AddPrimitive(*scene, MeshPrimitiveType::Quad, {8.0f + float(i % 8) * 0.6f, 1, -8.0f + float(i / 8) * 0.6f}, {1, 2, 1},
+                                    "Assets/Materials/Next/Grass.dzmaterial");
+        blade.GetComponent<TransformComponent>().SetRotationEuler({-90, float(i * 37 % 90), 0});
+    }
+    engine.TickOneFrame(1.0f / 60.0f);
+    image  = Render(renderer, *scene);
+    counts = renderer.ReadDrawCounts();
+    Check(renderer.GetStatistics().AlphaTest == 40, "grass is in the alpha-test queue", std::to_string(renderer.GetStatistics().AlphaTest));
+    Check(renderer.GetStatistics().UniqueMeshes == uniqueBefore + 1, "40 identical quads share one mesh",
+          std::to_string(renderer.GetStatistics().UniqueMeshes - uniqueBefore) + " new");
+    Check(counts[SceneRenderer::kViewAlphaTest] > 0 && counts[SceneRenderer::kViewAlphaTest] <= 40,
+          "alpha-test view is culled on the GPU", std::to_string(counts[SceneRenderer::kViewAlphaTest]) + " drawn");
+    const int grassGreen = greenPixels(image);
+    Check(bareGreen == 0 && grassGreen > 30, "grass is drawn (cut out, lit)",
+          std::to_string(grassGreen) + " green pixels (bare floor " + std::to_string(bareGreen) + ")");
+
+    // ---- in-game UI: one batch, painter's order by Pos.z, SDF text
+    auto addImage = [&](glm::vec3 pos, glm::vec4 color) {
+        Entity entity = scene->CreateEntity("Image");
+        auto&  rect   = entity.AddComponent<UI::RectTransformComponent>();
+        rect.Pos      = pos;
+        rect.Size     = {40, 30};
+        entity.AddComponent<UI::ImageComponent>().Color = color;
+    };
+    addImage({60, 150, 0.5f}, {0, 1, 0, 1}); // in front
+    addImage({60, 150, 0.0f}, {1, 0, 0, 1}); // behind, created later
+    Entity label = scene->CreateEntity("Label");
+    label.AddComponent<UI::RectTransformComponent>().Pos = {200, 140, 0};
+    auto& text       = label.AddComponent<UI::TextComponent>();
+    text.TextContent = "UI";
+    text.FontSize    = 32;
+    text.Color       = {0, 0, 1, 1};
+    image            = Render(renderer, *scene);
+    const auto panel = image.At(60, int(kExtent.Height) - 150);
+    Check(panel == glm::ivec3(0, 255, 0), "UI quads are drawn in Pos.z order", Text(glm::vec3(panel)));
+    int blue = 0;
+    for (int y = int(kExtent.Height) - 170; y < int(kExtent.Height) - 135; ++y)
+        for (int x = 195; x < 250; ++x)
+        {
+            const auto c = image.At(x, y);
+            blue += c.b > 200 && c.r < 60 && c.g < 60;
+        }
+    Check(renderer.GetStatistics().UIQuads == 4 && blue > 40, "text is drawn from the SDF atlas",
+          std::to_string(renderer.GetStatistics().UIQuads) + " quads, " + std::to_string(blue) + " glyph pixels");
 
     // ---- CameraClearFlags::Color replaces the sky
     cameraComponent.ClearFlags = CameraClearFlags::Color;

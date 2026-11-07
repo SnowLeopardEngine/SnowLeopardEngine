@@ -32,7 +32,26 @@ namespace SnowLeopardEngine
     {
         static_assert(sizeof(SceneRenderer::GPUFrame) == 1440, "GPUFrame must match FrameData in Scene.slangh");
         static_assert(sizeof(SceneRenderer::GPUInstance) == 176, "GPUInstance must match InstanceData");
-        static_assert(sizeof(SceneRenderer::GPUMaterial) == 80, "GPUMaterial must match MaterialData");
+        static_assert(sizeof(SceneRenderer::GPUMaterial) == 96, "GPUMaterial must match MaterialData");
+
+        // FNV-1a over a mesh's vertices and indices: identical meshes share an arena range.
+        uint64_t MeshHash(const MeshData& data)
+        {
+            uint64_t hash = 1469598103934665603ull;
+            auto     mix  = [&](const void* bytes, size_t size) {
+                const auto* p = static_cast<const uint8_t*>(bytes);
+                for (size_t i = 0; i < size; ++i)
+                {
+                    hash = (hash ^ p[i]) * 1099511628211ull;
+                }
+            };
+            for (const auto& vertex : data.Vertices)
+            {
+                mix(&vertex.Position, sizeof(vertex.Position) + sizeof(vertex.Normal) + sizeof(vertex.TexCoord));
+            }
+            mix(data.Indices.data(), data.Indices.size() * sizeof(uint32_t));
+            return hash ^ (uint64_t(data.Vertices.size()) << 32) ^ data.Indices.size();
+        }
 
         constexpr uint32_t  kCommandStride = sizeof(VriDrawIndexedDesc); // 20 bytes, matches DrawCommand
         constexpr VriFormat kHDRFormat     = VriFormat_RGBA16_SFLOAT;
@@ -245,6 +264,11 @@ namespace SnowLeopardEngine
         const VriVertexAttributeDesc kDepthAttributes[] {{VriFormat_RGB32_SFLOAT, 0, 0, "POSITION", 0},
                                                          {VriFormat_R32_UINT, 0, 1, "INSTANCE", 0}};
         VriVertexInputDesc           DepthInput() { return {kDepthAttributes, 2, kStreams, 2}; }
+        // Cut-out depth passes also read the uv.
+        const VriVertexAttributeDesc kCutoutAttributes[] {{VriFormat_RGB32_SFLOAT, 0, 0, "POSITION", 0},
+                                                          {VriFormat_RG32_SFLOAT, 24, 0, "TEXCOORD", 0},
+                                                          {VriFormat_R32_UINT, 0, 1, "INSTANCE", 0}};
+        VriVertexInputDesc           CutoutInput() { return {kCutoutAttributes, 3, kStreams, 2}; }
     } // namespace
 
     // ------------------------------------------------------------------------------------------------ setup
@@ -333,6 +357,7 @@ namespace SnowLeopardEngine
         m_Lighting          = ShaderAsset::Load("Assets/Shaders/Renderer/DeferredLighting.dzshader", options);
         m_ToneMapping       = ShaderAsset::Load("Assets/Shaders/Renderer/ToneMapping.dzshader", options);
         m_EnvironmentShader = ShaderAsset::Load("Assets/Shaders/Renderer/Environment.dzshader", options);
+        m_UI                = CreateScope<UIRenderer>(m_Device, options);
     }
 
     void SceneRenderer::CreatePipelines()
@@ -344,6 +369,7 @@ namespace SnowLeopardEngine
         gbuffer.DepthFormat  = VriFormat_D32_SFLOAT;
         gbuffer.VertexInput  = MeshInput();
         m_GBufferPipeline    = CreateScope<ShaderPipeline>(m_Device, m_Standard, *standard.FindPass("GBuffer"), gbuffer);
+        m_GBufferAlphaPipeline = CreateScope<ShaderPipeline>(m_Device, m_Standard, *standard.FindPass("GBufferAlphaTest"), gbuffer);
 
         ShaderPipelineDesc forward;
         forward.ColorFormats = {kHDRFormat};
@@ -356,6 +382,8 @@ namespace SnowLeopardEngine
         shadow.DepthFormat  = VriFormat_D32_SFLOAT;
         shadow.VertexInput  = DepthInput();
         m_ShadowPipeline    = CreateScope<ShaderPipeline>(m_Device, m_Standard, *standard.FindPass("ShadowCaster"), shadow);
+        shadow.VertexInput  = CutoutInput();
+        m_ShadowAlphaPipeline = CreateScope<ShaderPipeline>(m_Device, m_Standard, *standard.FindPass("ShadowCasterAlphaTest"), shadow);
 
         m_CullPipeline = CreateScope<ShaderPipeline>(m_Device, m_Culling, m_Culling.Subshaders.at(0).Passes.at(0), ShaderPipelineDesc {});
 
@@ -363,7 +391,8 @@ namespace SnowLeopardEngine
         lighting.ColorFormats = {kHDRFormat};
         m_LightingPipeline = CreateScope<ShaderPipeline>(m_Device, m_Lighting, m_Lighting.Subshaders.at(0).Passes.at(0), lighting);
 
-        for (const auto* pipeline : {m_GBufferPipeline.get(), m_ForwardPipeline.get(), m_ShadowPipeline.get(),
+        for (const auto* pipeline : {m_GBufferPipeline.get(), m_GBufferAlphaPipeline.get(), m_ForwardPipeline.get(),
+                                     m_ShadowPipeline.get(), m_ShadowAlphaPipeline.get(),
                                      m_CullPipeline.get(), m_LightingPipeline.get()})
         {
             // Renderer resources live in set 0; a generated `material` block must not take it.
@@ -375,6 +404,8 @@ namespace SnowLeopardEngine
         m_GBufferSet  = CreateScope<ShaderBindings>(m_Device, *m_GBufferPipeline);
         m_ForwardSet  = CreateScope<ShaderBindings>(m_Device, *m_ForwardPipeline);
         m_ShadowSet   = CreateScope<ShaderBindings>(m_Device, *m_ShadowPipeline);
+        m_GBufferAlphaSet = CreateScope<ShaderBindings>(m_Device, *m_GBufferAlphaPipeline);
+        m_ShadowAlphaSet  = CreateScope<ShaderBindings>(m_Device, *m_ShadowAlphaPipeline);
         m_CullSet     = CreateScope<ShaderBindings>(m_Device, *m_CullPipeline);
         m_LightingSet = CreateScope<ShaderBindings>(m_Device, *m_LightingPipeline);
 
@@ -476,7 +507,11 @@ namespace SnowLeopardEngine
     {
         m_Device.WaitIdle();
         m_Meshes.clear();
+        m_SharedMeshes.clear();
+        m_PendingVertices.clear();
+        m_PendingIndices.clear();
         m_VertexCount = m_IndexCount = 0;
+        m_UploadedVertices = m_UploadedIndices = 0;
         m_MaterialIndices.clear();
         m_Materials.clear();
         m_Textures.resize(1);
@@ -503,7 +538,7 @@ namespace SnowLeopardEngine
                 VriBufferDesc {next * stride, 0, usage | VriBufferUsage_TransferDst | VriBufferUsage_TransferSrc, VriMemoryLocation_Device});
             RHI::Frame frame(m_Device);
             auto*      cmd = frame.Begin();
-            if (buffer && m_VertexCount + m_IndexCount > 0)
+            if (buffer && m_UploadedVertices + m_UploadedIndices > 0)
             {
                 buffer->Transition(cmd, {VriAccess_CopySourceRead, VriPipelineStage_Transfer});
                 replacement->Transition(cmd, {VriAccess_CopyDestinationWrite, VriPipelineStage_Transfer});
@@ -539,7 +574,20 @@ namespace SnowLeopardEngine
             // until the next scene change resets the arena.
         }
 
-        GrowArena(m_VertexCount + data.Vertices.size(), m_IndexCount + data.Indices.size());
+        // Static meshes with identical content share one range (skinned ones are rewritten per entity).
+        uint64_t hash = 0;
+        if (!mesh.Skinned())
+        {
+            hash = MeshHash(data);
+            if (auto shared = m_SharedMeshes.find(hash); shared != m_SharedMeshes.end())
+            {
+                auto record   = shared->second;
+                record.Source = data.Vertices.data();
+                return &(m_Meshes[&mesh] = record);
+            }
+        }
+
+        // Appended to this frame's pending block; FlushMeshUploads copies all of them in one transfer.
         MeshRecord record;
         record.FirstIndex   = uint32_t(m_IndexCount);
         record.IndexCount   = uint32_t(data.Indices.size());
@@ -548,11 +596,30 @@ namespace SnowLeopardEngine
         record.Source       = data.Vertices.data();
         const auto box      = AABB::Build(data.Vertices); // once per mesh, not per frame
         record.LocalSphere  = glm::vec4(box.GetCenter(), glm::length(box.GetExtent()) * 0.5f);
-        RHI::UploadBufferRegion(m_Device, *m_Vertices, m_VertexCount * sizeof(MeshVertexData), std::as_bytes(std::span(data.Vertices)));
-        RHI::UploadBufferRegion(m_Device, *m_Indices, m_IndexCount * sizeof(uint32_t), std::as_bytes(std::span(data.Indices)));
+        m_PendingVertices.insert(m_PendingVertices.end(), data.Vertices.begin(), data.Vertices.end());
+        m_PendingIndices.insert(m_PendingIndices.end(), data.Indices.begin(), data.Indices.end());
         m_VertexCount += data.Vertices.size();
         m_IndexCount += data.Indices.size();
+        if (!mesh.Skinned())
+        {
+            m_SharedMeshes[hash] = record;
+        }
         return &(m_Meshes[&mesh] = record);
+    }
+
+    void SceneRenderer::FlushMeshUploads()
+    {
+        if (m_PendingVertices.empty())
+        {
+            return;
+        }
+        GrowArena(m_VertexCount, m_IndexCount);
+        RHI::UploadBufferRegion(m_Device, *m_Vertices, m_UploadedVertices * sizeof(MeshVertexData), std::as_bytes(std::span(m_PendingVertices)));
+        RHI::UploadBufferRegion(m_Device, *m_Indices, m_UploadedIndices * sizeof(uint32_t), std::as_bytes(std::span(m_PendingIndices)));
+        m_UploadedVertices = m_VertexCount;
+        m_UploadedIndices  = m_IndexCount;
+        m_PendingVertices.clear();
+        m_PendingIndices.clear();
     }
 
     uint32_t SceneRenderer::TextureIndex(RHI::Texture* texture)
@@ -617,6 +684,10 @@ namespace SnowLeopardEngine
             }
             return TextureIndex(IO::Load(found->second->Value, define.TextureFlipY));
         };
+        auto always = [&](const char* name) -> uint32_t { // maps without a use flag
+            auto found = values.find(name);
+            return found == values.end() || found->second->Value.empty() ? 0 : TextureIndex(IO::Load(found->second->Value, define.TextureFlipY));
+        };
 
         GPUMaterial gpu {};
         gpu.Albedo   = glm::vec4(glm::vec3(vector("albedo", glm::vec4(1))), scalar("opacity", 1));
@@ -626,7 +697,9 @@ namespace SnowLeopardEngine
                         map("metallicMap", "useMetallicMap"),
                         map("roughnessMap", "useRoughnessMap"),
                         map("aoMap", "useAoMap")};
-        gpu.Maps2    = {map("emissiveMap", "useEmissiveMap"), 0, 0, 0};
+        gpu.Maps2    = {map("emissiveMap", "useEmissiveMap"), always("noiseMap"), 0, 0};
+        const auto wind = vector("windDirection", glm::vec4(1, 0, 1, 0));
+        gpu.Alpha       = {scalar("alphaCutoff", 0.5f), scalar("windStrength", 0), wind.x, wind.z};
 
         const auto index              = uint32_t(m_Materials.size());
         m_MaterialIndices[&material] = index;
@@ -667,7 +740,7 @@ namespace SnowLeopardEngine
     bool SceneRenderer::Prepare(LogicScene* scene, RHI::Extent extent)
     {
         ++m_FrameIndex;
-        m_OpaqueCount = m_TransparentCount = 0;
+        m_OpaqueCount = m_AlphaCount = m_TransparentCount = 0;
         m_DynamicCopies.clear();
         m_Extent = extent;
         if (scene == nullptr || extent.Empty())
@@ -691,13 +764,19 @@ namespace SnowLeopardEngine
         const auto projection      = DepthZeroToOne(g_EngineContext->CameraSys->GetProjectionMatrix(camera));
         SetEnvironment(camera.EnvironmentMapFilePath);
 
-        // ---- renderables: opaque first, transparents after (sorted far to near)
+        // ---- renderables: opaque, then alpha-tested, then transparent (sorted far to near)
+        enum class Queue
+        {
+            Opaque,
+            AlphaTest,
+            Transparent
+        };
         struct Item
         {
             const MeshRecord* Mesh;
             glm::mat4         Model;
             uint32_t          Material;
-            bool              Transparent;
+            Queue             Bucket;
             bool              CastShadow;
             float             Distance;
         };
@@ -715,18 +794,16 @@ namespace SnowLeopardEngine
                 m_DynamicCopies.push_back({mesh.Data.Vertices.data(), 0, uint64_t(record->VertexOffset) * sizeof(MeshVertexData),
                                            uint64_t(record->VertexCount) * sizeof(MeshVertexData)});
             }
-            const bool transparent = material.GetDefine().RenderQueue == RenderQueue_Transparent;
-            items.push_back({record, model, MaterialIndex(material), transparent, castShadow && !transparent,
+            const auto& queue  = material.GetDefine().RenderQueue;
+            const auto  bucket = queue == RenderQueue_Transparent ? Queue::Transparent :
+                                 queue == RenderQueue_AlphaTest   ? Queue::AlphaTest :
+                                                                    Queue::Opaque;
+            items.push_back({record, model, MaterialIndex(material), bucket, castShadow && bucket != Queue::Transparent,
                              glm::distance(cameraTransform.Position, glm::vec3(model[3]))});
         };
         registry.view<TransformComponent, EntityStatusComponent, MeshFilterComponent, MeshRendererComponent>().each(
             [&](entt::entity, TransformComponent& transform, EntityStatusComponent& status, MeshFilterComponent& filter, MeshRendererComponent& renderer) {
                 if (!status.IsEnabled || filter.Meshes == nullptr || renderer.Mat == nullptr)
-                {
-                    return;
-                }
-                // Grass is drawn by its own pass (not ported yet).
-                if (renderer.Mat->GetDefine().Name == "Grass")
                 {
                     return;
                 }
@@ -743,11 +820,14 @@ namespace SnowLeopardEngine
                     add(terrain.Mesh, transform.GetTransform(), *renderer.Mat, renderer.CastShadow);
                 }
             });
-        std::stable_partition(items.begin(), items.end(), [](const Item& item) { return !item.Transparent; });
-        const auto firstTransparent = std::find_if(items.begin(), items.end(), [](const Item& item) { return item.Transparent; });
+        FlushMeshUploads(); // every mesh new this frame, in one transfer
+        std::stable_sort(items.begin(), items.end(), [](const Item& a, const Item& b) { return a.Bucket < b.Bucket; });
+        const auto firstAlpha       = std::find_if(items.begin(), items.end(), [](const Item& item) { return item.Bucket != Queue::Opaque; });
+        const auto firstTransparent = std::find_if(items.begin(), items.end(), [](const Item& item) { return item.Bucket == Queue::Transparent; });
         std::sort(firstTransparent, items.end(), [](const Item& a, const Item& b) { return a.Distance > b.Distance; });
+        m_OpaqueCount      = uint32_t(firstAlpha - items.begin());
+        m_AlphaCount       = uint32_t(firstTransparent - firstAlpha);
         m_TransparentCount = uint32_t(items.end() - firstTransparent);
-        m_OpaqueCount      = uint32_t(items.size()) - m_TransparentCount;
 
         // ---- instances
         EnsureInstanceCapacity(uint32_t(items.size()));
@@ -761,8 +841,10 @@ namespace SnowLeopardEngine
             gpu.NormalMatrix  = glm::mat4(glm::inverseTranspose(glm::mat3(item.Model)));
             const float scale = std::max({glm::length(glm::vec3(item.Model[0])), glm::length(glm::vec3(item.Model[1])),
                                           glm::length(glm::vec3(item.Model[2]))});
+            // Wind bends alpha-tested meshes by up to windStrength: the culling sphere covers the swing.
+            const float sway   = item.Bucket == Queue::AlphaTest ? m_Materials[item.Material].Alpha.y : 0.0f;
             gpu.BoundingSphere = glm::vec4(glm::vec3(item.Model * glm::vec4(glm::vec3(item.Mesh->LocalSphere), 1)),
-                                           item.Mesh->LocalSphere.w * scale);
+                                           item.Mesh->LocalSphere.w * scale + sway);
             gpu.Draw  = {item.Mesh->IndexCount, item.Mesh->FirstIndex, item.Mesh->VertexOffset, item.Material};
             gpu.Flags = {item.CastShadow ? 1u : 0u, 0, 0, 0};
             if (item.CastShadow)
@@ -870,14 +952,21 @@ namespace SnowLeopardEngine
             // Casters behind the light's near plane still throw shadows into the cascade: no near plane.
             m_ViewPlanes[1 + cascade][4] = glm::vec4(0, 0, 0, 1);
         }
-        m_ViewPlanes[5] = m_ViewPlanes[0];
+        m_ViewPlanes[kViewTransparent] = m_ViewPlanes[0];
+        for (uint32_t view = 0; view <= kCascades; ++view)
+        {
+            m_ViewPlanes[kViewAlphaTest + view] = m_ViewPlanes[view];
+        }
 
-        m_Stats = {uint32_t(items.size()), m_TransparentCount, uint32_t(m_Materials.size()), uint32_t(m_Textures.size()),
-                   m_VertexCount, m_IndexCount};
+        // ---- in-game UI
+        m_UI->Prepare(*scene, extent, [this](RHI::Texture* texture) { return TextureIndex(texture); });
+
+        m_Stats = {uint32_t(items.size()), m_TransparentCount, m_AlphaCount, m_UI->GetQuadCount(), uint32_t(m_SharedMeshes.size()),
+                   uint32_t(m_Materials.size()), uint32_t(m_Textures.size()), m_VertexCount, m_IndexCount};
         return true;
     }
 
-    std::array<uint32_t, 6> SceneRenderer::ReadDrawCounts()
+    std::array<uint32_t, SceneRenderer::kViews> SceneRenderer::ReadDrawCounts()
     {
         RHI::Buffer readback(m_Device, VriBufferDesc {kViews * 4, 0, VriBufferUsage_TransferDst, VriMemoryLocation_HostReadback});
         RHI::Frame  frame(m_Device);
@@ -890,7 +979,7 @@ namespace SnowLeopardEngine
         m_Device.Core.CmdCopyBuffer(cmd, readback.Handle, m_DrawCounts->Handle, &copy);
         m_DrawCounts->Transition(cmd, previous);
         frame.SubmitAndWait();
-        std::array<uint32_t, 6> counts {};
+        std::array<uint32_t, kViews> counts {};
         const auto* mapped = m_Device.Core.MapBuffer(readback.Handle, 0, sizeof(counts));
         std::memcpy(counts.data(), mapped, sizeof(counts));
         m_Device.Core.UnmapBuffer(readback.Handle);
@@ -1058,15 +1147,17 @@ namespace SnowLeopardEngine
                               const VriDispatchDesc groups {(count + 63) / 64, 1, 1};
                               m_Device.Core.CmdDispatch(cmd, &groups);
                           };
-                          dispatch(0, 0, m_OpaqueCount, true, false);
+                          dispatch(kViewCamera, 0, m_OpaqueCount, true, false);
+                          dispatch(kViewAlphaTest, m_OpaqueCount, m_AlphaCount, true, false);
                           if (m_Frame.Shadow.w > 0)
                           {
                               for (uint32_t cascade = 0; cascade < kCascades; ++cascade)
                               {
                                   dispatch(1 + cascade, 0, m_OpaqueCount, true, true);
+                                  dispatch(kViewAlphaTest + 1 + cascade, m_OpaqueCount, m_AlphaCount, true, true);
                               }
                           }
-                          dispatch(5, m_OpaqueCount, m_TransparentCount, false, false);
+                          dispatch(kViewTransparent, m_OpaqueCount + m_AlphaCount, m_TransparentCount, false, false);
                       });
 
         for (uint32_t cascade = 0; cascade < kCascades; ++cascade)
@@ -1087,6 +1178,14 @@ namespace SnowLeopardEngine
                                   const glm::uvec4 parameters {cascade, 0, 0, 0};
                                   m_ShadowPipeline->SetConstants(cmd, &parameters, sizeof(parameters));
                                   DrawIndirect(cmd, 1 + cascade, 0, m_OpaqueCount);
+                                  if (m_AlphaCount > 0)
+                                  {
+                                      WriteBindings(*m_ShadowAlphaSet, nullptr);
+                                      m_ShadowAlphaPipeline->Bind(cmd);
+                                      m_ShadowAlphaSet->Bind(cmd);
+                                      m_ShadowAlphaPipeline->SetConstants(cmd, &parameters, sizeof(parameters));
+                                      DrawIndirect(cmd, kViewAlphaTest + 1 + cascade, 0, m_AlphaCount);
+                                  }
                               }
                               m_Device.Core.CmdEndRendering(cmd);
                           });
@@ -1107,7 +1206,14 @@ namespace SnowLeopardEngine
                           m_GBufferPipeline->Bind(cmd);
                           m_GBufferSet->Bind(cmd);
                           BindGeometry(cmd);
-                          DrawIndirect(cmd, 0, 0, m_OpaqueCount);
+                          DrawIndirect(cmd, kViewCamera, 0, m_OpaqueCount);
+                          if (m_AlphaCount > 0)
+                          {
+                              WriteBindings(*m_GBufferAlphaSet, nullptr);
+                              m_GBufferAlphaPipeline->Bind(cmd);
+                              m_GBufferAlphaSet->Bind(cmd);
+                              DrawIndirect(cmd, kViewAlphaTest, 0, m_AlphaCount);
+                          }
                           m_Device.Core.CmdEndRendering(cmd);
                       });
 
@@ -1149,7 +1255,7 @@ namespace SnowLeopardEngine
                 m_ForwardPipeline->Bind(cmd);
                 m_ForwardSet->Bind(cmd);
                 BindGeometry(cmd);
-                DrawIndirect(cmd, 5, m_OpaqueCount, m_TransparentCount);
+                DrawIndirect(cmd, kViewTransparent, 0, m_TransparentCount);
             }
             m_Device.Core.CmdEndRendering(cmd);
         });
@@ -1168,5 +1274,17 @@ namespace SnowLeopardEngine
                           m_Device.Core.CmdDraw(cmd, &draw);
                           m_Device.Core.CmdEndRendering(cmd);
                       });
+
+        // In-game UI in display space, over the tone-mapped image.
+        graph.AddPass("UI", {{target, GraphUsage::ColorReadWrite}}, [this, target](VriCommandBuffer* cmd, RenderGraph& g) {
+            if (m_UI->GetQuadCount() == 0)
+            {
+                return;
+            }
+            auto& output = g.GetTexture(target);
+            RHI::BeginColorPass(m_Device, cmd, output.View(), output.GetExtent());
+            m_UI->Draw(cmd, m_TargetFormat, [this](ShaderBindings& set) { WriteBindings(set, nullptr); });
+            m_Device.Core.CmdEndRendering(cmd);
+        });
     }
 } // namespace SnowLeopardEngine

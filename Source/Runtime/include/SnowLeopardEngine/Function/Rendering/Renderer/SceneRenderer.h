@@ -4,6 +4,8 @@
 #include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Resources.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderGraph/RenderGraph.h"
+#include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
+#include "SnowLeopardEngine/Function/Rendering/Renderer/UIRenderer.h"
 #include "SnowLeopardEngine/Function/Rendering/Shader/ShaderAsset.h"
 #include "SnowLeopardEngine/Function/Rendering/Shader/ShaderPipeline.h"
 
@@ -33,8 +35,11 @@ namespace SnowLeopardEngine
     // frustum-culls the instances for each view (camera + 4 shadow cascades) and writes indexed indirect draws, so
     // each geometry pass is a single DrawIndexedIndirectCount however many objects there are.
     //
+    // Render queues: Opaque, AlphaTest (cut-out, two-sided, optional wind: foliage) and Transparent (sorted far to
+    // near). Identical meshes (e.g. thousands of grass quads, each its own MeshItem) share one arena range.
+    //
     // Frame: upload (skinned vertices) -> cull -> 4 shadow cascades -> G-buffer -> deferred lighting + sky ->
-    // transparent forward -> tone mapping into the caller's target.
+    // transparent forward -> tone mapping into the caller's target -> in-game UI (UIRenderer).
     class SceneRenderer
     {
     public:
@@ -58,10 +63,19 @@ namespace SnowLeopardEngine
         // Scene GPU caches (meshes, materials) refer to the previous scene's objects: drop them.
         void OnSceneChanged();
 
+        // Culling views: per queue, the camera and the 4 shadow cascades.
+        static constexpr uint32_t kViews           = 11;
+        static constexpr uint32_t kViewCamera      = 0; // opaque; 1 - 4: opaque shadow cascades
+        static constexpr uint32_t kViewTransparent = 5;
+        static constexpr uint32_t kViewAlphaTest   = 6; // alpha-tested; 7 - 10: their shadow cascades
+
         struct Statistics
         {
             uint32_t Instances    = 0;
             uint32_t Transparent  = 0;
+            uint32_t AlphaTest    = 0;
+            uint32_t UIQuads      = 0;
+            uint32_t UniqueMeshes = 0;
             uint32_t Materials    = 0;
             uint32_t Textures     = 0;
             uint64_t ArenaVertices = 0;
@@ -69,9 +83,11 @@ namespace SnowLeopardEngine
         };
         const Statistics& GetStatistics() const { return m_Stats; }
 
-        // Draw counts the GPU culling produced in the last executed frame, per view (0 camera, 1 - 4 shadow
-        // cascades, 5 transparents). Blocking readback, for tests and diagnostics.
-        std::array<uint32_t, 6> ReadDrawCounts();
+        // Draw counts the GPU culling produced in the last executed frame, per view (kView*). Blocking readback, for
+        // tests and diagnostics.
+        std::array<uint32_t, kViews> ReadDrawCounts();
+
+        UIRenderer& GetUI() { return *m_UI; }
 
     public:
         // GPU layouts, mirrored in Assets/Shaders/Slang/Scene.slangh.
@@ -84,7 +100,6 @@ namespace SnowLeopardEngine
         static constexpr uint32_t kMaxPointLights = 16;
         static constexpr uint32_t kMaxTextures    = 1024;
         static constexpr uint32_t kCascades       = 4;
-        static constexpr uint32_t kViews          = 6; // camera opaque, 4 cascades, camera transparent
 
         struct GPUFrame
         {
@@ -120,8 +135,9 @@ namespace SnowLeopardEngine
             glm::vec4  Albedo;
             glm::vec4  Emissive;
             glm::vec4  Surface;
+            glm::vec4  Alpha; // cutoff, wind strength, wind direction (xz)
             glm::uvec4 Maps;
-            glm::uvec4 Maps2;
+            glm::uvec4 Maps2; // emissive, wind noise
         };
 
     private:
@@ -148,6 +164,7 @@ namespace SnowLeopardEngine
         void CreatePipelines();
 
         const MeshRecord* UploadMesh(const MeshItem& mesh);
+        void              FlushMeshUploads();
         void              GrowArena(uint64_t vertices, uint64_t indices);
         uint32_t          MaterialIndex(const Material& material);
         uint32_t          TextureIndex(RHI::Texture* texture);
@@ -166,9 +183,11 @@ namespace SnowLeopardEngine
 
         // Shaders and pipelines
         ShaderAsset          m_Standard, m_Culling, m_Lighting, m_ToneMapping, m_EnvironmentShader;
-        Scope<ShaderPipeline> m_GBufferPipeline, m_ForwardPipeline, m_ShadowPipeline, m_CullPipeline, m_LightingPipeline,
-            m_ToneMappingPipeline;
-        Scope<ShaderBindings> m_GBufferSet, m_ForwardSet, m_ShadowSet, m_CullSet, m_LightingSet, m_ToneMappingSet;
+        Scope<ShaderPipeline> m_GBufferPipeline, m_GBufferAlphaPipeline, m_ForwardPipeline, m_ShadowPipeline, m_ShadowAlphaPipeline,
+            m_CullPipeline, m_LightingPipeline, m_ToneMappingPipeline;
+        Scope<ShaderBindings> m_GBufferSet, m_GBufferAlphaSet, m_ForwardSet, m_ShadowSet, m_ShadowAlphaSet, m_CullSet, m_LightingSet,
+            m_ToneMappingSet;
+        Scope<UIRenderer>     m_UI;
         VriFormat             m_TargetFormat = VriFormat_Unknown;
 
         // Samplers and placeholder textures
@@ -188,6 +207,10 @@ namespace SnowLeopardEngine
         uint64_t                                           m_VertexCapacity = 0, m_IndexCapacity = 0;
         uint64_t                                           m_VertexCount = 0, m_IndexCount = 0;
         std::unordered_map<const MeshItem*, MeshRecord>    m_Meshes;
+        std::unordered_map<uint64_t, MeshRecord>           m_SharedMeshes; // content hash -> range (static meshes)
+        std::vector<MeshVertexData>                        m_PendingVertices; // appended this frame, uploaded at once
+        std::vector<uint32_t>                              m_PendingIndices;
+        uint64_t                                           m_UploadedVertices = 0, m_UploadedIndices = 0;
 
         // Materials and the bindless table
         std::unordered_map<const Material*, uint32_t> m_MaterialIndices;
@@ -203,7 +226,7 @@ namespace SnowLeopardEngine
         std::vector<DynamicCopy> m_DynamicCopies;
         GPUFrame                 m_Frame {};
         std::array<glm::vec4, 6> m_ViewPlanes[kViews] {};
-        uint32_t                 m_OpaqueCount = 0, m_TransparentCount = 0;
+        uint32_t                 m_OpaqueCount = 0, m_AlphaCount = 0, m_TransparentCount = 0;
         RHI::Extent              m_Extent {};
         uint64_t                 m_GraphVersion = 1;
         uint64_t                 m_FrameIndex   = 0;

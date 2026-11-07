@@ -1,0 +1,71 @@
+// In-game UI: one batch of quads (images, buttons, SDF text) in window pixels, premultiplied-alpha blended over
+// the tone-mapped image. See Function/Rendering/Renderer/UIRenderer.h.
+Shader "Renderer/UI"
+{
+    SubShader
+    {
+        Cull Off
+        Blend One OneMinusSrcAlpha
+        SLANGINCLUDE
+        #include "Slang/Scene.slangh"
+        ENDSLANG
+
+        Pass
+        {
+            Name "UI"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            static const uint kSdfFlag = 0x80000000u;
+
+            struct UIParameters { float4 resolution; }; // xy pixels
+            [[vk::push_constant]] ConstantBuffer<UIParameters> ui;
+
+            struct UIVertexInput
+            {
+                [[vk::location(0)]] float2 position : POSITION;
+                [[vk::location(1)]] float2 uv : TEXCOORD0;
+                [[vk::location(2)]] float4 color : COLOR;
+                [[vk::location(3)]] uint texture : TEXTURE;
+            };
+
+            struct UIVertex
+            {
+                float4 position : SV_Position;
+                float2 uv : TEXCOORD0;
+                float4 color : COLOR;
+                nointerpolation uint texture : TEXTURE;
+            };
+
+            UIVertex vertexMain(UIVertexInput input)
+            {
+                UIVertex output;
+                // Pixels from the bottom-left corner -> clip space (Y up).
+                output.position = float4(input.position / ui.resolution.xy * 2 - 1, 0, 1);
+                output.uv       = input.uv;
+                output.color    = input.color;
+                output.texture  = input.texture;
+                return output;
+            }
+
+            float4 fragmentMain(UIVertex input) : SV_Target0
+            {
+                float4 color = input.color;
+                uint   index = input.texture & ~kSdfFlag;
+                if ((input.texture & kSdfFlag) != 0)
+                {
+                    // Signed distance (0.5 on the outline): antialiased over one screen pixel at any size.
+                    float distance = textures[NonUniformResourceIndex(index)].Sample(linearClamp, input.uv).r;
+                    float width    = max(fwidth(distance), 1e-4) * 0.7;
+                    color.a *= smoothstep(0.5 - width, 0.5 + width, distance);
+                }
+                else if (index != 0)
+                {
+                    color *= textures[NonUniformResourceIndex(index)].Sample(linearClamp, input.uv);
+                }
+                return float4(color.rgb * color.a, color.a);
+            }
+            ENDSLANG
+        }
+    }
+}

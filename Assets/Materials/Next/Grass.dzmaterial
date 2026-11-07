@@ -1,8 +1,18 @@
 {
     "DzMaterial": {
         "Name": "Grass",
-        "RenderQueue": "Opaque",
+        "RenderQueue": "AlphaTest",
         "Properties": [
+            {
+                "Name": "alphaCutoff",
+                "Type": "Float",
+                "Value": "0.5"
+            },
+            {
+                "Name": "windStrength",
+                "Type": "Float",
+                "Value": "1"
+            },
             {
                 "Name": "noiseMap",
                 "Type": "Texture2D",

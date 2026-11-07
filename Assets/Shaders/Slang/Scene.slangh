@@ -50,8 +50,9 @@ struct MaterialData
     float4 albedo;   // rgb, a = opacity
     float4 emissive; // rgb
     float4 surface;  // x metallic, y roughness, z ambient occlusion, w UV tiling
+    float4 alpha;    // x cutoff (AlphaTest queue), y wind strength, zw wind direction (xz)
     uint4  maps;     // texture indices: albedo, metallic, roughness, ambient occlusion (0: use the constant)
-    uint4  maps2;    // x emissive
+    uint4  maps2;    // x emissive, y wind noise
 };
 
 [[vk::binding(0, 0)]] ConstantBuffer<FrameData>        frame;

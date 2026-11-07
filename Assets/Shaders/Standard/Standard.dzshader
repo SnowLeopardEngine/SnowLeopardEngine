@@ -3,6 +3,9 @@
 // Properties are the .dzmaterial vocabulary: the material loader validates a .dzmaterial against them, and the
 // renderer packs the values into one MaterialData record (Slang/Scene.slangh) with bindless texture indices, so
 // every Standard object of a pass is one indirect draw. `useXMap = 1` selects the map over the constant.
+//
+// Render queues (DzMaterial::RenderQueue): Opaque -> GBuffer; AlphaTest -> GBufferAlphaTest (two-sided, discards
+// below alphaCutoff, optional wind: foliage); Transparent -> Forward. Shadows: ShadowCaster / ShadowCasterAlphaTest.
 Shader "Standard/Standard"
 {
     Properties
@@ -23,6 +26,13 @@ Shader "Standard/Standard"
         emissiveMap ("Emissive Map", 2D) = "black" {}
         [Enum(Off, 0, On, 1)] useEmissiveMap ("Use Emissive Map", Integer) = 0
         opacity ("Opacity", Range(0, 1)) = 1
+        // AlphaTest queue
+        alphaCutoff ("Alpha Cutoff", Range(0, 1)) = 0.5
+        // Wind (AlphaTest queue): the mesh bends towards windDirection (xz), tips (uv.y = 1) most, roots not at all;
+        // noiseMap modulates it over space and time.
+        windStrength ("Wind Strength", Range(0, 4)) = 0
+        windDirection ("Wind Direction", Vector) = (1, 0, 1, 0)
+        noiseMap ("Wind Noise", 2D) = "white" {}
     }
     SubShader
     {
@@ -31,6 +41,48 @@ Shader "Standard/Standard"
         ZTest LEqual
         SLANGINCLUDE
         #include "Slang/Lighting.slangh"
+
+        struct GBuffer
+        {
+            float4 albedoMetallic : SV_Target0;     // RGBA8 sRGB
+            float4 normalRoughness : SV_Target1;    // RGBA16F
+            float4 emissiveOcclusion : SV_Target2;  // RGBA16F
+        };
+
+        GBuffer WriteGBuffer(Surface s, float3 normal)
+        {
+            GBuffer output;
+            output.albedoMetallic    = float4(s.albedo, s.metallic);
+            output.normalRoughness   = float4(normal, s.roughness);
+            output.emissiveOcclusion = float4(s.emissive, s.occlusion);
+            return output;
+        }
+
+        // Wind bend of an alpha-tested mesh (no-op when windStrength = 0).
+        float3 ApplyWind(float3 world, float2 uv, uint materialIndex)
+        {
+            MaterialData m = materials[materialIndex];
+            if (m.alpha.y <= 0)
+            {
+                return world;
+            }
+            float2 direction = normalize(m.alpha.zw + 1e-5);
+            float  time      = frame.cameraPosition.w;
+            // Gusts: the noise field drifts downwind.
+            float  noise  = textures[NonUniformResourceIndex(m.maps2.y)].SampleLevel(materialSampler, (world.xz - direction * time * 2) / 30, 0).r;
+            float  sway   = sin(noise * 0.5 + time * 1.7 + dot(world.xz, float2(0.13, 0.11))) * 0.35 + noise * 0.65;
+            float  weight = Square(saturate(uv.y)); // bend grows towards the tips
+            world.xz += direction * sway * m.alpha.y * weight;
+            return world;
+        }
+
+        struct DepthVertex
+        {
+            [[vk::location(0)]] float3 position : POSITION;
+            [[vk::location(1)]] uint instance : INSTANCE;
+        };
+        struct ShadowParameters { uint4 cascade; };
+        [[vk::push_constant]] ConstantBuffer<ShadowParameters> shadowPass;
         ENDSLANG
 
         // Opaque queue: one indirect draw of every visible opaque instance.
@@ -42,23 +94,49 @@ Shader "Standard/Standard"
             Vertex vertexMain
             Fragment fragmentMain
             SLANGPROGRAM
-            struct GBuffer
-            {
-                float4 albedoMetallic : SV_Target0;     // RGBA8 sRGB
-                float4 normalRoughness : SV_Target1;    // RGBA16F
-                float4 emissiveOcclusion : SV_Target2;  // RGBA16F
-            };
-
             SurfaceVertex vertexMain(MeshVertex input) { return TransformVertex(input); }
 
             GBuffer fragmentMain(SurfaceVertex input)
             {
-                Surface s = SampleSurface(input.material, input.uv);
-                GBuffer output;
-                output.albedoMetallic    = float4(s.albedo, s.metallic);
-                output.normalRoughness   = float4(normalize(input.normal), s.roughness);
-                output.emissiveOcclusion = float4(s.emissive, s.occlusion);
+                return WriteGBuffer(SampleSurface(input.material, input.uv), normalize(input.normal));
+            }
+            ENDSLANG
+        }
+
+        // AlphaTest queue (foliage, fences): two-sided, cut out, with wind.
+        Pass
+        {
+            Name "GBufferAlphaTest"
+            Tags { "LightMode" = "Deferred" }
+            Cull Off
+            ZWrite On
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            SurfaceVertex vertexMain(MeshVertex input)
+            {
+                SurfaceVertex output = TransformVertex(input);
+                output.worldPosition = ApplyWind(output.worldPosition, input.uv, output.material);
+                output.position      = mul(frame.viewProjection, float4(output.worldPosition, 1));
                 return output;
+            }
+
+            GBuffer fragmentMain(SurfaceVertex input, bool frontFace : SV_IsFrontFace)
+            {
+                MaterialData m     = materials[input.material];
+                float        alpha = (m.maps.x != 0 ? SampleMap(m.maps.x, input.uv * m.surface.w).a : 1) * m.albedo.a;
+                if (alpha < m.alpha.x)
+                {
+                    discard;
+                }
+                Surface s      = SampleSurface(input.material, input.uv);
+                float3  normal = normalize(input.normal) * (frontFace ? 1 : -1);
+                // Thin foliage: bias the normal up so blades are lit like the canopy they form, not like cards.
+                if (m.alpha.y > 0)
+                {
+                    normal = normalize(lerp(normal, float3(0, 1, 0), 0.5));
+                }
+                return WriteGBuffer(s, normal);
             }
             ENDSLANG
         }
@@ -83,7 +161,7 @@ Shader "Standard/Standard"
             ENDSLANG
         }
 
-        // Depth only, once per shadow cascade.
+        // Depth only, once per shadow cascade (position + instance streams).
         Pass
         {
             Name "ShadowCaster"
@@ -91,20 +169,57 @@ Shader "Standard/Standard"
             ZWrite On
             Vertex vertexMain
             SLANGPROGRAM
-            struct ShadowParameters { uint4 cascade; };
-            [[vk::push_constant]] ConstantBuffer<ShadowParameters> shadowPass;
-
-            // Position + instance only (the depth pipeline's vertex input).
-            struct DepthVertex
-            {
-                [[vk::location(0)]] float3 position : POSITION;
-                [[vk::location(1)]] uint instance : INSTANCE;
-            };
-
             float4 vertexMain(DepthVertex input) : SV_Position
             {
                 float4 world = mul(instances[input.instance].model, float4(input.position, 1));
                 return mul(frame.lightViewProjection[shadowPass.cascade.x], world);
+            }
+            ENDSLANG
+        }
+
+        // Cut-out shadows, with the same wind as the G-buffer so shadows sway with the blades.
+        Pass
+        {
+            Name "ShadowCasterAlphaTest"
+            Tags { "LightMode" = "ShadowCaster" }
+            Cull Off
+            ZWrite On
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            struct ShadowVertex
+            {
+                float4 position : SV_Position;
+                float2 uv : TEXCOORD0;
+                nointerpolation uint material : MATERIAL;
+            };
+
+            struct CutoutVertex
+            {
+                [[vk::location(0)]] float3 position : POSITION;
+                [[vk::location(1)]] float2 uv : TEXCOORD0;
+                [[vk::location(2)]] uint instance : INSTANCE;
+            };
+
+            ShadowVertex vertexMain(CutoutVertex input)
+            {
+                InstanceData instance = instances[input.instance];
+                float3       world    = ApplyWind(mul(instance.model, float4(input.position, 1)).xyz, input.uv, instance.draw.w);
+                ShadowVertex output;
+                output.position = mul(frame.lightViewProjection[shadowPass.cascade.x], float4(world, 1));
+                output.uv       = input.uv;
+                output.material = instance.draw.w;
+                return output;
+            }
+
+            void fragmentMain(ShadowVertex input)
+            {
+                MaterialData m     = materials[input.material];
+                float        alpha = (m.maps.x != 0 ? SampleMap(m.maps.x, input.uv * m.surface.w).a : 1) * m.albedo.a;
+                if (alpha < m.alpha.x)
+                {
+                    discard;
+                }
             }
             ENDSLANG
         }
