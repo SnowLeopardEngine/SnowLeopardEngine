@@ -4,7 +4,8 @@
 // and reads the result back: the sky, a lit object, the sun's cascaded shadow on the floor, GPU frustum culling
 // (draw counts per view), an alpha-blended transparent, CameraClearFlags::Color, a textured (bindless) material,
 // a point light's attenuation, alpha-tested foliage (one shared mesh, its own culling views) and the in-game UI
-// batch (painter's order, SDF text). Exit code = number of failures.
+// batch (painter's order, SDF text), and post-processing A/B renders (ambient occlusion, bloom, FXAA). Exit code =
+// number of failures.
 
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Engine/Engine.h"
@@ -17,6 +18,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 
 using namespace SnowLeopardEngine;
@@ -65,6 +67,27 @@ namespace
         return buffer;
     }
     float Luma(glm::vec3 c) { return 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b; }
+
+    // SLE_TEST_DUMP=1: writes `name`.ppm next to the executable (for looking at a failing check).
+    void Dump(const Image& image, const char* name)
+    {
+        const char* dump = std::getenv("SLE_TEST_DUMP");
+        if (dump == nullptr || dump[0] == '0' || image.Pixels.empty())
+        {
+            return;
+        }
+        FILE* file = std::fopen((std::string(name) + ".ppm").c_str(), "wb");
+        if (file == nullptr)
+        {
+            return;
+        }
+        std::fprintf(file, "P6 %u %u 255\n", kExtent.Width, kExtent.Height);
+        for (size_t i = 0; i < image.Pixels.size(); i += 4)
+        {
+            std::fwrite(&image.Pixels[i], 1, 3, file);
+        }
+        std::fclose(file);
+    }
 
     Image Render(SceneRenderer& renderer, LogicScene& scene)
     {
@@ -258,6 +281,49 @@ int main() TRY
     const int grassGreen = greenPixels(image);
     Check(bareGreen == 0 && grassGreen > 30, "grass is drawn (cut out, lit)",
           std::to_string(grassGreen) + " green pixels (bare floor " + std::to_string(bareGreen) + ")");
+
+    // ---- post-processing: the same frame with each effect on and off
+    AddPrimitive(*scene, MeshPrimitiveType::Cube, {-2, 0.5f, 4}, {1, 1, 1}, "Assets/Materials/Next/White.dzmaterial");
+    engine.TickOneFrame(1.0f / 60.0f);
+    const auto defaults = renderer.GetSettings();
+    auto       renderWith = [&](auto change) {
+        auto settings = defaults;
+        change(settings);
+        renderer.SetSettings(settings);
+        auto result = Render(renderer, *scene);
+        renderer.SetSettings(defaults);
+        return result;
+    };
+    auto differing = [](const Image& a, const Image& b, int threshold) {
+        int count = 0;
+        for (size_t i = 0; i + 3 < a.Pixels.size(); i += 4)
+        {
+            count += std::abs(a.Pixels[i] - b.Pixels[i]) + std::abs(a.Pixels[i + 1] - b.Pixels[i + 1]) +
+                         std::abs(a.Pixels[i + 2] - b.Pixels[i + 2]) > threshold;
+        }
+        return count;
+    };
+    {
+        const auto withAO    = renderWith([](SceneRendererSettings&) {});
+        const auto withoutAO = renderWith([](SceneRendererSettings& s) { s.AmbientOcclusion = false; });
+        Dump(withAO, "with_ao");
+        Dump(withoutAO, "without_ao");
+        const auto contact   = ToPixel(camera, {-2.6f, 0.02f, 4.3f}); // floor beside the cube's base
+        const auto open      = ToPixel(camera, {-5.0f, 0.02f, 9.0f}); // open floor
+        const float darkening = Luma(withoutAO.Mean(contact)) - Luma(withAO.Mean(contact));
+        const float openDelta = std::abs(Luma(withoutAO.Mean(open)) - Luma(withAO.Mean(open)));
+        Check(darkening > 3 && openDelta < 1.5f, "ambient occlusion darkens the contact, not open floor",
+              "contact -" + std::to_string(darkening) + ", open " + std::to_string(openDelta));
+
+        const auto noBloom = renderWith([](SceneRendererSettings& s) { s.Bloom = false; });
+        Check(differing(withAO, noBloom, 2) > int(kExtent.Width * kExtent.Height) / 50, "bloom changes the image",
+              std::to_string(differing(withAO, noBloom, 2)) + " pixels");
+
+        const auto noFXAA = renderWith([](SceneRendererSettings& s) { s.FXAA = false; });
+        const int  smoothed = differing(withAO, noFXAA, 6);
+        Check(smoothed > 50 && smoothed < int(kExtent.Width * kExtent.Height) / 10, "FXAA touches edges only",
+              std::to_string(smoothed) + " pixels");
+    }
 
     // ---- in-game UI: one batch, painter's order by Pos.z, SDF text
     auto addImage = [&](glm::vec3 pos, glm::vec4 color) {

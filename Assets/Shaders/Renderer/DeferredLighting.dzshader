@@ -34,7 +34,9 @@ Shader "Renderer/DeferredLighting"
                 s.metallic  = albedoMetallic.a;
                 s.roughness = normalRoughness.a;
                 s.emissive  = emissiveOcclusion.rgb;
-                s.occlusion = emissiveOcclusion.a;
+                // Material AO x screen-space AO; both occlude indirect light only (ShadeSurface). Sampled by uv: the
+                // map is the frame's AO or a 1 x 1 white placeholder when AO is off.
+                s.occlusion = emissiveOcclusion.a * ssaoMap.SampleLevel(linearClamp, input.uv, 0).r;
                 s.opacity   = 1;
                 return float4(ShadeSurface(s, position, normalRoughness.xyz), 1);
             }

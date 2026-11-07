@@ -1,0 +1,320 @@
+// Post-processing of the scene renderer (fullscreen passes; inputs `postSource` / `postSecondary`, see
+// SceneRenderer::AddPasses):
+//   GTAO       - ground-truth ambient occlusion (horizon search in screen-space slices, after Jimenez et al. 2016 /
+//                XeGTAO) from the depth buffer and G-buffer normals; occludes indirect light only
+//   AODenoise  - depth-aware 5 x 5 filter of the noisy AO
+//   BloomDown  - 13-tap downsample (Jimenez 2014, CoD: AW); the first level weights groups by 1 / (1 + luma) (Karis)
+//                so single bright pixels do not flicker
+//   BloomUp    - 3 x 3 tent upsample of the smaller level plus this level's downsample
+//   FXAA       - FXAA 3.11 (Lottes) on the tone-mapped, gamma-encoded image (luma in alpha), before the UI
+Shader "Renderer/PostProcess"
+{
+    SubShader
+    {
+        Cull Off
+        SLANGINCLUDE
+        #include "Slang/Scene.slangh"
+        [[vk::binding(22, 0)]] Texture2D<float4> postSource;
+        [[vk::binding(23, 0)]] Texture2D<float4> postSecondary;
+
+        struct PostParameters
+        {
+            float4 values;  // pass-specific
+            float4 texel;   // xy: 1 / source size, zw: 1 / target size
+        };
+        [[vk::push_constant]] ConstantBuffer<PostParameters> post;
+
+        ScreenVertex vertexMain(uint id : SV_VertexID) { return FullscreenTriangle(id); }
+
+        float Luminance(float3 color) { return dot(color, float3(0.2126, 0.7152, 0.0722)); }
+
+        // Jimenez's interleaved gradient noise: well distributed per pixel, no texture.
+        float InterleavedGradientNoise(float2 pixel)
+        {
+            return frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715))));
+        }
+
+        float3 ViewPosition(int2 pixel)
+        {
+            pixel       = clamp(pixel, int2(0, 0), int2(frame.resolution.xy) - 1);
+            float2 uv   = (float2(pixel) + 0.5) * frame.resolution.zw;
+            float3 world = Unproject(uv, sceneDepth.Load(int3(pixel, 0)), frame.inverseViewProjection);
+            return mul(frame.view, float4(world, 1)).xyz;
+        }
+        ENDSLANG
+
+        Pass
+        {
+            Name "GTAO"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            // values: x radius (world), y slices, z steps per side, w falloff fraction of the radius
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                int2  pixel = int2(input.position.xy);
+                float depth = sceneDepth.Load(int3(pixel, 0));
+                if (depth >= 1)
+                {
+                    return 1;
+                }
+                float3 position = ViewPosition(pixel);
+                float3 view     = normalize(-position);
+                float3 normal   = normalize(mul(frame.view, float4(gbufferNormalRoughness.Load(int3(pixel, 0)).xyz, 0)).xyz);
+
+                float radius       = post.values.x;
+                uint  slices       = uint(post.values.y);
+                uint  steps        = uint(post.values.z);
+                // World radius -> pixels at this depth.
+                float screenRadius = radius * frame.projection[1][1] * 0.5 * frame.resolution.y / max(-position.z, 1e-3);
+                if (screenRadius < 1)
+                {
+                    return 1; // too far away to occlude anything visibly
+                }
+                float falloffRange = post.values.w * radius;
+                float falloffMul   = -1 / falloffRange;
+                float falloffAdd   = (radius - falloffRange) / falloffRange + 1;
+
+                float noiseSlice = InterleavedGradientNoise(float2(pixel));
+                float noiseStep  = InterleavedGradientNoise(float2(pixel) + float2(37, 17));
+
+                float visibility = 0;
+                for (uint slice = 0; slice < slices; ++slice)
+                {
+                    float  phi       = (float(slice) + noiseSlice) * PI / slices;
+                    float2 omega     = float2(cos(phi), -sin(phi)); // screen direction (y down)
+                    float3 direction = float3(cos(phi), sin(phi), 0); // the same direction in view space (y up)
+                    float3 orthoDirection  = direction - dot(direction, view) * view;
+                    float3 axis            = normalize(cross(orthoDirection, view));
+                    float3 projectedNormal = normal - axis * dot(normal, axis);
+                    float  projectedLength = length(projectedNormal);
+                    float  signNormal      = sign(dot(orthoDirection, projectedNormal));
+                    float  cosNormal       = saturate(dot(projectedNormal, view) / max(projectedLength, 1e-5));
+                    float  n               = signNormal * acos(cosNormal);
+
+                    // Horizons on both sides, starting at the tangent plane.
+                    float lowHorizon0 = cos(n + PI / 2), lowHorizon1 = cos(n - PI / 2);
+                    float horizon0 = lowHorizon0, horizon1 = lowHorizon1;
+                    for (uint step = 0; step < steps; ++step)
+                    {
+                        float s      = (float(step) + noiseStep) / steps;
+                        float offset = max(s * s * screenRadius, float(step + 1)); // denser near the centre, >= 1 px
+                        int2  delta  = int2(round(omega * offset));
+                        float3 d0 = ViewPosition(pixel + delta) - position;
+                        float3 d1 = ViewPosition(pixel - delta) - position;
+                        float  l0 = length(d0), l1 = length(d1);
+                        float  c0 = lerp(lowHorizon0, dot(d0 / max(l0, 1e-5), view), saturate(l0 * falloffMul + falloffAdd));
+                        float  c1 = lerp(lowHorizon1, dot(d1 / max(l1, 1e-5), view), saturate(l1 * falloffMul + falloffAdd));
+                        horizon0 = max(horizon0, c0);
+                        horizon1 = max(horizon1, c1);
+                    }
+                    float h0 = -acos(clamp(horizon1, -1, 1));
+                    float h1 = acos(clamp(horizon0, -1, 1));
+                    h0 = n + max(h0 - n, -PI / 2);
+                    h1 = n + min(h1 - n, PI / 2);
+                    // Cosine-weighted visible arc of the slice (analytic integral).
+                    float arc0 = (cosNormal + 2 * h0 * sin(n) - cos(2 * h0 - n)) / 4;
+                    float arc1 = (cosNormal + 2 * h1 * sin(n) - cos(2 * h1 - n)) / 4;
+                    visibility += projectedLength * (arc0 + arc1);
+                }
+                return saturate(visibility / slices);
+            }
+            ENDSLANG
+        }
+
+        Pass
+        {
+            Name "AODenoise"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            // values: x intensity (power applied to the result)
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                int2  pixel = int2(input.position.xy);
+                float depth = sceneDepth.Load(int3(pixel, 0));
+                if (depth >= 1)
+                {
+                    return 1;
+                }
+                float centerZ = ViewPosition(pixel).z;
+                float sum = 0, weights = 0;
+                for (int y = -2; y <= 2; ++y)
+                {
+                    for (int x = -2; x <= 2; ++x)
+                    {
+                        int2  tap = clamp(pixel + int2(x, y), int2(0, 0), int2(frame.resolution.xy) - 1);
+                        float z   = ViewPosition(tap).z;
+                        // Same surface only: no AO leaking across depth edges.
+                        float w   = exp(-abs(z - centerZ) / max(0.02 * abs(centerZ), 1e-3)) * (1.0 / (1 + float(x * x + y * y) * 0.25));
+                        sum += postSource.Load(int3(tap, 0)).r * w;
+                        weights += w;
+                    }
+                }
+                return pow(saturate(sum / max(weights, 1e-5)), post.values.x);
+            }
+            ENDSLANG
+        }
+
+        Pass
+        {
+            Name "BloomDown"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            // values: x = 1 for the first level (Karis average)
+            float3 Tap(float2 uv) { return postSource.SampleLevel(linearClamp, uv, 0).rgb; }
+            float  Karis(float3 c) { return 1 / (1 + Luminance(c)); }
+
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                float2 t = post.texel.xy, uv = input.uv;
+                float3 a = Tap(uv + t * float2(-2, -2)), b = Tap(uv + t * float2(0, -2)), c = Tap(uv + t * float2(2, -2));
+                float3 d = Tap(uv + t * float2(-2, 0)),  e = Tap(uv),                     f = Tap(uv + t * float2(2, 0));
+                float3 g = Tap(uv + t * float2(-2, 2)),  h = Tap(uv + t * float2(0, 2)),  i = Tap(uv + t * float2(2, 2));
+                float3 j = Tap(uv + t * float2(-1, -1)), k = Tap(uv + t * float2(1, -1));
+                float3 l = Tap(uv + t * float2(-1, 1)),  m = Tap(uv + t * float2(1, 1));
+                float3 groups[5] = {(a + b + d + e) * 0.25, (b + c + e + f) * 0.25, (d + e + g + h) * 0.25,
+                                    (e + f + h + i) * 0.25, (j + k + l + m) * 0.25};
+                float  weights[5] = {0.125, 0.125, 0.125, 0.125, 0.5};
+                float3 color = 0;
+                float  total = 0;
+                for (int n = 0; n < 5; ++n)
+                {
+                    float w = weights[n] * (post.values.x > 0.5 ? Karis(groups[n]) : 1);
+                    color += groups[n] * w;
+                    total += w;
+                }
+                return float4(max(color / total, 0), 1);
+            }
+            ENDSLANG
+        }
+
+        Pass
+        {
+            Name "BloomUp"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            // postSource: the smaller (upsampled) level, postSecondary: this level's downsample; values: x radius in
+            // source texels
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                float2 t  = post.texel.xy * post.values.x, uv = input.uv;
+                float3 up = postSource.SampleLevel(linearClamp, uv, 0).rgb * 4;
+                up += (postSource.SampleLevel(linearClamp, uv + float2(t.x, 0), 0).rgb + postSource.SampleLevel(linearClamp, uv - float2(t.x, 0), 0).rgb +
+                       postSource.SampleLevel(linearClamp, uv + float2(0, t.y), 0).rgb + postSource.SampleLevel(linearClamp, uv - float2(0, t.y), 0).rgb) * 2;
+                up += postSource.SampleLevel(linearClamp, uv + t, 0).rgb + postSource.SampleLevel(linearClamp, uv - t, 0).rgb +
+                      postSource.SampleLevel(linearClamp, uv + float2(t.x, -t.y), 0).rgb + postSource.SampleLevel(linearClamp, uv + float2(-t.x, t.y), 0).rgb;
+                float3 down = postSecondary.SampleLevel(linearClamp, uv, 0).rgb;
+                // Each level adds its own detail: the result is a sum of increasingly wide blurs.
+                return float4((up / 16 + down) * 0.5, 1);
+            }
+            ENDSLANG
+        }
+
+        Pass
+        {
+            Name "FXAA"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            // FXAA 3.11, quality preset 29 (12 search steps). postSource: gamma-encoded colour, luma in alpha.
+            static const float kEdgeThreshold    = 0.125;
+            static const float kEdgeThresholdMin = 0.0312;
+            static const float kSubpixel         = 0.75;
+            static const float kSteps[12]        = {1, 1, 1, 1, 1.5, 2, 2, 2, 2, 4, 8, 8};
+
+            float4 Color(float2 uv) { return postSource.SampleLevel(linearClamp, uv, 0); }
+            float  Luma(float2 uv) { return Color(uv).a; }
+
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                float2 texel = post.texel.xy, uv = input.uv;
+                float4 center = Color(uv);
+                float  lumaM = center.a;
+                float  lumaN = Luma(uv + float2(0, -texel.y)), lumaS = Luma(uv + float2(0, texel.y));
+                float  lumaE = Luma(uv + float2(texel.x, 0)), lumaW = Luma(uv + float2(-texel.x, 0));
+                float  maxLuma = max(max(max(lumaN, lumaS), max(lumaE, lumaW)), lumaM);
+                float  minLuma = min(min(min(lumaN, lumaS), min(lumaE, lumaW)), lumaM);
+                float  range   = maxLuma - minLuma;
+                if (range < max(kEdgeThresholdMin, maxLuma * kEdgeThreshold))
+                {
+                    return float4(center.rgb, 1);
+                }
+                float lumaNW = Luma(uv + float2(-texel.x, -texel.y)), lumaNE = Luma(uv + float2(texel.x, -texel.y));
+                float lumaSW = Luma(uv + float2(-texel.x, texel.y)), lumaSE = Luma(uv + float2(texel.x, texel.y));
+
+                // Sub-pixel aliasing amount.
+                float average  = (2 * (lumaN + lumaS + lumaE + lumaW) + lumaNW + lumaNE + lumaSW + lumaSE) / 12;
+                float subpixel = saturate(abs(average - lumaM) / range);
+                subpixel       = Square(smoothstep(0, 1, subpixel)) * kSubpixel;
+
+                // Edge orientation.
+                float horizontal = abs(lumaNW + lumaNE - 2 * lumaN) + 2 * abs(lumaW + lumaE - 2 * lumaM) + abs(lumaSW + lumaSE - 2 * lumaS);
+                float vertical   = abs(lumaNW + lumaSW - 2 * lumaW) + 2 * abs(lumaN + lumaS - 2 * lumaM) + abs(lumaNE + lumaSE - 2 * lumaE);
+                bool  isHorizontal = horizontal >= vertical;
+
+                float  luma1 = isHorizontal ? lumaN : lumaW, luma2 = isHorizontal ? lumaS : lumaE;
+                float  gradient1 = luma1 - lumaM, gradient2 = luma2 - lumaM;
+                bool   steepest1 = abs(gradient1) >= abs(gradient2);
+                float  gradient  = 0.25 * max(abs(gradient1), abs(gradient2));
+                float  stepLength = isHorizontal ? texel.y : texel.x;
+                float  lumaLocal;
+                if (steepest1)
+                {
+                    stepLength = -stepLength;
+                    lumaLocal  = 0.5 * (luma1 + lumaM);
+                }
+                else
+                {
+                    lumaLocal = 0.5 * (luma2 + lumaM);
+                }
+                float2 edge = uv;
+                if (isHorizontal)
+                    edge.y += stepLength * 0.5;
+                else
+                    edge.x += stepLength * 0.5;
+
+                // Search both ends of the edge.
+                float2 offset = isHorizontal ? float2(texel.x, 0) : float2(0, texel.y);
+                float2 uv1 = edge - offset * kSteps[0], uv2 = edge + offset * kSteps[0];
+                float  end1 = Luma(uv1) - lumaLocal, end2 = Luma(uv2) - lumaLocal;
+                bool   done1 = abs(end1) >= gradient, done2 = abs(end2) >= gradient;
+                [unroll] for (int i = 1; i < 12 && !(done1 && done2); ++i)
+                {
+                    if (!done1)
+                    {
+                        uv1 -= offset * kSteps[i];
+                        end1  = Luma(uv1) - lumaLocal;
+                        done1 = abs(end1) >= gradient;
+                    }
+                    if (!done2)
+                    {
+                        uv2 += offset * kSteps[i];
+                        end2  = Luma(uv2) - lumaLocal;
+                        done2 = abs(end2) >= gradient;
+                    }
+                }
+                float distance1 = isHorizontal ? uv.x - uv1.x : uv.y - uv1.y;
+                float distance2 = isHorizontal ? uv2.x - uv.x : uv2.y - uv.y;
+                bool  nearer1   = distance1 < distance2;
+                float distance  = min(distance1, distance2);
+                float edgeLength  = distance1 + distance2;
+                float pixelOffset = -distance / edgeLength + 0.5;
+                // Only blend towards the end whose luma variation is consistent with the centre.
+                bool  centerSmaller = lumaM < lumaLocal;
+                bool  correct = ((nearer1 ? end1 : end2) < 0) != centerSmaller;
+                float finalOffset = max(correct ? pixelOffset : 0, subpixel);
+
+                float2 finalUv = uv;
+                if (isHorizontal)
+                    finalUv.y += finalOffset * stepLength;
+                else
+                    finalUv.x += finalOffset * stepLength;
+                return float4(Color(finalUv).rgb, 1);
+            }
+            ENDSLANG
+        }
+    }
+}

@@ -10,6 +10,8 @@
 #include "SnowLeopardEngine/Function/Rendering/Shader/ShaderPipeline.h"
 
 #include <array>
+#include <functional>
+#include <optional>
 #include <filesystem>
 #include <unordered_map>
 #include <vector>
@@ -26,6 +28,17 @@ namespace SnowLeopardEngine
         float    ShadowDistance   = 200.0f; // cascades cover [near, min(far, this)]
         float    CascadeLambda    = 0.8f;   // 0 uniform .. 1 logarithmic splits
         float    Exposure         = 0.6f;   // linear scale before ACES (the fit expects ~0.6 for the reference curve)
+
+        // Ground-truth ambient occlusion (screen space; occludes indirect light only).
+        bool  AmbientOcclusion          = true;
+        float AmbientOcclusionRadius    = 1.0f; // world units
+        float AmbientOcclusionIntensity = 1.0f; // exponent on the visibility
+        // Bloom: downsample / upsample chain mixed into the HDR image before tone mapping.
+        bool     Bloom         = true;
+        float    BloomStrength = 0.04f;
+        uint32_t BloomLevels   = 6;
+        // FXAA 3.11 on the tone-mapped image (before the UI, which stays sharp).
+        bool FXAA = true;
     };
 
     // GPU-driven scene renderer (Phase 2.4).
@@ -62,6 +75,10 @@ namespace SnowLeopardEngine
 
         // Scene GPU caches (meshes, materials) refer to the previous scene's objects: drop them.
         void OnSceneChanged();
+
+        const SceneRendererSettings& GetSettings() const { return m_Settings; }
+        // Post-processing switches change the graph: the next frame rebuilds it.
+        void SetSettings(const SceneRendererSettings& settings);
 
         // Culling views: per queue, the camera and the 4 shadow cascades.
         static constexpr uint32_t kViews           = 11;
@@ -182,7 +199,11 @@ namespace SnowLeopardEngine
         bool                  m_IndirectCount = false; // DrawIndexedIndirectCount available
 
         // Shaders and pipelines
-        ShaderAsset          m_Standard, m_Culling, m_Lighting, m_ToneMapping, m_EnvironmentShader;
+        ShaderAsset          m_Standard, m_Culling, m_Lighting, m_ToneMapping, m_EnvironmentShader, m_PostShader;
+        Scope<ShaderPipeline> m_GTAOPipeline, m_AODenoisePipeline, m_BloomDownPipeline, m_BloomUpPipeline, m_FXAAPipeline;
+        std::vector<Scope<ShaderBindings>> m_PostSets; // one per post-processing pass of the current graph
+        VriFormat             m_ToneMappingFormat = VriFormat_Unknown, m_FXAAFormat = VriFormat_Unknown;
+        std::optional<RenderGraph::Resource> m_AOResource, m_BloomResource;
         Scope<ShaderPipeline> m_GBufferPipeline, m_GBufferAlphaPipeline, m_ForwardPipeline, m_ShadowPipeline, m_ShadowAlphaPipeline,
             m_CullPipeline, m_LightingPipeline, m_ToneMappingPipeline;
         Scope<ShaderBindings> m_GBufferSet, m_GBufferAlphaSet, m_ForwardSet, m_ShadowSet, m_ShadowAlphaSet, m_CullSet, m_LightingSet,

@@ -73,6 +73,8 @@ struct MaterialData
 [[vk::binding(15, 0)]] Texture2D<float4>               gbufferEmissiveOcclusion;
 [[vk::binding(16, 0)]] Texture2D<float>                sceneDepth;
 [[vk::binding(17, 0)]] Texture2D<float4>               hdrColor;
+[[vk::binding(20, 0)]] Texture2D<float4>               ssaoMap;  // ambient occlusion of the frame (white: off)
+[[vk::binding(21, 0)]] Texture2D<float4>               bloomMap; // bloom chain result, half resolution (black: off)
 
 // ---- meshes
 

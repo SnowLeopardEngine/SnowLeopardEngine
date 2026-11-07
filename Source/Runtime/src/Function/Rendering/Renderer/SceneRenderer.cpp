@@ -358,6 +358,23 @@ namespace SnowLeopardEngine
         m_ToneMapping       = ShaderAsset::Load("Assets/Shaders/Renderer/ToneMapping.dzshader", options);
         m_EnvironmentShader = ShaderAsset::Load("Assets/Shaders/Renderer/Environment.dzshader", options);
         m_UI                = CreateScope<UIRenderer>(m_Device, options);
+        m_PostShader        = ShaderAsset::Load("Assets/Shaders/Renderer/PostProcess.dzshader", options);
+        auto post = [&](const char* name, VriFormat format) {
+            ShaderPipelineDesc desc;
+            desc.ColorFormats = {format};
+            return CreateScope<ShaderPipeline>(m_Device, m_PostShader, *m_PostShader.Subshaders.at(0).FindPass(name), desc);
+        };
+        m_GTAOPipeline      = post("GTAO", VriFormat_R16_SFLOAT);
+        m_AODenoisePipeline = post("AODenoise", VriFormat_R16_SFLOAT);
+        m_BloomDownPipeline = post("BloomDown", VriFormat_RGBA16_SFLOAT);
+        m_BloomUpPipeline   = post("BloomUp", VriFormat_RGBA16_SFLOAT);
+    }
+
+    void SceneRenderer::SetSettings(const SceneRendererSettings& settings)
+    {
+        m_Settings = settings;
+        m_Settings.BloomLevels = std::clamp(m_Settings.BloomLevels, 1u, 10u);
+        ++m_GraphVersion;
     }
 
     void SceneRenderer::CreatePipelines()
@@ -1042,6 +1059,8 @@ namespace SnowLeopardEngine
                 set.Write("hdrColor", texture("SceneHDR"));
             }
         }
+        set.Write("ssaoMap", graph != nullptr && m_AOResource ? graph->GetTexture(*m_AOResource).View() : m_White->View());
+        set.Write("bloomMap", graph != nullptr && m_BloomResource ? graph->GetTexture(*m_BloomResource).View() : m_Black->View());
     }
 
     void SceneRenderer::BindGeometry(VriCommandBuffer* cmd)
@@ -1078,16 +1097,75 @@ namespace SnowLeopardEngine
 
     void SceneRenderer::AddPasses(RenderGraph& graph, RenderGraph::Resource target, VriFormat targetFormat)
     {
-        if (targetFormat != m_TargetFormat)
+        // Descriptor sets of the previous graph go away: forget which were written (their addresses can be reused).
+        m_Device.WaitIdle();
+        m_PostSets.clear();
+        m_WrittenFrame.clear();
+        m_AOResource.reset();
+        m_BloomResource.reset();
+        m_TargetFormat = targetFormat;
+
+        // With FXAA, tone mapping writes an RGBA8 intermediate (luma in alpha) and FXAA writes the target.
+        const VriFormat toneFormat = m_Settings.FXAA ? VriFormat_RGBA8_UNORM : targetFormat;
+        if (toneFormat != m_ToneMappingFormat)
         {
-            m_Device.WaitIdle();
             ShaderPipelineDesc desc;
-            desc.ColorFormats      = {targetFormat};
+            desc.ColorFormats     = {toneFormat};
             m_ToneMappingSet.reset();
-            m_ToneMappingPipeline  = CreateScope<ShaderPipeline>(m_Device, m_ToneMapping, m_ToneMapping.Subshaders.at(0).Passes.at(0), desc);
-            m_ToneMappingSet       = CreateScope<ShaderBindings>(m_Device, *m_ToneMappingPipeline);
-            m_TargetFormat         = targetFormat;
+            m_ToneMappingPipeline = CreateScope<ShaderPipeline>(m_Device, m_ToneMapping, m_ToneMapping.Subshaders.at(0).Passes.at(0), desc);
+            m_ToneMappingSet      = CreateScope<ShaderBindings>(m_Device, *m_ToneMappingPipeline);
+            m_ToneMappingFormat   = toneFormat;
         }
+        if (m_Settings.FXAA && targetFormat != m_FXAAFormat)
+        {
+            ShaderPipelineDesc desc;
+            desc.ColorFormats = {targetFormat};
+            m_FXAAPipeline    = CreateScope<ShaderPipeline>(m_Device, m_PostShader, *m_PostShader.Subshaders.at(0).FindPass("FXAA"), desc);
+            m_FXAAFormat      = targetFormat;
+        }
+
+        // A fullscreen post-processing pass: `inputs` become postSource / postSecondary.
+        struct PostParameters
+        {
+            glm::vec4 Values;
+            glm::vec4 Texel;
+        };
+        auto addPost = [this, &graph](std::string                             name,
+                                      const ShaderPipeline&                   pipeline,
+                                      RenderGraph::Resource                   output,
+                                      std::vector<RenderGraph::Resource>      inputs,
+                                      std::vector<RenderGraph::Use>           extra,
+                                      std::function<PostParameters(RenderGraph&)> parameters) {
+            m_PostSets.push_back(CreateScope<ShaderBindings>(m_Device, pipeline));
+            ShaderBindings*               set = m_PostSets.back().get();
+            std::vector<RenderGraph::Use> uses {{output, GraphUsage::ColorWrite, true}};
+            for (const auto input : inputs)
+            {
+                uses.push_back({input, GraphUsage::Sampled});
+            }
+            uses.insert(uses.end(), extra.begin(), extra.end());
+            graph.AddPass(std::move(name), uses, [this, set, &pipeline, output, inputs, parameters](VriCommandBuffer* cmd, RenderGraph& g) {
+                WriteBindings(*set, &g);
+                const char* names[] {"postSource", "postSecondary"};
+                for (size_t i = 0; i < inputs.size() && i < 2; ++i)
+                {
+                    set->Write(names[i], g.GetTexture(inputs[i]).View());
+                }
+                auto& target = g.GetTexture(output);
+                RHI::BeginColorPass(m_Device, cmd, target.View(), target.GetExtent());
+                pipeline.Bind(cmd);
+                set->Bind(cmd);
+                const auto values = parameters(g);
+                pipeline.SetConstants(cmd, &values, sizeof(values));
+                const VriDrawDesc draw {3, 1, 0, 0};
+                m_Device.Core.CmdDraw(cmd, &draw);
+                m_Device.Core.CmdEndRendering(cmd);
+            });
+        };
+        auto texelOf = [](RenderGraph& g, RenderGraph::Resource resource) {
+            const auto size = g.GetTexture(resource).GetExtent();
+            return glm::vec2(1.0f / float(size.Width), 1.0f / float(size.Height));
+        };
 
         const auto extent   = m_Extent; // the target may be a transient, unallocated until Compile
         const auto commands = graph.ImportResource("DrawCommands", *m_DrawCommands, false);
@@ -1217,6 +1295,19 @@ namespace SnowLeopardEngine
                           m_Device.Core.CmdEndRendering(cmd);
                       });
 
+        if (m_Settings.AmbientOcclusion)
+        {
+            const auto raw = graph.CreateTexture("AORaw", RHI::ColorTextureDesc(extent, VriFormat_R16_SFLOAT));
+            const auto ao  = graph.CreateTexture("AO", RHI::ColorTextureDesc(extent, VriFormat_R16_SFLOAT));
+            addPost("GTAO", *m_GTAOPipeline, raw, {}, {{depth, GraphUsage::Sampled}, {normal, GraphUsage::Sampled}}, [this](RenderGraph&) {
+                return PostParameters {{m_Settings.AmbientOcclusionRadius, 2, 8, 0.6f}, {}};
+            });
+            addPost("AODenoise", *m_AODenoisePipeline, ao, {raw}, {{depth, GraphUsage::Sampled}}, [this](RenderGraph&) {
+                return PostParameters {{m_Settings.AmbientOcclusionIntensity, 0, 0, 0}, {}};
+            });
+            m_AOResource = ao;
+        }
+
         std::vector<RenderGraph::Use> lightingUses {{hdr, GraphUsage::ColorWrite, true},
                                                     {albedo, GraphUsage::Sampled},
                                                     {normal, GraphUsage::Sampled},
@@ -1225,6 +1316,10 @@ namespace SnowLeopardEngine
         for (const auto shadow : shadows)
         {
             lightingUses.push_back({shadow, GraphUsage::Sampled});
+        }
+        if (m_AOResource)
+        {
+            lightingUses.push_back({*m_AOResource, GraphUsage::Sampled});
         }
         graph.AddPass("DeferredLighting", lightingUses, [this, hdr](VriCommandBuffer* cmd, RenderGraph& g) {
             auto& target = g.GetTexture(hdr);
@@ -1260,22 +1355,62 @@ namespace SnowLeopardEngine
             m_Device.Core.CmdEndRendering(cmd);
         });
 
+        if (m_Settings.Bloom)
+        {
+            // down[i]: 1 / 2^(i+1) resolution; up[i] = tent(up[i + 1]) + down[i]; the result is up[0] (half size).
+            const uint32_t                     levels = std::clamp(m_Settings.BloomLevels, 1u, 10u);
+            std::vector<RenderGraph::Resource> down, up(levels);
+            for (uint32_t i = 0; i < levels; ++i)
+            {
+                const RHI::Extent size {std::max(extent.Width >> (i + 1), 1u), std::max(extent.Height >> (i + 1), 1u)};
+                down.push_back(graph.CreateTexture("BloomDown" + std::to_string(i), RHI::ColorTextureDesc(size, VriFormat_RGBA16_SFLOAT)));
+                const auto source = i == 0 ? hdr : down[i - 1];
+                addPost("BloomDown" + std::to_string(i), *m_BloomDownPipeline, down[i], {source}, {}, [i, source, texelOf](RenderGraph& g) {
+                    return PostParameters {{i == 0 ? 1.0f : 0.0f, 0, 0, 0}, glm::vec4(texelOf(g, source), 0, 0)};
+                });
+            }
+            up[levels - 1] = down[levels - 1];
+            for (int i = int(levels) - 2; i >= 0; --i)
+            {
+                const RHI::Extent size {std::max(extent.Width >> (i + 1), 1u), std::max(extent.Height >> (i + 1), 1u)};
+                up[i]              = graph.CreateTexture("BloomUp" + std::to_string(i), RHI::ColorTextureDesc(size, VriFormat_RGBA16_SFLOAT));
+                const auto smaller = up[i + 1];
+                addPost("BloomUp" + std::to_string(i), *m_BloomUpPipeline, up[i], {smaller, down[i]}, {}, [smaller, texelOf](RenderGraph& g) {
+                    return PostParameters {{1, 0, 0, 0}, glm::vec4(texelOf(g, smaller), 0, 0)};
+                });
+            }
+            m_BloomResource = up[0];
+        }
+
+        const auto toneTarget = m_Settings.FXAA ? graph.CreateTexture("SceneLDR", RHI::ColorTextureDesc(extent, VriFormat_RGBA8_UNORM)) : target;
+        std::vector<RenderGraph::Use> toneUses {{hdr, GraphUsage::Sampled}, {toneTarget, GraphUsage::ColorWrite, true}};
+        if (m_BloomResource)
+        {
+            toneUses.push_back({*m_BloomResource, GraphUsage::Sampled});
+        }
         graph.AddPass("ToneMapping",
-                      {{hdr, GraphUsage::Sampled}, {target, GraphUsage::ColorWrite, true}},
-                      [this, target](VriCommandBuffer* cmd, RenderGraph& g) {
+                      toneUses,
+                      [this, target = toneTarget](VriCommandBuffer* cmd, RenderGraph& g) {
                           auto& output = g.GetTexture(target);
                           RHI::BeginColorPass(m_Device, cmd, output.View(), output.GetExtent());
                           WriteBindings(*m_ToneMappingSet, &g);
                           m_ToneMappingPipeline->Bind(cmd);
                           m_ToneMappingSet->Bind(cmd);
-                          const glm::vec4 parameters {m_Settings.Exposure, 1, 0, 0};
+                          const glm::vec4 parameters {m_Settings.Exposure, 1, m_BloomResource ? m_Settings.BloomStrength : 0.0f, 0};
                           m_ToneMappingPipeline->SetConstants(cmd, &parameters, sizeof(parameters));
                           const VriDrawDesc draw {3, 1, 0, 0};
                           m_Device.Core.CmdDraw(cmd, &draw);
                           m_Device.Core.CmdEndRendering(cmd);
                       });
 
-        // In-game UI in display space, over the tone-mapped image.
+        if (m_Settings.FXAA)
+        {
+            addPost("FXAA", *m_FXAAPipeline, target, {toneTarget}, {}, [toneTarget, texelOf](RenderGraph& g) {
+                return PostParameters {{}, glm::vec4(texelOf(g, toneTarget), 0, 0)};
+            });
+        }
+
+        // In-game UI in display space, over the tone-mapped (and anti-aliased) image.
         graph.AddPass("UI", {{target, GraphUsage::ColorReadWrite}}, [this, target](VriCommandBuffer* cmd, RenderGraph& g) {
             if (m_UI->GetQuadCount() == 0)
             {

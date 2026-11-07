@@ -1,4 +1,5 @@
-// HDR scene colour -> display: exposure, ACES (Narkowicz fit), gamma 2.2 for a UNORM target.
+// HDR scene colour -> display: bloom mixed in (energy conserving), exposure, ACES (Narkowicz fit), gamma 2.2 for a
+// UNORM target. Alpha carries the luma for FXAA.
 Shader "Renderer/ToneMapping"
 {
     SubShader
@@ -14,7 +15,7 @@ Shader "Renderer/ToneMapping"
             Vertex vertexMain
             Fragment fragmentMain
             SLANGPROGRAM
-            struct ToneParameters { float4 values; }; // x exposure (linear scale), y apply gamma
+            struct ToneParameters { float4 values; }; // x exposure (linear scale), y apply gamma, z bloom strength
             [[vk::push_constant]] ConstantBuffer<ToneParameters> tone;
 
             ScreenVertex vertexMain(uint id : SV_VertexID) { return FullscreenTriangle(id); }
@@ -22,8 +23,13 @@ Shader "Renderer/ToneMapping"
             float4 fragmentMain(ScreenVertex input) : SV_Target0
             {
                 float3 color = hdrColor.Load(int3(int2(input.position.xy), 0)).rgb;
-                color        = ToneMapACES(max(color, 0) * tone.values.x);
-                return float4(tone.values.y > 0.5 ? LinearToGamma(color) : color, 1);
+                if (tone.values.z > 0)
+                {
+                    color = lerp(color, bloomMap.SampleLevel(linearClamp, input.uv, 0).rgb, tone.values.z);
+                }
+                color = ToneMapACES(max(color, 0) * tone.values.x);
+                color = tone.values.y > 0.5 ? LinearToGamma(color) : color;
+                return float4(color, dot(color, float3(0.299, 0.587, 0.114)));
             }
             ENDSLANG
         }
