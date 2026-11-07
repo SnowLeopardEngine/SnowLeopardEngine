@@ -32,7 +32,7 @@
 | In-game GUI | ★ | Canvas / Image / Text / Button only; a naive immediate design with no layout, styling or input focus. **Text rendering is known to be wrong** (owner report; cause not yet investigated). Every glyph is its own texture (no atlas); they became engine textures in Phase 1 |
 | Navigation | ☆ | **Not in the engine.** recast only appears in `Tests/LibraryTests/recastnavigation_Test` |
 | C# scripting | ☆ | **Effectively absent.** `Coral::HostInstance` is a local variable in the `CSharpScriptingSystem` constructor and is destroyed when it returns; only `Tests.Echo` is ever called; no script component, no bindings |
-| Editor | ★ | Docking layout; the Viewport renders the scene (render-to-texture through `RenderContext`, GL for now) with an editor camera and a small default scene. Still cannot edit much: scenes cannot be opened or saved, picking is commented out and there is no Hierarchy, so nothing can be selected for the Inspector. Play / Stop is wired but not exercised. No menu bar, Settings or Preview |
+| Editor | ★ | Docking layout; the Viewport renders the scene (VRI render-to-texture through the frame graph, with the full GPU-driven renderer and post-processing) with an editor camera and a small default scene. Still cannot edit much: scenes cannot be opened or saved, picking is commented out and there is no Hierarchy, so nothing can be selected for the Inspector. Play / Stop is wired but not exercised. No menu bar, Settings or Preview |
 | Project / packaging | ★★ | `.dzproj` format done; simple game builder done (#139); no game template (#138) |
 
 ### Rendering Backend Coupling
