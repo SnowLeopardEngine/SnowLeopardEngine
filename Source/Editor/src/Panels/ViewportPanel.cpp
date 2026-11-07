@@ -110,8 +110,8 @@ namespace SnowLeopardEngine::Editor
 
             if (const auto texture = g_EngineContext->RenderSys->GetOutputTextureID(); texture != 0)
             {
-                // GL textures start at the bottom row.
-                ImGui::Image(static_cast<ImTextureID>(texture), viewportSize, {0, 1}, {1, 0});
+                // The viewport texture's rows run top to bottom, like ImGui's uv.
+                ImGui::Image(static_cast<ImTextureID>(texture), viewportSize);
                 ImGui::SetCursorScreenPos(viewportMin);
             }
         }

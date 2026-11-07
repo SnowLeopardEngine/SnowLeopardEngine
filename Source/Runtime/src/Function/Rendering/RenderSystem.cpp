@@ -82,6 +82,7 @@ namespace SnowLeopardEngine
 
         // The scene renderer refers to cached textures; the loader caches own them. Free all while the device exists.
         m_FrameGraph.reset();
+        m_ViewportTexture.reset();
         m_SceneRenderer.reset();
         IO::ReleaseAllMaterials();
         IO::ReleaseAllTextures();
@@ -99,6 +100,32 @@ namespace SnowLeopardEngine
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
         // Scene data is collected in Present, right before the frame is recorded (after scripts and physics).
+    }
+
+    void RenderSystem::SetRenderToTexture(bool enabled)
+    {
+        m_RenderToTexture = enabled;
+        if (!enabled && m_ViewportTexture)
+        {
+            m_Device->WaitIdle();
+            m_FrameGraph.reset(); // imports the texture
+            m_ViewportTexture.reset();
+        }
+    }
+
+    void RenderSystem::UpdateViewport(const Rect2D& viewport)
+    {
+        m_Viewport = viewport;
+        const RHI::Extent extent {viewport.Extent.Width, viewport.Extent.Height};
+        if (!m_RenderToTexture || extent.Empty() || (m_ViewportTexture && m_ViewportTexture->GetExtent() == extent))
+        {
+            return;
+        }
+        // The previous frame has completed (one frame in flight), so nothing uses the old texture any more; the graph
+        // importing it is rebuilt before its next use.
+        m_Device->WaitIdle();
+        m_FrameGraph.reset();
+        m_ViewportTexture = CreateScope<RHI::Texture>(*m_Device, RHI::ColorTextureDesc(extent, VriFormat_RGBA8_UNORM));
     }
 
     void RenderSystem::SetVSync(bool enabled)
@@ -136,22 +163,44 @@ namespace SnowLeopardEngine
 
         m_FrameGraphHasScene     = m_SceneReady;
         m_FrameGraphSceneVersion = m_SceneRenderer->GetGraphVersion();
-        if (m_SceneReady)
+        m_FrameGraphViewport     = m_RenderToTexture ? m_ViewportTexture.get() : nullptr;
+
+        auto clear = [this, &graph](RenderGraph::Resource resource, const char* name) {
+            graph.AddPass(name, {{resource, GraphUsage::ColorWrite, true}}, [this, resource](VriCommandBuffer* cmd, RenderGraph& g) {
+                auto& target = g.GetTexture(resource);
+                RHI::BeginColorPass(*m_Device, cmd, target.View(), target.GetExtent(), kClearColor);
+                m_Device->Core.CmdEndRendering(cmd);
+            });
+        };
+
+        // The scene goes into the window, or into the viewport texture that the overlays (editor ImGui) sample.
+        std::vector<RenderGraph::Use> overlayUses {{m_Backbuffer, GraphUsage::ColorReadWrite}};
+        if (m_FrameGraphViewport != nullptr)
+        {
+            const auto viewport = graph.ImportResource("Viewport", *m_FrameGraphViewport, false);
+            if (m_SceneReady)
+            {
+                m_SceneRenderer->AddPasses(graph, viewport, m_FrameGraphViewport->Desc.format);
+            }
+            else
+            {
+                clear(viewport, "ClearViewport");
+            }
+            clear(m_Backbuffer, "Clear");
+            overlayUses.push_back({viewport, GraphUsage::Sampled});
+        }
+        else if (m_SceneReady)
         {
             m_SceneRenderer->AddPasses(graph, m_Backbuffer, backbuffer.Desc.format);
         }
         else
         {
-            graph.AddPass("Clear", {{m_Backbuffer, GraphUsage::ColorWrite, true}}, [this](VriCommandBuffer* cmd, RenderGraph& g) {
-                auto& target = g.GetTexture(m_Backbuffer);
-                RHI::BeginColorPass(*m_Device, cmd, target.View(), target.GetExtent(), kClearColor);
-                m_Device->Core.CmdEndRendering(cmd);
-            });
+            clear(m_Backbuffer, "Clear");
         }
 
         if (!m_Overlays.empty())
         {
-            graph.AddPass("Overlays", {{m_Backbuffer, GraphUsage::ColorReadWrite}}, [this](VriCommandBuffer* cmd, RenderGraph& g) {
+            graph.AddPass("Overlays", overlayUses, [this](VriCommandBuffer* cmd, RenderGraph& g) {
                 for (auto* overlay : m_Overlays)
                 {
                     overlay->Copy(cmd); // transfers stay outside the render pass
@@ -196,15 +245,17 @@ namespace SnowLeopardEngine
         }
 
         // The scene renderer stages this frame's data (uploads, instance / material / frame buffers).
-        m_SceneReady = false;
-        if (!m_RenderToTexture)
+        // Rendered at the window's size, or at the editor Viewport's (its texture).
+        RHI::Texture* viewport = m_RenderToTexture ? m_ViewportTexture.get() : nullptr;
+        m_SceneReady           = false;
+        if (!m_RenderToTexture || viewport != nullptr)
         {
             auto scene   = g_EngineContext->SceneMngr->GetActiveScene();
-            m_SceneReady = m_SceneRenderer->Prepare(scene.get(), target->GetExtent());
+            m_SceneReady = m_SceneRenderer->Prepare(scene.get(), viewport != nullptr ? viewport->GetExtent() : target->GetExtent());
         }
 
         if (!m_FrameGraph || m_FrameGraphExtent != target->GetExtent() || m_FrameGraphHasScene != m_SceneReady ||
-            m_FrameGraphSceneVersion != m_SceneRenderer->GetGraphVersion())
+            m_FrameGraphSceneVersion != m_SceneRenderer->GetGraphVersion() || m_FrameGraphViewport != viewport)
         {
             BuildFrameGraph(*target);
         }

@@ -40,12 +40,18 @@ namespace SnowLeopardEngine
         void SetVSync(bool enabled);
 
         // Size of what the scene is rendered at (the window, or the editor's Viewport panel).
-        void UpdateViewport(const Rect2D& viewport) { m_Viewport = viewport; }
+        // While rendering to a texture, also (re)creates the viewport texture at this size, so the view handed out by
+        // GetOutputTextureID before ImGui records it is the one this frame renders.
+        void UpdateViewport(const Rect2D& viewport);
 
-        // Editor Viewport: render the scene into a texture instead of the window. Not ported yet (Phase 2.5): while
-        // it is on, the scene is not drawn and the id stays 0.
-        void     SetRenderToTexture(bool enabled) { m_RenderToTexture = enabled; }
-        uint64_t GetOutputTextureID() const { return 0; }
+        // Editor Viewport: the scene is rendered into a viewport-sized texture instead of the window; the window gets
+        // only the overlays (the editor's ImGui), which sample it. The id is the texture's view (an ImTextureID for
+        // the editor's ImGui renderer), 0 until UpdateViewport gave a size. Rows are top to bottom.
+        void     SetRenderToTexture(bool enabled);
+        uint64_t GetOutputTextureID() const
+        {
+            return m_ViewportTexture ? reinterpret_cast<uint64_t>(m_ViewportTexture->View()) : 0;
+        }
 
         void AddOverlay(RenderOverlay* overlay);
         void RemoveOverlay(RenderOverlay* overlay);
@@ -75,11 +81,13 @@ namespace SnowLeopardEngine
         RenderGraph::Resource m_Backbuffer {};
         RHI::Extent           m_FrameGraphExtent {};
         bool                  m_FrameGraphHasScene     = false;
+        RHI::Texture*         m_FrameGraphViewport     = nullptr; // viewport texture the graph imports
         uint64_t              m_FrameGraphSceneVersion = 0;
         bool                  m_SceneReady             = false; // the scene renderer prepared this frame
 
         Rect2D m_Viewport {};
         bool   m_RenderToTexture = false;
+        Scope<RHI::Texture> m_ViewportTexture; // render-to-texture target (editor Viewport)
 
         // Frame capture for regression checks: SLE_CAPTURE_FRAME=<n> writes the n-th presented frame to
         // SLE_CAPTURE_PATH (default: capture.png in the working directory).
