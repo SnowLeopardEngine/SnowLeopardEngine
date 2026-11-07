@@ -1,0 +1,44 @@
+// Fullscreen deferred lighting: lit G-buffer where geometry was drawn, the sky elsewhere. The world position is
+// reconstructed from the depth buffer (no position target).
+Shader "Renderer/DeferredLighting"
+{
+    SubShader
+    {
+        Cull Off
+        SLANGINCLUDE
+        #include "Slang/Lighting.slangh"
+        ENDSLANG
+
+        Pass
+        {
+            Name "Lighting"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            ScreenVertex vertexMain(uint id : SV_VertexID) { return FullscreenTriangle(id); }
+
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                int3  pixel = int3(int2(input.position.xy), 0);
+                float depth = sceneDepth.Load(pixel);
+                float3 position = Unproject(input.uv, depth, frame.inverseViewProjection);
+                if (depth >= 1)
+                {
+                    return float4(SkyColor(normalize(position - frame.cameraPosition.xyz)), 1);
+                }
+                float4 albedoMetallic    = gbufferAlbedoMetallic.Load(pixel);
+                float4 normalRoughness   = gbufferNormalRoughness.Load(pixel);
+                float4 emissiveOcclusion = gbufferEmissiveOcclusion.Load(pixel);
+                Surface s;
+                s.albedo    = albedoMetallic.rgb;
+                s.metallic  = albedoMetallic.a;
+                s.roughness = normalRoughness.a;
+                s.emissive  = emissiveOcclusion.rgb;
+                s.occlusion = emissiveOcclusion.a;
+                s.opacity   = 1;
+                return float4(ShadeSurface(s, position, normalRoughness.xyz), 1);
+            }
+            ENDSLANG
+        }
+    }
+}

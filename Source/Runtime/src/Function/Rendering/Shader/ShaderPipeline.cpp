@@ -186,9 +186,10 @@ namespace SnowLeopardEngine
         {
             stages |= entry.Stage;
         }
-        if (stages & VriShaderStage_Compute)
+        m_Compute = (stages & VriShaderStage_Compute) != 0;
+        if (m_Compute && stages != VriShaderStage_Compute)
         {
-            throw std::invalid_argument("Pass " + pass.Name + " is a compute pass; ShaderPipeline builds graphics pipelines");
+            throw std::invalid_argument("Pass " + pass.Name + " mixes compute and graphics stages");
         }
 
         // Descriptor sets: one VRI set per register space, the array index equals the space (empty sets fill gaps).
@@ -213,6 +214,10 @@ namespace SnowLeopardEngine
             range.descriptorType = binding.Type;
             range.shaderStages   = stages;
             range.viewType       = binding.ViewType;
+            if (binding.Count > 1)
+            {
+                range.flags = VriDescriptorRange_PartiallyBound;
+            }
             m_RangeIndices[{binding.Set, binding.Binding}] = uint32_t(ranges[binding.Set].size());
             ranges[binding.Set].push_back(range);
             setCount = std::max(setCount, binding.Set + 1);
@@ -242,6 +247,22 @@ namespace SnowLeopardEngine
         layout.pushConstantNum  = uint32_t(pushConstants.size());
         layout.shaderStages     = stages;
         RHI::Check(device.Core.CreatePipelineLayout(device.Handle, &layout, &m_Layout), "Create pipeline layout");
+
+        if (m_Compute)
+        {
+            const auto             shaders = program.Descriptors(pass.Entries);
+            VriComputePipelineDesc compute {};
+            compute.pipelineLayout = m_Layout;
+            compute.shader         = shaders.at(0);
+            compute.pipelineCache  = device.PipelineCache;
+            if (const auto result = device.Core.CreateComputePipeline(device.Handle, &compute, &m_Pipeline);
+                result != VriResult_Success)
+            {
+                device.Core.DestroyPipelineLayout(m_Layout);
+                RHI::Check(result, "Create compute pipeline");
+            }
+            return;
+        }
 
         try
         {
@@ -389,6 +410,104 @@ namespace SnowLeopardEngine
     {
         m_Device.Core.CmdSetPipelineLayout(cmd, m_Layout);
         m_Device.Core.CmdSetPipeline(cmd, m_Pipeline);
+    }
+
+    void ShaderPipeline::SetConstants(VriCommandBuffer* cmd, const void* data, uint32_t size) const
+    {
+        if (size > m_PushConstantSize)
+        {
+            throw std::invalid_argument("Push constants larger than the shader's block");
+        }
+        m_Device.Core.CmdSetConstants(cmd, 0, data, size);
+    }
+
+    // ---------------------------------------------------------------- ShaderBindings
+
+    ShaderBindings::ShaderBindings(RHI::Device& device, const ShaderPipeline& pipeline, uint32_t set) :
+        m_Device(device), m_Pipeline(pipeline), m_SetIndex(set)
+    {
+        VriDescriptorPoolDesc pool {};
+        pool.descriptorSetMaxNum = 1;
+        bool any                 = false;
+        for (const auto& binding : pipeline.GetBindings())
+        {
+            if (binding.PushConstant || binding.Set != set)
+            {
+                continue;
+            }
+            any = true;
+            switch (binding.Type)
+            {
+                case VriDescriptorType_Sampler:
+                    pool.samplerMaxNum += binding.Count;
+                    break;
+                case VriDescriptorType_Texture:
+                    pool.textureMaxNum += binding.Count;
+                    break;
+                case VriDescriptorType_StorageTexture:
+                    pool.storageTextureMaxNum += binding.Count;
+                    break;
+                case VriDescriptorType_ConstantBuffer:
+                    pool.constantBufferMaxNum += binding.Count;
+                    break;
+                case VriDescriptorType_StructuredBuffer:
+                    pool.structuredBufferMaxNum += binding.Count;
+                    break;
+                case VriDescriptorType_StorageBuffer:
+                    pool.storageBufferMaxNum += binding.Count;
+                    break;
+                default:
+                    throw std::invalid_argument("Unsupported descriptor type for " + binding.Name);
+            }
+        }
+        if (!any)
+        {
+            return;
+        }
+        RHI::Check(device.Core.CreateDescriptorPool(device.Handle, &pool, &m_Pool), "Create descriptor pool");
+        RHI::Check(device.Core.AllocateDescriptorSets(m_Pool, pipeline.GetLayout(), set, &m_Set, 1), "Allocate descriptor set");
+    }
+
+    ShaderBindings::~ShaderBindings()
+    {
+        if (m_Pool != nullptr)
+        {
+            m_Device.Core.DestroyDescriptorPool(m_Pool);
+        }
+    }
+
+    bool ShaderBindings::Has(std::string_view name) const
+    {
+        return std::any_of(m_Pipeline.GetBindings().begin(), m_Pipeline.GetBindings().end(), [&](const auto& binding) {
+            return !binding.PushConstant && binding.Set == m_SetIndex && binding.Name == name;
+        });
+    }
+
+    void ShaderBindings::Write(std::string_view name, std::span<VriDescriptor* const> descriptors, uint32_t first)
+    {
+        for (const auto& binding : m_Pipeline.GetBindings())
+        {
+            if (binding.PushConstant || binding.Set != m_SetIndex || binding.Name != name)
+            {
+                continue;
+            }
+            if (first + descriptors.size() > binding.Count)
+            {
+                throw std::out_of_range("Too many descriptors for " + binding.Name);
+            }
+            std::vector<const VriDescriptor*> list(descriptors.begin(), descriptors.end());
+            VriDescriptorRangeUpdateDesc      update {list.data(), uint32_t(list.size()), first};
+            m_Device.Core.UpdateDescriptorRanges(m_Set, m_Pipeline.RangeIndex(binding), 1, &update);
+            return;
+        }
+    }
+
+    void ShaderBindings::Bind(VriCommandBuffer* cmd) const
+    {
+        if (m_Set != nullptr)
+        {
+            m_Device.Core.CmdSetDescriptorSet(cmd, m_SetIndex, m_Set);
+        }
     }
 
     // ---------------------------------------------------------------- ShaderMaterial

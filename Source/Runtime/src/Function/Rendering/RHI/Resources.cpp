@@ -23,6 +23,13 @@ namespace SnowLeopardEngine::RHI
         {
             m_Device.Core.DestroyDescriptor(m_View);
         }
+        for (auto* view : m_MipViews)
+        {
+            if (view != nullptr)
+            {
+                m_Device.Core.DestroyDescriptor(view);
+            }
+        }
         if (m_Owned)
         {
             m_Device.Core.DestroyTexture(Handle);
@@ -75,12 +82,79 @@ namespace SnowLeopardEngine::RHI
         return m_View;
     }
 
+    VriDescriptor* Texture::MipView(uint32_t mip)
+    {
+        if (mip >= Desc.mipNum)
+        {
+            throw std::out_of_range("Texture has no mip " + std::to_string(mip));
+        }
+        m_MipViews.resize(Desc.mipNum, nullptr);
+        if (m_MipViews[mip] == nullptr)
+        {
+            VriTextureViewDesc view {};
+            view.texture  = Handle;
+            view.viewType = Desc.layerNum > 1 ? VriTextureViewType_2DArray : VriTextureViewType_2D;
+            view.format   = Desc.format;
+            view.aspect   = m_Aspect;
+            view.baseMip  = mip;
+            view.mipNum   = 1;
+            view.layerNum = Desc.layerNum;
+            Check(m_Device.Core.CreateTextureView(m_Device.Handle, &view, &m_MipViews[mip]), "Create texture mip view");
+        }
+        return m_MipViews[mip];
+    }
+
     Buffer::Buffer(Device& device, const VriBufferDesc& desc) : Desc(desc), m_Device(device)
     {
         Check(device.Core.CreateBuffer(device.Handle, &Desc, &Handle), "Create buffer");
     }
 
-    Buffer::~Buffer() { m_Device.Core.DestroyBuffer(Handle); }
+    Buffer::~Buffer()
+    {
+        for (auto& [type, view] : m_Views)
+        {
+            m_Device.Core.DestroyDescriptor(view);
+        }
+        m_Device.Core.DestroyBuffer(Handle);
+    }
+
+    VriDescriptor* Buffer::View(VriDescriptorType type)
+    {
+        for (auto& [viewType, view] : m_Views)
+        {
+            if (viewType == type)
+            {
+                return view;
+            }
+        }
+        VriBufferViewDesc desc {};
+        desc.buffer   = Handle;
+        desc.viewType = type;
+        desc.size     = Desc.size;
+        VriDescriptor* view = nullptr;
+        Check(m_Device.Core.CreateBufferView(m_Device.Handle, &desc, &view), "Create buffer view");
+        m_Views.emplace_back(type, view);
+        return view;
+    }
+
+    void Buffer::Write(const void* data, uint64_t size, uint64_t offset)
+    {
+        if (size == 0)
+        {
+            return;
+        }
+        if (offset + size > Desc.size)
+        {
+            throw std::out_of_range("Buffer write past the end");
+        }
+        auto* mapped = static_cast<std::byte*>(m_Device.Core.MapBuffer(Handle, offset, size));
+        if (mapped == nullptr)
+        {
+            throw std::runtime_error("Map buffer failed (not host visible?)");
+        }
+        std::memcpy(mapped, data, size_t(size));
+        m_Device.Core.UnmapBuffer(Handle);
+    }
 
     void Buffer::Transition(VriCommandBuffer* cmd, VriAccessStage next)
     {
@@ -168,42 +242,127 @@ namespace SnowLeopardEngine::RHI
         return result;
     }
 
-    void UploadTexture2D(Device& device, Texture& texture, std::span<const std::byte> rgba8)
+    uint32_t TexelSize(VriFormat format)
     {
-        const uint32_t width  = texture.Desc.width;
-        const uint32_t height = texture.Desc.height;
-        if (rgba8.size_bytes() < uint64_t(width) * height * 4)
+        switch (format)
         {
-            throw std::invalid_argument("Texture upload data is smaller than the texture");
+            case VriFormat_R8_UNORM:
+                return 1;
+            case VriFormat_RG8_UNORM:
+            case VriFormat_R16_SFLOAT:
+                return 2;
+            case VriFormat_RGBA8_UNORM:
+            case VriFormat_RGBA8_SRGB:
+            case VriFormat_BGRA8_UNORM:
+            case VriFormat_BGRA8_SRGB:
+            case VriFormat_R32_SFLOAT:
+            case VriFormat_RG16_SFLOAT:
+                return 4;
+            case VriFormat_RGBA16_SFLOAT:
+            case VriFormat_RG32_SFLOAT:
+                return 8;
+            case VriFormat_RGBA32_SFLOAT:
+                return 16;
+            default:
+                throw std::invalid_argument("Upload supports uncompressed 8 / 16 / 32-bit colour formats only");
         }
-        // Rows of the staging buffer follow the device's buffer -> texture row alignment.
-        const uint32_t alignment =
-            std::lcm(256u, std::max(1u, device.Core.GetDeviceDesc(device.Handle)->uploadBufferTextureRowAlignment));
-        const uint32_t pitch = (width * 4 + alignment - 1) / alignment * alignment;
-        const uint64_t bytes = uint64_t(pitch) * height;
+    }
 
-        Buffer staging(device, {bytes, 0, VriBufferUsage_TransferSrc, VriMemoryLocation_HostUpload});
-        auto*  mapped = static_cast<std::byte*>(device.Core.MapBuffer(staging.Handle, 0, bytes));
+    void UploadBufferRegion(Device& device, Buffer& buffer, uint64_t offset, std::span<const std::byte> data)
+    {
+        if (data.empty())
+        {
+            return;
+        }
+        if (offset + data.size_bytes() > buffer.Desc.size)
+        {
+            throw std::out_of_range("Buffer upload past the end");
+        }
+        Buffer staging(device, {data.size_bytes(), 0, VriBufferUsage_TransferSrc, VriMemoryLocation_HostUpload});
+        staging.Write(data.data(), data.size_bytes());
+        Frame frame(device);
+        auto* cmd = frame.Begin();
+        buffer.Transition(cmd, {VriAccess_CopyDestinationWrite, VriPipelineStage_Transfer});
+        VriBufferCopyDesc copy {};
+        copy.dstOffset = offset;
+        copy.size      = data.size_bytes();
+        device.Core.CmdCopyBuffer(cmd, buffer.Handle, staging.Handle, &copy);
+        buffer.Transition(cmd,
+                          {VriAccess_VertexBufferRead | VriAccess_IndexBufferRead | VriAccess_ShaderResourceRead,
+                           VriPipelineStage_AllCommands});
+        frame.SubmitAndWait();
+    }
+
+    void UploadTexture(Device& device, Texture& texture, std::span<const std::span<const std::byte>> levels)
+    {
+        if (levels.empty() || levels.size() > texture.Desc.mipNum)
+        {
+            throw std::invalid_argument("Texture upload needs 1 .. mipNum levels");
+        }
+        const uint32_t texel = TexelSize(texture.Desc.format);
+        // Rows of the staging buffer follow the device's buffer -> texture row alignment; levels start aligned.
+        const uint64_t alignment = std::lcm(
+            uint64_t(std::lcm(256u, std::max(1u, device.Core.GetDeviceDesc(device.Handle)->uploadBufferTextureRowAlignment))),
+            uint64_t(texel));
+        struct Level
+        {
+            uint32_t Width, Height;
+            uint64_t Pitch, Offset;
+        };
+        std::vector<Level> layout;
+        uint64_t           total = 0;
+        for (uint32_t mip = 0; mip < levels.size(); ++mip)
+        {
+            const uint32_t width  = std::max(texture.Desc.width >> mip, 1u);
+            const uint32_t height = std::max(texture.Desc.height >> mip, 1u);
+            if (levels[mip].size_bytes() < uint64_t(width) * height * texel)
+            {
+                throw std::invalid_argument("Texture upload data is smaller than mip " + std::to_string(mip));
+            }
+            const uint64_t pitch = (uint64_t(width) * texel + alignment - 1) / alignment * alignment;
+            total                = (total + alignment - 1) / alignment * alignment;
+            layout.push_back({width, height, pitch, total});
+            total += pitch * height;
+        }
+
+        Buffer staging(device, {total, 0, VriBufferUsage_TransferSrc, VriMemoryLocation_HostUpload});
+        auto*  mapped = static_cast<std::byte*>(device.Core.MapBuffer(staging.Handle, 0, total));
         if (mapped == nullptr)
         {
             throw std::runtime_error("Map texture staging buffer failed");
         }
-        for (uint32_t row = 0; row < height; ++row)
+        for (size_t mip = 0; mip < layout.size(); ++mip)
         {
-            std::memcpy(mapped + uint64_t(row) * pitch, rgba8.data() + uint64_t(row) * width * 4, width * 4);
+            const auto& level = layout[mip];
+            const auto  row   = size_t(level.Width) * texel;
+            for (uint32_t y = 0; y < level.Height; ++y)
+            {
+                std::memcpy(mapped + level.Offset + y * level.Pitch, levels[mip].data() + y * row, row);
+            }
         }
         device.Core.UnmapBuffer(staging.Handle);
 
         Frame frame(device);
         auto* cmd = frame.Begin();
         texture.Transition(cmd, {VriAccess_CopyDestinationWrite, VriLayout_CopyDestination, VriPipelineStage_Transfer});
-        VriBufferTextureCopyDesc copy {};
-        copy.bufferRowLength   = pitch / 4;
-        copy.bufferImageHeight = height;
-        copy.texture           = {0, 0, 1, VriImageAspect_Color, 0, 0, 0, width, height, 1};
-        device.Core.CmdUploadBufferToTexture(cmd, texture.Handle, staging.Handle, &copy);
+        for (uint32_t mip = 0; mip < layout.size(); ++mip)
+        {
+            const auto&              level = layout[mip];
+            VriBufferTextureCopyDesc copy {};
+            copy.bufferOffset      = level.Offset;
+            copy.bufferRowLength   = uint32_t(level.Pitch / texel);
+            copy.bufferImageHeight = level.Height;
+            copy.texture           = {mip, 0, 1, VriImageAspect_Color, 0, 0, 0, level.Width, level.Height, 1};
+            device.Core.CmdUploadBufferToTexture(cmd, texture.Handle, staging.Handle, &copy);
+        }
         texture.Transition(cmd, {VriAccess_ShaderResourceRead, VriLayout_ShaderResource, VriPipelineStage_AllCommands});
         frame.SubmitAndWait();
+    }
+
+    void UploadTexture2D(Device& device, Texture& texture, std::span<const std::byte> rgba8)
+    {
+        const std::span<const std::byte> level[] {rgba8};
+        UploadTexture(device, texture, level);
     }
 
     namespace

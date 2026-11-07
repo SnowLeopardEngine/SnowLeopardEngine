@@ -1,0 +1,143 @@
+// Resources of the GPU-driven scene renderer (descriptor set 0). Every renderer pass includes this header and the
+// renderer offers each pass the same resources by name; a pass only binds what it reads.
+// Layouts must match Function/Rendering/Renderer/SceneRenderer.cpp (GPUFrame, GPUInstance, GPUMaterial).
+#pragma once
+
+#include "Slang/Common.slangh"
+
+static const uint kMaxPointLights = 16;
+static const uint kMaxTextures    = 1024; // bindless table; index 0 is "no texture"
+static const uint kCascades       = 4;
+
+struct PointLightData
+{
+    float4 position;    // xyz
+    float4 color;       // rgb, w = intensity
+    float4 attenuation; // x constant, y linear, z quadratic
+};
+
+struct FrameData
+{
+    float4x4 view;
+    float4x4 projection;
+    float4x4 viewProjection;
+    float4x4 inverseViewProjection;
+    float4x4 lightViewProjection[kCascades];
+    float4   cameraPosition;  // xyz, w = elapsed time
+    float4   resolution;      // xy, zw = 1 / xy
+    float4   lightDirection;  // xyz = direction the sunlight travels, w = intensity (0: no sun)
+    float4   lightColor;      // rgb, w = environment (IBL + sky) intensity
+    float4   cascadeSplits;   // view-space far distance of each cascade
+    float4   cascadeTexel;    // world-space size of one shadow-map texel per cascade
+    float4   shadow;          // x depth bias, y normal offset in texels, z resolution, w enabled
+    float4   environment;     // x specular map mip count - 1, y environment present
+    float4   skyColor;        // rgb (linear), w = 1: the camera clears to a colour instead of drawing the sky
+    uint4    counts;          // x point lights
+    PointLightData pointLights[kMaxPointLights];
+};
+
+struct InstanceData
+{
+    float4x4 model;
+    float4x4 normalMatrix;   // inverse transpose of model (upper 3 x 3 used)
+    float4   boundingSphere; // world-space centre, radius
+    uint4    draw;           // x index count, y first index, z vertex offset, w material
+    uint4    flags;          // x casts shadows
+};
+
+struct MaterialData
+{
+    float4 albedo;   // rgb, a = opacity
+    float4 emissive; // rgb
+    float4 surface;  // x metallic, y roughness, z ambient occlusion, w UV tiling
+    uint4  maps;     // texture indices: albedo, metallic, roughness, ambient occlusion (0: use the constant)
+    uint4  maps2;    // x emissive
+};
+
+[[vk::binding(0, 0)]] ConstantBuffer<FrameData>        frame;
+[[vk::binding(1, 0)]] StructuredBuffer<InstanceData>   instances;
+[[vk::binding(2, 0)]] StructuredBuffer<MaterialData>   materials;
+[[vk::binding(3, 0)]] Texture2D<float4>                textures[kMaxTextures];
+[[vk::binding(4, 0)]] SamplerState                     materialSampler;    // linear, repeat, anisotropic
+[[vk::binding(5, 0)]] SamplerState                     linearClamp;
+[[vk::binding(6, 0)]] SamplerState                     environmentSampler; // repeat U, clamp V
+[[vk::binding(7, 0)]] Texture2D<float>                 shadowMaps[kCascades];
+[[vk::binding(8, 0)]] SamplerComparisonState           shadowSampler;
+[[vk::binding(9, 0)]] Texture2D<float4>                radianceMap;   // equirectangular sky
+[[vk::binding(10, 0)]] Texture2D<float4>               irradianceMap; // cosine-convolved radiance
+[[vk::binding(11, 0)]] Texture2D<float4>               specularMap;   // GGX prefiltered, roughness = mip
+[[vk::binding(12, 0)]] Texture2D<float4>               brdfLut;
+[[vk::binding(13, 0)]] Texture2D<float4>               gbufferAlbedoMetallic;
+[[vk::binding(14, 0)]] Texture2D<float4>               gbufferNormalRoughness;
+[[vk::binding(15, 0)]] Texture2D<float4>               gbufferEmissiveOcclusion;
+[[vk::binding(16, 0)]] Texture2D<float>                sceneDepth;
+[[vk::binding(17, 0)]] Texture2D<float4>               hdrColor;
+
+// ---- meshes
+
+struct MeshVertex
+{
+    [[vk::location(0)]] float3 position : POSITION;
+    [[vk::location(1)]] float3 normal : NORMAL;
+    [[vk::location(2)]] float2 uv : TEXCOORD0;
+    // Per-instance stream (identity buffer): baseInstance of an indirect draw selects the instance.
+    [[vk::location(3)]] uint instance : INSTANCE;
+};
+
+struct SurfaceVertex
+{
+    float4 position : SV_Position;
+    float3 worldPosition : POSITION;
+    float3 normal : NORMAL;
+    float2 uv : TEXCOORD0;
+    nointerpolation uint material : MATERIAL;
+};
+
+SurfaceVertex TransformVertex(MeshVertex input)
+{
+    InstanceData  instance = instances[input.instance];
+    SurfaceVertex result;
+    float4 world         = mul(instance.model, float4(input.position, 1));
+    result.worldPosition = world.xyz;
+    result.position      = mul(frame.viewProjection, world);
+    result.normal        = mul(instance.normalMatrix, float4(input.normal, 0)).xyz;
+    result.uv            = input.uv;
+    result.material      = instance.draw.w;
+    return result;
+}
+
+// ---- materials
+
+struct Surface
+{
+    float3 albedo;
+    float3 emissive;
+    float  metallic;
+    float  roughness;
+    float  occlusion;
+    float  opacity;
+};
+
+float4 SampleMap(uint index, float2 uv)
+{
+    return textures[NonUniformResourceIndex(index)].Sample(materialSampler, uv);
+}
+
+float3 SrgbToLinear(float3 color)
+{
+    return select(color <= 0.04045, color / 12.92, pow((color + 0.055) / 1.055, 2.4));
+}
+
+Surface SampleSurface(uint materialIndex, float2 uv)
+{
+    MaterialData m = materials[materialIndex];
+    float2       tiled = uv * m.surface.w;
+    Surface      s;
+    s.albedo    = m.maps.x != 0 ? SrgbToLinear(SampleMap(m.maps.x, tiled).rgb) : m.albedo.rgb;
+    s.metallic  = m.maps.y != 0 ? SampleMap(m.maps.y, tiled).r : m.surface.x;
+    s.roughness = clamp(m.maps.z != 0 ? SampleMap(m.maps.z, tiled).r : m.surface.y, 0.03, 1.0);
+    s.occlusion = m.maps.w != 0 ? SampleMap(m.maps.w, tiled).r : m.surface.z;
+    s.emissive  = m.maps2.x != 0 ? SrgbToLinear(SampleMap(m.maps2.x, tiled).rgb) : m.emissive.rgb;
+    s.opacity   = m.albedo.a;
+    return s;
+}

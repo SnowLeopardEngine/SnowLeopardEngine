@@ -71,7 +71,11 @@ namespace SnowLeopardEngine
         // The platform window, for the rest of its interface (native event listeners, content scale, ...).
         Window* GetWindow() const { return m_Window; }
 
+        // Hidden window, offscreen rendering (WindowInitInfo::Offline or SLE_OFFLINE=1).
+        bool IsOffline() const { return m_Offline; }
+
     private:
-        Window* m_Window = nullptr;
+        Window* m_Window  = nullptr;
+        bool    m_Offline = false;
     };
 } // namespace SnowLeopardEngine

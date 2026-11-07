@@ -1,0 +1,158 @@
+// Physically based shading of the scene renderer: Cook-Torrance GGX for the sun (cascaded shadows) and point
+// lights, split-sum image-based lighting from the sky. Shared by the deferred lighting and forward passes.
+#pragma once
+
+#include "Slang/Scene.slangh"
+
+float3 FresnelSchlick(float cosine, float3 f0)
+{
+    return f0 + (1 - f0) * pow(saturate(1 - cosine), 5);
+}
+
+float DistributionGGX(float ndh, float roughness)
+{
+    float a2    = Square(Square(roughness));
+    float denom = ndh * ndh * (a2 - 1) + 1;
+    return a2 / (PI * denom * denom + 1e-7);
+}
+
+float GeometrySmith(float ndv, float ndl, float roughness)
+{
+    float k = Square(roughness + 1) / 8;
+    return (ndv / (ndv * (1 - k) + k)) * (ndl / (ndl * (1 - k) + k));
+}
+
+// Outgoing radiance for unit incident radiance from `light` (direction towards the light).
+float3 EvaluateBRDF(Surface s, float3 n, float3 v, float3 l, float3 f0)
+{
+    float ndl = saturate(dot(n, l));
+    if (ndl <= 0)
+    {
+        return 0;
+    }
+    float3 h   = normalize(v + l);
+    float  ndv = max(dot(n, v), 1e-4);
+    float3 f   = FresnelSchlick(saturate(dot(h, v)), f0);
+    float3 specular = DistributionGGX(saturate(dot(n, h)), s.roughness) * GeometrySmith(ndv, ndl, s.roughness) * f /
+                      (4 * ndv * ndl + 1e-4);
+    float3 kd = (1 - f) * (1 - s.metallic);
+    return (kd * s.albedo / PI + specular) * ndl;
+}
+
+// ---- cascaded shadows
+
+uint SelectCascade(float viewDepth)
+{
+    return min(uint(viewDepth > frame.cascadeSplits.x) + uint(viewDepth > frame.cascadeSplits.y) +
+                   uint(viewDepth > frame.cascadeSplits.z),
+               kCascades - 1);
+}
+
+float CascadeVisibility(uint cascade, float3 position, float3 normal)
+{
+    // Normal offset scaled to the cascade's texel size keeps acne away at every distance.
+    float3 offset    = position + normal * frame.shadow.y * frame.cascadeTexel[cascade];
+    float4 projected = mul(frame.lightViewProjection[cascade], float4(offset, 1));
+    float3 clip      = projected.xyz / projected.w;
+    float2 uv        = ClipToUv(clip.xy);
+    if (any(uv < 0) || any(uv > 1) || clip.z > 1)
+    {
+        return 1;
+    }
+    float receiver = clip.z - frame.shadow.x;
+    float texel    = 1.0 / frame.shadow.z;
+    // 3 x 3 taps of hardware 2 x 2 comparison filtering: a 4 x 4 texel PCF kernel.
+    float visibility = 0;
+    [unroll] for (int y = -1; y <= 1; ++y)
+    {
+        [unroll] for (int x = -1; x <= 1; ++x)
+        {
+            visibility += shadowMaps[cascade].SampleCmpLevelZero(shadowSampler, uv + float2(x, y) * texel, receiver);
+        }
+    }
+    return visibility / 9;
+}
+
+float ShadowVisibility(float3 position, float3 normal)
+{
+    if (frame.shadow.w < 0.5)
+    {
+        return 1;
+    }
+    float viewDepth = -mul(frame.view, float4(position, 1)).z;
+    if (viewDepth > frame.cascadeSplits.w)
+    {
+        return 1;
+    }
+    uint  cascade    = SelectCascade(viewDepth);
+    float visibility = CascadeVisibility(cascade, position, normal);
+    // Blend into the next cascade over the last 10% of this one: no visible seams.
+    if (cascade + 1 < kCascades)
+    {
+        float start = cascade == 0 ? 0 : frame.cascadeSplits[cascade - 1];
+        float width = (frame.cascadeSplits[cascade] - start) * 0.1;
+        float blend = saturate((viewDepth - (frame.cascadeSplits[cascade] - width)) / width);
+        if (blend > 0)
+        {
+            visibility = lerp(visibility, CascadeVisibility(cascade + 1, position, normal), blend);
+        }
+    }
+    return visibility;
+}
+
+// ---- image-based lighting (split sum, with Fdez-Aguera multiple-scattering energy compensation)
+
+float3 EvaluateIBL(Surface s, float3 n, float3 v, float3 f0)
+{
+    float  ndv         = max(dot(n, v), 1e-3);
+    float2 brdf        = brdfLut.SampleLevel(linearClamp, float2(ndv, s.roughness), 0).rg;
+    float3 irradiance  = irradianceMap.SampleLevel(environmentSampler, EnvironmentUv(n), 0).rgb;
+    float3 r           = reflect(-v, n);
+    float3 prefiltered = specularMap.SampleLevel(environmentSampler, EnvironmentUv(r), s.roughness * frame.environment.x).rgb;
+
+    float3 fssEss = f0 * brdf.x + brdf.y;
+    float  ems    = 1 - (brdf.x + brdf.y);
+    float3 fAvg   = f0 + (1 - f0) / 21;
+    float3 fmsEms = ems * fssEss * fAvg / (1 - fAvg * ems);
+    float3 kd     = s.albedo * (1 - s.metallic) * (1 - fssEss - fmsEms);
+    return (fmsEms + kd) * irradiance + fssEss * prefiltered;
+}
+
+// ---- everything
+
+float3 ShadeSurface(Surface s, float3 position, float3 normal)
+{
+    float3 n  = normalize(normal);
+    float3 v  = normalize(frame.cameraPosition.xyz - position);
+    float3 f0 = lerp(float3(0.04), s.albedo, s.metallic);
+
+    float3 color = s.emissive;
+    if (frame.lightDirection.w > 0)
+    {
+        float3 l = normalize(-frame.lightDirection.xyz);
+        color += EvaluateBRDF(s, n, v, l, f0) * frame.lightColor.rgb * frame.lightDirection.w * ShadowVisibility(position, n);
+    }
+    for (uint i = 0; i < frame.counts.x; ++i)
+    {
+        PointLightData light    = frame.pointLights[i];
+        float3         delta    = light.position.xyz - position;
+        float          distance = length(delta);
+        float          falloff  = 1.0 / max(light.attenuation.x + light.attenuation.y * distance +
+                                                light.attenuation.z * distance * distance, 1e-4);
+        color += EvaluateBRDF(s, n, v, delta / max(distance, 1e-4), f0) * light.color.rgb * light.color.w * falloff;
+    }
+    if (frame.environment.y > 0.5)
+    {
+        color += EvaluateIBL(s, n, v, f0) * s.occlusion * frame.lightColor.w;
+    }
+    return max(color, 0);
+}
+
+float3 SkyColor(float3 direction)
+{
+    if (frame.skyColor.w > 0.5 || frame.environment.y < 0.5)
+    {
+        return frame.skyColor.rgb; // CameraClearFlags::Color (also the fallback without an environment map)
+    }
+    return radianceMap.SampleLevel(environmentSampler, EnvironmentUv(direction), 0).rgb * frame.lightColor.w;
+}

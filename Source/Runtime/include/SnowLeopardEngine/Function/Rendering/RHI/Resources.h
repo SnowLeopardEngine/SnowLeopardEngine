@@ -37,6 +37,8 @@ namespace SnowLeopardEngine::RHI
 
         // Full-resource view, created on first use.
         VriDescriptor* View();
+        // View of a single mip level (render target of a mip chain), created on first use.
+        VriDescriptor* MipView(uint32_t mip);
 
         Extent GetExtent() const { return {Desc.width, Desc.height}; }
 
@@ -49,6 +51,7 @@ namespace SnowLeopardEngine::RHI
         bool                m_Owned;
         VriImageAspectFlags m_Aspect;
         VriDescriptor*      m_View = nullptr;
+        std::vector<VriDescriptor*> m_MipViews;
     };
 
     class Buffer
@@ -62,12 +65,20 @@ namespace SnowLeopardEngine::RHI
 
         void Transition(VriCommandBuffer* cmd, VriAccessStage next);
 
+        // Whole-buffer view of `type` (ConstantBuffer / StructuredBuffer / StorageBuffer), created on first use.
+        VriDescriptor* View(VriDescriptorType type);
+
+        // Host-visible buffers only (HostUpload): copies `data` to `offset`. With one frame in flight the GPU is
+        // not reading the buffer while the next frame is recorded.
+        void Write(const void* data, uint64_t size, uint64_t offset = 0);
+
         VriBuffer*     Handle = nullptr;
         VriBufferDesc  Desc {};
         VriAccessStage State {};
 
     private:
-        Device& m_Device;
+        Device&                                           m_Device;
+        std::vector<std::pair<VriDescriptorType, VriDescriptor*>> m_Views;
     };
 
     VriTextureDesc ColorTextureDesc(Extent extent, VriFormat format = VriFormat_RGBA8_UNORM);
@@ -80,9 +91,16 @@ namespace SnowLeopardEngine::RHI
                         Extent            extent,
                         const float*      clearColor = nullptr);
 
-    // Blocking uploads (own frame, waits for completion). Rows of `rgba8` are tightly packed.
+    // Bytes per texel of the uncompressed colour formats the engine uploads (RGBA8 / RGBA16F / RGBA32F ...).
+    uint32_t TexelSize(VriFormat format);
+
+    // Blocking uploads (own frame, waits for completion).
     Scope<Buffer> UploadBuffer(Device& device, std::span<const std::byte> data, VriBufferUsageFlags usage);
-    void          UploadTexture2D(Device& device, Texture& texture, std::span<const std::byte> rgba8);
+    // Writes `data` into a device-local buffer at `offset` (the buffer needs TransferDst usage).
+    void UploadBufferRegion(Device& device, Buffer& buffer, uint64_t offset, std::span<const std::byte> data);
+    // One tightly packed span per mip level (level 0 first, at most Desc.mipNum); texel size from the format.
+    void UploadTexture(Device& device, Texture& texture, std::span<const std::span<const std::byte>> levels);
+    void UploadTexture2D(Device& device, Texture& texture, std::span<const std::byte> rgba8); // one RGBA8 level
 
     // CPU copy of an 8-bit RGBA / BGRA texture as tightly packed RGBA8 rows, recorded into the caller's frame.
     // Read Pixels() only after that frame was submitted and waited for.

@@ -13,6 +13,11 @@ namespace SnowLeopardEngine
         uint32_t    Height     = 768;
         bool        Resizable  = false;
         bool        Fullscreen = false;
+        // Offline: the window stays hidden and frames are rendered offscreen (no swapchain), e.g. for captures and
+        // tests. SLE_OFFLINE=1 turns it on for any app.
+        bool Offline = false;
+
+        bool IsOffline() const;
 
         WindowInitInfo() = default;
         WindowInitInfo(const std::string& title, uint32_t width, uint32_t height, bool resizable, bool fullscreen) :

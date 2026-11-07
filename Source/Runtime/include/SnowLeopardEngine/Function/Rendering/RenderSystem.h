@@ -7,6 +7,7 @@
 #include "SnowLeopardEngine/Function/Rendering/RHI/Resources.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Swapchain.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderGraph/RenderGraph.h"
+#include "SnowLeopardEngine/Function/Rendering/Renderer/SceneRenderer.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderTypeDef.h"
 
 #include <filesystem>
@@ -25,9 +26,9 @@ namespace SnowLeopardEngine
         virtual void Draw(VriCommandBuffer* cmd) = 0; // record draws; inside the swapchain pass
     };
 
-    // Owns the VRI device, the window's swapchain and the frame. Per frame: OnTick records the scene (Phase 2.4),
-    // Present uploads overlays, acquires the swapchain image, runs the frame graph (clear, overlays, present),
-    // submits and presents.
+    // Owns the VRI device, the window's swapchain and the frame. Per frame, Present: overlays and the scene renderer
+    // stage their data, the swapchain image is acquired, the frame graph runs (scene passes or a clear, overlays,
+    // present), the frame is submitted and presented.
     class RenderSystem final : public EngineSubSystem
     {
     public:
@@ -41,16 +42,19 @@ namespace SnowLeopardEngine
         // Size of what the scene is rendered at (the window, or the editor's Viewport panel).
         void UpdateViewport(const Rect2D& viewport) { m_Viewport = viewport; }
 
-        // Editor Viewport: render the scene into a texture instead of the window. No scene renderer yet (Phase 2.4),
-        // so there is no output texture: the id stays 0.
+        // Editor Viewport: render the scene into a texture instead of the window. Not ported yet (Phase 2.5): while
+        // it is on, the scene is not drawn and the id stays 0.
         void     SetRenderToTexture(bool enabled) { m_RenderToTexture = enabled; }
         uint64_t GetOutputTextureID() const { return 0; }
 
         void AddOverlay(RenderOverlay* overlay);
         void RemoveOverlay(RenderOverlay* overlay);
 
-        RHI::Device& GetDevice() { return *m_Device; }
-        VriFormat    GetSwapchainFormat() const { return m_Swapchain->GetFormat(); }
+        RHI::Device&   GetDevice() { return *m_Device; }
+        bool           IsOffline() const { return m_Swapchain == nullptr; }
+        SceneRenderer* GetSceneRenderer() { return m_SceneRenderer.get(); }
+        // Format of the presented image (the swapchain's, or the offline target's).
+        VriFormat GetSwapchainFormat() const { return m_Swapchain ? m_Swapchain->GetFormat() : m_Offscreen->Desc.format; }
 
     private:
         void OnLogicSceneLoaded(const LogicSceneLoadedEvent& e);
@@ -59,8 +63,10 @@ namespace SnowLeopardEngine
 
     private:
         Scope<RHI::Device>    m_Device;
-        Scope<RHI::Swapchain> m_Swapchain;
+        Scope<RHI::Swapchain> m_Swapchain; // null offline
+        Scope<RHI::Texture>   m_Offscreen; // offline target, window-sized
         Scope<RHI::Frame>     m_Frame;
+        Scope<SceneRenderer>  m_SceneRenderer;
 
         std::vector<RenderOverlay*> m_Overlays;
 
@@ -68,6 +74,9 @@ namespace SnowLeopardEngine
         Scope<RenderGraph>    m_FrameGraph;
         RenderGraph::Resource m_Backbuffer {};
         RHI::Extent           m_FrameGraphExtent {};
+        bool                  m_FrameGraphHasScene     = false;
+        uint64_t              m_FrameGraphSceneVersion = 0;
+        bool                  m_SceneReady             = false; // the scene renderer prepared this frame
 
         Rect2D m_Viewport {};
         bool   m_RenderToTexture = false;

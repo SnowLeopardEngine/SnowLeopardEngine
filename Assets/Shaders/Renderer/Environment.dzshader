@@ -1,0 +1,115 @@
+// Image-based lighting precompute from an equirectangular radiance map (once per environment): cosine-convolved
+// irradiance, GGX-prefiltered specular (roughness = mip / (mips - 1)) and the split-sum BRDF table.
+// Ported from libvultra's environment.slang.
+Shader "Renderer/Environment"
+{
+    SubShader
+    {
+        Cull Off
+        SLANGINCLUDE
+        #include "Slang/Scene.slangh"
+        struct FilterParameters
+        {
+            float roughness;
+            uint  sampleCount;
+            float2 padding;
+        };
+        [[vk::push_constant]] ConstantBuffer<FilterParameters> filter;
+
+        ScreenVertex vertexMain(uint id : SV_VertexID) { return FullscreenTriangle(id); }
+
+        float3 SampleRadiance(float3 direction)
+        {
+            return radianceMap.SampleLevel(environmentSampler, EnvironmentUv(direction), 0).rgb;
+        }
+        ENDSLANG
+
+        Pass
+        {
+            Name "Irradiance"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                float3 normal = EnvironmentDirection(input.uv);
+                float3 sum    = 0;
+                for (uint i = 0; i < filter.sampleCount; ++i)
+                {
+                    float2 xi = Hammersley(i, filter.sampleCount);
+                    float  r  = sqrt(xi.x);
+                    sum += SampleRadiance(ToWorld(float3(r * cos(2 * PI * xi.y), r * sin(2 * PI * xi.y), sqrt(1 - xi.x)), normal));
+                }
+                // Cosine-weighted mean radiance = irradiance / pi: multiplied by albedo it is the Lambert term.
+                return float4(sum / filter.sampleCount, 1);
+            }
+            ENDSLANG
+        }
+
+        Pass
+        {
+            Name "Specular"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                float3 normal = EnvironmentDirection(input.uv);
+                if (filter.roughness < 0.001)
+                {
+                    return float4(SampleRadiance(normal), 1);
+                }
+                float3 sum    = 0;
+                float  weight = 0;
+                for (uint i = 0; i < filter.sampleCount; ++i)
+                {
+                    float3 h      = SampleGGX(Hammersley(i, filter.sampleCount), filter.roughness, normal);
+                    float3 l      = reflect(-normal, h);
+                    float  cosine = saturate(dot(normal, l));
+                    sum += SampleRadiance(l) * cosine;
+                    weight += cosine;
+                }
+                return float4(sum / max(weight, 1e-6), 1);
+            }
+            ENDSLANG
+        }
+
+        Pass
+        {
+            Name "BRDF"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            float SmithG1(float cosine, float alpha)
+            {
+                float cosine2 = cosine * cosine;
+                return 2 * cosine / max(cosine + sqrt(cosine2 + alpha * alpha * (1 - cosine2)), 1e-6);
+            }
+
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                float  ndv       = max(input.uv.x, 0.001);
+                float  roughness = max(input.uv.y, 0.02);
+                float3 view      = float3(sqrt(1 - ndv * ndv), 0, ndv);
+                float2 result    = 0;
+                for (uint i = 0; i < filter.sampleCount; ++i)
+                {
+                    float3 h   = SampleGGX(Hammersley(i, filter.sampleCount), roughness, float3(0, 0, 1));
+                    float3 l   = reflect(-view, h);
+                    float  ndl = saturate(l.z);
+                    float  ndh = saturate(h.z);
+                    float  vdh = saturate(dot(view, h));
+                    if (ndl > 0)
+                    {
+                        float alpha      = roughness * roughness;
+                        float visibility = SmithG1(ndv, alpha) * SmithG1(ndl, alpha) * vdh / max(ndh * ndv, 1e-6);
+                        float fresnel    = pow(1 - vdh, 5);
+                        result += float2(1 - fresnel, fresnel) * visibility;
+                    }
+                }
+                return float4(result / filter.sampleCount, 0, 1);
+            }
+            ENDSLANG
+        }
+    }
+}

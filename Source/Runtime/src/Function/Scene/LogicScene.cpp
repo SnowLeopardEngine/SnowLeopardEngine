@@ -184,9 +184,8 @@ namespace SnowLeopardEngine
     {
         if (m_IsLoaded)
         {
-            // OnLoad has already run, so this entity's meshes and materials are not loaded yet.
-            LoadEntityRenderResources(entity);
-
+            // Components are added after CreateEntity returns: their meshes and materials are loaded by
+            // LoadPendingRenderResources at the start of the next tick.
             EntityCreateEvent entityCreateEvent(entity);
             TriggerEvent(entityCreateEvent);
         }
@@ -195,7 +194,8 @@ namespace SnowLeopardEngine
     void LogicScene::LoadEntityRenderResources(entt::entity entity)
     {
         // TODO: Move to AssetManager
-        if (auto* meshFilter = m_Registry.try_get<MeshFilterComponent>(entity))
+        // Idempotent: only what is still missing is built or loaded.
+        if (auto* meshFilter = m_Registry.try_get<MeshFilterComponent>(entity); meshFilter != nullptr && meshFilter->Meshes == nullptr)
         {
             if (meshFilter->PrimitiveType != MeshPrimitiveType::Invalid)
             {
@@ -234,14 +234,14 @@ namespace SnowLeopardEngine
             meshFilter->AssignEntityID(static_cast<int>(entity));
         }
 
-        if (auto* terrain = m_Registry.try_get<TerrainComponent>(entity))
+        if (auto* terrain = m_Registry.try_get<TerrainComponent>(entity); terrain != nullptr && terrain->Mesh.Data.Vertices.empty())
         {
             terrain->Mesh = GeometryFactory::CreateMeshPrimitive<HeightfieldMesh>(
                 terrain->TerrainHeightMap, terrain->XScale, terrain->YScale, terrain->ZScale);
         }
 
         auto loadMaterial = [](auto* renderer) {
-            if (renderer != nullptr && FileSystem::Exists(renderer->MaterialFilePath))
+            if (renderer != nullptr && renderer->Mat == nullptr && FileSystem::Exists(renderer->MaterialFilePath))
             {
                 renderer->Mat = IO::Load(renderer->MaterialFilePath);
             }
@@ -251,6 +251,47 @@ namespace SnowLeopardEngine
         loadMaterial(m_Registry.try_get<UI::ImageComponent>(entity));
         loadMaterial(m_Registry.try_get<UI::ButtonComponent>(entity));
         loadMaterial(m_Registry.try_get<UI::TextComponent>(entity));
+    }
+
+    void LogicScene::LoadPendingRenderResources()
+    {
+        std::vector<entt::entity> pending;
+        m_Registry.view<MeshFilterComponent>().each([&](entt::entity entity, MeshFilterComponent& filter) {
+            if (filter.Meshes == nullptr && (filter.PrimitiveType != MeshPrimitiveType::Invalid || !filter.FilePath.empty()))
+            {
+                pending.push_back(entity);
+            }
+        });
+        m_Registry.view<TerrainComponent>().each([&](entt::entity entity, TerrainComponent& terrain) {
+            if (terrain.Mesh.Data.Vertices.empty())
+            {
+                pending.push_back(entity);
+            }
+        });
+        auto missingMaterial = [&](auto& view) {
+            view.each([&](entt::entity entity, auto& renderer) {
+                if (renderer.Mat == nullptr && !renderer.MaterialFilePath.empty())
+                {
+                    pending.push_back(entity);
+                }
+            });
+        };
+        auto meshRenderers    = m_Registry.view<MeshRendererComponent>();
+        auto terrainRenderers = m_Registry.view<TerrainRendererComponent>();
+        auto images           = m_Registry.view<UI::ImageComponent>();
+        auto buttons          = m_Registry.view<UI::ButtonComponent>();
+        auto texts            = m_Registry.view<UI::TextComponent>();
+        missingMaterial(meshRenderers);
+        missingMaterial(terrainRenderers);
+        missingMaterial(images);
+        missingMaterial(buttons);
+        missingMaterial(texts);
+        std::sort(pending.begin(), pending.end());
+        pending.erase(std::unique(pending.begin(), pending.end()), pending.end());
+        for (auto entity : pending)
+        {
+            LoadEntityRenderResources(entity);
+        }
     }
 
     Entity LogicScene::GetEntityWithCoreUUID(CoreUUID id) const { return m_EntityMap->at(id); }
@@ -340,6 +381,9 @@ namespace SnowLeopardEngine
     void LogicScene::OnTick(float deltaTime)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
+
+        // Entities created (or given renderers) since the last tick.
+        LoadPendingRenderResources();
 
         // Tick NativeScriptingComponents for now
         // TODO: Consider Script Tick Priority

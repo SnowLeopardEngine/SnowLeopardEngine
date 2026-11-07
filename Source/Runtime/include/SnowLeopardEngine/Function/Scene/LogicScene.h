@@ -100,9 +100,11 @@ namespace SnowLeopardEngine
 
         void InitAfterDeserializing();
 
-        // Builds meshes and loads materials for one entity. Used for every entity on scene load and for entities
-        // created at runtime (TriggerEntityCreate), which would otherwise reach the renderer without them.
+        // Builds the meshes and loads the materials an entity is still missing. Used for every entity on scene load;
+        // LoadPendingRenderResources (start of each tick) covers entities created or given renderers at runtime,
+        // whose components are only filled in after CreateEntity returns.
         void LoadEntityRenderResources(entt::entity entity);
+        void LoadPendingRenderResources();
 
         template<typename T>
         void OnComponentAdded(Entity entity, T& component);

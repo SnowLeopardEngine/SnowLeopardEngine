@@ -1,0 +1,85 @@
+// GPU culling: one thread per instance tests its bounding sphere against a view's frustum and writes the indexed
+// indirect draw for it. Compact mode appends visible draws (draw count in drawCounts[view], drawn with
+// DrawIndexedIndirectCount); in-place mode keeps the instance order (transparents, sorted on the CPU), turns
+// culled draws into zero-instance draws and sets the draw count to the instance count.
+Shader "Renderer/Culling"
+{
+    SubShader
+    {
+        SLANGINCLUDE
+        #include "Slang/Scene.slangh"
+        ENDSLANG
+
+        Pass
+        {
+            Name "Cull"
+            Compute cullMain
+            SLANGPROGRAM
+            struct DrawCommand
+            {
+                uint indexCount;
+                uint instanceCount;
+                uint firstIndex;
+                int  vertexOffset;
+                uint firstInstance;
+            };
+
+            struct CullParameters
+            {
+                float4 planes[6]; // xyz normal (pointing inside), w distance
+                uint4  range;     // x first instance, y instance count, z view (command block / counter), w capacity
+                uint4  options;   // x compact, y shadow casters only
+            };
+
+            [[vk::binding(18, 0)]] RWStructuredBuffer<DrawCommand> drawCommands;
+            [[vk::binding(19, 0)]] RWStructuredBuffer<uint>        drawCounts;
+            [[vk::push_constant]] ConstantBuffer<CullParameters>  cull;
+
+            [numthreads(64, 1, 1)]
+            void cullMain(uint3 id : SV_DispatchThreadID)
+            {
+                if (id.x >= cull.range.y)
+                {
+                    return;
+                }
+                uint         index    = cull.range.x + id.x;
+                InstanceData instance = instances[index];
+
+                bool visible = cull.options.y == 0 || instance.flags.x != 0;
+                [unroll] for (uint i = 0; i < 6; ++i)
+                {
+                    visible = visible && dot(cull.planes[i].xyz, instance.boundingSphere.xyz) + cull.planes[i].w >=
+                                             -instance.boundingSphere.w;
+                }
+
+                DrawCommand command;
+                command.indexCount    = instance.draw.x;
+                command.instanceCount = 1;
+                command.firstIndex    = instance.draw.y;
+                command.vertexOffset  = int(instance.draw.z);
+                command.firstInstance = index; // selects the instance through the identity instance stream
+
+                uint block = cull.range.z * cull.range.w;
+                if (cull.options.x != 0)
+                {
+                    if (visible)
+                    {
+                        uint slot;
+                        InterlockedAdd(drawCounts[cull.range.z], 1, slot);
+                        drawCommands[block + slot] = command;
+                    }
+                }
+                else
+                {
+                    command.instanceCount      = visible ? 1 : 0;
+                    drawCommands[block + id.x] = command;
+                    if (id.x == 0)
+                    {
+                        drawCounts[cull.range.z] = cull.range.y; // every command, culled ones draw nothing
+                    }
+                }
+            }
+            ENDSLANG
+        }
+    }
+}

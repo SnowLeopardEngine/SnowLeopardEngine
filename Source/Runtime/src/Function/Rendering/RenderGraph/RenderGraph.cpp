@@ -66,6 +66,12 @@ namespace SnowLeopardEngine
                         return 0;
                     }
                     break;
+                case GraphUsage::IndirectRead:
+                    if (!texture)
+                    {
+                        return VriBufferUsage_IndirectBuffer;
+                    }
+                    break;
             }
             throw std::invalid_argument("Unsupported graph usage for this resource type");
         }
@@ -120,6 +126,8 @@ namespace SnowLeopardEngine
                     return {VriAccess_CopyDestinationWrite, VriLayout_CopyDestination, VriPipelineStage_Transfer};
                 case GraphUsage::Present:
                     return {VriAccess_None, VriLayout_Present, VriPipelineStage_AllCommands};
+                case GraphUsage::IndirectRead:
+                    return {VriAccess_IndirectBufferRead, VriLayout_Undefined, VriPipelineStage_DrawIndirect};
             }
             throw std::logic_error("Unknown graph usage");
         }
@@ -168,6 +176,8 @@ namespace SnowLeopardEngine
                 return "copy destination";
             case GraphUsage::Present:
                 return "present";
+            case GraphUsage::IndirectRead:
+                return "indirect read";
         }
         throw std::logic_error("Unknown graph usage");
     }

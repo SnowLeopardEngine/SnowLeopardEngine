@@ -195,24 +195,39 @@ namespace SnowLeopardEngine
         }
 
         // No graphics context: the render system creates a VRI (Vulkan) swapchain from the native window.
-        SDL_WindowFlags flags = SDL_WINDOW_HIGH_PIXEL_DENSITY;
-        if (initInfo.Resizable)
+        SDL_WindowFlags flags   = SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        const bool      offline = initInfo.IsOffline();
+        int             width   = static_cast<int>(initInfo.Width);
+        int             height  = static_cast<int>(initInfo.Height);
+        if (initInfo.Resizable && !offline)
         {
             flags |= SDL_WINDOW_RESIZABLE;
         }
-        if (initInfo.Fullscreen)
+        if (offline)
+        {
+            // Never shown. A fullscreen app keeps the desktop resolution so offline frames match on-screen ones.
+            flags |= SDL_WINDOW_HIDDEN;
+            if (initInfo.Fullscreen)
+            {
+                if (const auto* mode = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay()); mode != nullptr)
+                {
+                    width  = mode->w;
+                    height = mode->h;
+                }
+            }
+        }
+        else if (initInfo.Fullscreen)
         {
             flags |= SDL_WINDOW_FULLSCREEN; // borderless, at the desktop resolution
         }
 
-        m_Window = SDL_CreateWindow(
-            initInfo.Title.c_str(), static_cast<int>(initInfo.Width), static_cast<int>(initInfo.Height), flags);
+        m_Window = SDL_CreateWindow(initInfo.Title.c_str(), width, height, flags);
         SNOW_LEOPARD_CORE_ASSERT(m_Window, "[SDL3Window] SDL_CreateWindow failed: {0}", SDL_GetError());
         ++g_WindowCount;
 
         // Where window coordinates are pixels (Windows, X11), scale a windowed size by the display scale, as GLFW's
         // GLFW_SCALE_TO_MONITOR did. Where they are points (macOS, Wayland) the OS already does it.
-        if (!initInfo.Fullscreen && SDL_GetWindowPixelDensity(m_Window) <= 1.0f)
+        if (!initInfo.Fullscreen && !offline && SDL_GetWindowPixelDensity(m_Window) <= 1.0f)
         {
             const float scale = GetContentScale();
             if (scale > 1.0f)

@@ -1,0 +1,83 @@
+// Math, colour and coordinate helpers shared by the scene renderer's shaders.
+// Conventions (VRI, see RHI::Device): clip-space Y points up, depth is [0, 1] (not reversed), texture UV (0, 0) is
+// the top-left texel. Meshes are counter-clockwise.
+#pragma once
+
+static const float PI = 3.141592653589793;
+
+float Square(float value) { return value * value; }
+
+// ---- colour
+
+float3 GammaToLinear(float3 color) { return pow(max(color, 0), 2.2); }
+float3 LinearToGamma(float3 color) { return pow(max(color, 0), 1.0 / 2.2); }
+
+// Narkowicz's fit of the ACES RRT + ODT.
+float3 ToneMapACES(float3 color)
+{
+    return saturate((color * (2.51 * color + 0.03)) / (color * (2.43 * color + 0.59) + 0.14));
+}
+
+// ---- spaces
+
+float2 ClipToUv(float2 clip) { return clip * float2(0.5, -0.5) + 0.5; }
+float2 UvToClip(float2 uv) { return uv * float2(2, -2) + float2(-1, 1); }
+
+float3 Unproject(float2 uv, float depth, float4x4 inverseViewProjection)
+{
+    float4 position = mul(inverseViewProjection, float4(UvToClip(uv), depth, 1));
+    return position.xyz / position.w;
+}
+
+// Tangent frame around `normal` (z = normal).
+float3 ToWorld(float3 local, float3 normal)
+{
+    float3 up      = abs(normal.y) < 0.999 ? float3(0, 1, 0) : float3(0, 0, 1);
+    float3 tangent = normalize(cross(up, normal));
+    return local.x * tangent + local.y * cross(normal, tangent) + local.z * normal;
+}
+
+// ---- equirectangular environment maps (+Y up)
+
+float2 EnvironmentUv(float3 direction)
+{
+    return float2(atan2(direction.z, direction.x) / (2 * PI) + 0.5, acos(clamp(direction.y, -1, 1)) / PI);
+}
+
+float3 EnvironmentDirection(float2 uv)
+{
+    float phi   = (uv.x - 0.5) * 2 * PI;
+    float theta = uv.y * PI;
+    return float3(cos(phi) * sin(theta), cos(theta), sin(phi) * sin(theta));
+}
+
+// ---- sampling
+
+float2 Hammersley(uint index, uint count)
+{
+    return float2(float(index) / count, float(reversebits(index)) * 2.3283064365386963e-10);
+}
+
+float3 SampleGGX(float2 xi, float roughness, float3 normal)
+{
+    float alpha  = max(Square(roughness), 0.001);
+    float cosine = sqrt((1 - xi.y) / (1 + (alpha * alpha - 1) * xi.y));
+    float sine   = sqrt(max(1 - cosine * cosine, 0));
+    return ToWorld(float3(cos(2 * PI * xi.x) * sine, sin(2 * PI * xi.x) * sine, cosine), normal);
+}
+
+// ---- fullscreen triangle
+
+struct ScreenVertex
+{
+    float4 position : SV_Position;
+    float2 uv : TEXCOORD0;
+};
+
+ScreenVertex FullscreenTriangle(uint id)
+{
+    ScreenVertex result;
+    result.uv       = float2((id << 1) & 2, id & 2);
+    result.position = float4(UvToClip(result.uv), 0, 1);
+    return result;
+}

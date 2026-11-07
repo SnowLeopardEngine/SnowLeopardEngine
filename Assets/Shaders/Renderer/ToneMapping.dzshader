@@ -1,0 +1,31 @@
+// HDR scene colour -> display: exposure, ACES (Narkowicz fit), gamma 2.2 for a UNORM target.
+Shader "Renderer/ToneMapping"
+{
+    SubShader
+    {
+        Cull Off
+        SLANGINCLUDE
+        #include "Slang/Scene.slangh"
+        ENDSLANG
+
+        Pass
+        {
+            Name "ToneMapping"
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            struct ToneParameters { float4 values; }; // x exposure (linear scale), y apply gamma
+            [[vk::push_constant]] ConstantBuffer<ToneParameters> tone;
+
+            ScreenVertex vertexMain(uint id : SV_VertexID) { return FullscreenTriangle(id); }
+
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                float3 color = hdrColor.Load(int3(int2(input.position.xy), 0)).rgb;
+                color        = ToneMapACES(max(color, 0) * tone.values.x);
+                return float4(tone.values.y > 0.5 ? LinearToGamma(color) : color, 1);
+            }
+            ENDSLANG
+        }
+    }
+}

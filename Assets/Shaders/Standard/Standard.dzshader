@@ -1,102 +1,112 @@
+// The engine's standard PBR material, drawn by the GPU-driven scene renderer.
+//
+// Properties are the .dzmaterial vocabulary: the material loader validates a .dzmaterial against them, and the
+// renderer packs the values into one MaterialData record (Slang/Scene.slangh) with bindless texture indices, so
+// every Standard object of a pass is one indirect draw. `useXMap = 1` selects the map over the constant.
+Shader "Standard/Standard"
 {
-    "DzShader": {
-        "Name": "Standard/Standard",
-        "Properties": [
+    Properties
+    {
+        albedo ("Albedo", Color) = (1, 1, 1, 1)
+        albedoMap ("Albedo Map", 2D) = "white" {}
+        [Enum(Off, 0, On, 1)] useAlbedoMap ("Use Albedo Map", Integer) = 0
+        metallic ("Metallic", Range(0, 1)) = 0
+        metallicMap ("Metallic Map", 2D) = "black" {}
+        [Enum(Off, 0, On, 1)] useMetallicMap ("Use Metallic Map", Integer) = 0
+        roughness ("Roughness", Range(0, 1)) = 0.5
+        roughnessMap ("Roughness Map", 2D) = "white" {}
+        [Enum(Off, 0, On, 1)] useRoughnessMap ("Use Roughness Map", Integer) = 0
+        ao ("Ambient Occlusion", Range(0, 1)) = 1
+        aoMap ("Ambient Occlusion Map", 2D) = "white" {}
+        [Enum(Off, 0, On, 1)] useAoMap ("Use AO Map", Integer) = 0
+        [HDR] emissive ("Emissive", Color) = (0, 0, 0, 1)
+        emissiveMap ("Emissive Map", 2D) = "black" {}
+        [Enum(Off, 0, On, 1)] useEmissiveMap ("Use Emissive Map", Integer) = 0
+        opacity ("Opacity", Range(0, 1)) = 1
+    }
+    SubShader
+    {
+        Tags { "RenderType" = "Opaque" }
+        Cull Back
+        ZTest LEqual
+        SLANGINCLUDE
+        #include "Slang/Lighting.slangh"
+        ENDSLANG
+
+        // Opaque queue: one indirect draw of every visible opaque instance.
+        Pass
+        {
+            Name "GBuffer"
+            Tags { "LightMode" = "Deferred" }
+            ZWrite On
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            struct GBuffer
             {
-                "Name": "albedo",
-                "Type": "Color",
-                "Value": "(1, 1, 1, 1)"
-            },
+                float4 albedoMetallic : SV_Target0;     // RGBA8 sRGB
+                float4 normalRoughness : SV_Target1;    // RGBA16F
+                float4 emissiveOcclusion : SV_Target2;  // RGBA16F
+            };
+
+            SurfaceVertex vertexMain(MeshVertex input) { return TransformVertex(input); }
+
+            GBuffer fragmentMain(SurfaceVertex input)
             {
-                "Name": "albedoMap",
-                "Type": "Texture2D",
-                "Value": ""
-            },
-            {
-                "Name": "useAlbedoMap",
-                "Type": "Int",
-                "Value": "0"
-            },
-            {
-                "Name": "metallic",
-                "Type": "Float",
-                "Value": "0.0"
-            },
-            {
-                "Name": "metallicMap",
-                "Type": "Texture2D",
-                "Value": ""
-            },
-            {
-                "Name": "useMetallicMap",
-                "Type": "Int",
-                "Value": "0"
-            },
-            {
-                "Name": "roughness",
-                "Type": "Float",
-                "Value": "1.0"
-            },
-            {
-                "Name": "roughnessMap",
-                "Type": "Texture2D",
-                "Value": ""
-            },
-            {
-                "Name": "useRoughnessMap",
-                "Type": "Int",
-                "Value": "0"
-            },
-            {
-                "Name": "ao",
-                "Type": "Float",
-                "Value": "0"
-            },
-            {
-                "Name": "aoMap",
-                "Type": "Texture2D",
-                "Value": ""
-            },
-            {
-                "Name": "useAoMap",
-                "Type": "Int",
-                "Value": "0"
+                Surface s = SampleSurface(input.material, input.uv);
+                GBuffer output;
+                output.albedoMetallic    = float4(s.albedo, s.metallic);
+                output.normalRoughness   = float4(normalize(input.normal), s.roughness);
+                output.emissiveOcclusion = float4(s.emissive, s.occlusion);
+                return output;
             }
-        ],
-        "InstancedPropertyNames": [],
-        "Resources": [],
-        "PipelineStates": {},
-        "Tags": {
-            "RenderQueue": "Geometry",
-            "LightingMode": "Forward"
-        },
-        "Keywords": [
-            "FORWARD_LIGHTING"
-        ],
-        "Passes": [
+            ENDSLANG
+        }
+
+        // Transparent queue: sorted back to front on the CPU, culled in place on the GPU, lit forward.
+        Pass
+        {
+            Name "Forward"
+            Tags { "LightMode" = "Forward" }
+            ZWrite Off
+            Blend SrcAlpha OneMinusSrcAlpha
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            SurfaceVertex vertexMain(MeshVertex input) { return TransformVertex(input); }
+
+            float4 fragmentMain(SurfaceVertex input) : SV_Target0
             {
-                "Name": "PBR_GeometryPass",
-                "PipelineStates": {},
-                "Tags": {},
-                "ResourcesToBind": [],
-                "ResourcesToUse": [
-                    "shadowMap"
-                ],
-                "Stages": [
-                    {
-                        "Name": "vertex",
-                        "LanguageType": "GLSL",
-                        "EntryPoint": "main",
-                        "ShaderSource": "#version 450\n\n#include \"LegacySceneUniform.glsl\"\n#include \"LegacyShadow.glsl\"\n\nlayout(location = 0) in vec3 aPos;\nlayout(location = 1) in vec3 aNormal;\nlayout(location = 2) in vec2 aTexCoords;\nlayout(location = 3) in int aEntityID;\n\nlayout(location = 0) out vec2 varingTexCoords;\nlayout(location = 1) flat out int varingEntityID;\nlayout(location = 2) out vec3 worldNormal;\nlayout(location = 3) out vec3 fragPos;\nlayout(location = 4) out vec4 fragPosLightSpace;\n\nlayout(location = 0) uniform mat4 lightSpaceMatrix;\n\nvoid main() {\n    varingTexCoords = aTexCoords;\n    varingEntityID = aEntityID;\n    worldNormal = mat3(transpose(inverse(model))) * aNormal;\n    fragPos = vec3(model * vec4(aPos, 1.0));\n    fragPosLightSpace = lightSpaceMatrix * vec4(fragPos, 1.0);\n\n    vec4 pos = vec4(aPos, 1.0);\n    gl_Position = projection * view * model * pos;\n}"
-                    },
-                    {
-                        "Name": "fragment",
-                        "LanguageType": "GLSL",
-                        "EntryPoint": "main",
-                        "ShaderSource": "#version 450\n\n#include \"PBRLighting.glsl\"\n\nlayout(location = 0) in vec2 varingTexCoords;\nlayout(location = 1) flat in int varingEntityID;\nlayout(location = 2) in vec3 worldNormal;\nlayout(location = 3) in vec3 fragPos;\nlayout(location = 4) in vec4 fragPosLightSpace;\n\nlayout(location = 0) out vec4 color0;\nlayout(location = 1) out int color1;\n\nlayout(location = 1) uniform vec4 albedo;\nlayout(location = 2) uniform sampler2D albedoMap;\nlayout(location = 3) uniform int useAlbedoMap;\nlayout(location = 4) uniform float metallic;\nlayout(location = 5) uniform sampler2D metallicMap;\nlayout(location = 6) uniform int useMetallicMap;\nlayout(location = 7) uniform float roughness;\nlayout(location = 8) uniform sampler2D roughnessMap;\nlayout(location = 9) uniform int useRoughnessMap;\nlayout(location = 10) uniform float ao;\nlayout(location = 11) uniform sampler2D aoMap;\nlayout(location = 12) uniform int useAoMap;\nlayout(location = 13) uniform sampler2D shadowMap;\nlayout(location = 14) uniform DirectionalLight directionalLight;\n\nvoid main() {\n    vec3 viewDir = normalize(viewPos - fragPos);\n\n    PBRMaterial material;\n    material.albedo = (1 - useAlbedoMap) * albedo.rgb + useAlbedoMap * texture(albedoMap, varingTexCoords).rgb;\n    material.metallic = (1 - useMetallicMap) * metallic + useMetallicMap * texture(metallicMap, varingTexCoords).r;\n    material.roughness = (1 - useRoughnessMap) * roughness + useRoughnessMap * texture(roughnessMap, varingTexCoords).r;\n    material.ao = (1 - useAoMap) * ao + useAoMap * texture(aoMap, varingTexCoords).r;\n\n    color0 = vec4(calPBRLighting(directionalLight, worldNormal, viewDir, material, fragPosLightSpace, shadowMap), 1);\n    color1 = varingEntityID;\n}"
-                    }
-                ]
+                Surface s = SampleSurface(input.material, input.uv);
+                return float4(ShadeSurface(s, input.worldPosition, input.normal), s.opacity);
             }
-        ]
+            ENDSLANG
+        }
+
+        // Depth only, once per shadow cascade.
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+            ZWrite On
+            Vertex vertexMain
+            SLANGPROGRAM
+            struct ShadowParameters { uint4 cascade; };
+            [[vk::push_constant]] ConstantBuffer<ShadowParameters> shadowPass;
+
+            // Position + instance only (the depth pipeline's vertex input).
+            struct DepthVertex
+            {
+                [[vk::location(0)]] float3 position : POSITION;
+                [[vk::location(1)]] uint instance : INSTANCE;
+            };
+
+            float4 vertexMain(DepthVertex input) : SV_Position
+            {
+                float4 world = mul(instances[input.instance].model, float4(input.position, 1));
+                return mul(frame.lightViewProjection[shadowPass.cascade.x], world);
+            }
+            ENDSLANG
+        }
     }
 }

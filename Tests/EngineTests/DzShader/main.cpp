@@ -164,6 +164,7 @@ int main() TRY
 {
     EngineInitInfo initInfo {};
     initInfo.Window.Title = "Test - DzShader";
+    initInfo.Window.Offline = true; // GPU work only: no visible window, no swapchain
 
     Engine engine;
     if (!engine.Init(initInfo))

@@ -26,7 +26,8 @@ namespace SnowLeopardEngine
         StorageReadWrite,
         CopySource,
         CopyDestination,
-        Present
+        Present,
+        IndirectRead // draw arguments / counts of an indirect draw (buffers)
     };
 
     const char* GraphUsageName(GraphUsage usage);

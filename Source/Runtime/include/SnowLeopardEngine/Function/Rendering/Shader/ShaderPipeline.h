@@ -20,8 +20,10 @@ namespace SnowLeopardEngine
     };
 
     // The GPU side of one DzShader pass: pipeline layout from Slang reflection (descriptor-set index = register
-    // space, push constants from [[vk::push_constant]]) and a graphics pipeline from the pass's render states.
-    // `[property]` render states use the property's default value.
+    // space, push constants from [[vk::push_constant]]) and a graphics pipeline from the pass's render states, or a
+    // compute pipeline for a `Compute` pass (the graphics fields of `desc` are ignored then).
+    // `[property]` render states use the property's default value. Resource arrays are partially bound: a bindless
+    // table only needs the entries the shader reads.
     class ShaderPipeline
     {
     public:
@@ -33,6 +35,7 @@ namespace SnowLeopardEngine
 
         VriPipelineLayout* GetLayout() const { return m_Layout; }
         VriPipeline*       GetHandle() const { return m_Pipeline; }
+        bool               IsCompute() const { return m_Compute; }
 
         const std::vector<ShaderResourceBinding>& GetBindings() const { return m_Bindings; }
         // Index of `binding` within its descriptor set's ranges (for UpdateDescriptorRanges).
@@ -41,8 +44,9 @@ namespace SnowLeopardEngine
         uint32_t                PushConstantSize() const { return m_PushConstantSize; }
         const ShaderParameter*  MaterialLayout() const { return m_MaterialLayout; } // `material` element struct
 
-        // Binds layout + pipeline (inside a render pass).
+        // Binds layout + pipeline (graphics: inside a render pass).
         void Bind(VriCommandBuffer* cmd) const;
+        void SetConstants(VriCommandBuffer* cmd, const void* data, uint32_t size) const;
 
     private:
         RHI::Device&                       m_Device;
@@ -54,6 +58,33 @@ namespace SnowLeopardEngine
         uint32_t                           m_PushConstantSize = 0;
         const ShaderParameter*             m_MaterialLayout   = nullptr;
         ShaderParameter                    m_Parameters; // reflection copy, owns m_MaterialLayout
+        bool                               m_Compute = false;
+    };
+
+    // One descriptor set of a pipeline's layout, written by binding name. Names the layout does not have (compiled
+    // out, or used by another pass) are ignored, so one set of renderer resources can be offered to every pass.
+    class ShaderBindings
+    {
+    public:
+        ShaderBindings(RHI::Device& device, const ShaderPipeline& pipeline, uint32_t set = 0);
+        ~ShaderBindings();
+
+        ShaderBindings(const ShaderBindings&)            = delete;
+        ShaderBindings& operator=(const ShaderBindings&) = delete;
+
+        bool Has(std::string_view name) const;
+        // Writes descriptors[0 ..] to the binding's array elements starting at `first`.
+        void Write(std::string_view name, std::span<VriDescriptor* const> descriptors, uint32_t first = 0);
+        void Write(std::string_view name, VriDescriptor* descriptor) { Write(name, std::span(&descriptor, 1)); }
+
+        void Bind(VriCommandBuffer* cmd) const;
+
+    private:
+        RHI::Device&           m_Device;
+        const ShaderPipeline&  m_Pipeline;
+        uint32_t               m_SetIndex;
+        VriDescriptorPool*     m_Pool = nullptr;
+        VriDescriptorSet*      m_Set  = nullptr;
     };
 
     // Values of a shader's `material` parameter block: a constant buffer laid out from reflection, plus the

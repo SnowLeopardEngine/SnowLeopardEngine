@@ -15,7 +15,7 @@ namespace SnowLeopardEngine
 {
     namespace
     {
-        // Until the scene renderer exists (Phase 2.4) every frame is this colour.
+        // Frames without a scene (no active scene or camera) are this colour.
         constexpr float kClearColor[4] = {0.08f, 0.08f, 0.10f, 1.0f};
 
         bool ValidationEnabled()
@@ -35,14 +35,23 @@ namespace SnowLeopardEngine
 
     RenderSystem::RenderSystem()
     {
-        m_Device    = CreateScope<RHI::Device>(ValidationEnabled());
-        m_Swapchain = CreateScope<RHI::Swapchain>(*m_Device, *g_EngineContext->WindowSys->GetWindow());
+        // Bindless: the scene renderer's material textures are one partially bound descriptor array.
+        m_Device    = CreateScope<RHI::Device>(ValidationEnabled(), VriFeature_Bindless);
         m_Frame     = CreateScope<RHI::Frame>(*m_Device);
 
-        // TODO: configurable VSync. Off, as before.
-        m_Swapchain->SetVSync(false);
-
-        const auto extent = m_Swapchain->GetExtent();
+        RHI::Extent extent;
+        if (g_EngineContext->WindowSys->IsOffline())
+        {
+            extent = {g_EngineContext->WindowSys->GetWidth(), g_EngineContext->WindowSys->GetHeight()};
+            m_Offscreen = CreateScope<RHI::Texture>(*m_Device, RHI::ColorTextureDesc(extent, VriFormat_RGBA8_UNORM));
+        }
+        else
+        {
+            m_Swapchain = CreateScope<RHI::Swapchain>(*m_Device, *g_EngineContext->WindowSys->GetWindow());
+            // TODO: configurable VSync. Off, as before.
+            m_Swapchain->SetVSync(false);
+            extent = m_Swapchain->GetExtent();
+        }
         m_Viewport        = {.Offset = {0, 0}, .Extent = {extent.Width, extent.Height}};
 
         if (const char* captureFrame = std::getenv("SLE_CAPTURE_FRAME"); captureFrame != nullptr)
@@ -52,9 +61,14 @@ namespace SnowLeopardEngine
             m_CapturePath           = capturePath != nullptr ? capturePath : "capture.png";
         }
 
+        m_SceneRenderer = CreateScope<SceneRenderer>(*m_Device);
+
         Subscribe(m_LogicSceneLoadedHandler);
 
-        SNOW_LEOPARD_CORE_INFO("[RenderSystem] Initialized (VRI, swapchain {0} x {1})", extent.Width, extent.Height);
+        SNOW_LEOPARD_CORE_INFO("[RenderSystem] Initialized (VRI, {0} {1} x {2})",
+                               m_Swapchain ? "swapchain" : "offline",
+                               extent.Width,
+                               extent.Height);
         m_State = SystemState::InitOk;
     }
 
@@ -66,14 +80,16 @@ namespace SnowLeopardEngine
 
         m_Device->WaitIdle();
 
-        // The loader caches own GPU textures; free them while the device exists.
+        // The scene renderer refers to cached textures; the loader caches own them. Free all while the device exists.
+        m_FrameGraph.reset();
+        m_SceneRenderer.reset();
         IO::ReleaseAllMaterials();
         IO::ReleaseAllTextures();
 
         m_PendingCapture.reset();
-        m_FrameGraph.reset();
         m_Frame.reset();
         m_Swapchain.reset();
+        m_Offscreen.reset();
         m_Device.reset();
 
         m_State = SystemState::ShutdownOk;
@@ -82,10 +98,16 @@ namespace SnowLeopardEngine
     void RenderSystem::OnTick(float deltaTime)
     {
         SNOW_LEOPARD_PROFILE_FUNCTION
-        // The scene renderer (render graph + passes) is rebuilt on VRI in Phase 2.2 - 2.4.
+        // Scene data is collected in Present, right before the frame is recorded (after scripts and physics).
     }
 
-    void RenderSystem::SetVSync(bool enabled) { m_Swapchain->SetVSync(enabled); }
+    void RenderSystem::SetVSync(bool enabled)
+    {
+        if (m_Swapchain)
+        {
+            m_Swapchain->SetVSync(enabled);
+        }
+    }
 
     void RenderSystem::AddOverlay(RenderOverlay* overlay)
     {
@@ -112,11 +134,20 @@ namespace SnowLeopardEngine
         // The acquired image's old content is never needed.
         m_Backbuffer = graph.ImportResource("Backbuffer", backbuffer, false);
 
-        graph.AddPass("Clear", {{m_Backbuffer, GraphUsage::ColorWrite, true}}, [this](VriCommandBuffer* cmd, RenderGraph& g) {
-            auto& target = g.GetTexture(m_Backbuffer);
-            RHI::BeginColorPass(*m_Device, cmd, target.View(), target.GetExtent(), kClearColor);
-            m_Device->Core.CmdEndRendering(cmd);
-        });
+        m_FrameGraphHasScene     = m_SceneReady;
+        m_FrameGraphSceneVersion = m_SceneRenderer->GetGraphVersion();
+        if (m_SceneReady)
+        {
+            m_SceneRenderer->AddPasses(graph, m_Backbuffer, backbuffer.Desc.format);
+        }
+        else
+        {
+            graph.AddPass("Clear", {{m_Backbuffer, GraphUsage::ColorWrite, true}}, [this](VriCommandBuffer* cmd, RenderGraph& g) {
+                auto& target = g.GetTexture(m_Backbuffer);
+                RHI::BeginColorPass(*m_Device, cmd, target.View(), target.GetExtent(), kClearColor);
+                m_Device->Core.CmdEndRendering(cmd);
+            });
+        }
 
         if (!m_Overlays.empty())
         {
@@ -135,8 +166,15 @@ namespace SnowLeopardEngine
             });
         }
 
-        // Presenting is the frame's observable result.
-        graph.AddPass("Present", {{m_Backbuffer, GraphUsage::Present}}, [](VriCommandBuffer*, RenderGraph&) {}, true);
+        if (m_Swapchain)
+        {
+            // Presenting is the frame's observable result.
+            graph.AddPass("Present", {{m_Backbuffer, GraphUsage::Present}}, [](VriCommandBuffer*, RenderGraph&) {}, true);
+        }
+        else
+        {
+            graph.ExportResource(m_Backbuffer); // offline: the image is the result (read by captures)
+        }
         graph.Compile();
     }
 
@@ -151,12 +189,22 @@ namespace SnowLeopardEngine
             overlay->Upload(windowExtent);
         }
 
-        auto* target = m_Swapchain->Acquire();
+        auto* target = m_Swapchain ? m_Swapchain->Acquire() : m_Offscreen.get();
         if (target == nullptr)
         {
             return; // minimized or out of date
         }
-        if (!m_FrameGraph || m_FrameGraphExtent != target->GetExtent())
+
+        // The scene renderer stages this frame's data (uploads, instance / material / frame buffers).
+        m_SceneReady = false;
+        if (!m_RenderToTexture)
+        {
+            auto scene   = g_EngineContext->SceneMngr->GetActiveScene();
+            m_SceneReady = m_SceneRenderer->Prepare(scene.get(), target->GetExtent());
+        }
+
+        if (!m_FrameGraph || m_FrameGraphExtent != target->GetExtent() || m_FrameGraphHasScene != m_SceneReady ||
+            m_FrameGraphSceneVersion != m_SceneRenderer->GetGraphVersion())
         {
             BuildFrameGraph(*target);
         }
@@ -176,7 +224,10 @@ namespace SnowLeopardEngine
         }
 
         m_Frame->SubmitAndWait();
-        m_Swapchain->Present();
+        if (m_Swapchain)
+        {
+            m_Swapchain->Present();
+        }
 
         if (capture && m_PendingCapture)
         {
@@ -204,6 +255,7 @@ namespace SnowLeopardEngine
 
     void RenderSystem::OnLogicSceneLoaded(const LogicSceneLoadedEvent& e)
     {
-        // Scene GPU resources (meshes, materials, environment maps) are created by the renderer from Phase 2.4.
+        // GPU caches (meshes, materials) of the previous scene refer to its objects.
+        m_SceneRenderer->OnSceneChanged();
     }
 } // namespace SnowLeopardEngine
