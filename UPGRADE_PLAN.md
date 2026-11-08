@@ -14,7 +14,7 @@
 | Size | Runtime ~9.2k lines, Editor ~2.3k, GameDemo 1k, 25 GLSL / DzShader files |
 | Build | xmake + custom package repo `SnowLeopardEngine/xmake-repo`, now rebuilt from the owner's `xmake-repo@backup` (upstream 2026-02 + Vultra packages) plus the SLE recipes (`scoral`, `fg`, `fastnoise2`). C++20. **Builds and runs on Windows / MSVC 2022 (Phase 0)** |
 | Dependencies | spdlog 1.17 (external fmt), fmt 12.1, SDL3 3.4.0 (shared), glm, entt 3.16.0, assimp, miniaudio, stb, tracy, magic_enum, cereal, freetype, ozz-animation 0.14.2, **Jolt Physics 5.5.0** (replaced PhysX), imgui 1.92.5-docking, Coral (scoral) |
-| CI | Windows / Linux workflows (Debug + Release, xmake 3.1.2, package cache, headless Jolt test); macOS dropped (decision 4) |
+| CI | Windows / Linux workflows (Debug + Release, xmake 3.1.2, package cache with retries, headless Jolt test); all green since 2026-11-08. macOS is a target again (decision 4) but has no CI job yet |
 
 ### Subsystem Maturity
 
@@ -321,7 +321,7 @@ Defaults in **bold** are what this plan currently follows; change them here if n
    - C. Archive SLE and use its physics / animation / audio work as input to libvultra's "optional extensions" roadmap item
 2. **Frame graph**: **port libvultra's RenderGraph** vs. keep `fg`.
 3. **Shader language**: ~~Vulkan GLSL first, Slang later~~ → **decided: Slang, with DzShader v3 as a ShaderLab-like syntax parsed by ANTLR** (following libvultra's `.vshader`).
-4. **Platforms**: **drop macOS temporarily**.
+4. **Platforms**: ~~drop macOS temporarily~~ — **revised 2026-11-08: macOS stays a target.** VRI runs there through MoltenVK and has a native Metal backend (the `vri` recipe's `metal` config); the other dependencies support macOS. Still to do: a macOS CI job and a first build / run on a Mac.
 5. **Packages**: ~~in-repo `external/packages` recipes~~ → **decided: keep `SnowLeopardEngine/xmake-repo`, synced from the owner's `xmake-repo` (`backup` branch: recent upstream + the Vultra packages VRI / vshadersystem / slang-prebuilt / antlr-cpp that Phase 2 needs) plus the SLE recipes on top.** The old fork was a 2024 copy of the whole upstream and shadowed newer official recipes.
 6. **C++ / runtime**: whether to follow libvultra to C++23 + static MSVC runtime (MT). Jolt, ozz, etc. must switch together to avoid LNK2038. Undecided; stays C++20 / MD until Phase 2.
 7. **Branching**: ~~long-lived `revival` branch~~ → **decided: long-lived `dev-next` branch, one PR per phase. Only `main`, `dev` and `dev-next` remain**; the 20 old feature branches are deleted (every tip is kept in a git bundle, `old-branches-2026-11-06.bundle`, outside the repo).

@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 namespace SnowLeopardEngine
 {
@@ -213,6 +215,17 @@ namespace SnowLeopardEngine
                 {
                     width  = mode->w;
                     height = mode->h;
+                }
+            }
+            // SLE_OFFLINE_SIZE=<width>x<height>: render offline frames at that size (captures for docs, tests),
+            // instead of the app's window or the desktop resolution.
+            if (const char* size = std::getenv("SLE_OFFLINE_SIZE"); size != nullptr)
+            {
+                int w = 0, h = 0;
+                if (std::sscanf(size, "%dx%d", &w, &h) == 2 && w > 0 && h > 0)
+                {
+                    width  = w;
+                    height = h;
                 }
             }
         }
