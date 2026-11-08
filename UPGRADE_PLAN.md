@@ -13,7 +13,7 @@
 |---|---|
 | Size | Runtime ~9.2k lines, Editor ~2.3k, GameDemo 1k, 25 GLSL / DzShader files |
 | Build | xmake + custom package repo `SnowLeopardEngine/xmake-repo`, now rebuilt from the owner's `xmake-repo@backup` (upstream 2026-02 + Vultra packages) plus the SLE recipes (`scoral`, `fg`, `fastnoise2`). C++20. **Builds and runs on Windows / MSVC 2022 (Phase 0)** |
-| Dependencies | spdlog 1.17 (external fmt), fmt 12.1, SDL3 3.4.0 (shared), glm, entt 3.16.0, assimp, miniaudio, stb, tracy, magic_enum, cereal, shaderc, spirv-cross, cryptopp, fg (skaarj1989/FrameGraph), freetype, ozz-animation 0.14.2, **Jolt Physics 5.5.0** (replaced PhysX), imgui 1.92.5-docking, Coral (scoral) |
+| Dependencies | spdlog 1.17 (external fmt), fmt 12.1, SDL3 3.4.0 (shared), glm, entt 3.16.0, assimp, miniaudio, stb, tracy, magic_enum, cereal, freetype, ozz-animation 0.14.2, **Jolt Physics 5.5.0** (replaced PhysX), imgui 1.92.5-docking, Coral (scoral) |
 | CI | Windows / Linux workflows (Debug + Release, xmake 3.1.2, package cache, headless Jolt test); macOS dropped (decision 4) |
 
 ### Subsystem Maturity

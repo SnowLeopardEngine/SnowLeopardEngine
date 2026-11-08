@@ -7,12 +7,14 @@
 
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Engine/Engine.h"
+#include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
 #include <cmath>
+#include <fstream>
 #include <cstdio>
 #include <map>
 #include <string>
@@ -209,6 +211,20 @@ int main() TRY
         Check(!graph->GetEntityWithCoreUUID(childId) && !graph->GetEntityWithCoreUUID(grandChildId),
               "deleting a parent deletes its children");
         Check(!graph->GetEntityWithCoreUUID(CoreUUIDHelper::CreateStandardUUID()), "unknown UUID gives a null entity");
+    }
+
+    // ---- asset content hash (FileSystem::GetMD5, RFC 1321 test vectors)
+    {
+        const auto md5Of = [](const std::string& content) {
+            const auto file = std::filesystem::temp_directory_path() / "sle_md5_test.bin";
+            std::ofstream(file, std::ios::binary) << content;
+            const auto hash = FileSystem::GetMD5(file);
+            std::filesystem::remove(file);
+            return hash;
+        };
+        Check(md5Of("") == "D41D8CD98F00B204E9800998ECF8427E", "MD5 of empty content");
+        Check(md5Of("abc") == "900150983CD24FB0D6963F7D28E17F72", "MD5 of abc");
+        Check(md5Of("12345678901234567890123456789012345678901234567890123456789012345678901234567890") == "57EDF4A22BE3C955AC49DA2E2107B67A", "MD5 across 64-byte blocks", md5Of("12345678901234567890123456789012345678901234567890123456789012345678901234567890"));
     }
 
     std::printf("\n%d failure(s)\n", g_Failures);
