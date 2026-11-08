@@ -46,11 +46,20 @@ jobs:
         run: |
           xmake repo -u
           for attempt in 1 2 3; do
-            xmake f -m ${{ matrix.mode }} -y && exit 0
+            # verbose after the first failure: the package's own error, not only "install .. failed"
+            if [ $attempt -eq 1 ]; then flags=""; else flags="-vD"; fi
+            xmake f -m ${{ matrix.mode }} -y $flags && exit 0
             echo "package install failed (attempt $attempt), retrying"
             sleep 20
           done
           exit 1
+
+      # A package that fails to install keeps its full log on the runner only: print it.
+      - name: Package install logs
+        if: failure()
+        run: |
+          find ~/.xmake/cache/packages -path '*installdir.failed*' -name install.txt 2>/dev/null |
+            while read -r log; do echo "::group::$log"; tail -n 150 "$log"; echo "::endgroup::"; done
 
       - name: Build
         run: xmake -y

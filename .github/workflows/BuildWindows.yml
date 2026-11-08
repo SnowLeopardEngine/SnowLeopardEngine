@@ -42,12 +42,22 @@ jobs:
         run: |
           xmake repo -u
           foreach ($attempt in 1..3) {
-            xmake f -m ${{ matrix.mode }} -y
+            # verbose after the first failure: the package's own error, not only "install .. failed"
+            if ($attempt -eq 1) { xmake f -m ${{ matrix.mode }} -y } else { xmake f -m ${{ matrix.mode }} -y -vD }
             if ($LASTEXITCODE -eq 0) { exit 0 }
             Write-Host "package install failed (attempt $attempt), retrying"
             Start-Sleep -Seconds 20
           }
           exit 1
+
+      # A package that fails to install keeps its full log on the runner only: print it.
+      - name: Package install logs
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-ChildItem "$env:LOCALAPPDATA\.xmake\cache\packages" -Recurse -Filter install.txt -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -like '*installdir.failed*' } |
+            ForEach-Object { Write-Host "::group::$($_.FullName)"; Get-Content $_.FullName -Tail 150; Write-Host "::endgroup::" }
 
       - name: Build
         run: xmake -y
