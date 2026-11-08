@@ -1,4 +1,5 @@
 #include "SnowLeopardEditor/Panels/ConsolePanel.h"
+#include "SnowLeopardEditor/EditorContext.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 #include "imgui.h"
@@ -22,8 +23,13 @@ namespace SnowLeopardEngine::Editor
     {
         // TODO: Yanni Ma: Use text filter to implement searching.
 
+        auto& visible = EditorContext::GetPanels().Console;
+        if (!visible)
+        {
+            return;
+        }
         ImGui::SetNextWindowSize(ImVec2(640, 480), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Console");
+        ImGui::Begin("Console", &visible);
 
         ImGuiStyle& style = ImGui::GetStyle();
 

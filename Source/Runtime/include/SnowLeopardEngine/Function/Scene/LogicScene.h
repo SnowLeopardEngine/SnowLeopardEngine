@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/Math/Math.h"
 #include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 
 #include <entt/entt.hpp>
@@ -76,6 +77,18 @@ namespace SnowLeopardEngine
         Entity CreateEntityFromContent(CoreUUID uuid, const std::string& name = std::string());
         void   DestroyEntity(Entity entity);
         Entity GetEntityWithCoreUUID(CoreUUID uuid) const;
+
+        // Hierarchy (TreeNodeComponent). Transforms are local to the parent; the renderer draws world transforms.
+        glm::mat4 GetWorldTransform(entt::entity entity) const;
+        glm::mat4 GetParentWorldTransform(entt::entity entity) const; // identity for a root
+        // Reparents `child` under `parent` (a null Entity: to the root). keepWorld keeps the child where it is by
+        // rewriting its local transform. False (nothing changed) if `parent` is `child` or one of its descendants.
+        bool SetParent(Entity child, Entity parent, bool keepWorld = true);
+        bool IsDescendantOf(Entity entity, Entity ancestor) const;
+        // A copy of `source` (all copyable components, children included) next to it in the hierarchy.
+        Entity DuplicateEntity(Entity source);
+        // Root entities in creation order, for hierarchy views.
+        std::vector<Entity> GetRootEntities();
         Entity GetEntityWithName(const std::string& name);
 
         void TriggerEntityDestroy(Entity entity);

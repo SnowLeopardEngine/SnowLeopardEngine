@@ -359,6 +359,7 @@ namespace SnowLeopardEngine
         m_EnvironmentShader = ShaderAsset::Load("Assets/Shaders/Renderer/Environment.dzshader", options);
         m_UI                = CreateScope<UIRenderer>(m_Device, options);
         m_PostShader        = ShaderAsset::Load("Assets/Shaders/Renderer/PostProcess.dzshader", options);
+        m_EditorShader      = ShaderAsset::Load("Assets/Shaders/Renderer/EditorOverlay.dzshader", options);
         auto post = [&](const char* name, VriFormat format) {
             ShaderPipelineDesc desc;
             desc.ColorFormats = {format};
@@ -372,9 +373,17 @@ namespace SnowLeopardEngine
 
     void SceneRenderer::SetSettings(const SceneRendererSettings& settings)
     {
-        m_Settings = settings;
-        m_Settings.BloomLevels = std::clamp(m_Settings.BloomLevels, 1u, 10u);
-        ++m_GraphVersion;
+        auto next        = settings;
+        next.BloomLevels = std::clamp(next.BloomLevels, 1u, 10u);
+        // Only switches that add, remove or resize passes rebuild the graph; values are read when passes execute.
+        const bool shape = next.AmbientOcclusion != m_Settings.AmbientOcclusion || next.Bloom != m_Settings.Bloom ||
+                           next.BloomLevels != m_Settings.BloomLevels || next.FXAA != m_Settings.FXAA ||
+                           next.EditorOverlay != m_Settings.EditorOverlay || next.ShadowResolution != m_Settings.ShadowResolution;
+        m_Settings = next;
+        if (shape)
+        {
+            ++m_GraphVersion;
+        }
     }
 
     void SceneRenderer::CreatePipelines()
@@ -401,6 +410,18 @@ namespace SnowLeopardEngine
         m_ShadowPipeline    = CreateScope<ShaderPipeline>(m_Device, m_Standard, *standard.FindPass("ShadowCaster"), shadow);
         shadow.VertexInput  = CutoutInput();
         m_ShadowAlphaPipeline = CreateScope<ShaderPipeline>(m_Device, m_Standard, *standard.FindPass("ShadowCasterAlphaTest"), shadow);
+
+        ShaderPipelineDesc entityId;
+        entityId.ColorFormats  = {VriFormat_R32_UINT};
+        entityId.DepthFormat   = VriFormat_D32_SFLOAT;
+        entityId.VertexInput   = DepthInput();
+        m_EntityIdPipeline     = CreateScope<ShaderPipeline>(m_Device, m_Standard, *standard.FindPass("EntityID"), entityId);
+        entityId.VertexInput   = CutoutInput();
+        m_EntityIdAlphaPipeline = CreateScope<ShaderPipeline>(m_Device, m_Standard, *standard.FindPass("EntityIDAlphaTest"), entityId);
+        m_EntityIdSet          = CreateScope<ShaderBindings>(m_Device, *m_EntityIdPipeline);
+        m_EntityIdAlphaSet     = CreateScope<ShaderBindings>(m_Device, *m_EntityIdAlphaPipeline);
+        m_PickReadback         = CreateScope<RHI::Buffer>(
+            m_Device, VriBufferDesc {256, 0, VriBufferUsage_TransferDst, VriMemoryLocation_HostReadback});
 
         m_CullPipeline = CreateScope<ShaderPipeline>(m_Device, m_Culling, m_Culling.Subshaders.at(0).Passes.at(0), ShaderPipelineDesc {});
 
@@ -754,7 +775,7 @@ namespace SnowLeopardEngine
 
     // ------------------------------------------------------------------------------------------------ frame
 
-    bool SceneRenderer::Prepare(LogicScene* scene, RHI::Extent extent)
+    bool SceneRenderer::Prepare(LogicScene* scene, RHI::Extent extent, const CameraOverride* cameraOverride)
     {
         ++m_FrameIndex;
         m_OpaqueCount = m_AlphaCount = m_TransparentCount = 0;
@@ -766,15 +787,26 @@ namespace SnowLeopardEngine
         }
         auto& registry = scene->GetRegistry();
 
-        // ---- camera (the first one, as before)
-        auto cameras = registry.view<TransformComponent, CameraComponent>();
-        if (cameras.begin() == cameras.end())
+        // ---- camera: the override (editor), else the scene's first one
+        TransformComponent* cameraTransformPtr = nullptr;
+        CameraComponent*    cameraPtr          = nullptr;
+        if (cameraOverride != nullptr && cameraOverride->Transform != nullptr && cameraOverride->Camera != nullptr)
         {
-            return false;
+            cameraTransformPtr = cameraOverride->Transform;
+            cameraPtr          = cameraOverride->Camera;
         }
-        const auto cameraEntity    = cameras.front();
-        auto&      cameraTransform = cameras.get<TransformComponent>(cameraEntity);
-        auto&      camera          = cameras.get<CameraComponent>(cameraEntity);
+        else
+        {
+            auto cameras = registry.view<TransformComponent, CameraComponent>();
+            if (cameras.begin() == cameras.end())
+            {
+                return false;
+            }
+            cameraTransformPtr = &cameras.get<TransformComponent>(cameras.front());
+            cameraPtr          = &cameras.get<CameraComponent>(cameras.front());
+        }
+        auto&      cameraTransform = *cameraTransformPtr;
+        auto&      camera          = *cameraPtr;
         camera.ViewportWidth       = float(extent.Width); // the aspect follows the render target
         camera.ViewportHeight      = float(extent.Height);
         const auto view            = g_EngineContext->CameraSys->GetViewMatrix(cameraTransform);
@@ -796,9 +828,10 @@ namespace SnowLeopardEngine
             Queue             Bucket;
             bool              CastShadow;
             float             Distance;
+            uint32_t          Id; // entity + 1
         };
         std::vector<Item> items;
-        auto add = [&](const MeshItem& mesh, const glm::mat4& model, const Material& material, bool castShadow) {
+        auto add = [&](entt::entity entity, const MeshItem& mesh, const glm::mat4& model, const Material& material, bool castShadow) {
             const auto* record = UploadMesh(mesh);
             if (record == nullptr)
             {
@@ -816,25 +849,25 @@ namespace SnowLeopardEngine
                                  queue == RenderQueue_AlphaTest   ? Queue::AlphaTest :
                                                                     Queue::Opaque;
             items.push_back({record, model, MaterialIndex(material), bucket, castShadow && bucket != Queue::Transparent,
-                             glm::distance(cameraTransform.Position, glm::vec3(model[3]))});
+                             glm::distance(cameraTransform.Position, glm::vec3(model[3])), uint32_t(entt::to_integral(entity)) + 1});
         };
         registry.view<TransformComponent, EntityStatusComponent, MeshFilterComponent, MeshRendererComponent>().each(
-            [&](entt::entity, TransformComponent& transform, EntityStatusComponent& status, MeshFilterComponent& filter, MeshRendererComponent& renderer) {
+            [&](entt::entity entity, TransformComponent&, EntityStatusComponent& status, MeshFilterComponent& filter, MeshRendererComponent& renderer) {
                 if (!status.IsEnabled || filter.Meshes == nullptr || renderer.Mat == nullptr)
                 {
                     return;
                 }
-                const auto model = transform.GetTransform();
+                const auto model = scene->GetWorldTransform(entity);
                 for (const auto& mesh : filter.Meshes->Items)
                 {
-                    add(mesh, model, *renderer.Mat, renderer.CastShadow);
+                    add(entity, mesh, model, *renderer.Mat, renderer.CastShadow);
                 }
             });
         registry.view<TransformComponent, EntityStatusComponent, TerrainComponent, TerrainRendererComponent>().each(
-            [&](entt::entity, TransformComponent& transform, EntityStatusComponent& status, TerrainComponent& terrain, TerrainRendererComponent& renderer) {
+            [&](entt::entity entity, TransformComponent&, EntityStatusComponent& status, TerrainComponent& terrain, TerrainRendererComponent& renderer) {
                 if (status.IsEnabled && renderer.Mat != nullptr)
                 {
-                    add(terrain.Mesh, transform.GetTransform(), *renderer.Mat, renderer.CastShadow);
+                    add(entity, terrain.Mesh, scene->GetWorldTransform(entity), *renderer.Mat, renderer.CastShadow);
                 }
             });
         FlushMeshUploads(); // every mesh new this frame, in one transfer
@@ -863,7 +896,7 @@ namespace SnowLeopardEngine
             gpu.BoundingSphere = glm::vec4(glm::vec3(item.Model * glm::vec4(glm::vec3(item.Mesh->LocalSphere), 1)),
                                            item.Mesh->LocalSphere.w * scale + sway);
             gpu.Draw  = {item.Mesh->IndexCount, item.Mesh->FirstIndex, item.Mesh->VertexOffset, item.Material};
-            gpu.Flags = {item.CastShadow ? 1u : 0u, 0, 0, 0};
+            gpu.Flags = {item.CastShadow ? 1u : 0u, item.Id, 0, 0};
             if (item.CastShadow)
             {
                 casterMin = glm::min(casterMin, glm::vec3(gpu.BoundingSphere) - gpu.BoundingSphere.w);
@@ -949,12 +982,12 @@ namespace SnowLeopardEngine
 
         uint32_t lights = 0;
         registry.view<TransformComponent, EntityStatusComponent, PointLightComponent>().each(
-            [&](entt::entity, TransformComponent& transform, EntityStatusComponent& status, PointLightComponent& light) {
+            [&](entt::entity entity, TransformComponent&, EntityStatusComponent& status, PointLightComponent& light) {
                 if (!status.IsEnabled || lights >= kMaxPointLights)
                 {
                     return;
                 }
-                frame.PointLights[lights++] = {glm::vec4(transform.Position, 1),
+                frame.PointLights[lights++] = {glm::vec4(glm::vec3(scene->GetWorldTransform(entity)[3]), 1),
                                                glm::vec4(light.Color, light.Intensity),
                                                glm::vec4(light.Constant, light.Linear, light.Quadratic, 0)};
             });
@@ -981,6 +1014,44 @@ namespace SnowLeopardEngine
         m_Stats = {uint32_t(items.size()), m_TransparentCount, m_AlphaCount, m_UI->GetQuadCount(), uint32_t(m_SharedMeshes.size()),
                    uint32_t(m_Materials.size()), uint32_t(m_Textures.size()), m_VertexCount, m_IndexCount};
         return true;
+    }
+
+    void SceneRenderer::SetSelection(std::span<const entt::entity> entities)
+    {
+        m_Selection.clear();
+        for (const auto entity : entities)
+        {
+            if (entity != entt::null && m_Selection.size() < kMaxSelection)
+            {
+                m_Selection.push_back(uint32_t(entt::to_integral(entity)) + 1);
+            }
+        }
+    }
+
+    void SceneRenderer::RequestPick(glm::uvec2 pixel) { m_PickRequest = pixel; }
+
+    std::optional<entt::entity> SceneRenderer::TakePickResult()
+    {
+        auto result = m_PickResult;
+        m_PickResult.reset();
+        return result;
+    }
+
+    void SceneRenderer::OnFrameComplete()
+    {
+        if (!m_PickInFlight)
+        {
+            return;
+        }
+        m_PickInFlight.reset();
+        uint32_t    id     = 0;
+        const auto* mapped = m_Device.Core.MapBuffer(m_PickReadback->Handle, 0, sizeof(id));
+        if (mapped != nullptr)
+        {
+            std::memcpy(&id, mapped, sizeof(id));
+            m_Device.Core.UnmapBuffer(m_PickReadback->Handle);
+        }
+        m_PickResult = id == 0 ? entt::entity(entt::null) : entt::entity(id - 1);
     }
 
     std::array<uint32_t, SceneRenderer::kViews> SceneRenderer::ReadDrawCounts()
@@ -1115,6 +1186,15 @@ namespace SnowLeopardEngine
             m_ToneMappingPipeline = CreateScope<ShaderPipeline>(m_Device, m_ToneMapping, m_ToneMapping.Subshaders.at(0).Passes.at(0), desc);
             m_ToneMappingSet      = CreateScope<ShaderBindings>(m_Device, *m_ToneMappingPipeline);
             m_ToneMappingFormat   = toneFormat;
+        }
+        if (m_Settings.EditorOverlay && targetFormat != m_OutlineFormat)
+        {
+            ShaderPipelineDesc desc;
+            desc.ColorFormats = {targetFormat};
+            m_OutlineSet.reset();
+            m_OutlinePipeline = CreateScope<ShaderPipeline>(m_Device, m_EditorShader, *m_EditorShader.Subshaders.at(0).FindPass("SelectionOutline"), desc);
+            m_OutlineSet      = CreateScope<ShaderBindings>(m_Device, *m_OutlinePipeline);
+            m_OutlineFormat   = targetFormat;
         }
         if (m_Settings.FXAA && targetFormat != m_FXAAFormat)
         {
@@ -1410,6 +1490,11 @@ namespace SnowLeopardEngine
             });
         }
 
+        if (m_Settings.EditorOverlay)
+        {
+            AddEditorPasses(graph, target, commands, counts);
+        }
+
         // In-game UI in display space, over the tone-mapped (and anti-aliased) image.
         graph.AddPass("UI", {{target, GraphUsage::ColorReadWrite}}, [this, target](VriCommandBuffer* cmd, RenderGraph& g) {
             if (m_UI->GetQuadCount() == 0)
@@ -1419,6 +1504,91 @@ namespace SnowLeopardEngine
             auto& output = g.GetTexture(target);
             RHI::BeginColorPass(m_Device, cmd, output.View(), output.GetExtent());
             m_UI->Draw(cmd, m_TargetFormat, [this](ShaderBindings& set) { WriteBindings(set, nullptr); });
+            m_Device.Core.CmdEndRendering(cmd);
+        });
+    }
+    void SceneRenderer::AddEditorPasses(RenderGraph& graph, RenderGraph::Resource target, RenderGraph::Resource commands, RenderGraph::Resource counts)
+    {
+        const auto ids   = graph.CreateTexture("EntityID", RHI::ColorTextureDesc(m_Extent, VriFormat_R32_UINT));
+        const auto depth = graph.CreateTexture("EntityIDDepth", RHI::DepthTextureDesc(m_Extent));
+
+        // The camera's opaque, alpha-tested and transparent draws (the culling commands of the frame), ids only.
+        graph.AddPass("EntityID",
+                      {{ids, GraphUsage::ColorWrite, true},
+                       {depth, GraphUsage::DepthWrite, true},
+                       {commands, GraphUsage::IndirectRead},
+                       {counts, GraphUsage::IndirectRead}},
+                      [this, ids, depth](VriCommandBuffer* cmd, RenderGraph& g) {
+                          VriDescriptor* colors[] {g.GetTexture(ids).View()};
+                          const float    clear[4] {0, 0, 0, 0};
+                          BeginRendering(m_Device, cmd, colors, clear, g.GetTexture(depth).View(), true, m_Extent);
+                          BindGeometry(cmd);
+                          WriteBindings(*m_EntityIdSet, nullptr);
+                          m_EntityIdPipeline->Bind(cmd);
+                          m_EntityIdSet->Bind(cmd);
+                          DrawIndirect(cmd, kViewCamera, 0, m_OpaqueCount);
+                          DrawIndirect(cmd, kViewTransparent, 0, m_TransparentCount);
+                          if (m_AlphaCount > 0)
+                          {
+                              WriteBindings(*m_EntityIdAlphaSet, nullptr);
+                              m_EntityIdAlphaPipeline->Bind(cmd);
+                              m_EntityIdAlphaSet->Bind(cmd);
+                              DrawIndirect(cmd, kViewAlphaTest, 0, m_AlphaCount);
+                          }
+                          m_Device.Core.CmdEndRendering(cmd);
+                      });
+
+        // One texel to the host when a pick was requested (read in OnFrameComplete).
+        graph.AddPass(
+            "PickReadback",
+            {{ids, GraphUsage::CopySource}},
+            [this, ids](VriCommandBuffer* cmd, RenderGraph& g) {
+                if (!m_PickRequest)
+                {
+                    return;
+                }
+                const auto pixel = glm::min(*m_PickRequest, glm::uvec2(m_Extent.Width - 1, m_Extent.Height - 1));
+                m_PickInFlight   = pixel;
+                m_PickRequest.reset();
+                m_PickReadback->Transition(cmd, {VriAccess_CopyDestinationWrite, VriPipelineStage_Transfer});
+                VriBufferTextureCopyDesc region {};
+                region.texture.layerNum = 1;
+                region.texture.aspect   = VriImageAspect_Color;
+                region.texture.x        = int32_t(pixel.x);
+                region.texture.y        = int32_t(pixel.y);
+                region.texture.width    = 1;
+                region.texture.height   = 1;
+                region.texture.depth    = 1;
+                m_Device.Core.CmdReadbackTextureToBuffer(cmd, m_PickReadback->Handle, g.GetTexture(ids).Handle, &region);
+            },
+            true);
+
+        graph.AddPass("SelectionOutline", {{target, GraphUsage::ColorReadWrite}, {ids, GraphUsage::Sampled}}, [this, target, ids](VriCommandBuffer* cmd, RenderGraph& g) {
+            if (m_Selection.empty())
+            {
+                return;
+            }
+            struct OutlineParameters
+            {
+                glm::uvec4 Ids[kMaxSelection / 4];
+                glm::vec4  Color;
+                glm::uvec4 Options;
+            } parameters {};
+            for (size_t i = 0; i < m_Selection.size(); ++i)
+            {
+                parameters.Ids[i / 4][i % 4] = m_Selection[i];
+            }
+            parameters.Color   = glm::vec4(m_Settings.SelectionColor, 0.12f);
+            parameters.Options = {uint32_t(m_Selection.size()), m_Settings.SelectionOutline, 0, 0};
+
+            m_OutlineSet->Write("entityIdMap", g.GetTexture(ids).View());
+            auto& output = g.GetTexture(target);
+            RHI::BeginColorPass(m_Device, cmd, output.View(), output.GetExtent());
+            m_OutlinePipeline->Bind(cmd);
+            m_OutlineSet->Bind(cmd);
+            m_OutlinePipeline->SetConstants(cmd, &parameters, sizeof(parameters));
+            const VriDrawDesc draw {3, 1, 0, 0};
+            m_Device.Core.CmdDraw(cmd, &draw);
             m_Device.Core.CmdEndRendering(cmd);
         });
     }

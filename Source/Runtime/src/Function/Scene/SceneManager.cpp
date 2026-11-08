@@ -44,6 +44,8 @@ namespace SnowLeopardEngine
             m_ActiveScene->OnUnload();
         }
 
+        // nullptr: no active scene (the previous one is released, not kept).
+        m_ActiveScene = nullptr;
         if (activeScene != nullptr)
         {
             activeScene->OnLoad();

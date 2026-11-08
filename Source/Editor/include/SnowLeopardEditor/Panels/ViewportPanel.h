@@ -1,23 +1,15 @@
 #pragma once
 
-#include "SnowLeopardEditor/EditorCamera/EditorCameraScript.h"
 #include "SnowLeopardEditor/PanelBase.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
-#include "SnowLeopardEngine/Function/Scene/LogicScene.h"
-#include <SnowLeopardEngine/Function/Scene/Entity.h>
+#include "SnowLeopardEngine/Core/Math/Math.h"
 
 #include <ImGuizmo.h>
 
 namespace SnowLeopardEngine::Editor
 {
-    enum class ViewportMode
-    {
-        Invalid = 0,
-        Edit,
-        Simulating,
-        SimulationPaused,
-    };
-
+    // The scene view: renders the active scene into a texture of the panel's size (through the editor camera while
+    // editing), picks entities with the renderer's entity-id buffer, and moves the selection with ImGuizmo.
     class ViewportPanel final : public PanelBase
     {
     public:
@@ -26,25 +18,23 @@ namespace SnowLeopardEngine::Editor
         virtual void OnTick(float deltaTime) override final;
 
     private:
-        void HandleInput();
         void DrawToolbar();
-        void CreateDefaultScene();
+        void DrawStats(const glm::vec2& min, const glm::vec2& size);
+        void HandleShortcuts();
+        void HandlePicking(const glm::vec2& min, const glm::vec2& size);
+        void DrawGizmo(const glm::vec2& min, const glm::vec2& size);
 
     private:
-        glm::vec2 m_ViewportSize = {0, 0};
+        // -1: no gizmo (the hand tool: left mouse pans the camera)
+        int            m_GizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+        ImGuizmo::MODE m_GizmoMode      = ImGuizmo::MODE::LOCAL;
+        bool           m_ShowStats      = true;
 
-        Ref<LogicScene> m_EditingScene    = nullptr;
-        Ref<LogicScene> m_SimulatingScene = nullptr;
-
-        Entity                  m_EditorCamera       = {};
-        Ref<EditorCameraScript> m_EditorCameraScript = nullptr;
-
-        int            m_GuizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
-        ImGuizmo::MODE m_GuizmoMode      = ImGuizmo::MODE::LOCAL;
-
-        ViewportMode m_ViewportMode = ViewportMode::Edit;
-
-        bool   m_IsWindowHovered = false;
-        Entity m_HoveredEntity   = {};
+        bool      m_IsHovered        = false;
+        bool      m_PickPending      = false;
+        bool      m_PickAdditive     = false;
+        glm::vec2 m_PressPosition    = {0, 0};
+        bool      m_PressedInside    = false;
+        bool      m_GizmoWasUsing    = false;
     };
 } // namespace SnowLeopardEngine::Editor

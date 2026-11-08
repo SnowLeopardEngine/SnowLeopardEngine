@@ -53,6 +53,11 @@ namespace SnowLeopardEngine
             return m_ViewportTexture ? reinterpret_cast<uint64_t>(m_ViewportTexture->View()) : 0;
         }
 
+        // Editor: render through a camera that is not part of the scene (null: the scene's first camera). The
+        // pointed-to components must outlive their use (they are read in Present).
+        void SetCameraOverride(const CameraOverride& camera) { m_CameraOverride = camera; }
+        void ClearCameraOverride() { m_CameraOverride.reset(); }
+
         void AddOverlay(RenderOverlay* overlay);
         void RemoveOverlay(RenderOverlay* overlay);
 
@@ -91,7 +96,8 @@ namespace SnowLeopardEngine
         uint64_t              m_FrameGraphSceneVersion = 0;
         bool                  m_SceneReady             = false; // the scene renderer prepared this frame
 
-        Rect2D m_Viewport {};
+        Rect2D                        m_Viewport {};
+        std::optional<CameraOverride> m_CameraOverride;
         bool   m_RenderToTexture = false;
         Scope<RHI::Texture> m_ViewportTexture; // render-to-texture target (editor Viewport)
 

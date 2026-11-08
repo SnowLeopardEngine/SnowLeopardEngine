@@ -4,8 +4,8 @@
 // and reads the result back: the sky, a lit object, the sun's cascaded shadow on the floor, GPU frustum culling
 // (draw counts per view), an alpha-blended transparent, CameraClearFlags::Color, a textured (bindless) material,
 // a point light's attenuation, alpha-tested foliage (one shared mesh, its own culling views) and the in-game UI
-// batch (painter's order, SDF text), and post-processing A/B renders (ambient occlusion, bloom, FXAA). Exit code =
-// number of failures.
+// batch (painter's order, SDF text), post-processing A/B renders (ambient occlusion, bloom, FXAA) and the editor
+// overlay (camera override, entity-id picking, selection outline). Exit code = number of failures.
 
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Engine/Engine.h"
@@ -173,9 +173,9 @@ int main() TRY
     cameraComponent.ViewportWidth  = float(kExtent.Width);
     cameraComponent.ViewportHeight = float(kExtent.Height);
 
-    AddPrimitive(*scene, MeshPrimitiveType::Cube, {0, -0.5f, 0}, {60, 1, 60}, "Assets/Materials/Next/White.dzmaterial");
+    Entity floorEntity = AddPrimitive(*scene, MeshPrimitiveType::Cube, {0, -0.5f, 0}, {60, 1, 60}, "Assets/Materials/Next/White.dzmaterial");
     const glm::vec3 spherePosition {0, 3, 0};
-    AddPrimitive(*scene, MeshPrimitiveType::Sphere, spherePosition, {2, 2, 2}, "Assets/Materials/Next/White.dzmaterial");
+    Entity sphereEntity = AddPrimitive(*scene, MeshPrimitiveType::Sphere, spherePosition, {2, 2, 2}, "Assets/Materials/Next/White.dzmaterial");
 
     engine.PostInit();
     engine.TickOneFrame(1.0f / 60.0f); // loads meshes and materials
@@ -397,6 +397,85 @@ int main() TRY
     image                      = Render(renderer, *scene);
     const auto cleared         = image.Mean({int(kExtent.Width / 2), 6});
     Check(cleared.r > cleared.g + 60 && cleared.b > cleared.g + 60, "ClearFlags Color shows the clear colour", Text(cleared));
+
+    // ---- editor overlay: entity-id picking, camera override, selection outline
+    {
+        auto settings          = renderer.GetSettings();
+        settings.EditorOverlay = true;
+        renderer.SetSettings(settings);
+        auto pick = [&](glm::ivec2 pixel, const CameraOverride* view = nullptr) -> std::optional<entt::entity> {
+            renderer.RequestPick(glm::uvec2(glm::clamp(pixel, glm::ivec2(0), glm::ivec2(kExtent.Width - 1, kExtent.Height - 1))));
+            Image picked;
+            if (renderer.Prepare(scene.get(), kExtent, view))
+            {
+                RenderGraph graph(device);
+                const auto  target = graph.CreateTexture("Output", RHI::ColorTextureDesc(kExtent, VriFormat_RGBA8_UNORM));
+                renderer.AddPasses(graph, target, VriFormat_RGBA8_UNORM);
+                graph.ExportResource(target);
+                graph.Compile();
+                RHI::Frame frame(device);
+                graph.Execute(frame.Begin());
+                frame.SubmitAndWait();
+                renderer.OnFrameComplete();
+            }
+            return renderer.TakePickResult();
+        };
+        const auto onSphere = pick(ToPixel(camera, spherePosition));
+        Check(onSphere && *onSphere == entt::entity(sphereEntity), "pick on the sphere returns the sphere entity");
+        const auto onSky = pick({int(kExtent.Width / 2), 2});
+        Check(onSky && *onSky == entt::entity(entt::null), "pick on the sky returns no entity");
+        Check(!renderer.TakePickResult(), "a pick result is returned once");
+
+        // A camera that is not in the scene (the editor's), looking straight at the sphere.
+        TransformComponent overrideTransform;
+        overrideTransform.Position = {0, 3, 9};
+        CameraComponent overrideCamera;
+        overrideCamera.ClearFlags = CameraClearFlags::Color;
+        overrideCamera.ClearColor = {0, 0, 0, 1};
+        const CameraOverride view {&overrideTransform, &overrideCamera};
+        const glm::ivec2     center {int(kExtent.Width / 2), int(kExtent.Height / 2)};
+        const auto           sceneCenter    = pick(center);
+        const auto           overrideCenter = pick(center, &view);
+        Check(sceneCenter && *sceneCenter == entt::entity(floorEntity) && overrideCenter && *overrideCenter == entt::entity(sphereEntity),
+              "camera override renders through the editor camera", "scene camera sees the floor, the override the sphere");
+
+        // Outline: selection-coloured pixels just outside the sphere's silhouette.
+        auto renderView = [&](const CameraOverride* v) {
+            Image result;
+            if (!renderer.Prepare(scene.get(), kExtent, v))
+                return result;
+            RenderGraph graph(device);
+            const auto  target = graph.CreateTexture("Output", RHI::ColorTextureDesc(kExtent, VriFormat_RGBA8_UNORM));
+            renderer.AddPasses(graph, target, VriFormat_RGBA8_UNORM);
+            graph.ExportResource(target);
+            graph.Compile();
+            RHI::Frame frame(device);
+            auto*      cmd = frame.Begin();
+            graph.Execute(cmd);
+            auto&                output = graph.GetTexture(target);
+            RHI::TextureReadback readback(device, output);
+            readback.Record(cmd, output);
+            frame.SubmitAndWait();
+            renderer.OnFrameComplete();
+            result.Pixels = readback.Pixels();
+            return result;
+        };
+        auto countOutline = [](const Image& img) {
+            int count = 0;
+            for (size_t i = 0; i + 3 < img.Pixels.size(); i += 4)
+                if (img.Pixels[i] > 230 && img.Pixels[i + 1] > 110 && img.Pixels[i + 1] < 170 && img.Pixels[i + 2] < 60)
+                    ++count;
+            return count;
+        };
+        const auto unselected = renderView(&view);
+        const entt::entity selection[] {entt::entity(sphereEntity)};
+        renderer.SetSelection(selection);
+        const auto selected = renderView(&view);
+        Dump(selected, "selection_outline");
+        const int  before = countOutline(unselected), after = countOutline(selected);
+        Check(after > before + 100, "selected entity gets an outline", std::to_string(before) + " -> " + std::to_string(after) + " outline pixels");
+        renderer.SetSelection({});
+    }
     }();
 
     engine.Shutdown();

@@ -15,6 +15,11 @@
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 #include "SnowLeopardEngine/Function/Scene/Entity.h"
 
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL
+#endif
+#include <glm/gtx/matrix_decompose.hpp>
+
 namespace SnowLeopardEngine
 {
 #define ON_COMPONENT_ADDED(comp) \
@@ -74,9 +79,14 @@ namespace SnowLeopardEngine
         auto& srcSceneRegistry = other->m_Registry;
         auto& dstSceneRegistry = newScene->m_Registry;
 
-        // Create entities in new scene
-        auto idView = srcSceneRegistry.view<IDComponent>();
-        for (auto e : idView)
+        // Create entities in new scene, in the source's creation order (views iterate newest first), so the copy
+        // lists them in the same order (editor play mode).
+        auto                      idView = srcSceneRegistry.view<IDComponent>();
+        std::vector<entt::entity> ordered(idView.begin(), idView.end());
+        std::sort(ordered.begin(), ordered.end(), [](entt::entity a, entt::entity b) {
+            return entt::to_entity(a) < entt::to_entity(b);
+        });
+        for (auto e : ordered)
         {
             CoreUUID    uuid               = srcSceneRegistry.get<IDComponent>(e).Id;
             const auto& name               = srcSceneRegistry.get<NameComponent>(e).Name;
@@ -150,12 +160,16 @@ namespace SnowLeopardEngine
 
     void LogicScene::DestroyEntity(Entity entity)
     {
-        // Destroy children
+        // Destroy children (a copy of the list: each child removes itself from it)
         if (entity.HasChildren())
         {
-            for (const auto& childUUID : entity.GetChildrenUUIDs())
+            const auto children = entity.GetChildrenUUIDs();
+            for (const auto& childUUID : children)
             {
-                DestroyEntity(GetEntityWithCoreUUID(childUUID));
+                if (auto child = GetEntityWithCoreUUID(childUUID))
+                {
+                    DestroyEntity(child);
+                }
             }
         }
 
@@ -169,6 +183,101 @@ namespace SnowLeopardEngine
         // Destroy self
         m_EntityMap->erase(entity.GetCoreUUID());
         m_Registry.destroy(entity);
+    }
+
+    glm::mat4 LogicScene::GetParentWorldTransform(entt::entity entity) const
+    {
+        const auto* node = m_Registry.try_get<TreeNodeComponent>(entity);
+        if (node == nullptr || node->ParentId.is_nil())
+        {
+            return glm::mat4(1);
+        }
+        const auto found = m_EntityMap->find(node->ParentId);
+        if (found == m_EntityMap->end() || !m_Registry.valid(entt::entity(found->second)))
+        {
+            return glm::mat4(1);
+        }
+        return GetWorldTransform(entt::entity(found->second));
+    }
+
+    glm::mat4 LogicScene::GetWorldTransform(entt::entity entity) const
+    {
+        const auto* transform = m_Registry.try_get<TransformComponent>(entity);
+        const auto  local     = transform != nullptr ? transform->GetTransform() : glm::mat4(1);
+        return GetParentWorldTransform(entity) * local;
+    }
+
+    bool LogicScene::IsDescendantOf(Entity entity, Entity ancestor) const
+    {
+        auto current = entity;
+        for (int depth = 0; current && depth < 1024; ++depth)
+        {
+            if (current == ancestor)
+            {
+                return true;
+            }
+            if (!current.HasParent())
+            {
+                return false;
+            }
+            current = GetEntityWithCoreUUID(current.GetParentUUID());
+        }
+        return false;
+    }
+
+    bool LogicScene::SetParent(Entity child, Entity parent, bool keepWorld)
+    {
+        if (!child || (parent && IsDescendantOf(parent, child)))
+        {
+            return false;
+        }
+        const auto world = GetWorldTransform(child);
+        if (child.HasParent())
+        {
+            if (auto previous = GetEntityWithCoreUUID(child.GetParentUUID()))
+            {
+                previous.RemoveChild(child.GetCoreUUID());
+            }
+        }
+        auto& node    = child.GetComponent<TreeNodeComponent>();
+        node.ParentId = parent ? parent.GetCoreUUID() : CoreUUID {};
+        if (parent)
+        {
+            parent.AddChild(child.GetCoreUUID());
+        }
+        if (keepWorld)
+        {
+            const auto local = glm::inverse(GetParentWorldTransform(child)) * world;
+            glm::vec3  position, scale, skew;
+            glm::quat  rotation;
+            glm::vec4  perspective;
+            if (glm::decompose(local, scale, rotation, position, skew, perspective))
+            {
+                auto& transform    = child.GetComponent<TransformComponent>();
+                transform.Position = position;
+                transform.Scale    = scale;
+                transform.SetRotationEuler(glm::degrees(glm::eulerAngles(rotation)));
+            }
+        }
+        return true;
+    }
+
+    std::vector<Entity> LogicScene::GetRootEntities()
+    {
+        std::vector<Entity> roots;
+        for (auto entity : m_Registry.view<IDComponent, TreeNodeComponent>())
+        {
+            const auto& node = m_Registry.get<TreeNodeComponent>(entity);
+            if (node.ParentId.is_nil() || !GetEntityWithCoreUUID(node.ParentId))
+            {
+                roots.emplace_back(entity, this);
+            }
+        }
+        // Creation order (entity index; a recycled index takes a destroyed entity's place).
+        std::sort(roots.begin(), roots.end(), [](Entity a, Entity b) {
+            return entt::to_entity(entt::entity(a)) < entt::to_entity(entt::entity(b));
+        });
+        return roots;
     }
 
     void LogicScene::TriggerEntityDestroy(Entity entity)
@@ -294,7 +403,43 @@ namespace SnowLeopardEngine
         }
     }
 
-    Entity LogicScene::GetEntityWithCoreUUID(CoreUUID id) const { return m_EntityMap->at(id); }
+    Entity LogicScene::GetEntityWithCoreUUID(CoreUUID id) const
+    {
+        // A null Entity for an unknown id (a stale selection, a dangling parent id), instead of throwing.
+        const auto found = m_EntityMap->find(id);
+        return found != m_EntityMap->end() ? found->second : Entity {};
+    }
+
+    Entity LogicScene::DuplicateEntity(Entity source)
+    {
+        if (!source)
+        {
+            return {};
+        }
+        Entity copy = CreateEntity(source.GetName());
+        CopyComponentIfExists(AllCopyableComponents {}, copy, source);
+
+        // The copy is a sibling of the source; its children are copies of the source's children.
+        auto& node = copy.GetComponent<TreeNodeComponent>();
+        node.ChildrenIds.clear();
+        if (auto parent = GetEntityWithCoreUUID(node.ParentId))
+        {
+            parent.AddChild(copy.GetCoreUUID());
+        }
+        else
+        {
+            node.ParentId = {};
+        }
+        const auto children = source.GetChildrenUUIDs();
+        for (const auto& childId : children)
+        {
+            if (auto childCopy = DuplicateEntity(GetEntityWithCoreUUID(childId)))
+            {
+                SetParent(childCopy, copy, false);
+            }
+        }
+        return copy;
+    }
 
     Entity LogicScene::GetEntityWithName(const std::string& name)
     {

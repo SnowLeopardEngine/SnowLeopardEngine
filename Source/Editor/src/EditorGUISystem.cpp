@@ -1,4 +1,6 @@
 #include "SnowLeopardEditor/EditorGUISystem.h"
+#include "SnowLeopardEditor/EditorContext.h"
+#include "SnowLeopardEditor/Panels/HierarchyPanel.h"
 #include "SnowLeopardEditor/ImGuiRenderer.h"
 #include "SnowLeopardEditor/PanelManager.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
@@ -70,6 +72,9 @@ namespace SnowLeopardEngine::Editor
         m_Renderer         = CreateScope<ImGuiRenderer>(renderSystem->GetDevice(), renderSystem->GetSwapchainFormat());
         renderSystem->AddOverlay(m_Renderer.get());
 
+        // the edited scene, play mode, selection and camera (before the panels, which use them)
+        EditorContext::Init(initInfo.ProjectFilePath);
+
         // init panel manager
         PanelManagerInitInfo panelInitInfo = {};
         panelInitInfo.ProjectFilePath      = initInfo.ProjectFilePath;
@@ -82,6 +87,7 @@ namespace SnowLeopardEngine::Editor
     {
         SNOW_LEOPARD_INFO("[EditorGUISystem] Shutting Down...");
         PanelManager::Shutdown();
+        EditorContext::Shutdown();
         g_EngineContext->WindowSys->GetWindow()->RemoveNativeEventListener(m_EventListener);
         g_EngineContext->RenderSys->RemoveOverlay(m_Renderer.get());
         m_Renderer.reset();
@@ -93,6 +99,8 @@ namespace SnowLeopardEngine::Editor
 
     void EditorGUISystem::OnTick(float deltaTime)
     {
+        EditorContext::OnTick();
+
         static bool               dockSpaceOpen  = true;
         static ImGuiDockNodeFlags dockSpaceFlags = ImGuiDockNodeFlags_None;
 
@@ -117,6 +125,9 @@ namespace SnowLeopardEngine::Editor
         ImGui::Begin("DockSpaceWindow", &dockSpaceOpen, windowFlags);
         ImGui::PopStyleVar(3);
 
+        DrawMenuBar();
+        HandleShortcuts();
+
         // DockSpace
         ImGuiIO&    io          = ImGui::GetIO();
         ImGuiStyle& style       = ImGui::GetStyle();
@@ -126,14 +137,19 @@ namespace SnowLeopardEngine::Editor
         style.WindowMinSize.y   = 120.0f;
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
         {
-            ImGuiID dockSpaceId = ImGui::GetID("DockSpace");
+            // "DockSpace2": the layout gained the Hierarchy and Render Settings panels; a layout saved for the old
+            // dock space would leave them floating.
+            ImGuiID dockSpaceId = ImGui::GetID("DockSpace2");
             BuildDefaultLayout(dockSpaceId, viewport->Size);
             ImGui::DockSpace(dockSpaceId, ImVec2(0.0f, 0.0f), dockSpaceFlags);
         }
         style.WindowMinSize.x = minWinSizeX;
         style.WindowMinSize.y = minWinSizeY;
 
-        ImGui::ShowDemoWindow();
+        if (auto& panels = EditorContext::GetPanels(); panels.ImGuiDemo)
+        {
+            ImGui::ShowDemoWindow(&panels.ImGuiDemo);
+        }
 
         PanelManager::OnTick(deltaTime);
 
@@ -161,16 +177,137 @@ namespace SnowLeopardEngine::Editor
         ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
         ImGui::DockBuilderSetNodeSize(dockSpaceId, size);
 
-        ImGuiID center = dockSpaceId;
-        ImGuiID right  = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.25f, nullptr, &center);
-        ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.25f, nullptr, &center);
+        // Hierarchy | Viewport | Inspector over Render Settings, Console + Resources below the Viewport.
+        ImGuiID center      = dockSpaceId;
+        ImGuiID right       = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.24f, nullptr, &center);
+        ImGuiID rightBottom = ImGui::DockBuilderSplitNode(right, ImGuiDir_Down, 0.42f, nullptr, &right);
+        ImGuiID left        = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.2f, nullptr, &center);
+        ImGuiID bottom      = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.28f, nullptr, &center);
 
         ImGui::DockBuilderDockWindow("Viewport", center);
+        ImGui::DockBuilderDockWindow("###Hierarchy", left);
         ImGui::DockBuilderDockWindow("Inspector", right);
+        ImGui::DockBuilderDockWindow("###RenderSettings", rightBottom);
         ImGui::DockBuilderDockWindow("Dear ImGui Demo", right);
-        ImGui::DockBuilderDockWindow(ICON_MDI_FOLDER_STAR "Resources", bottom);
+        ImGui::DockBuilderDockWindow("###Resources", bottom);
         ImGui::DockBuilderDockWindow("Console", bottom);
+        ImGui::DockBuilderGetNode(bottom)->SelectedTabId = ImHashStr("Console"); // front tab (window id = name hash)
         ImGui::DockBuilderFinish(dockSpaceId);
+    }
+
+    void EditorGUISystem::DrawMenuBar()
+    {
+        if (!ImGui::BeginMenuBar())
+        {
+            return;
+        }
+        const auto mode    = EditorContext::GetMode();
+        const bool editing = mode == EditorMode::Edit;
+
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem(ICON_MDI_FILE_PLUS " New Scene", "Ctrl+N"))
+                EditorContext::NewScene();
+            if (ImGui::MenuItem(ICON_MDI_FOLDER_OPEN " Open Scene...", "Ctrl+O"))
+                EditorContext::ShowOpenSceneDialog();
+            ImGui::Separator();
+            // Saving always writes the edited scene (not the simulated copy).
+            if (ImGui::MenuItem(ICON_MDI_CONTENT_SAVE " Save Scene", "Ctrl+S"))
+                EditorContext::SaveScene();
+            if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S"))
+                EditorContext::ShowSaveSceneDialog();
+            ImGui::Separator();
+            if (ImGui::MenuItem(ICON_MDI_EXIT_TO_APP " Exit"))
+                m_WantsQuit = true;
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Edit"))
+        {
+            const bool any = !EditorContext::GetSelection().empty();
+            if (ImGui::MenuItem(ICON_MDI_CONTENT_COPY " Duplicate", "Ctrl+D", false, any))
+                EditorContext::DuplicateSelection();
+            if (ImGui::MenuItem(ICON_MDI_DELETE " Delete", "Del", false, any))
+                EditorContext::DeleteSelection();
+            if (ImGui::MenuItem("Deselect All", "Esc", false, any))
+                EditorContext::ClearSelection();
+            ImGui::Separator();
+            if (ImGui::MenuItem("Frame Selection", "F", false, any))
+                EditorContext::FocusSelection();
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Entity"))
+        {
+            HierarchyPanel::DrawCreateMenu({});
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Play"))
+        {
+            if (ImGui::MenuItem(mode == EditorMode::Paused ? "Resume" : "Play", "Ctrl+P", false, mode != EditorMode::Playing))
+                EditorContext::Play();
+            if (ImGui::MenuItem("Pause", nullptr, false, mode == EditorMode::Playing))
+                EditorContext::Pause();
+            if (ImGui::MenuItem("Stop", "Ctrl+P", false, !editing))
+                EditorContext::Stop();
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("View"))
+        {
+            auto& panels = EditorContext::GetPanels();
+            ImGui::MenuItem("Hierarchy", nullptr, &panels.Hierarchy);
+            ImGui::MenuItem("Inspector", nullptr, &panels.Inspector);
+            ImGui::MenuItem("Render Settings", nullptr, &panels.RenderSettings);
+            ImGui::MenuItem("Resources", nullptr, &panels.Resources);
+            ImGui::MenuItem("Console", nullptr, &panels.Console);
+            ImGui::Separator();
+            ImGui::MenuItem("ImGui Demo", nullptr, &panels.ImGuiDemo);
+            ImGui::EndMenu();
+        }
+
+        // Right: the scene file and the mode.
+        std::string status = EditorContext::GetSceneTitle();
+        if (!editing)
+            status += mode == EditorMode::Playing ? "   " ICON_MDI_PLAY " Playing" : "   " ICON_MDI_PAUSE " Paused";
+        const float width = ImGui::CalcTextSize(status.c_str()).x;
+        ImGui::SameLine(std::max(ImGui::GetCursorPosX() + 20, ImGui::GetWindowWidth() - width - 16));
+        if (editing)
+            ImGui::TextDisabled("%s", status.c_str());
+        else
+            ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.2f, 1.0f), "%s", status.c_str());
+        if (ImGui::IsItemHovered() && !EditorContext::GetScenePath().empty())
+            ImGui::SetTooltip("%s", EditorContext::GetScenePath().generic_string().c_str());
+
+        ImGui::EndMenuBar();
+    }
+
+    void EditorGUISystem::HandleShortcuts()
+    {
+        // Global (any panel focused), except while typing into a text field.
+        if (ImGui::GetIO().WantTextInput)
+        {
+            return;
+        }
+        constexpr ImGuiInputFlags global = ImGuiInputFlags_RouteGlobal;
+        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_N, global))
+            EditorContext::NewScene();
+        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_O, global))
+            EditorContext::ShowOpenSceneDialog();
+        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_S, global))
+            EditorContext::ShowSaveSceneDialog();
+        else if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S, global))
+            EditorContext::SaveScene();
+        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_D, global))
+            EditorContext::DuplicateSelection();
+        if (ImGui::Shortcut(ImGuiKey_Delete, global))
+            EditorContext::DeleteSelection();
+        if (ImGui::Shortcut(ImGuiKey_Escape, global))
+            EditorContext::ClearSelection();
+        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_P, global))
+        {
+            if (EditorContext::GetMode() == EditorMode::Edit)
+                EditorContext::Play();
+            else
+                EditorContext::Stop();
+        }
     }
 
     void EditorGUISystem::Begin()

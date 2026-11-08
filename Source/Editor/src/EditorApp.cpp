@@ -77,7 +77,7 @@ namespace SnowLeopardEngine::Editor
     void EditorApp::Run()
     {
         float fixedTimer = 0;
-        while (m_IsRunning && !m_Engine->GetContext()->WindowSys->ShouldClose())
+        while (m_IsRunning && !m_Engine->GetContext()->WindowSys->ShouldClose() && !m_GUISystem.WantsQuit())
         {
             m_Timer.Start();
             float dt        = m_Timer.GetDeltaTime();

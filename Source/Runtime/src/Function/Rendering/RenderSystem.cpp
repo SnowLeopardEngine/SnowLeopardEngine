@@ -253,7 +253,9 @@ namespace SnowLeopardEngine
         if (!m_RenderToTexture || viewport != nullptr)
         {
             auto scene   = g_EngineContext->SceneMngr->GetActiveScene();
-            m_SceneReady = m_SceneRenderer->Prepare(scene.get(), viewport != nullptr ? viewport->GetExtent() : target->GetExtent());
+            m_SceneReady = m_SceneRenderer->Prepare(scene.get(),
+                                                    viewport != nullptr ? viewport->GetExtent() : target->GetExtent(),
+                                                    m_CameraOverride ? &*m_CameraOverride : nullptr);
         }
 
         if (!m_FrameGraph || m_FrameGraphExtent != target->GetExtent() || m_FrameGraphHasScene != m_SceneReady ||
@@ -280,6 +282,7 @@ namespace SnowLeopardEngine
 
         m_Frame->SubmitAndWait();
         m_Profiler->Collect();
+        m_SceneRenderer->OnFrameComplete();
         if (m_Swapchain)
         {
             m_Swapchain->Present();

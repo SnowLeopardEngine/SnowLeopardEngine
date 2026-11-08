@@ -32,7 +32,7 @@
 | In-game GUI | ★ | Canvas / Image / Text / Button only; a naive immediate design with no layout, styling or input focus. **Text rendering is known to be wrong** (owner report; cause not yet investigated). Every glyph is its own texture (no atlas); they became engine textures in Phase 1 |
 | Navigation | ☆ | **Not in the engine.** recast only appears in `Tests/LibraryTests/recastnavigation_Test` |
 | C# scripting | ☆ | **Effectively absent.** `Coral::HostInstance` is a local variable in the `CSharpScriptingSystem` constructor and is destroyed when it returns; only `Tests.Echo` is ever called; no script component, no bindings |
-| Editor | ★ | Docking layout; the Viewport renders the scene (VRI render-to-texture through the frame graph, with the full GPU-driven renderer and post-processing) with an editor camera and a small default scene. Still cannot edit much: scenes cannot be opened or saved, picking is commented out and there is no Hierarchy, so nothing can be selected for the Inspector. Play / Stop is wired but not exercised. No menu bar, Settings or Preview |
+| Editor | ★★½ | Beyond the old `editor` branch: menu bar (new / open / save scene with native dialogs, entity creation, play controls, panel toggles) and global shortcuts; Hierarchy (tree, multi-select, drag-to-parent keeping world transforms, rename, duplicate, delete, filter); GPU picking from an entity-id buffer, occlusion-aware selection outline, ImGuizmo on world transforms; an editor camera that is not a scene entity (fly / pan / orbit / dolly per second, focus); Inspector with editable name, add / remove component, lights, camera, colliders, mesh / material reload, asset drag-and-drop; Render Settings panel (#136) with statistics and per-pass GPU times; Play / Pause / Stop on a scene copy (verified offline). Not yet: undo / redo, the SMeta auto-drawn Inspector, Material Inspector, Preview, multi-viewport, asset pipeline (runtime models are not saved into scenes) |
 | Project / packaging | ★★ | `.dzproj` format done; simple game builder done (#139); no game template (#138) |
 
 ### Rendering Backend Coupling
@@ -73,12 +73,12 @@ Legend: `[ ]` not started, `[~]` partially done (judged against the code).
   - [ ] #110 Static batching with meshoptimizer
   - [~] #112 CSM + PCSS (CSM exists, PCSS does not)
 - [ ] #60 Optimize high-poly meshes with meshoptimizer — merge into #110
-- [ ] #136 RenderSettingsPanel
+- [x] #136 RenderSettingsPanel — renderer settings, statistics and per-pass GPU timings (editor)
 
 ### Editor
 - [~] **#44 Basic Editor** (umbrella)
-  - [ ] Menu bar & toolbar
-  - [ ] #72 Hierarchy panel
+  - [x] Menu bar & toolbar
+  - [x] #72 Hierarchy panel
   - [~] #73 Inspector panel — manual version exists; switch to auto-drawing once SMeta is done
   - [ ] Preview panel
   - [ ] Settings panel
@@ -282,12 +282,18 @@ Replace Coral / scoral with a direct hostfxr host modelled on libvultra's `dotne
 - Acceptance: a new `Examples/CSharpScripting` drives a character from C#, and editing the script at runtime hot-reloads while keeping field values
 
 ### Phase 4 — Editor (2–3 weeks)
-- [ ] Menu bar / toolbar (new / open / save scene and project; Play / Pause / Stop)
-- [ ] #72 Hierarchy (drag-to-parent, context menu, multi-select)
-- [ ] SMeta generator → #73 auto-drawn Inspector
-- [ ] #131 Material Inspector, #136 RenderSettings, Settings and Preview panels
-- [ ] Asset pipeline: a real AssetManager; clear the 7 TODOs in `LogicScene`; drag-and-drop from the Resource panel
-- [ ] Gizmos (ImGuizmo already present) and picking via an ID buffer instead of the back-buffer hack in `RenderTypeDef.h`
+Started 2026-11-08 (ahead of Phase 3: the editor had fallen behind the old `editor` branch). Redesigned rather than ported:
+- `EditorContext` owns what the panels share: the edited scene and its file, play mode (a `LogicScene::Copy` is simulated and dropped on Stop; saving always writes the edited scene), the selection (UUIDs, valid in the copy too) and the editor camera. The old `EditorCameraScript` was an entity of the scene, so it was saved into scenes, copied into play mode and rendered as the "first camera"; the new `EditorCamera` is not an entity and the renderer draws through it with `CameraOverride` while editing (play mode uses the scene's camera). Its movement is per second (was per frame), W / E / R no longer switch gizmos while flying, Alt orbit and middle-mouse pan were added
+- Picking (`SceneRendererSettings::EditorOverlay`): an `EntityID` pass rasterizes the camera's culled indirect draws (opaque, alpha-tested with cut-out and wind, transparent, CPU-skinned) into an R32_UINT target with its own depth; `RequestPick` copies one texel to a readback buffer collected after the frame's submit (one frame of latency, no stall). The same buffer drives the selection outline, an overlay pass after FXAA, so occluders cut the outline. Games pay nothing (no pass without the setting). Replaces the GL back-buffer hack
+- Scene graph: `LogicScene::GetWorldTransform` (the renderer, gizmos and point lights use world transforms), `SetParent` (keeps the world transform, refuses cycles), `DuplicateEntity` (with children), `GetRootEntities`. Fixed on the way: `DestroyEntity` erased from the child list it iterated; `GetEntityWithCoreUUID` threw on unknown ids; `SceneManager::SetActiveScene(nullptr)` kept the scene; `LogicScene::Copy` reversed entity order; `SceneRenderer::SetSettings` rebuilt the frame graph on every slider move; the Resources panel opened every file of a folder on any double-click and sent a truncated drag payload
+- Verified: `SceneRendering` 31 checks (picking, empty pick, camera override, outline), `SceneSerialization` 37 (reparenting, cycles, duplicate, delete subtree, hierarchy save / load, play-copy order); offline editor captures (`SLE_EDITOR_SELECT=<name>`, `SLE_EDITOR_PLAY=1`) show the layout, gizmo, outline on static and skinned meshes, and physics running in play mode. Not verified: mouse interaction itself (clicks, drags, dialogs) — needs a person at the editor
+- [x] Menu bar / toolbar (new / open / save scene; Play / Pause / Stop) — project save stays on exit
+- [x] #72 Hierarchy (drag-to-parent, context menu, multi-select, rename, filter)
+- [ ] SMeta generator → #73 auto-drawn Inspector (the manual Inspector now covers transform, mesh, material, camera, lights, rigid body, colliders, animator, add / remove)
+- [ ] #131 Material Inspector, Settings and Preview panels (#136 RenderSettings done)
+- [ ] Asset pipeline: a real AssetManager; clear the 7 TODOs in `LogicScene`; runtime (ozz) models referenced from scenes (the default scene's character is not saved); drag-and-drop of material / model paths into the Inspector works
+- [x] Gizmos and picking via an ID buffer
+- [ ] Undo / redo, multi-viewport (detached panels need per-window swapchains), camera / light icons in the Viewport
 
 ### Phase 5 — Gameplay Systems (order as needed)
 - [ ] Animation: #70 BlendJob, #134 `.dzanimcon`, state-machine view in the editor (#69 blackboard done)
@@ -362,3 +368,4 @@ Defaults in **bold** are what this plan currently follows; change them here if n
 | 2026-11-07 | 2.4 | Post-processing: GTAO + depth-aware denoise, bloom chain, FXAA 3.11 before the UI; AO placeholder bug found by A/B checks; GL-era shaders removed; `SceneRendering` 23 checks. 2.4 done |
 | 2026-11-07 | 2.5 | Editor Viewport on VRI: render-to-texture viewport texture (resized from the panel), scene passes into it, overlays sample it through the graph; ImGui uv unflipped |
 | 2026-11-08 | 2.6 | GPU profiling: `RHI::GpuProfiler` (VRI timestamps) times every render-graph pass; `RenderSystem::GetPassTimings`; Tracy GPU zones while a client is connected; `SceneRendering` 26 checks. Phase 2 done |
+| 2026-11-08 | 4 | Editor past the old `editor` branch: `EditorContext`, editor camera outside the scene (`CameraOverride`), GPU entity-id picking + selection outline, gizmos on world transforms, Hierarchy, menu bar / shortcuts / scene files, Inspector add / remove, Render Settings panel; scene-graph world transforms and fixes; `SceneRendering` 31, `SceneSerialization` 37 checks |

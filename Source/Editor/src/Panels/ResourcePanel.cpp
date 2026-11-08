@@ -1,4 +1,5 @@
 #include "SnowLeopardEditor/Panels/ResourcePanel.h"
+#include "SnowLeopardEditor/EditorContext.h"
 #include "SnowLeopardEngine/Core/File/FileSystem.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
@@ -76,7 +77,12 @@ namespace SnowLeopardEngine::Editor
 
     void ResourcePanel::OnTick(float /*deltaTime*/)
     {
-        if (ImGui::Begin(ICON_MDI_FOLDER_STAR "Resources"))
+        auto& visible = EditorContext::GetPanels().Resources;
+        if (!visible)
+        {
+            return;
+        }
+        if (ImGui::Begin(ICON_MDI_FOLDER_STAR "Resources###Resources", &visible))
         {
             auto windowSize = ImGui::GetWindowSize();
             bool vertical   = windowSize.y > windowSize.x;
@@ -289,13 +295,14 @@ namespace SnowLeopardEngine::Editor
             if (ImGui::Button(folder ? ICON_MDI_FOLDER : ICON_MDI_FILE))
             {
             }
-            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-            {
-                doubleClicked = true;
-            }
             auto newFname = SimplifyPath(m_CurrentDir->Children[dirIndex]->ThisPath);
             ImGui::TextUnformatted(newFname.c_str());
             ImGui::EndGroup();
+            // Only the item under the mouse (this used to open every item of the folder on any double-click).
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            {
+                doubleClicked = true;
+            }
             if ((shownIndex + 1) % m_GridItemsPerRow != 0)
                 ImGui::SameLine();
         }
@@ -330,8 +337,7 @@ namespace SnowLeopardEngine::Editor
             }
             else
             {
-                //            m_Editor->FileOpenCallback(m_BasePath + "/" +
-                //            m_CurrentDir->Children[dirIndex]->FilePath.string());
+                EditorContext::OpenAsset(m_ProjectPath + "/" + m_CurrentDir->Children[dirIndex]->GlobalPath);
             }
         }
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
@@ -340,7 +346,7 @@ namespace SnowLeopardEngine::Editor
             ImGui::SameLine();
             m_MovePath = m_ProjectPath + "/" + m_CurrentDir->Children[dirIndex]->GlobalPath;
             ImGui::TextUnformatted(m_MovePath.c_str());
-            size_t size = sizeof(const char*) + strlen(m_MovePath.c_str());
+            size_t size = m_MovePath.size() + 1; // the string and its terminator
             ImGui::SetDragDropPayload("AssetFile", m_MovePath.c_str(), size);
             m_IsDragging = true;
             ImGui::EndDragDropSource();

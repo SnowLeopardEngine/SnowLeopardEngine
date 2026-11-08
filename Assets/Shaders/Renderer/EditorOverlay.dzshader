@@ -1,0 +1,83 @@
+// Editor overlays of the scene renderer (SceneRendererSettings::EditorOverlay), drawn over the final image before
+// the in-game UI:
+//   SelectionOutline - outline around the visible pixels of the selected entities, found in the entity-id buffer
+//                      (Standard's EntityID passes), so occluders cut the outline like they cut the object
+Shader "Renderer/EditorOverlay"
+{
+    SubShader
+    {
+        Cull Off
+        ZTest Always
+        ZWrite Off
+        SLANGINCLUDE
+        #include "Slang/Scene.slangh"
+        [[vk::binding(24, 0)]] Texture2D<uint> entityIdMap; // entity id + 1 per pixel (0: none)
+
+        ScreenVertex vertexMain(uint id : SV_VertexID) { return FullscreenTriangle(id); }
+        ENDSLANG
+
+        Pass
+        {
+            Name "SelectionOutline"
+            Blend SrcAlpha OneMinusSrcAlpha
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            struct OutlineParameters
+            {
+                uint4  ids[4];  // up to 16 selected entity ids (+ 1)
+                float4 color;   // rgb, a = fill opacity inside the selection
+                uint4  options; // x selected count, y outline width in pixels
+            };
+            [[vk::push_constant]] ConstantBuffer<OutlineParameters> outline;
+
+            bool IsSelected(int2 pixel, int2 size)
+            {
+                if (any(pixel < 0) || any(pixel >= size))
+                {
+                    return false;
+                }
+                uint id = entityIdMap.Load(int3(pixel, 0));
+                if (id == 0)
+                {
+                    return false;
+                }
+                for (uint i = 0; i < outline.options.x; ++i)
+                {
+                    if (outline.ids[i / 4][i % 4] == id)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            float4 fragmentMain(ScreenVertex input) : SV_Target0
+            {
+                uint width, height;
+                entityIdMap.GetDimensions(width, height);
+                int2 size  = int2(width, height);
+                int2 pixel = int2(input.position.xy);
+                if (IsSelected(pixel, size))
+                {
+                    return float4(outline.color.rgb, outline.color.a);
+                }
+                // Outer outline: a selected pixel within the outline width (disc).
+                int radius = int(outline.options.y);
+                for (int y = -radius; y <= radius; ++y)
+                {
+                    for (int x = -radius; x <= radius; ++x)
+                    {
+                        if (x * x + y * y <= radius * radius && IsSelected(pixel + int2(x, y), size))
+                        {
+                            return float4(outline.color.rgb, 1);
+                        }
+                    }
+                }
+                discard;
+                return 0;
+            }
+            ENDSLANG
+        }
+    }
+}

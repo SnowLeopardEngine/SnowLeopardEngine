@@ -28,12 +28,17 @@ namespace SnowLeopardEngine::Editor
         void Begin();
         void End();
 
+        bool WantsQuit() const { return m_WantsQuit; } // File > Exit
+
     private:
         void SetupUIStyle();
+        void DrawMenuBar();
+        void HandleShortcuts();
         void BuildDefaultLayout(uint32_t dockSpaceId, const ImVec2& size);
 
     private:
         uint32_t             m_EventListener = 0; // Window::NativeEventListenerId feeding SDL events to ImGui
         Scope<ImGuiRenderer> m_Renderer;          // draws ImGui in the render system's swapchain pass
+        bool                 m_WantsQuit = false;
     };
 } // namespace SnowLeopardEngine::Editor

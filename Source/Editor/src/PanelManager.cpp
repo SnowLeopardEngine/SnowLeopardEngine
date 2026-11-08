@@ -1,7 +1,9 @@
 #include "SnowLeopardEditor/PanelManager.h"
 #include "SnowLeopardEditor/PanelBase.h"
 #include "SnowLeopardEditor/Panels/ConsolePanel.h"
+#include "SnowLeopardEditor/Panels/HierarchyPanel.h"
 #include "SnowLeopardEditor/Panels/InspectorPanel.h"
+#include "SnowLeopardEditor/Panels/RenderSettingsPanel.h"
 #include "SnowLeopardEditor/Panels/ResourcePanel.h"
 #include "SnowLeopardEditor/Panels/ViewportPanel.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
@@ -18,6 +20,8 @@ namespace SnowLeopardEngine::Editor
         auto viewportPanel = CreateRef<ViewportPanel>();
         s_Panels.emplace_back(viewportPanel);
 
+        s_Panels.emplace_back(CreateRef<HierarchyPanel>());
+
         auto consolePanel = CreateRef<ConsolePanel>();
         s_Panels.emplace_back(consolePanel);
 
@@ -27,7 +31,9 @@ namespace SnowLeopardEngine::Editor
         auto resourcePanel = CreateRef<ResourcePanel>();
         s_Panels.emplace_back(resourcePanel);
 
-        // TODO: add more panels
+        // After the Inspector: of the panels docked together, the first one submitted is the front tab.
+        s_Panels.emplace_back(CreateRef<RenderSettingsPanel>());
+
 
         for (const auto& panel : s_Panels)
         {

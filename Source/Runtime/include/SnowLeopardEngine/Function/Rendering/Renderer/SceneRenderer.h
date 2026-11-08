@@ -9,6 +9,8 @@
 #include "SnowLeopardEngine/Function/Rendering/Shader/ShaderAsset.h"
 #include "SnowLeopardEngine/Function/Rendering/Shader/ShaderPipeline.h"
 
+#include <entt/entity/entity.hpp>
+
 #include <array>
 #include <functional>
 #include <optional>
@@ -21,6 +23,16 @@ namespace SnowLeopardEngine
     class LogicScene;
     class Material;
     struct MeshItem;
+    struct TransformComponent;
+    struct CameraComponent;
+
+    // A camera that is not an entity of the scene (the editor's): Prepare renders through it instead of the scene's
+    // first camera.
+    struct CameraOverride
+    {
+        TransformComponent* Transform = nullptr;
+        CameraComponent*    Camera    = nullptr;
+    };
 
     struct SceneRendererSettings
     {
@@ -39,6 +51,11 @@ namespace SnowLeopardEngine
         uint32_t BloomLevels   = 6;
         // FXAA 3.11 on the tone-mapped image (before the UI, which stays sharp).
         bool FXAA = true;
+        // Editor: an entity-id buffer of the camera view (picking, see RequestPick) and an outline around the
+        // selected entities (SetSelection). Off for games: no extra pass.
+        bool      EditorOverlay    = false;
+        glm::vec3 SelectionColor   = {1.0f, 0.55f, 0.1f};
+        uint32_t  SelectionOutline = 2; // pixels
     };
 
     // GPU-driven scene renderer (Phase 2.4).
@@ -64,7 +81,7 @@ namespace SnowLeopardEngine
 
         // CPU half of a frame, before recording: collects the scene, uploads new meshes, materials and the
         // environment, writes the frame / instance / material buffers. False: nothing to draw (no camera).
-        bool Prepare(LogicScene* scene, RHI::Extent extent);
+        bool Prepare(LogicScene* scene, RHI::Extent extent, const CameraOverride* camera = nullptr);
 
         // Adds the scene passes to `graph`; the tone-mapped image is written to `target` (UNORM colour, extent of
         // the last Prepare). Passes read the state of the latest Prepare when the graph executes.
@@ -105,6 +122,20 @@ namespace SnowLeopardEngine
         std::array<uint32_t, kViews> ReadDrawCounts();
 
         UIRenderer& GetUI() { return *m_UI; }
+
+        // ---- editor overlay (SceneRendererSettings::EditorOverlay)
+
+        // Outlined entities (at most kMaxSelection are drawn).
+        static constexpr uint32_t kMaxSelection = 16;
+        void                      SetSelection(std::span<const entt::entity> entities);
+
+        // The entity under `pixel` (target coordinates, origin top-left) in the next executed frame: read back with
+        // that frame and returned once by TakePickResult (nullopt until then). A pick of empty space yields
+        // entt::null.
+        void                        RequestPick(glm::uvec2 pixel);
+        std::optional<entt::entity> TakePickResult();
+        // After the frame's SubmitAndWait (RenderSystem calls it): collects the pick readback.
+        void OnFrameComplete();
 
     public:
         // GPU layouts, mirrored in Assets/Shaders/Slang/Scene.slangh.
@@ -191,6 +222,7 @@ namespace SnowLeopardEngine
         // Writes the renderer resources into a pass's descriptor set (names the pass does not use are skipped).
         void WriteBindings(ShaderBindings& bindings, RenderGraph* graph);
         void DrawIndirect(VriCommandBuffer* cmd, uint32_t view, uint32_t first, uint32_t count);
+        void AddEditorPasses(RenderGraph& graph, RenderGraph::Resource target, RenderGraph::Resource commands, RenderGraph::Resource counts);
         void BindGeometry(VriCommandBuffer* cmd);
 
     private:
@@ -201,6 +233,15 @@ namespace SnowLeopardEngine
         // Shaders and pipelines
         ShaderAsset          m_Standard, m_Culling, m_Lighting, m_ToneMapping, m_EnvironmentShader, m_PostShader;
         Scope<ShaderPipeline> m_GTAOPipeline, m_AODenoisePipeline, m_BloomDownPipeline, m_BloomUpPipeline, m_FXAAPipeline;
+        // Editor overlay
+        ShaderAsset           m_EditorShader;
+        Scope<ShaderPipeline> m_EntityIdPipeline, m_EntityIdAlphaPipeline, m_OutlinePipeline;
+        Scope<ShaderBindings> m_EntityIdSet, m_EntityIdAlphaSet, m_OutlineSet;
+        VriFormat             m_OutlineFormat = VriFormat_Unknown;
+        std::vector<uint32_t> m_Selection; // entity id + 1
+        std::optional<glm::uvec2>   m_PickRequest, m_PickInFlight;
+        std::optional<entt::entity> m_PickResult;
+        Scope<RHI::Buffer>          m_PickReadback;
         std::vector<Scope<ShaderBindings>> m_PostSets; // one per post-processing pass of the current graph
         VriFormat             m_ToneMappingFormat = VriFormat_Unknown, m_FXAAFormat = VriFormat_Unknown;
         std::optional<RenderGraph::Resource> m_AOResource, m_BloomResource;

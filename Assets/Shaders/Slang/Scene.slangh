@@ -42,7 +42,7 @@ struct InstanceData
     float4x4 normalMatrix;   // inverse transpose of model (upper 3 x 3 used)
     float4   boundingSphere; // world-space centre, radius
     uint4    draw;           // x index count, y first index, z vertex offset, w material
-    uint4    flags;          // x casts shadows
+    uint4    flags;          // x casts shadows, y entity id + 1 (0: none; editor picking / selection)
 };
 
 struct MaterialData

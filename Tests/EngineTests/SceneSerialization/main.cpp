@@ -1,8 +1,9 @@
 // Scene serialization round trip.
 //
 // Builds a scene, writes it with IO::Serialize (entt snapshot + cereal JSON), reads it back into an empty scene with
-// IO::Deserialize and compares entities and component values. Every check prints PASS / FAIL; the exit code is the
-// number of failures.
+// IO::Deserialize and compares entities and component values; then the scene graph the editor edits (reparenting with
+// world transforms kept, cycles refused, duplication with children, deletion of a subtree, a hierarchy that survives
+// a save, the play-mode copy). Every check prints PASS / FAIL; the exit code is the number of failures.
 
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Engine/Engine.h"
@@ -147,6 +148,69 @@ int main() TRY
     Check(dst.valid(extra) && ByName(dst).size() == srcNames.size() + 1, "new entity after load");
 
     std::filesystem::remove(path);
+
+    // ---- scene graph (editor Hierarchy)
+    {
+        auto   graph  = context->SceneMngr->CreateScene("Graph", false);
+        Entity parent = graph->CreateEntity("Parent");
+        Entity child  = graph->CreateEntity("Child");
+        parent.GetComponent<TransformComponent>().Position = {10, 0, 0};
+        parent.GetComponent<TransformComponent>().SetRotationEuler({0, 90, 0});
+        parent.GetComponent<TransformComponent>().Scale = {2, 2, 2};
+        child.GetComponent<TransformComponent>().Position = {1, 2, 3};
+
+        Check(graph->SetParent(child, parent, true), "SetParent succeeds");
+        Check(child.GetParentUUID() == parent.GetCoreUUID() && parent.GetChildrenUUIDs().size() == 1, "parent and child are linked");
+        Check(Near(glm::vec3(graph->GetWorldTransform(child)[3]), {1, 2, 3}), "keepWorld keeps the child where it was");
+        Check(!Near(child.GetComponent<TransformComponent>().Position, {1, 2, 3}), "its local transform is rewritten");
+
+        parent.GetComponent<TransformComponent>().Position = {20, 0, 0};
+        Check(Near(glm::vec3(graph->GetWorldTransform(child)[3]), {11, 2, 3}), "the child follows its parent");
+        Check(!graph->SetParent(parent, child, true), "a parent cannot become its child's child");
+
+        Entity grandChild = graph->CreateEntity("GrandChild");
+        graph->SetParent(grandChild, child, false);
+        Check(graph->IsDescendantOf(grandChild, parent), "grandchild is a descendant of the root");
+
+        const auto rootsBefore = graph->GetRootEntities().size();
+        Entity     copy        = graph->DuplicateEntity(parent);
+        Check(copy && copy.GetCoreUUID() != parent.GetCoreUUID() && copy.GetChildrenUUIDs().size() == 1, "duplicate copies the subtree");
+        Check(graph->GetRootEntities().size() == rootsBefore + 1, "the duplicate is a sibling (a new root)");
+        Entity copiedChild = graph->GetEntityWithCoreUUID(copy.GetChildrenUUIDs()[0]);
+        Check(copiedChild && copiedChild.GetCoreUUID() != child.GetCoreUUID() && copiedChild.GetChildrenUUIDs().size() == 1 &&
+                  Near(glm::vec3(graph->GetWorldTransform(copiedChild)[3]), glm::vec3(graph->GetWorldTransform(child)[3])),
+              "copied children keep their transforms");
+
+        // Save and reload: the hierarchy is part of the scene file.
+        const auto graphPath = std::filesystem::temp_directory_path() / "sle_scene_graph_test.dzscene";
+        graph->SaveTo(graphPath);
+        auto reloaded = context->SceneMngr->CreateScene("GraphLoaded", true);
+        reloaded->LoadFrom(graphPath);
+        std::filesystem::remove(graphPath);
+        Entity reloadedChild = reloaded->GetEntityWithCoreUUID(child.GetCoreUUID());
+        Check(reloadedChild && reloadedChild.GetParentUUID() == parent.GetCoreUUID() &&
+                  Near(glm::vec3(reloaded->GetWorldTransform(reloadedChild)[3]), {11, 2, 3}),
+              "hierarchy survives save / load");
+
+        // Play mode copies the scene: same UUIDs, same order of roots.
+        auto played = LogicScene::Copy(graph);
+        auto names  = [](const std::vector<Entity>& entities) {
+            std::string list;
+            for (auto entity : entities)
+                list += entity.GetName() + ",";
+            return list;
+        };
+        Check(names(played->GetRootEntities()) == names(graph->GetRootEntities()), "play copy lists roots in the same order",
+              names(played->GetRootEntities()));
+
+        // Deleting a parent deletes its subtree; unknown ids give a null entity instead of throwing.
+        const auto childId = child.GetCoreUUID(), grandChildId = grandChild.GetCoreUUID();
+        graph->DestroyEntity(parent);
+        Check(!graph->GetEntityWithCoreUUID(childId) && !graph->GetEntityWithCoreUUID(grandChildId),
+              "deleting a parent deletes its children");
+        Check(!graph->GetEntityWithCoreUUID(CoreUUIDHelper::CreateStandardUUID()), "unknown UUID gives a null entity");
+    }
+
     std::printf("\n%d failure(s)\n", g_Failures);
 
     engine.Shutdown();

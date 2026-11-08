@@ -1,467 +1,315 @@
 #include "SnowLeopardEditor/Panels/ViewportPanel.h"
-#include "SnowLeopardEditor/EditorCamera/EditorCameraScript.h"
-#include "SnowLeopardEditor/Selector.h"
-#include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
+#include "SnowLeopardEditor/EditorContext.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
-#include "SnowLeopardEngine/Function/Asset/Model.h"
 #include "SnowLeopardEngine/Function/Input/Input.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
 
 #include "IconsMaterialDesignIcons.h"
-#include "entt/entt.hpp"
 #include <imgui.h>
 
 namespace SnowLeopardEngine::Editor
 {
     void ViewportPanel::Init(const PanelCommonInitInfo& initInfo)
     {
-        REGISTER_TYPE(EditorCameraScript);
-
-        // The scene is rendered into a texture that this panel draws, instead of into the window.
-        g_EngineContext->RenderSys->SetRenderToTexture(true);
-
-        CreateDefaultScene();
-    }
-
-    void ViewportPanel::CreateDefaultScene()
-    {
-        // Until scenes can be opened from the project (menu bar, Phase 4) the editor starts with a small scene.
-        auto scene = g_EngineContext->SceneMngr->CreateScene("Untitled Scene", true);
-        scene->SetSimulationMode(LogicSceneSimulationMode::Editor);
-        m_EditingScene = scene;
-
-        // The renderer draws through the first camera, so the editor camera is created first.
-        m_EditorCamera = scene->CreateEntity("EditorCamera");
-        auto& cameraTransform    = m_EditorCamera.GetComponent<TransformComponent>();
-        cameraTransform.Position = {0, 8, 25};
-        cameraTransform.SetRotationEuler(glm::vec3(-15, 0, 0));
-        m_EditorCamera.AddComponent<CameraComponent>().ClearFlags = CameraClearFlags::Skybox;
-        m_EditorCamera.AddComponent<NativeScriptingComponent>(NAME_OF_TYPE(EditorCameraScript));
-
-        auto normalMaterial = CreateRef<PhysicsMaterial>(0.4, 0.4, 0.4);
-
-        Entity floor                                         = scene->CreateEntity("Floor");
-        floor.GetComponent<TransformComponent>().Scale       = {50, 1, 50};
-        floor.GetComponent<EntityStatusComponent>().IsStatic = true;
-        floor.AddComponent<RigidBodyComponent>();
-        floor.AddComponent<BoxColliderComponent>(normalMaterial);
-        floor.AddComponent<MeshFilterComponent>().PrimitiveType           = MeshPrimitiveType::Cube;
-        floor.AddComponent<MeshRendererComponent>().MaterialFilePath      = "Assets/Materials/Next/White.dzmaterial";
-
-        Entity sphere                                     = scene->CreateEntity("Sphere");
-        sphere.GetComponent<TransformComponent>().Position = {0, 6, 0};
-        sphere.GetComponent<TransformComponent>().Scale    = {3, 3, 3};
-        sphere.AddComponent<RigidBodyComponent>();
-        sphere.AddComponent<SphereColliderComponent>(normalMaterial);
-        sphere.AddComponent<MeshFilterComponent>().PrimitiveType      = MeshPrimitiveType::Sphere;
-        sphere.AddComponent<MeshRendererComponent>().MaterialFilePath = "Assets/Materials/Next/Blue.dzmaterial";
-
-        Entity cube                                     = scene->CreateEntity("Cube");
-        cube.GetComponent<TransformComponent>().Position = {-6, 1.5, 2};
-        cube.GetComponent<TransformComponent>().Scale    = {2, 2, 2};
-        cube.AddComponent<MeshFilterComponent>().PrimitiveType      = MeshPrimitiveType::Cube;
-        cube.AddComponent<MeshRendererComponent>().MaterialFilePath = "Assets/Materials/Next/Red.dzmaterial";
+        // The scene is rendered into a texture that this panel draws, with the editor overlay (entity ids for
+        // picking, the selection outline).
+        auto& renderSystem = g_EngineContext->RenderSys;
+        renderSystem->SetRenderToTexture(true);
+        auto settings          = renderSystem->GetSceneRenderer()->GetSettings();
+        settings.EditorOverlay = true;
+        renderSystem->GetSceneRenderer()->SetSettings(settings);
     }
 
     void ViewportPanel::OnFixedTick()
     {
-        // Tick Logic
         g_EngineContext->SceneMngr->OnFixedTick();
-
-        if (m_ViewportMode == ViewportMode::Simulating)
+        if (EditorContext::GetMode() == EditorMode::Playing)
         {
-            // Tick Physics
             g_EngineContext->PhysicsSys->OnFixedTick();
         }
     }
 
     void ViewportPanel::OnTick(float deltaTime)
     {
-        HandleInput();
-
-        // Tick logic
         g_EngineContext->SceneMngr->OnTick(deltaTime);
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
         ImGui::Begin("Viewport");
         ImGui::PopStyleVar();
 
-        ImGui::BeginChild("ViewportToolbar", ImVec2(0, 30), false, ImGuiWindowFlags_NoScrollbar);
+        ImGui::BeginChild("ViewportToolbar", ImVec2(0, 32), false, ImGuiWindowFlags_NoScrollbar);
         DrawToolbar();
         ImGui::EndChild();
 
-        ImGui::BeginChild("ViewportMain", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar);
+        ImGui::BeginChild("ViewportMain", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 
-        // Nothing has been drawn into the child yet, so the cursor is at the content region's top-left corner
-        // (GetWindowContentRegionMin / Max were removed in imgui 1.92).
-        const auto viewportMin  = ImGui::GetCursorScreenPos();
-        const auto viewportSize = ImGui::GetContentRegionAvail();
+        // Nothing has been drawn into the child yet: the cursor is the content region's top-left corner.
+        const auto      cursor = ImGui::GetCursorScreenPos();
+        const auto      avail  = ImGui::GetContentRegionAvail();
+        const glm::vec2 min {cursor.x, cursor.y};
+        const glm::vec2 size {std::floor(avail.x), std::floor(avail.y)};
 
-        // Render the scene at the panel's size, then show it.
-        if (!g_EngineContext->WindowSys->IsMinimized() && viewportSize.x >= 1.0f && viewportSize.y >= 1.0f)
+        auto& renderSystem = g_EngineContext->RenderSys;
+        if (!g_EngineContext->WindowSys->IsMinimized() && size.x >= 1.0f && size.y >= 1.0f)
         {
-            m_ViewportSize = {viewportSize.x, viewportSize.y};
-            g_EngineContext->RenderSys->UpdateViewport({
-                .Offset = {.X = 0, .Y = 0},
-                .Extent = {.Width  = static_cast<uint32_t>(viewportSize.x),
-                           .Height = static_cast<uint32_t>(viewportSize.y)},
-            });
-            g_EngineContext->RenderSys->OnTick(deltaTime);
-
-            if (const auto texture = g_EngineContext->RenderSys->GetOutputTextureID(); texture != 0)
+            renderSystem->UpdateViewport({.Offset = {.X = 0, .Y = 0},
+                                          .Extent = {.Width = uint32_t(size.x), .Height = uint32_t(size.y)}});
+            renderSystem->OnTick(deltaTime);
+            if (const auto texture = renderSystem->GetOutputTextureID(); texture != 0)
             {
                 // The viewport texture's rows run top to bottom, like ImGui's uv.
-                ImGui::Image(static_cast<ImTextureID>(texture), viewportSize);
-                ImGui::SetCursorScreenPos(viewportMin);
+                ImGui::Image(static_cast<ImTextureID>(texture), avail);
+                ImGui::SetCursorScreenPos(cursor);
             }
         }
+        m_IsHovered = ImGui::IsWindowHovered();
 
-        if (m_ViewportMode == ViewportMode::Edit)
+        // The editor camera only moves while editing; playing shows the scene's own camera.
+        auto& camera = EditorContext::GetCamera();
+        // The gizmo needs the aspect before the renderer sets it (first frame, resizes).
+        camera.GetCamera().ViewportWidth  = std::max(size.x, 1.0f);
+        camera.GetCamera().ViewportHeight = std::max(size.y, 1.0f);
+        if (EditorContext::GetMode() == EditorMode::Edit)
         {
-            // Get mouse relative position (Origin is left bottom) to the viewport window
-            glm::vec2 bounds0      = {viewportMin.x, viewportMin.y};
-            glm::vec2 bounds1      = {viewportMin.x + viewportSize.x, viewportMin.y + viewportSize.y};
-            ImVec2    mousePos = ImGui::GetMousePos();
-            mousePos.x -= bounds0.x;
-            mousePos.y -= bounds0.y;
-            auto viewportTotalSize = bounds1 - bounds0;
-            mousePos.y             = viewportTotalSize.y - mousePos.y;
+            camera.OnTick(deltaTime, m_IsHovered, m_GizmoOperation == -1);
+        }
 
-            if (mousePos.x >= 0 && mousePos.x < viewportTotalSize.x && mousePos.y >= 0 &&
-                mousePos.y < viewportTotalSize.y)
-            {
-                // // Get picking buffer pixel value (entity ID)
-                // m_RenderTarget->Bind();
-                // int entityID = m_RenderTarget->ReadPixelRedOnly(1, mousePos.x, mousePos.y);
-                // m_HoveredEntity =
-                //     (entityID == -1 || m_GuizmoOperation == -1) ?
-                //         Entity() :
-                //         Entity(static_cast<entt::entity>(entityID), g_EngineContext->SceneMngr->GetActiveScene().get());
-                // m_RenderTarget->Unbind();
-            }
+        // Outline what is selected (the renderer resolves entities of the scene it draws).
+        std::vector<entt::entity> selected;
+        for (auto entity : EditorContext::GetSelection())
+        {
+            selected.push_back(entity);
+        }
+        renderSystem->GetSceneRenderer()->SetSelection(selected);
 
-            m_IsWindowHovered = ImGui::IsWindowHovered();
-
-            // Set EditorCamera states
-            if (m_EditorCamera)
-            {
-                if (m_EditorCameraScript == nullptr)
-                {
-                    m_EditorCameraScript = std::dynamic_pointer_cast<EditorCameraScript>(
-                        m_EditorCamera.GetComponent<NativeScriptingComponent>().ScriptInstance);
-                }
-                m_EditorCameraScript->SetWindowHovered(m_IsWindowHovered);
-                m_EditorCameraScript->SetGrabMoveEnabled(m_GuizmoOperation == -1);
-            }
-
-            // Gizmos
-            auto selectedEntityUUID = Selector::GetLastSelection(SelectionCategory::Viewport);
-            if (selectedEntityUUID.has_value())
-            {
-                Entity selectedEntity =
-                    g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithCoreUUID(selectedEntityUUID.value());
-                if (selectedEntity && m_GuizmoOperation != -1)
-                {
-                    ImGuizmo::SetOrthographic(false);
-                    ImGuizmo::SetDrawlist();
-
-                    ImGuizmo::SetRect(bounds0.x, bounds0.y, bounds1.x - bounds0.x, bounds1.y - bounds0.y);
-
-                    // Editor camera
-                    auto editorCameraComponent          = m_EditorCamera.GetComponent<CameraComponent>();
-                    auto editorCameraTransformComponent = m_EditorCamera.GetComponent<TransformComponent>();
-                    auto cameraView       = g_EngineContext->CameraSys->GetViewMatrix(editorCameraTransformComponent);
-                    auto cameraProjection = g_EngineContext->CameraSys->GetProjectionMatrix(editorCameraComponent);
-
-                    // Entity transform
-                    auto&     transformComponent = selectedEntity.GetComponent<TransformComponent>();
-                    glm::mat4 transform          = transformComponent.GetTransform();
-
-                    // Snapping
-                    bool snap = g_EngineContext->InputSys->GetKey(KeyCode::LeftControl);
-
-                    float snapValue = 0.5f; // Snap to 0.5m for translation/scale
-
-                    // Snap to 45 degrees for rotation
-                    if (m_GuizmoOperation == ImGuizmo::OPERATION::ROTATE)
-                    {
-                        snapValue = 45.0f;
-                    }
-
-                    float snapValues[3] = {snapValue, snapValue, snapValue};
-
-                    ImGuizmo::Manipulate(glm::value_ptr(cameraView),
-                                         glm::value_ptr(cameraProjection),
-                                         static_cast<ImGuizmo::OPERATION>(m_GuizmoOperation),
-                                         m_GuizmoMode,
-                                         glm::value_ptr(transform),
-                                         nullptr,
-                                         snap ? snapValues : nullptr);
-
-                    if (ImGuizmo::IsUsing())
-                    {
-                        glm::vec3 rotation;
-                        ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(transform),
-                                                              glm::value_ptr(transformComponent.Position),
-                                                              glm::value_ptr(rotation),
-                                                              glm::value_ptr(transformComponent.Scale));
-                        transformComponent.SetRotationEuler(rotation);
-                    }
-                }
-            }
+        if (EditorContext::GetMode() != EditorMode::Playing)
+        {
+            HandleShortcuts();
+            DrawGizmo(min, size);
+            HandlePicking(min, size);
+        }
+        if (m_ShowStats)
+        {
+            DrawStats(min, size);
         }
 
         ImGui::EndChild();
         ImGui::End();
     }
 
-    void ViewportPanel::HandleInput()
+    void ViewportPanel::HandleShortcuts()
     {
-        if (m_ViewportMode != ViewportMode::Edit)
+        // Single keys only over the Viewport, never while flying (W A S D Q E move the camera) or typing.
+        if (!m_IsHovered || EditorContext::GetCamera().IsNavigating() || ImGui::GetIO().WantTextInput || ImGuizmo::IsUsing())
+        {
+            return;
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_Q, false))
+            m_GizmoOperation = -1;
+        if (ImGui::IsKeyPressed(ImGuiKey_W, false))
+            m_GizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+        if (ImGui::IsKeyPressed(ImGuiKey_E, false))
+            m_GizmoOperation = ImGuizmo::OPERATION::ROTATE;
+        if (ImGui::IsKeyPressed(ImGuiKey_R, false))
+            m_GizmoOperation = ImGuizmo::OPERATION::SCALE;
+        if (ImGui::IsKeyPressed(ImGuiKey_T, false))
+            m_GizmoMode = m_GizmoMode == ImGuizmo::LOCAL ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
+        if (ImGui::IsKeyPressed(ImGuiKey_F, false))
+            EditorContext::FocusSelection();
+    }
+
+    void ViewportPanel::HandlePicking(const glm::vec2& min, const glm::vec2& size)
+    {
+        auto* renderer = g_EngineContext->RenderSys->GetSceneRenderer();
+
+        // The result of last frame's request (the frame is read back after it is submitted).
+        if (m_PickPending)
+        {
+            if (auto picked = renderer->TakePickResult())
+            {
+                m_PickPending = false;
+                auto scene    = EditorContext::GetActiveScene();
+                if (*picked != entt::null && scene != nullptr && scene->GetRegistry().valid(*picked))
+                {
+                    Entity entity(*picked, scene.get());
+                    if (m_PickAdditive && EditorContext::IsSelected(entity))
+                        EditorContext::Deselect(entity);
+                    else
+                        EditorContext::Select(entity, m_PickAdditive);
+                }
+                else if (!m_PickAdditive)
+                {
+                    EditorContext::ClearSelection();
+                }
+            }
+        }
+
+        // A click: press and release at (almost) the same place, not on the gizmo, not while navigating. A drag that
+        // started on the gizmo or moved the camera selects nothing.
+        const auto mouse = ImGui::GetMousePos();
+        const glm::vec2 local {mouse.x - min.x, mouse.y - min.y};
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        {
+            m_PressPosition = local;
+            m_PressedInside = m_IsHovered && !ImGuizmo::IsOver() && !ImGui::GetIO().KeyAlt && m_GizmoOperation != -1;
+        }
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && m_PressedInside)
+        {
+            m_PressedInside = false;
+            const bool inside = local.x >= 0 && local.y >= 0 && local.x < size.x && local.y < size.y;
+            if (inside && glm::distance(local, m_PressPosition) < 4.0f && !m_GizmoWasUsing)
+            {
+                renderer->RequestPick(glm::uvec2(local));
+                m_PickPending  = true;
+                m_PickAdditive = ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeyShift;
+            }
+        }
+        m_GizmoWasUsing = ImGuizmo::IsUsing() || (m_GizmoWasUsing && ImGui::IsMouseDown(ImGuiMouseButton_Left));
+    }
+
+    void ViewportPanel::DrawGizmo(const glm::vec2& min, const glm::vec2& size)
+    {
+        auto   scene    = EditorContext::GetActiveScene();
+        Entity selected = EditorContext::GetPrimarySelection();
+        if (scene == nullptr || !selected || m_GizmoOperation == -1)
         {
             return;
         }
 
-        // Select hovered entity
+        auto& camera = EditorContext::GetCamera();
+        ImGuizmo::SetOrthographic(false);
+        ImGuizmo::SetDrawlist();
+        ImGuizmo::SetRect(min.x, min.y, size.x, size.y);
+        ImGuizmo::Enable(!camera.IsNavigating());
 
-        // Workaround for https://github.com/CedricGuillemet/ImGuizmo/issues/310
-#if defined(NDEBUG)
-        static bool isFirstTime = true;
-        if (g_EngineContext->InputSys->GetMouseButtonDown(MouseCode::ButtonLeft) && m_IsWindowHovered &&
-            (!ImGuizmo::IsOver() || isFirstTime))
+        const auto view       = camera.GetView();
+        const auto projection = camera.GetProjection();
+        // The gizmo works on the world transform; the result goes back as the local transform under the parent.
+        glm::mat4  world      = scene->GetWorldTransform(selected);
+
+        const bool  snap       = ImGui::GetIO().KeyCtrl;
+        const float snapValue  = m_GizmoOperation == ImGuizmo::OPERATION::ROTATE ? 15.0f : 0.5f;
+        const float snaps[3]   = {snapValue, snapValue, snapValue};
+        // Scaling only makes sense in local space.
+        const auto mode = m_GizmoOperation == ImGuizmo::OPERATION::SCALE ? ImGuizmo::LOCAL : m_GizmoMode;
+
+        if (ImGuizmo::Manipulate(glm::value_ptr(view),
+                                 glm::value_ptr(projection),
+                                 static_cast<ImGuizmo::OPERATION>(m_GizmoOperation),
+                                 mode,
+                                 glm::value_ptr(world),
+                                 nullptr,
+                                 snap ? snaps : nullptr))
         {
-            isFirstTime = false;
-#else
-        if (g_EngineContext->InputSys->GetMouseButtonDown(MouseCode::ButtonLeft) && m_IsWindowHovered &&
-            !ImGuizmo::IsOver())
-        {
-#endif
-            if (m_HoveredEntity)
-            {
-                SNOW_LEOPARD_INFO("[Editor][Viewport] Selected entity: Name = {0}",
-                                  m_HoveredEntity.GetComponent<NameComponent>().Name);
-
-                // Single selection for now
-                Selector::UnselectAll(SelectionCategory::Viewport);
-                Selector::Select(SelectionCategory::Viewport, m_HoveredEntity.GetCoreUUID());
-            }
-            else
-            {
-                // https://github.com/CedricGuillemet/ImGuizmo/issues/133#issuecomment-708083755
-                auto selectedEntityUUID = Selector::GetLastSelection(SelectionCategory::Viewport);
-                if (selectedEntityUUID.has_value() && m_GuizmoOperation != -1)
-                {
-                    auto entityCache =
-                        g_EngineContext->SceneMngr->GetActiveScene()->GetEntityWithCoreUUID(selectedEntityUUID.value());
-
-                    // Editor camera
-                    auto editorCameraComponent          = m_EditorCamera.GetComponent<CameraComponent>();
-                    auto editorCameraTransformComponent = m_EditorCamera.GetComponent<TransformComponent>();
-                    auto cameraView       = g_EngineContext->CameraSys->GetViewMatrix(editorCameraTransformComponent);
-                    auto cameraProjection = g_EngineContext->CameraSys->GetProjectionMatrix(editorCameraComponent);
-
-                    glm::mat4 transform = entityCache.GetComponent<TransformComponent>().GetTransform();
-                    transform           = glm::translate(transform, glm::vec3(0.0f, -10000.0f, 0.0f));
-                    ImGuizmo::Manipulate(glm::value_ptr(cameraView),
-                                         glm::value_ptr(cameraProjection),
-                                         static_cast<ImGuizmo::OPERATION>(m_GuizmoOperation),
-                                         m_GuizmoMode,
-                                         glm::value_ptr(transform));
-                }
-
-                Selector::UnselectAll(SelectionCategory::Viewport);
-            }
+            const glm::mat4 local = glm::inverse(scene->GetParentWorldTransform(selected)) * world;
+            auto&           transform = selected.GetComponent<TransformComponent>();
+            glm::vec3       rotation;
+            ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(local),
+                                                  glm::value_ptr(transform.Position),
+                                                  glm::value_ptr(rotation),
+                                                  glm::value_ptr(transform.Scale));
+            transform.SetRotationEuler(rotation);
         }
+    }
 
-        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::Q) && m_IsWindowHovered && !ImGuizmo::IsUsing())
-        {
-            m_GuizmoOperation = -1;
-        }
+    void ViewportPanel::DrawStats(const glm::vec2& min, const glm::vec2& size)
+    {
+        auto&       renderSystem = g_EngineContext->RenderSys;
+        const auto& stats        = renderSystem->GetSceneRenderer()->GetStatistics();
+        const auto& io           = ImGui::GetIO();
 
-        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::W) && m_IsWindowHovered && !ImGuizmo::IsUsing())
-        {
-            m_GuizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
-        }
-
-        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::E) && m_IsWindowHovered && !ImGuizmo::IsUsing())
-        {
-            m_GuizmoOperation = ImGuizmo::OPERATION::ROTATE;
-        }
-
-        if (g_EngineContext->InputSys->GetKeyDown(KeyCode::R) && m_IsWindowHovered && !ImGuizmo::IsUsing())
-        {
-            m_GuizmoOperation = ImGuizmo::OPERATION::SCALE;
-        }
+        char text[256];
+        std::snprintf(text,
+                      sizeof(text),
+                      "%.0f FPS  %.2f ms\nGPU %.2f ms\n%u x %u\n%u objects  %u materials",
+                      io.Framerate,
+                      1000.0f / std::max(io.Framerate, 1.0f),
+                      renderSystem->GetFrameGpuMs(),
+                      uint32_t(size.x),
+                      uint32_t(size.y),
+                      stats.Instances,
+                      stats.Materials);
+        auto*       drawList = ImGui::GetWindowDrawList();
+        const auto  extent   = ImGui::CalcTextSize(text);
+        const ImVec2 origin(min.x + size.x - extent.x - 14, min.y + 8);
+        drawList->AddRectFilled(ImVec2(origin.x - 6, origin.y - 4), ImVec2(origin.x + extent.x + 6, origin.y + extent.y + 4), IM_COL32(0, 0, 0, 140), 4);
+        drawList->AddText(origin, IM_COL32(230, 230, 230, 255), text);
     }
 
     void ViewportPanel::DrawToolbar()
     {
-        float windowHeight = ImGui::GetWindowHeight();
-
-        float centerHeight = windowHeight * 0.5f;
-        float offsetY      = (windowHeight - centerHeight) * 0.5f;
-        ImGui::SetCursorPos(ImVec2(0, offsetY));
-
-        ImGui::Indent();
-        ImGui::Text("");
-        ImGui::SameLine();
-
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-
+        ImGui::SetCursorPos(ImVec2(8, 4));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         const ImVec4 selectedColor = ImVec4(0.18f, 0.46f, 0.98f, 1.0f);
 
-        if (m_ViewportMode == ViewportMode::Edit)
+        auto toolButton = [&](const char* icon, int operation, const char* tooltip) {
+            const bool selected = m_GizmoOperation == operation;
+            if (selected)
+                ImGui::PushStyleColor(ImGuiCol_Text, selectedColor);
+            if (ImGui::Button(icon))
+                m_GizmoOperation = operation;
+            if (selected)
+                ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", tooltip);
+            ImGui::SameLine();
+        };
+
+        const auto mode = EditorContext::GetMode();
+        ImGui::BeginDisabled(mode == EditorMode::Playing);
+        toolButton(ICON_MDI_HAND_BACK_RIGHT, -1, "Pan the view (Q)");
+        toolButton(ICON_MDI_ARROW_ALL, ImGuizmo::OPERATION::TRANSLATE, "Move the selection (W)");
+        toolButton(ICON_MDI_ROTATE_3D_VARIANT, ImGuizmo::OPERATION::ROTATE, "Rotate the selection (E)");
+        toolButton(ICON_MDI_ARROW_EXPAND_ALL, ImGuizmo::OPERATION::SCALE, "Scale the selection (R)");
+        if (ImGui::Button(m_GizmoMode == ImGuizmo::LOCAL ? ICON_MDI_CUBE_OUTLINE " Local" : ICON_MDI_EARTH " World"))
+            m_GizmoMode = m_GizmoMode == ImGuizmo::LOCAL ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Gizmo space (T). Hold Ctrl to snap.");
+        ImGui::EndDisabled();
+
+        // Play controls in the middle.
+        const float buttons = 3 * 30.0f;
+        ImGui::SameLine(std::max(ImGui::GetCursorPosX() + 16, (ImGui::GetWindowWidth() - buttons) * 0.5f));
+        if (mode != EditorMode::Playing)
         {
-            bool selected = false;
-            {
-                selected = m_GuizmoOperation == -1;
-                if (selected)
-                    ImGui::PushStyleColor(ImGuiCol_Text, selectedColor);
-                ImGui::SameLine();
-                if (ImGui::Button(ICON_MDI_HAND_BACK_RIGHT))
-                    m_GuizmoOperation = -1;
-
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Grab the screen to move the viewport.");
-                }
-
-                if (selected)
-                    ImGui::PopStyleColor();
-            }
-            ImGui::SameLine();
-
-            {
-                selected = m_GuizmoOperation == ImGuizmo::OPERATION::TRANSLATE;
-                if (selected)
-                    ImGui::PushStyleColor(ImGuiCol_Text, selectedColor);
-                ImGui::SameLine();
-                if (ImGui::Button(ICON_MDI_ARROW_ALL))
-                    m_GuizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
-
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Translate the selected object.");
-                }
-
-                if (selected)
-                    ImGui::PopStyleColor();
-            }
-            ImGui::SameLine();
-
-            {
-                selected = m_GuizmoOperation == ImGuizmo::OPERATION::ROTATE;
-                if (selected)
-                    ImGui::PushStyleColor(ImGuiCol_Text, selectedColor);
-                ImGui::SameLine();
-                if (ImGui::Button(ICON_MDI_ROTATE_3D_VARIANT))
-                    m_GuizmoOperation = ImGuizmo::OPERATION::ROTATE;
-
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Rotate the selected object.");
-                }
-
-                if (selected)
-                    ImGui::PopStyleColor();
-            }
-            ImGui::SameLine();
-
-            {
-                selected = m_GuizmoOperation == ImGuizmo::OPERATION::SCALE;
-                if (selected)
-                    ImGui::PushStyleColor(ImGuiCol_Text, selectedColor);
-                ImGui::SameLine();
-                if (ImGui::Button(ICON_MDI_ARROW_EXPAND_ALL))
-                    m_GuizmoOperation = ImGuizmo::OPERATION::SCALE;
-
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Scale the selected object.");
-                }
-
-                if (selected)
-                    ImGui::PopStyleColor();
-            }
-            ImGui::SameLine();
+            if (ImGui::Button(ICON_MDI_PLAY))
+                EditorContext::Play();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip(mode == EditorMode::Paused ? "Resume (Ctrl+P)" : "Play a copy of the scene (Ctrl+P)");
         }
-
-        bool isSimulating = m_ViewportMode == ViewportMode::Simulating;
-        bool isPaused     = m_ViewportMode == ViewportMode::SimulationPaused;
+        else
         {
-            if (!isSimulating)
-            {
-                bool playButtonDown = ImGui::Button(ICON_MDI_PLAY);
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Simulate the scene.");
-                }
-
-                if (playButtonDown)
-                {
-                    m_ViewportMode = ViewportMode::Simulating;
-
-                    if (m_SimulatingScene != nullptr)
-                    {
-                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Simulating);
-                    }
-                    else if (m_EditingScene != nullptr)
-                    {
-                        // Copy scene and set simulating
-                        m_SimulatingScene = LogicScene::Copy(m_EditingScene);
-                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Simulating);
-                        g_EngineContext->SceneMngr->SetActiveScene(m_SimulatingScene);
-                    }
-                }
-            }
-
-            if (isSimulating)
-            {
-                bool pauseButtonDown = ImGui::Button(ICON_MDI_PAUSE);
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Pause simulating the scene.");
-                }
-
-                if (pauseButtonDown)
-                {
-                    m_ViewportMode = ViewportMode::SimulationPaused;
-
-                    if (m_SimulatingScene != nullptr)
-                    {
-                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Paused);
-                    }
-                }
-            }
-            ImGui::SameLine();
-
-            if (isSimulating || isPaused)
-            {
-                bool stopButtonDown = ImGui::Button(ICON_MDI_STOP);
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Stop simulating the scene.");
-                }
-
-                if (stopButtonDown)
-                {
-                    m_ViewportMode = ViewportMode::Edit;
-
-                    if (m_SimulatingScene != nullptr)
-                    {
-                        m_SimulatingScene->SetSimulationStatus(LogicSceneSimulationStatus::Stopped);
-                        m_SimulatingScene.reset();
-                        m_SimulatingScene = nullptr;
-                    }
-
-                    if (m_EditingScene != nullptr)
-                    {
-                        g_EngineContext->SceneMngr->SetActiveScene(m_EditingScene);
-                    }
-                }
-            }
+            if (ImGui::Button(ICON_MDI_PAUSE))
+                EditorContext::Pause();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Pause");
         }
         ImGui::SameLine();
+        ImGui::BeginDisabled(mode == EditorMode::Edit);
+        if (ImGui::Button(ICON_MDI_STOP))
+            EditorContext::Stop();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            ImGui::SetTooltip("Stop and return to the edited scene (Ctrl+P)");
+        ImGui::EndDisabled();
+
+        // Right side: camera speed and the stats overlay.
+        ImGui::SameLine(std::max(ImGui::GetCursorPosX() + 16, ImGui::GetWindowWidth() - 190));
+        auto& camera = EditorContext::GetCamera();
+        float speed  = camera.GetFlySpeed();
+        ImGui::SetNextItemWidth(90);
+        if (ImGui::DragFloat("##speed", &speed, 0.2f, 0.1f, 500.0f, ICON_MDI_SPEEDOMETER " %.1f"))
+            camera.SetFlySpeed(speed);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Fly speed (units / s); the wheel changes it while flying");
+        ImGui::SameLine();
+        if (m_ShowStats)
+            ImGui::PushStyleColor(ImGuiCol_Text, selectedColor);
+        if (ImGui::Button(ICON_MDI_CHART_BAR))
+            m_ShowStats = !m_ShowStats;
+        if (m_ShowStats)
+            ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Statistics overlay");
 
         ImGui::PopStyleColor();
     }

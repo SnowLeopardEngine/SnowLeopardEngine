@@ -6,6 +6,7 @@
 //
 // Render queues (DzMaterial::RenderQueue): Opaque -> GBuffer; AlphaTest -> GBufferAlphaTest (two-sided, discards
 // below alphaCutoff, optional wind: foliage); Transparent -> Forward. Shadows: ShadowCaster / ShadowCasterAlphaTest.
+// Editor: EntityID / EntityIDAlphaTest write the entity id of the nearest surface (picking, selection outline).
 Shader "Standard/Standard"
 {
     Properties
@@ -220,6 +221,84 @@ Shader "Standard/Standard"
                 {
                     discard;
                 }
+            }
+            ENDSLANG
+        }
+
+        // Editor only: entity id (InstanceData.flags.y) of the nearest surface, every queue (transparent objects are
+        // pickable too). Its own depth buffer, so the result does not depend on the G-buffer's depth.
+        Pass
+        {
+            Name "EntityID"
+            Tags { "LightMode" = "EntityID" }
+            ZWrite On
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            struct IdVertex
+            {
+                float4 position : SV_Position;
+                nointerpolation uint id : ENTITY;
+            };
+
+            IdVertex vertexMain(DepthVertex input)
+            {
+                InstanceData instance = instances[input.instance];
+                IdVertex     output;
+                output.position = mul(frame.viewProjection, mul(instance.model, float4(input.position, 1)));
+                output.id       = instance.flags.y;
+                return output;
+            }
+
+            uint fragmentMain(IdVertex input) : SV_Target0 { return input.id; }
+            ENDSLANG
+        }
+
+        Pass
+        {
+            Name "EntityIDAlphaTest"
+            Tags { "LightMode" = "EntityID" }
+            Cull Off
+            ZWrite On
+            Vertex vertexMain
+            Fragment fragmentMain
+            SLANGPROGRAM
+            struct IdVertex
+            {
+                float4 position : SV_Position;
+                float2 uv : TEXCOORD0;
+                nointerpolation uint material : MATERIAL;
+                nointerpolation uint id : ENTITY;
+            };
+
+            struct CutoutVertex
+            {
+                [[vk::location(0)]] float3 position : POSITION;
+                [[vk::location(1)]] float2 uv : TEXCOORD0;
+                [[vk::location(2)]] uint instance : INSTANCE;
+            };
+
+            IdVertex vertexMain(CutoutVertex input)
+            {
+                InstanceData instance = instances[input.instance];
+                float3       world    = ApplyWind(mul(instance.model, float4(input.position, 1)).xyz, input.uv, instance.draw.w);
+                IdVertex     output;
+                output.position = mul(frame.viewProjection, float4(world, 1));
+                output.uv       = input.uv;
+                output.material = instance.draw.w;
+                output.id       = instance.flags.y;
+                return output;
+            }
+
+            uint fragmentMain(IdVertex input) : SV_Target0
+            {
+                MaterialData m     = materials[input.material];
+                float        alpha = (m.maps.x != 0 ? SampleMap(m.maps.x, input.uv * m.surface.w).a : 1) * m.albedo.a;
+                if (alpha < m.alpha.x)
+                {
+                    discard;
+                }
+                return input.id;
             }
             ENDSLANG
         }
