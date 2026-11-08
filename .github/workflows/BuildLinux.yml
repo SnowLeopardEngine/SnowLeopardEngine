@@ -41,14 +41,20 @@ jobs:
       - name: Build C# bindings
         run: bash ./Source/CSharpBindings/build.sh
 
+      # Package downloads from GitHub fail now and then (tinygltf did, tarball and clone): retry the install.
       - name: Configure
         run: |
           xmake repo -u
-          xmake f -m ${{ matrix.mode }} -y
+          for attempt in 1 2 3; do
+            xmake f -m ${{ matrix.mode }} -y && exit 0
+            echo "package install failed (attempt $attempt), retrying"
+            sleep 20
+          done
+          exit 1
 
       - name: Build
         run: xmake -y
 
-      # Engine tests need an OpenGL window, which hosted runners do not have; the Jolt library test is headless.
+      # Engine tests need a Vulkan GPU, which hosted runners do not have; the Jolt library test is headless.
       - name: Test
         run: xmake run JoltPhysics_Test

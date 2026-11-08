@@ -36,14 +36,22 @@ jobs:
         shell: pwsh
         run: ./Source/CSharpBindings/build.ps1
 
+      # Package downloads from GitHub fail now and then (tinygltf did, tarball and clone): retry the install.
       - name: Configure
+        shell: pwsh
         run: |
           xmake repo -u
-          xmake f -m ${{ matrix.mode }} -y
+          foreach ($attempt in 1..3) {
+            xmake f -m ${{ matrix.mode }} -y
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "package install failed (attempt $attempt), retrying"
+            Start-Sleep -Seconds 20
+          }
+          exit 1
 
       - name: Build
         run: xmake -y
 
-      # Engine tests need an OpenGL window, which hosted runners do not have; the Jolt library test is headless.
+      # Engine tests need a Vulkan GPU, which hosted runners do not have; the Jolt library test is headless.
       - name: Test
         run: xmake run JoltPhysics_Test

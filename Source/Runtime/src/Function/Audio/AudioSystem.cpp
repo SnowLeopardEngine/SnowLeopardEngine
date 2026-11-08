@@ -3,6 +3,9 @@
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 
 #define MINIAUDIO_IMPLEMENTATION
+// The FLAC decoder's SSE4.1 path passes a non-constant shift to _mm_alignr_epi8, which only compiles where the
+// optimizer has inlined it into a constant: GCC 15 debug builds (-O0) reject it. Scalar FLAC decoding instead.
+#define MA_DR_FLAC_NO_SIMD
 #include <miniaudio.h>
 
 namespace SnowLeopardEngine
