@@ -62,6 +62,7 @@ namespace SnowLeopardEngine
         }
 
         m_SceneRenderer = CreateScope<SceneRenderer>(*m_Device);
+        m_Profiler      = CreateScope<RHI::GpuProfiler>(*m_Device);
 
         Subscribe(m_LogicSceneLoadedHandler);
 
@@ -84,6 +85,7 @@ namespace SnowLeopardEngine
         m_FrameGraph.reset();
         m_ViewportTexture.reset();
         m_SceneRenderer.reset();
+        m_Profiler.reset();
         IO::ReleaseAllMaterials();
         IO::ReleaseAllTextures();
 
@@ -265,7 +267,9 @@ namespace SnowLeopardEngine
         }
 
         auto* cmd = m_Frame->Begin();
-        m_FrameGraph->Execute(cmd); // ends with the image in the present layout
+        m_Profiler->BeginFrame(cmd);
+        m_FrameGraph->Execute(cmd, m_Profiler.get()); // ends with the image in the present layout
+        m_Profiler->Resolve(cmd);
 
         ++m_PresentedFrames;
         const bool capture = m_CaptureFrame != 0 && m_PresentedFrames == m_CaptureFrame;
@@ -275,6 +279,7 @@ namespace SnowLeopardEngine
         }
 
         m_Frame->SubmitAndWait();
+        m_Profiler->Collect();
         if (m_Swapchain)
         {
             m_Swapchain->Present();

@@ -59,6 +59,11 @@ namespace SnowLeopardEngine
         RHI::Device&   GetDevice() { return *m_Device; }
         bool           IsOffline() const { return m_Swapchain == nullptr; }
         SceneRenderer* GetSceneRenderer() { return m_SceneRenderer.get(); }
+
+        // Per-pass CPU / GPU times of the last presented frame (GPU from VRI timestamp queries; also sent to Tracy as
+        // GPU zones while a Tracy client is connected).
+        const std::vector<RHI::GpuProfiler::PassTiming>& GetPassTimings() const { return m_Profiler->GetTimings(); }
+        double                                           GetFrameGpuMs() const { return m_Profiler->GetFrameGpuMs(); }
         // Format of the presented image (the swapchain's, or the offline target's).
         VriFormat GetSwapchainFormat() const { return m_Swapchain ? m_Swapchain->GetFormat() : m_Offscreen->Desc.format; }
 
@@ -73,6 +78,7 @@ namespace SnowLeopardEngine
         Scope<RHI::Texture>   m_Offscreen; // offline target, window-sized
         Scope<RHI::Frame>     m_Frame;
         Scope<SceneRenderer>  m_SceneRenderer;
+        Scope<RHI::GpuProfiler> m_Profiler;
 
         std::vector<RenderOverlay*> m_Overlays;
 

@@ -645,7 +645,7 @@ namespace SnowLeopardEngine
         m_Compiled = true;
     }
 
-    void RenderGraph::Execute(VriCommandBuffer* cmd)
+    void RenderGraph::Execute(VriCommandBuffer* cmd, RHI::GpuProfiler* profiler)
     {
         if (!m_Compiled)
         {
@@ -673,6 +673,10 @@ namespace SnowLeopardEngine
                 continue;
             }
             core.CmdBeginDebugGroup(cmd, pass.Name.c_str());
+            if (profiler != nullptr)
+            {
+                profiler->BeginPass(cmd, pass.Name);
+            }
             for (const auto& use : pass.Uses)
             {
                 auto&      entry = Lookup(use.Target);
@@ -686,7 +690,15 @@ namespace SnowLeopardEngine
                     entry.Buffer->Transition(cmd, {state.access, state.stages});
                 }
             }
+            if (profiler != nullptr)
+            {
+                profiler->BeginCommands(cmd);
+            }
             pass.Execute(cmd, *this);
+            if (profiler != nullptr)
+            {
+                profiler->EndPass(cmd);
+            }
             core.CmdEndDebugGroup(cmd);
         }
     }

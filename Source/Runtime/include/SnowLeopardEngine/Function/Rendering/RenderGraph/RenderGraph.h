@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SnowLeopardEngine/Function/Rendering/RHI/GpuProfiler.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/Resources.h"
 
 #include <cstdint>
@@ -124,7 +125,8 @@ namespace SnowLeopardEngine
         // plan cannot be edited any more.
         void Compile(bool aliasTransients = false);
         bool AliasesTransients() const { return m_Aliased; }
-        void Execute(VriCommandBuffer* cmd);
+        // With a profiler, every live pass is timed (GPU timestamps around its barriers and its commands).
+        void Execute(VriCommandBuffer* cmd, RHI::GpuProfiler* profiler = nullptr);
 
         // Rebinds an imported texture of the same format and extent (e.g. this frame's swapchain image).
         void Bind(Resource resource, RHI::Texture& texture);

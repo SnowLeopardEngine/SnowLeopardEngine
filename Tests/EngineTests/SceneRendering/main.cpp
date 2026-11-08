@@ -10,6 +10,7 @@
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Engine/Engine.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Rendering/RHI/GpuProfiler.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderGraph/RenderGraph.h"
 #include "SnowLeopardEngine/Function/Rendering/Renderer/SceneRenderer.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
@@ -89,7 +90,7 @@ namespace
         std::fclose(file);
     }
 
-    Image Render(SceneRenderer& renderer, LogicScene& scene)
+    Image Render(SceneRenderer& renderer, LogicScene& scene, RHI::GpuProfiler* profiler = nullptr)
     {
         auto& device = g_EngineContext->RenderSys->GetDevice();
         Image image;
@@ -105,11 +106,23 @@ namespace
 
         RHI::Frame frame(device);
         auto*      cmd = frame.Begin();
-        graph.Execute(cmd);
+        if (profiler != nullptr)
+        {
+            profiler->BeginFrame(cmd);
+        }
+        graph.Execute(cmd, profiler);
+        if (profiler != nullptr)
+        {
+            profiler->Resolve(cmd);
+        }
         auto&                output = graph.GetTexture(target);
         RHI::TextureReadback readback(device, output);
         readback.Record(cmd, output);
         frame.SubmitAndWait();
+        if (profiler != nullptr)
+        {
+            profiler->Collect();
+        }
         image.Pixels = readback.Pixels();
         return image;
     }
@@ -353,6 +366,30 @@ int main() TRY
         }
     Check(renderer.GetStatistics().UIQuads == 4 && blue > 40, "text is drawn from the SDF atlas",
           std::to_string(renderer.GetStatistics().UIQuads) + " quads, " + std::to_string(blue) + " glyph pixels");
+
+    // ---- GPU profiling: every graph pass timed with timestamp queries
+    {
+        RHI::GpuProfiler profiler(device);
+        Render(renderer, *scene, &profiler);
+        const auto& timings = profiler.GetTimings();
+        auto find = [&](const char* name) {
+            for (const auto& timing : timings)
+                if (timing.Name == name)
+                    return &timing;
+            return static_cast<const RHI::GpuProfiler::PassTiming*>(nullptr);
+        };
+        const auto* gbuffer  = find("GBuffer");
+        const auto* lighting = find("DeferredLighting");
+        double      sum      = 0;
+        for (const auto& timing : timings)
+            sum += timing.GpuMs;
+        Check(profiler.HasGpuTimings(), "device has timestamp queries");
+        Check(timings.size() > 10 && gbuffer != nullptr && lighting != nullptr, "every live pass is profiled",
+              std::to_string(timings.size()) + " passes");
+        Check(gbuffer && lighting && gbuffer->GpuMs > 0 && lighting->GpuMs > 0 && sum <= profiler.GetFrameGpuMs() * 1.01 + 1e-3,
+              "pass GPU times are positive and within the frame",
+              lighting ? "lighting " + std::to_string(lighting->GpuMs) + " ms, frame " + std::to_string(profiler.GetFrameGpuMs()) + " ms" : "");
+    }
 
     // ---- CameraClearFlags::Color replaces the sky
     cameraComponent.ClearFlags = CameraClearFlags::Color;

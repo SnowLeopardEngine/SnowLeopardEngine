@@ -253,7 +253,13 @@ Goal: OpenGL still runs, but GL exists only inside one backend directory.
   - Verified offline: the editor's default editing scene renders in the Viewport, zero validation messages; apps (window path) unchanged
   - Not here: object picking (already disabled in the GL version) and gizmo interaction belong to Phase 4 (editor); multi-viewport (detached ImGui windows need their own swapchains) is off
   - Original scope: upgrade the editor to imgui 1.92.x docking with a VRI renderer backend (following libvultra's EditorGui); the Viewport samples a texture exported by the render graph
-- [ ] **2.6 Cleanup**: Tracy GPU zones via VRI timestamps (`glad` and the GL `GraphicsContext` go in 2.1)
+- [x] **2.6 Cleanup — GPU profiling** — done:
+  - `RHI::GpuProfiler` (ported from libvultra's Profiler, VRI timestamp queries via `vri_ext_query`): timestamps at each pass's start, after its barriers and at its end; resolved into a readback buffer and collected after `SubmitAndWait`. `RenderGraph::Execute(cmd, profiler)` times every live pass, so there are no per-call-site GPU macros (`SNOW_LEOPARD_PROFILE_GPU` removed)
+  - `RenderSystem` profiles every frame: `GetPassTimings()` (per pass: CPU record time, GPU time, GPU barrier time) and `GetFrameGpuMs()`
+  - Tracy: the timings are emitted as GPU zones of a "VRI" GPU context through Tracy's manual GPU API (no Vulkan handles needed), only while a Tracy client is connected, so nothing is queued when no profiler is attached. Not verified with a Tracy client yet (needs the Tracy GUI)
+  - `SceneRendering` engine test: 26 checks (+ timestamp support, every live pass profiled, positive pass times within the frame)
+  - Kept on purpose: `CameraSystem` still returns OpenGL-convention projections, because the editor's ImGuizmo consumes them; the scene renderer remaps depth to [0, 1] in one place. GL remains only in comments and the editor's file-type icon table
+  - Original scope: Tracy GPU zones via VRI timestamps (`glad` and the GL `GraphicsContext` went in 2.1)
 - Platforms: VRI is validated in libvultra on Windows x64 and Linux x86_64 (Vulkan). **Drop macOS from CI for now**; revisit with VRI Metal / MoltenVK later
 - Acceptance: the three RenderingSystem examples (Overview / PBR / Instancing) and OverallShowcase run **with zero Vulkan validation errors** and match GL screenshots (finite-frame + readback, `--frames N --capture`)
 
@@ -355,3 +361,4 @@ Defaults in **bold** are what this plan currently follows; change them here if n
 | 2026-11-07 | 2.4 | Foliage as an `AlphaTest` queue (cut-out, lit, shadowed, wind, GPU-culled; mesh dedupe + batched uploads); in-game UI as one batch with an SDF font atlas; `SceneRendering` now 20 checks; all apps run offline with zero validation messages |
 | 2026-11-07 | 2.4 | Post-processing: GTAO + depth-aware denoise, bloom chain, FXAA 3.11 before the UI; AO placeholder bug found by A/B checks; GL-era shaders removed; `SceneRendering` 23 checks. 2.4 done |
 | 2026-11-07 | 2.5 | Editor Viewport on VRI: render-to-texture viewport texture (resized from the panel), scene passes into it, overlays sample it through the graph; ImGui uv unflipped |
+| 2026-11-08 | 2.6 | GPU profiling: `RHI::GpuProfiler` (VRI timestamps) times every render-graph pass; `RenderSystem::GetPassTimings`; Tracy GPU zones while a client is connected; `SceneRendering` 26 checks. Phase 2 done |
