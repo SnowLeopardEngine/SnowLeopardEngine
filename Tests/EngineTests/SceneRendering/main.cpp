@@ -10,6 +10,7 @@
 #include "SnowLeopardEngine/Engine/Debug.h"
 #include "SnowLeopardEngine/Engine/Engine.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/AssetManager.h"
 #include "SnowLeopardEngine/Function/Rendering/RHI/GpuProfiler.h"
 #include "SnowLeopardEngine/Function/Rendering/RenderGraph/RenderGraph.h"
 #include "SnowLeopardEngine/Function/Rendering/Renderer/SceneRenderer.h"
@@ -475,6 +476,14 @@ int main() TRY
         const int  before = countOutline(unselected), after = countOutline(selected);
         Check(after > before + 100, "selected entity gets an outline", std::to_string(before) + " -> " + std::to_string(after) + " outline pixels");
         renderer.SetSelection({});
+    }
+
+    // ---- assets: everything above came from cooked files (SAssetPipeline), none from parsing sources
+    {
+        const auto& stats = AssetManager::GetStatistics();
+        Check(AssetManager::IsMounted() && stats.CookedLoads > 0 && stats.FallbackLoads == 0,
+              "textures and materials are loaded from cooked assets",
+              std::to_string(stats.CookedLoads) + " cooked, " + std::to_string(stats.FallbackLoads) + " parsed at runtime");
     }
     }();
 

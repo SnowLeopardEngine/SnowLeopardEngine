@@ -37,10 +37,8 @@ namespace SnowLeopardEngine
         glm::vec3 Position;
         glm::vec3 Normal;
         glm::vec2 TexCoord;
-
-        // for picking object using back buffer hack
-        int EntityID = -1;
     };
+    static_assert(sizeof(MeshVertexData) == 32, "the renderer's vertex stream and cooked meshes (SAssetPipeline) use 32-byte vertices");
 
     struct MeshData
     {

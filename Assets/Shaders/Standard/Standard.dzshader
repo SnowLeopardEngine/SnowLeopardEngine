@@ -125,7 +125,7 @@ Shader "Standard/Standard"
             GBuffer fragmentMain(SurfaceVertex input, bool frontFace : SV_IsFrontFace)
             {
                 MaterialData m     = materials[input.material];
-                float        alpha = (m.maps.x != 0 ? SampleMap(m.maps.x, input.uv * m.surface.w).a : 1) * m.albedo.a;
+                float        alpha = (m.maps.x != 0 ? SampleMap(m.maps.x, MaterialUv(m, input.uv)).a : 1) * m.albedo.a;
                 if (alpha < m.alpha.x)
                 {
                     discard;
@@ -216,7 +216,7 @@ Shader "Standard/Standard"
             void fragmentMain(ShadowVertex input)
             {
                 MaterialData m     = materials[input.material];
-                float        alpha = (m.maps.x != 0 ? SampleMap(m.maps.x, input.uv * m.surface.w).a : 1) * m.albedo.a;
+                float        alpha = (m.maps.x != 0 ? SampleMap(m.maps.x, MaterialUv(m, input.uv)).a : 1) * m.albedo.a;
                 if (alpha < m.alpha.x)
                 {
                     discard;
@@ -293,7 +293,7 @@ Shader "Standard/Standard"
             uint fragmentMain(IdVertex input) : SV_Target0
             {
                 MaterialData m     = materials[input.material];
-                float        alpha = (m.maps.x != 0 ? SampleMap(m.maps.x, input.uv * m.surface.w).a : 1) * m.albedo.a;
+                float        alpha = (m.maps.x != 0 ? SampleMap(m.maps.x, MaterialUv(m, input.uv)).a : 1) * m.albedo.a;
                 if (alpha < m.alpha.x)
                 {
                     discard;

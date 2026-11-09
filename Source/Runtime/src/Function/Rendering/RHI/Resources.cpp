@@ -268,6 +268,24 @@ namespace SnowLeopardEngine::RHI
         }
     }
 
+    BlockInfo FormatBlock(VriFormat format)
+    {
+        switch (format)
+        {
+            case VriFormat_BC1_UNORM:
+            case VriFormat_BC4_UNORM:
+                return {4, 8};
+            case VriFormat_BC2_UNORM:
+            case VriFormat_BC3_UNORM:
+            case VriFormat_BC5_UNORM:
+            case VriFormat_BC6H_UFLOAT:
+            case VriFormat_BC7_UNORM:
+                return {4, 16};
+            default:
+                return {1, TexelSize(format)};
+        }
+    }
+
     void UploadBufferRegion(Device& device, Buffer& buffer, uint64_t offset, std::span<const std::byte> data)
     {
         if (data.empty())
@@ -299,30 +317,34 @@ namespace SnowLeopardEngine::RHI
         {
             throw std::invalid_argument("Texture upload needs 1 .. mipNum levels");
         }
-        const uint32_t texel = TexelSize(texture.Desc.format);
+        // Rows of blocks (texels for uncompressed formats, 4 x 4 texels for BC formats).
+        const auto block = FormatBlock(texture.Desc.format);
         // Rows of the staging buffer follow the device's buffer -> texture row alignment; levels start aligned.
         const uint64_t alignment = std::lcm(
             uint64_t(std::lcm(256u, std::max(1u, device.Core.GetDeviceDesc(device.Handle)->uploadBufferTextureRowAlignment))),
-            uint64_t(texel));
+            uint64_t(block.Bytes));
         struct Level
         {
-            uint32_t Width, Height;
-            uint64_t Pitch, Offset;
+            uint32_t Width, Height; // texels
+            uint32_t Rows;          // block rows
+            uint64_t RowBytes, Pitch, Offset;
         };
         std::vector<Level> layout;
         uint64_t           total = 0;
         for (uint32_t mip = 0; mip < levels.size(); ++mip)
         {
-            const uint32_t width  = std::max(texture.Desc.width >> mip, 1u);
-            const uint32_t height = std::max(texture.Desc.height >> mip, 1u);
-            if (levels[mip].size_bytes() < uint64_t(width) * height * texel)
+            const uint32_t width    = std::max(texture.Desc.width >> mip, 1u);
+            const uint32_t height   = std::max(texture.Desc.height >> mip, 1u);
+            const uint32_t rows     = (height + block.Size - 1) / block.Size;
+            const uint64_t rowBytes = uint64_t((width + block.Size - 1) / block.Size) * block.Bytes;
+            if (levels[mip].size_bytes() < rowBytes * rows)
             {
                 throw std::invalid_argument("Texture upload data is smaller than mip " + std::to_string(mip));
             }
-            const uint64_t pitch = (uint64_t(width) * texel + alignment - 1) / alignment * alignment;
+            const uint64_t pitch = (rowBytes + alignment - 1) / alignment * alignment;
             total                = (total + alignment - 1) / alignment * alignment;
-            layout.push_back({width, height, pitch, total});
-            total += pitch * height;
+            layout.push_back({width, height, rows, rowBytes, pitch, total});
+            total += pitch * rows;
         }
 
         Buffer staging(device, {total, 0, VriBufferUsage_TransferSrc, VriMemoryLocation_HostUpload});
@@ -334,10 +356,9 @@ namespace SnowLeopardEngine::RHI
         for (size_t mip = 0; mip < layout.size(); ++mip)
         {
             const auto& level = layout[mip];
-            const auto  row   = size_t(level.Width) * texel;
-            for (uint32_t y = 0; y < level.Height; ++y)
+            for (uint32_t y = 0; y < level.Rows; ++y)
             {
-                std::memcpy(mapped + level.Offset + y * level.Pitch, levels[mip].data() + y * row, row);
+                std::memcpy(mapped + level.Offset + y * level.Pitch, levels[mip].data() + y * level.RowBytes, size_t(level.RowBytes));
             }
         }
         device.Core.UnmapBuffer(staging.Handle);
@@ -350,8 +371,8 @@ namespace SnowLeopardEngine::RHI
             const auto&              level = layout[mip];
             VriBufferTextureCopyDesc copy {};
             copy.bufferOffset      = level.Offset;
-            copy.bufferRowLength   = uint32_t(level.Pitch / texel);
-            copy.bufferImageHeight = level.Height;
+            copy.bufferRowLength   = uint32_t(level.Pitch / block.Bytes) * block.Size; // in texels
+            copy.bufferImageHeight = level.Rows * block.Size;
             copy.texture           = {mip, 0, 1, VriImageAspect_Color, 0, 0, 0, level.Width, level.Height, 1};
             device.Core.CmdUploadBufferToTexture(cmd, texture.Handle, staging.Handle, &copy);
         }

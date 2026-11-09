@@ -56,6 +56,13 @@ target("SnowLeopardEngine")
     -- add dependencies (inside project)
     add_deps("FastNoiseLite")
 
+    -- cooked assets (SAssetPipeline runtime: formats and registry)
+    if get_config("sap_dir") and get_config("sap_dir") ~= "" then
+        add_deps("SAssetPipeline", { public = true })
+    else
+        add_packages("sassetpipeline", { public = true })
+    end
+
     -- defines
     if is_mode("debug") then
         add_defines("_DEBUG")

@@ -23,3 +23,5 @@ Deps/SPhysX-Cross/
 
 # Solutions
 *.sln
+# cooked assets (SAssetPipeline: `sap import Assets`, run by the build)
+Assets/.imported/

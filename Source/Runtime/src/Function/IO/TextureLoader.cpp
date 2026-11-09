@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/IO/TextureLoader.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/AssetManager.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -42,15 +43,24 @@ namespace SnowLeopardEngine
             }
         } // namespace
 
-        RHI::Texture* Load(const std::filesystem::path& texturePath, bool flip)
+        RHI::Texture* LoadTexture(const std::filesystem::path& texturePath)
         {
-            const auto key = texturePath.generic_string() + (flip ? "|flip" : "");
+            if (const auto id = AssetManager::FindBySource(texturePath))
+            {
+                if (auto* texture = AssetManager::LoadTexture(*id))
+                {
+                    return texture;
+                }
+            }
+
+            const auto key = texturePath.generic_string();
             if (auto it = g_TextureCache.find(key); it != g_TextureCache.end())
             {
                 return it->second.get();
             }
+            AssetManager::ReportFallback(texturePath);
 
-            stbi_set_flip_vertically_on_load(flip);
+            stbi_set_flip_vertically_on_load(false);
             int  width = 0, height = 0, channels = 0;
             auto pixels = stbi_load(texturePath.generic_string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
             if (pixels == nullptr)
@@ -87,6 +97,14 @@ namespace SnowLeopardEngine
 
         RHI::Texture* LoadHDR(const std::filesystem::path& texturePath)
         {
+            if (const auto id = AssetManager::FindBySource(texturePath))
+            {
+                if (auto* texture = AssetManager::LoadTexture(*id))
+                {
+                    return texture;
+                }
+            }
+            AssetManager::ReportFallback(texturePath);
             const auto key = texturePath.generic_string() + "|hdr";
             if (auto it = g_TextureCache.find(key); it != g_TextureCache.end())
             {

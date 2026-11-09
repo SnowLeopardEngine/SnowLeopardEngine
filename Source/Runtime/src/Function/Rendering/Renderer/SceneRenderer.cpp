@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Function/Rendering/Renderer/SceneRenderer.h"
 #include "SnowLeopardEngine/Core/Time/Time.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/AssetManager.h"
 #include "SnowLeopardEngine/Function/IO/TextureLoader.h"
 #include "SnowLeopardEngine/Function/Rendering/Material.h"
 #include "SnowLeopardEngine/Function/Scene/Components.h"
@@ -714,17 +715,28 @@ namespace SnowLeopardEngine
             auto found = values.find(name);
             return found != values.end() ? ParseFloat(found->second->Value) : fallback;
         };
+        // A texture property: the cooked texture (by id) of a cooked material, else the file.
+        auto texture = [&](const DzMaterialProperty& property) -> uint32_t {
+            if (!property.TextureId.is_nil())
+            {
+                if (auto* cooked = AssetManager::LoadTexture(property.TextureId))
+                {
+                    return TextureIndex(cooked);
+                }
+            }
+            return property.Value.empty() ? 0 : TextureIndex(IO::LoadTexture(property.Value));
+        };
         auto map = [&](const char* name, const char* use) -> uint32_t {
             auto found = values.find(name);
-            if (scalar(use, 0) < 0.5f || found == values.end() || found->second->Value.empty())
+            if (scalar(use, 0) < 0.5f || found == values.end())
             {
                 return 0;
             }
-            return TextureIndex(IO::Load(found->second->Value, define.TextureFlipY));
+            return texture(*found->second);
         };
         auto always = [&](const char* name) -> uint32_t { // maps without a use flag
             auto found = values.find(name);
-            return found == values.end() || found->second->Value.empty() ? 0 : TextureIndex(IO::Load(found->second->Value, define.TextureFlipY));
+            return found == values.end() ? 0 : texture(*found->second);
         };
 
         GPUMaterial gpu {};
@@ -735,7 +747,7 @@ namespace SnowLeopardEngine
                         map("metallicMap", "useMetallicMap"),
                         map("roughnessMap", "useRoughnessMap"),
                         map("aoMap", "useAoMap")};
-        gpu.Maps2    = {map("emissiveMap", "useEmissiveMap"), always("noiseMap"), 0, 0};
+        gpu.Maps2    = {map("emissiveMap", "useEmissiveMap"), always("noiseMap"), define.TextureFlipY ? 1u : 0u, 0};
         const auto wind = vector("windDirection", glm::vec4(1, 0, 1, 0));
         gpu.Alpha       = {scalar("alphaCutoff", 0.5f), scalar("windStrength", 0), wind.x, wind.z};
 

@@ -1,5 +1,6 @@
 #include "SnowLeopardEngine/Function/IO/MaterialLoader.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/AssetManager.h"
 #include "SnowLeopardEngine/Function/IO/Serialization.h"
 #include "SnowLeopardEngine/Function/Rendering/Material.h"
 
@@ -11,12 +12,21 @@ namespace SnowLeopardEngine
 
         Material* Load(const std::filesystem::path& materialPath)
         {
+            if (const auto id = AssetManager::FindBySource(materialPath))
+            {
+                if (auto* material = AssetManager::LoadMaterial(*id))
+                {
+                    return material;
+                }
+            }
+
             auto pathStr = materialPath.generic_string();
 
             if (auto it = g_MaterialCache.find(pathStr); it != g_MaterialCache.end())
             {
                 return it->second.get();
             }
+            AssetManager::ReportFallback(materialPath);
 
             auto material = CreateScope<Material>();
 

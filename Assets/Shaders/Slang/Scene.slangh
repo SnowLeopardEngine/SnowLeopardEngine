@@ -52,7 +52,7 @@ struct MaterialData
     float4 surface;  // x metallic, y roughness, z ambient occlusion, w UV tiling
     float4 alpha;    // x cutoff (AlphaTest queue), y wind strength, zw wind direction (xz)
     uint4  maps;     // texture indices: albedo, metallic, roughness, ambient occlusion (0: use the constant)
-    uint4  maps2;    // x emissive, y wind noise
+    uint4  maps2;    // x emissive, y wind noise, z flip v (the .dzmaterial's TextureFlipY)
 };
 
 [[vk::binding(0, 0)]] ConstantBuffer<FrameData>        frame;
@@ -121,6 +121,12 @@ struct Surface
     float  opacity;
 };
 
+// Texture coordinates of a material's maps: tiling, and the optional v flip.
+float2 MaterialUv(MaterialData m, float2 uv)
+{
+    return float2(uv.x, m.maps2.z != 0 ? 1 - uv.y : uv.y) * m.surface.w;
+}
+
 float4 SampleMap(uint index, float2 uv)
 {
     return textures[NonUniformResourceIndex(index)].Sample(materialSampler, uv);
@@ -134,7 +140,7 @@ float3 SrgbToLinear(float3 color)
 Surface SampleSurface(uint materialIndex, float2 uv)
 {
     MaterialData m = materials[materialIndex];
-    float2       tiled = uv * m.surface.w;
+    float2       tiled = MaterialUv(m, uv);
     Surface      s;
     s.albedo    = m.maps.x != 0 ? SrgbToLinear(SampleMap(m.maps.x, tiled).rgb) : m.albedo.rgb;
     s.metallic  = m.maps.y != 0 ? SampleMap(m.maps.y, tiled).r : m.surface.x;

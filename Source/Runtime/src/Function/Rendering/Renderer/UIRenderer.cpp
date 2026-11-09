@@ -104,8 +104,8 @@ namespace SnowLeopardEngine
             return status == nullptr || status->IsEnabled;
         };
 
-        // A rect (images, buttons): pivot at Pos, rotated about it; uv (0, 0) is the image's bottom-left (textures
-        // are loaded bottom row first).
+        // A rect (images, buttons): pivot at Pos, rotated about it. Corners run bottom-left first (y up); textures are
+        // stored top row first, so v is flipped.
         auto addRect = [&](const UI::RectTransformComponent& rect, RHI::Texture* texture, const glm::vec4& color) {
             Quad quad {rect.Pos.z, order++, {}};
             const uint32_t index = texture != nullptr ? textureIndex(texture) : 0;
@@ -113,7 +113,7 @@ namespace SnowLeopardEngine
             for (int i = 0; i < 4; ++i)
             {
                 quad.Corners[i] = {Place(glm::vec2(rect.Pos), rect.RotationAngle, (corners[i] - rect.Pivot) * rect.Size),
-                                   corners[i],
+                                   glm::vec2(corners[i].x, 1.0f - corners[i].y),
                                    PackColor(color),
                                    index};
             }

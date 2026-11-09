@@ -104,7 +104,7 @@ public:
         panelRect.Pivot                 = {0.5, 0.5};
         panelRect.Pos                   = {centerX, centerY, -0.1};
         auto& panelImageComp            = panelImage.AddComponent<UI::ImageComponent>();
-        panelImageComp.TargetGraphic    = IO::Load("Assets/Textures/GUI/Panel/Window/Big.png");
+        panelImageComp.TargetGraphic    = IO::LoadTexture("Assets/Textures/GUI/Panel/Window/Big.png");
         panelImageComp.MaterialFilePath = uiImageMaterialPath;
 
         // Create a play button
@@ -115,7 +115,7 @@ public:
         playButtonRect.Pos    = {centerX, centerY, 0};
         auto& playButtonComp  = playButton.AddComponent<UI::ButtonComponent>();
         playButtonComp.TintColor.TargetGraphic =
-            IO::Load("Assets/Textures/GUI/Buttons/Rect-Medium/PlayText/Default.png");
+            IO::LoadTexture("Assets/Textures/GUI/Buttons/Rect-Medium/PlayText/Default.png");
         playButtonComp.MaterialFilePath = uiImageMaterialPath;
 
         Subscribe(m_ButtonClickedEventHandler);

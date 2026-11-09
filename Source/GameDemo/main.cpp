@@ -464,7 +464,7 @@ private:
         bgRect.Pivot                 = {0.5, 0.5};
         bgRect.Pos                   = {width / 2.0f, height / 2.0f, -0.1};
         auto& bgImageComp            = bgImage.AddComponent<UI::ImageComponent>();
-        bgImageComp.TargetGraphic    = IO::Load("Assets/Textures/GUI/Panel/Window/Big.png");
+        bgImageComp.TargetGraphic    = IO::LoadTexture("Assets/Textures/GUI/Panel/Window/Big.png");
         bgImageComp.MaterialFilePath = ImageMaterialPath;
 
         // Create a game name text
@@ -486,7 +486,7 @@ private:
         playButtonRect.Pos   = {width / 2.0f, height / 2.0f, 0};
         auto& playButtonComp = playButton.AddComponent<UI::ButtonComponent>();
         playButtonComp.TintColor.TargetGraphic =
-            IO::Load("Assets/Textures/GUI/FantacyUI/Buttons/ButtonNormal.png");
+            IO::LoadTexture("Assets/Textures/GUI/FantacyUI/Buttons/ButtonNormal.png");
         playButtonComp.MaterialFilePath = ImageMaterialPath;
         // embedded text
         Entity playText               = m_MainMenuScene->CreateEntity("PlayText");
@@ -507,7 +507,7 @@ private:
         exitButtonRect.Pos   = {width / 2.0f, height / 2.0f - 100, 0};
         auto& exitButtonComp = exitButton.AddComponent<UI::ButtonComponent>();
         exitButtonComp.TintColor.TargetGraphic =
-            IO::Load("Assets/Textures/GUI/FantacyUI/Buttons/ButtonNormal.png");
+            IO::LoadTexture("Assets/Textures/GUI/FantacyUI/Buttons/ButtonNormal.png");
         exitButtonComp.MaterialFilePath = ImageMaterialPath;
         // embedded text
         Entity exitText               = m_MainMenuScene->CreateEntity("ExitText");
@@ -551,7 +551,7 @@ private:
         menuButtonRect.Pos   = {50, height - 50, 0};
         auto& menuButtonComp = menuButton.AddComponent<UI::ButtonComponent>();
         menuButtonComp.TintColor.TargetGraphic =
-            IO::Load("Assets/Textures/GUI/FantacyUI/Buttons/Menu.png");
+            IO::LoadTexture("Assets/Textures/GUI/FantacyUI/Buttons/Menu.png");
         menuButtonComp.MaterialFilePath = ImageMaterialPath;
 
         // Create a healthbar
@@ -561,7 +561,7 @@ private:
         healthBarBackRect.Pivot             = {0.5, 0.5};
         healthBarBackRect.Pos               = {200, height - 50, -0.1};
         auto& healthBarBackImage            = healthBarBack.AddComponent<UI::ImageComponent>();
-        healthBarBackImage.TargetGraphic    = IO::Load("DemoAssets/GUI/HealthBarBack.png");
+        healthBarBackImage.TargetGraphic    = IO::LoadTexture("DemoAssets/GUI/HealthBarBack.png");
         healthBarBackImage.MaterialFilePath = ImageMaterialPath;
 
         Entity healthBarFront                = m_GameScene->CreateEntity("HealthBarFront");
@@ -570,7 +570,7 @@ private:
         healthBarFrontRect.Pivot             = {0, 0.5};
         healthBarFrontRect.Pos               = {102, height - 50, -0.05};
         auto& healthBarFrontImage            = healthBarFront.AddComponent<UI::ImageComponent>();
-        healthBarFrontImage.TargetGraphic    = IO::Load("DemoAssets/GUI/HealthBarFront.png");
+        healthBarFrontImage.TargetGraphic    = IO::LoadTexture("DemoAssets/GUI/HealthBarFront.png");
         healthBarFrontImage.MaterialFilePath = ImageMaterialPath;
 
         // Create a GAME-OVER text
@@ -833,7 +833,7 @@ private:
         playButtonRect.Pos   = {800, 360, 0};
         auto& playButtonComp = playButton.AddComponent<UI::ButtonComponent>();
         playButtonComp.TintColor.TargetGraphic =
-            IO::Load("Assets/Textures/GUI/FantacyUI/Buttons/ButtonNormal.png");
+            IO::LoadTexture("Assets/Textures/GUI/FantacyUI/Buttons/ButtonNormal.png");
         playButtonComp.MaterialFilePath = ImageMaterialPath;
         // embedded text
         Entity playText               = m_GameScene->CreateEntity("PlayText");

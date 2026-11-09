@@ -94,6 +94,14 @@ namespace SnowLeopardEngine::RHI
     // Bytes per texel of the uncompressed colour formats the engine uploads (RGBA8 / RGBA16F / RGBA32F ...).
     uint32_t TexelSize(VriFormat format);
 
+    // Upload unit of a format: Size x Size texels in Bytes (1 x 1 texel for uncompressed formats, 4 x 4 for BC).
+    struct BlockInfo
+    {
+        uint32_t Size;
+        uint32_t Bytes;
+    };
+    BlockInfo FormatBlock(VriFormat format);
+
     // Blocking uploads (own frame, waits for completion).
     Scope<Buffer> UploadBuffer(Device& device, std::span<const std::byte> data, VriBufferUsageFlags usage);
     // Writes `data` into a device-local buffer at `offset` (the buffer needs TransferDst usage).

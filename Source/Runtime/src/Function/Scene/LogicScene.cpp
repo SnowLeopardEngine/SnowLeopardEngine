@@ -5,6 +5,7 @@
 #include "SnowLeopardEngine/Core/Reflection/TypeFactory.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
 #include "SnowLeopardEngine/Function/Animation/Animator.h"
+#include "SnowLeopardEngine/Function/Asset/AssetManager.h"
 #include "SnowLeopardEngine/Function/Asset/Model.h"
 #include "SnowLeopardEngine/Function/Geometry/GeometryFactory.h"
 #include "SnowLeopardEngine/Function/IO/AssimpModelLoader.h"
@@ -332,15 +333,18 @@ namespace SnowLeopardEngine
                         break;
                 }
             }
+            else if (const auto id = AssetManager::FindBySource(meshFilter->FilePath); id && (meshFilter->Meshes = AssetManager::LoadMesh(*id)))
+            {
+                // the imported mesh (shared by every entity that uses the file)
+            }
             else if (FileSystem::Exists(meshFilter->FilePath))
             {
+                AssetManager::ReportFallback(meshFilter->FilePath);
                 meshFilter->Meshes = CreateRef<MeshGroup>();
                 Model assimpModel;
                 AssimpModelLoader::LoadModel(meshFilter->FilePath, assimpModel);
                 *meshFilter->Meshes = assimpModel.Meshes;
             }
-
-            meshFilter->AssignEntityID(static_cast<int>(entity));
         }
 
         if (auto* terrain = m_Registry.try_get<TerrainComponent>(entity); terrain != nullptr && terrain->Mesh.Data.Vertices.empty())

@@ -1,0 +1,10 @@
+[import]
+version=1
+importer=mesh
+id=f73cfbd6-9b54-47b8-8a1f-d983a4400a35
+
+[params]
+bakeTransforms=true
+flipUVs=true
+scale=1
+smoothNormals=true

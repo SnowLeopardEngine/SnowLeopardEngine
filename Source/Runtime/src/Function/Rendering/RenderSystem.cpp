@@ -2,6 +2,7 @@
 #include "SnowLeopardEngine/Core/Base/Base.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/AssetManager.h"
 #include "SnowLeopardEngine/Function/IO/MaterialLoader.h"
 #include "SnowLeopardEngine/Function/IO/TextureLoader.h"
 
@@ -88,6 +89,7 @@ namespace SnowLeopardEngine
         m_Profiler.reset();
         IO::ReleaseAllMaterials();
         IO::ReleaseAllTextures();
+        AssetManager::Unmount(); // its textures are GPU resources
 
         m_PendingCapture.reset();
         m_Frame.reset();

@@ -2,6 +2,7 @@
 
 #include "SnowLeopardEngine/Core/Base/Hash.h"
 #include "SnowLeopardEngine/Core/Base/Base.h"
+#include "SnowLeopardEngine/Core/UUID/CoreUUID.h"
 
 #include <cereal/cereal.hpp>
 
@@ -16,6 +17,9 @@ namespace SnowLeopardEngine
         std::string Name;
         std::string Type;
         std::string Value;
+        // Texture2D from a cooked material: the texture asset (nil: load `Value` as a file). Not part of the
+        // .dzmaterial text.
+        CoreUUID TextureId;
 
         // NOLINTBEGIN
         template<class Archive>

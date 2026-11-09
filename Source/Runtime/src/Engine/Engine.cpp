@@ -1,6 +1,7 @@
 #include "SnowLeopardEngine/Engine/Engine.h"
 #include "SnowLeopardEngine/Core/Profiling/Profiling.h"
 #include "SnowLeopardEngine/Engine/EngineContext.h"
+#include "SnowLeopardEngine/Function/Asset/AssetManager.h"
 
 namespace SnowLeopardEngine
 {
@@ -37,6 +38,9 @@ namespace SnowLeopardEngine
 
         // Init render system
         g_EngineContext->RenderSys.Init();
+
+        // Cooked assets of the app's asset root (imported by the build): loaders use them before source files.
+        AssetManager::Mount("Assets");
 
         // Init gui system
         g_EngineContext->GUISys.Init();
