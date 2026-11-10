@@ -7,7 +7,7 @@ package("sassetpipeline")
     set_license("MIT")
 
     add_urls("https://github.com/SnowLeopardEngine/SAssetPipeline.git")
-    add_versions("0.2.0", "d70d6673e2f8adaf9e47d2e6522030498cd751cf")
+    add_versions("0.2.0", "b07ba8633d83529d3857bd3a90bae1c0a6015fd6")
 
     add_deps("nlohmann_json", "zstd", "assimp", "stb", "xxhash")
     -- the importer library needs the vendored BC7 encoder after it, the runtime last
