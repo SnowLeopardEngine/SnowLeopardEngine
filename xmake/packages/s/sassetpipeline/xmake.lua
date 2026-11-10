@@ -7,14 +7,22 @@ package("sassetpipeline")
     set_license("MIT")
 
     add_urls("https://github.com/SnowLeopardEngine/SAssetPipeline.git")
-    add_versions("0.2.0", "b07ba8633d83529d3857bd3a90bae1c0a6015fd6")
+    add_versions("0.2.0", "4cd828e22a709cf32d11190b67ad0ac029cbf17d")
+
+    -- The engine links only the runtime (cooked formats, registry) and runs the `sap` tool; tools that import in
+    -- process (an editor reimporting on file changes) also link the importer.
+    add_configs("importer", {description = "Link the importer libraries (Assimp, stb, BC7 encoder)", default = false, type = "boolean"})
 
     add_deps("nlohmann_json", "zstd", "assimp", "stb", "xxhash")
-    -- the importer library needs the vendored BC7 encoder after it, the runtime last
-    add_links("SAssetPipelineImport", "SAssetPipeline_bc7enc", "SAssetPipeline")
 
     on_load(function (package)
         package:addenv("PATH", "bin") -- the `sap` tool
+        if package:config("importer") then
+            -- the importer needs the vendored BC7 encoder after it, the runtime last
+            package:add("links", "SAssetPipelineImport", "SAssetPipeline_bc7enc", "SAssetPipeline")
+        else
+            package:add("links", "SAssetPipeline")
+        end
     end)
 
     on_install("windows", "linux", "macosx", function (package)

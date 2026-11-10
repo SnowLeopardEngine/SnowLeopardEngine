@@ -8,6 +8,8 @@ on:
 
 jobs:
   build:
+    env:
+      XMAKE_ACTION_BUILD_CACHE: true # xmake's build cache (build/.build_cache), as the setup action enabled it
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -27,10 +29,26 @@ jobs:
           xmake-version: '3.1.2'
           actions-cache-folder: '.xmake-cache'
           actions-cache-key: 'linux-${{ matrix.mode }}'
-          package-cache: true
-          package-cache-key: 'linux-${{ matrix.mode }}'
-          build-cache: true
-          build-cache-key: 'linux-${{ matrix.mode }}'
+
+      # Caches (instead of the action's package / build caches, whose keys are a hash of every dependency: one changed
+      # package threw everything away, and nothing was saved after a failed job):
+      #   packages: keyed by the build scripts and recipes, restored from the closest earlier key when they change
+      #   build cache (compiled objects): one entry per run, restored from the latest one
+      # Both are saved even when a later step fails, so the next run starts from what was installed / compiled.
+      - name: Restore xmake packages
+        id: packages
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.xmake/packages
+          key: xmake-packages-linux-${{ matrix.mode }}-${{ hashFiles('xmake.lua', '**/xmake.lua', 'xmake/packages/**') }}
+          restore-keys: xmake-packages-linux-${{ matrix.mode }}-
+
+      - name: Restore build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: build/.build_cache
+          key: xmake-build-linux-${{ matrix.mode }}-${{ github.run_id }}
+          restore-keys: xmake-build-linux-${{ matrix.mode }}-
 
       - name: Install system dependencies
         run: |
@@ -67,3 +85,17 @@ jobs:
       # Engine tests need a Vulkan GPU, which hosted runners do not have; the Jolt library test is headless.
       - name: Test
         run: xmake run JoltPhysics_Test
+
+      - name: Save xmake packages
+        if: always() && steps.packages.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.xmake/packages
+          key: ${{ steps.packages.outputs.cache-primary-key }}
+
+      - name: Save build cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: build/.build_cache
+          key: xmake-build-linux-${{ matrix.mode }}-${{ github.run_id }}
